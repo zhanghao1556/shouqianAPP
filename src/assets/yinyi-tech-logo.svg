@@ -1,0 +1,14 @@
+<svg width="320" height="112" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="音翼科技">
+  <rect width="320" height="112" rx="18" fill="#ffffff"/>
+  <text
+    x="160"
+    y="64"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    fill="#122033"
+    font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, Arial, sans-serif"
+    font-size="46"
+    font-weight="800"
+  >音翼科技</text>
+  <rect x="46" y="82" width="228" height="5" rx="2.5" fill="#00a6a6"/>
+</svg>

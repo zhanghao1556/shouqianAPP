@@ -1,0 +1,186 @@
+import fs from "node:fs";
+import http from "node:http";
+import path from "node:path";
+import { chromium, devices, webkit } from "playwright";
+
+const root = process.cwd();
+const releaseDate = "260708";
+const releaseDir = path.join(root, "outputs", `音翼AI售前工具-1.1-内部测试版-${releaseDate}`);
+const releaseHtml = "音翼AI售前工具-1.1.html";
+const releasePath = path.join(releaseDir, releaseHtml);
+
+if (!fs.existsSync(releasePath)) {
+  throw new Error(`Release HTML not found: ${releasePath}`);
+}
+
+const html = fs.readFileSync(releasePath, "utf8");
+const knownMojibakePattern = new RegExp(["\\u7f08\\u517c", "\\u935e", "\\u5a34\\u5b2d\\u7602", "\\u9417", "\\ufffd"].join("|"));
+const structuralChecks = {
+  hasInlineScript: /<script>[\s\S]*<\/script>/.test(html),
+  hasInlineStyle: /<style>[\s\S]*<\/style>/.test(html),
+  hasNoExternalAssetTags: !/(?:src|href)="\.\/assets\//.test(html),
+  hasChineseTitle: html.includes("<title>音翼AI售前工具</title>"),
+  hasNoKnownMojibake: !knownMojibakePattern.test(html)
+};
+
+const server = http.createServer((req, res) => {
+  const rawPath = decodeURIComponent((req.url || "/").split("?")[0]);
+  const file = rawPath === "/" ? releaseHtml : rawPath.replace(/^\//, "");
+  const resolved = path.resolve(releaseDir, file);
+
+  if (!resolved.startsWith(releaseDir)) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
+
+  fs.readFile(resolved, (error, data) => {
+    if (error) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+
+    res.writeHead(200, {
+      "Content-Type": file.endsWith(".txt") || file.endsWith(".md") ? "text/plain; charset=utf-8" : "text/html; charset=utf-8"
+    });
+    res.end(data);
+  });
+});
+
+const listen = () =>
+  new Promise((resolve) => {
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      resolve(`http://127.0.0.1:${address.port}/${encodeURIComponent(releaseHtml)}`);
+    });
+  });
+
+const close = () => new Promise((resolve) => server.close(resolve));
+
+async function launchChromium() {
+  const channels = ["chrome", "msedge", undefined];
+  let lastError;
+
+  for (const channel of channels) {
+    try {
+      return await chromium.launch({ channel, headless: true });
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
+async function launchWebKitIfAvailable() {
+  try {
+    const browser = await webkit.launch({ headless: true });
+    return { browser, actualEngine: "WebKit" };
+  } catch {
+    const browser = await launchChromium();
+    return { browser, actualEngine: "Chromium fallback with iPhone profile" };
+  }
+}
+
+async function runCase({ browser, contextOptions, name, url }) {
+  const context = await browser.newContext(contextOptions);
+  const page = await context.newPage();
+  const errors = [];
+
+  page.on("pageerror", (error) => errors.push(String(error.message || error)));
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      const text = message.text();
+      if (!text.includes("Failed to load resource: the server responded with a status of 404")) {
+        errors.push(text);
+      }
+    }
+  });
+
+  await page.goto(url, { waitUntil: "load", timeout: 15000 });
+  await page.waitForTimeout(500);
+
+  const result = await page.evaluate(() => {
+    const bodyText = document.body?.innerText || "";
+    const firstDimensionValues = Array.from(document.querySelectorAll('input[type="number"]'))
+      .slice(0, 3)
+      .map((input) => input.value);
+    const firstTextValues = Array.from(document.querySelectorAll("input"))
+      .filter((input) => input.type !== "file" && input.type !== "number" && !input.readOnly)
+      .slice(0, 2)
+      .map((input) => input.value);
+    return {
+      title: document.title,
+      h1: document.querySelector("h1")?.textContent?.trim() || "",
+      bodyLength: bodyText.length,
+      rootChildren: document.querySelector("#root")?.children.length || 0,
+      pointMapCount: document.querySelectorAll('svg[aria-label="音翼阵列麦与音箱点位图"]').length,
+      fallbackStillVisible: bodyText.includes("页面正在加载"),
+      hasWorkbench: bodyText.includes("音翼AI售前工具"),
+      hasPointMapText: bodyText.includes("点位图"),
+      hasReleaseBuildMarker: window.__YIOU_RELEASE_BUILD__ === true,
+      firstDimensionValues,
+      firstTextValues,
+      innerWidth: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth
+    };
+  });
+
+  await context.close();
+
+  const passed =
+    result.h1 === "音翼AI售前工具" &&
+    result.rootChildren > 0 &&
+    !result.fallbackStillVisible &&
+    result.hasWorkbench &&
+    result.hasPointMapText &&
+    result.hasReleaseBuildMarker &&
+    result.firstDimensionValues.length === 3 &&
+    result.firstDimensionValues.every((value) => value === "0") &&
+    result.firstTextValues.every((value) => value === "") &&
+    errors.length === 0;
+
+  return { name, passed, result, errors };
+}
+
+if (Object.values(structuralChecks).some((passed) => !passed)) {
+  console.log(JSON.stringify({ structuralChecks }, null, 2));
+  process.exitCode = 1;
+} else {
+  const httpUrl = await listen();
+  const chromiumBrowser = await launchChromium();
+  const webkitLaunch = await launchWebKitIfAvailable();
+
+  try {
+    const cases = [
+      {
+        browser: chromiumBrowser,
+        contextOptions: devices["Pixel 7"],
+        name: "Android Chrome - Pixel 7 / HTTP",
+        url: httpUrl
+      },
+      {
+        browser: webkitLaunch.browser,
+        contextOptions: devices["iPhone 14"],
+        name: `iOS Safari - iPhone 14 (${webkitLaunch.actualEngine}) / HTTP`,
+        url: httpUrl
+      }
+    ];
+
+    const results = [];
+    for (const testCase of cases) {
+      results.push(await runCase(testCase));
+    }
+
+    console.log(JSON.stringify({ structuralChecks, httpUrl, results }, null, 2));
+
+    if (results.some((result) => !result.passed)) {
+      process.exitCode = 1;
+    }
+  } finally {
+    await chromiumBrowser.close();
+    await webkitLaunch.browser.close();
+    await close();
+  }
+}

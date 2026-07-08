@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.npm-cache/
+vite-dev.log
+vite-dev.err.log
+
+# Local Codex/runtime artifacts
+.agents/
+.codex-backups/
+.git-invalid-*/
+work/
+output/
+outputs/
+
+# Large source/reference documents kept outside git by default
+docx_2/
+
+# Local environment files
+.env
+.env.*
+!.env.example

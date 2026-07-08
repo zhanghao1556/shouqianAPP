@@ -1,0 +1,1736 @@
+[
+  {
+    "id": "case_mpxs2jnc_86j2wb",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦红灯了是什么情况",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_zmgsv3",
+        "question": "天花麦红灯了是什么情况",
+        "expected": "遥控器按了麦克静音键，天花麦给到线上的声音被静音了。新版白灰色遥控器按一下麦克风控制面的“圆圈”键。旧版黑灰色遥控器按“麦克开”键。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不够完善，还要参考YY-YKO1、YY-YK02、YY-YK03 遥控器使用手册，准确来讲，最新的版本红灯是指的的线上静音状态",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_en8vch",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦指示灯不停的闪是什么情况？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_t2evud",
+        "question": "天花麦指示灯不停的闪是什么情况？",
+        "expected": "原因是底噪异常，检查一下是不是麦克风旁边有高频震动设备或者空调风扇等，把他们关掉试一下。\n可能是调试的时候在调试软件里进行了“搜寻设备”操作，取消搜寻即可。\n如果调音软件无法成功连接，可能是设备故障不能正常启动。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "答案1 静音触发是常亮红灯而不是红灯闪烁，可能是文档描述不够详细，建议这条作为次要答案",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_pd99eb",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "播放音乐的声音小，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_7ipeyl",
+        "question": "播放音乐的声音小，怎么解决？",
+        "expected": "先调整电脑右下角的系统音量或者播放器的音量，如果音量仍然不够就进入调音软件在通道设置页面增加USB输入音量。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_t7ygc5",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦啸叫了怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_jenfh4",
+        "question": "天花麦啸叫了怎么办？",
+        "expected": "一般可能是扩声音量调的太大了，需要用遥控器或者调音软件降低扬声器音量。或者可以请厂家技术人员调整设备反馈抑制参数。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_6qyyp7",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "录课声音听不清楚怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_ackw5p",
+        "question": "录课声音听不清楚怎么解决？",
+        "expected": "有很多种原因需要仔细排查：\n如果是线路引起的底噪需要排查接线或者增加隔离器解决。\n天花麦的降噪算法没有打开。\n其他的设备引入的干扰噪声。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的不够精准，只有一.1和3是匹配的答案，其他不是不针对问题的回答",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_sbdj8y",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin里线上学生听课有回音如何解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_kqnzg0",
+        "question": "classin里线上学生听课有回音如何解决？",
+        "expected": "请检查一下classin软件了是不是同时开启了摄像机的声音，关掉即可。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_37mjza",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin里麦克风和扬声器找不到DT1、DT2了，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_6b9ch1",
+        "question": "classin里麦克风和扬声器找不到DT1、DT2了，怎么解决？",
+        "expected": "请检查天花麦的指示灯状态是不是常亮的，检查一下大屏上天花麦的USB线是否连接正常，重新插拔一下USB线建议更换到USB2.0的接口上测试。如果以上尝试无法解决，需要降设备断电重启、拔掉连接扬声器的端子断电重启、更换USB线，尝试解决。如果以上方法都无效则需要更换天花麦。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_nfwlo9",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "声场均衡没效果，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_m2lipo",
+        "question": "声场均衡没效果，怎么解决？",
+        "expected": "可能背地扩声音量低或者被静音了，需要用遥控器或者调试软件增加本地扩声音量试试。\n也可以直接用调试软件操作确认本地扩声为开启状态，适当增加AFC总音量或者扬声器音量。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_qi3mkh",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "有人讲话时候录音会有滋滋音，怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_zpa4cv",
+        "question": "有人讲话时候录音会有滋滋音，怎么办？",
+        "expected": "可能电脑上同时接入的其他USB设备导致的，将其他设备拔掉测试一下。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答思路没问题，因为提出的问题是特定故障，已经在答案范围内",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_qtlb4v",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "国产化操作系统，如统信，麒麟有回音，如何处理啊？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_aqziyk",
+        "question": "国产化操作系统，如统信，麒麟有回音，如何处理啊？",
+        "expected": "国产操作系统一般就有两个声卡选项，需要注意识别麦克和扬声器的选择到阵列麦。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答思路没问题。故障实际是通过操作系统本身的声卡设置解决的，国产操作系统兼容性差设置不合理可能会出现问题，参考资料里可能没有提及。",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_g6nvxf",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "多麦级联，不同麦采集，有的音质好，有的音质差怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_qj6kcl",
+        "question": "多麦级联，不同麦采集，有的音质好，有的音质差怎么解决？",
+        "expected": "可以在调试软件“通道设置”页面调整从麦的音量大小比重，从麦通道类型AEC为线上声音，从麦通道类型AFC为本地扩声声音。调整方法是：从麦声音没有主麦的清晰，增加从麦音量；从麦声音比主麦清晰，则降低从麦音量。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答答案正确，但图片引用直接就给出了圆盘的连接图不太合理，也可能是天花麦或其他的设备，建议AI引用文件先判断一下用户提问的设备型号。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_6md1n7",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "视频会议线上讲话有回声怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_jycitz",
+        "question": "视频会议线上讲话有回声怎么办？",
+        "expected": "如果使用会议软件、会议主机、第三方处理器等设备做回声消除处理，则产生的回声应该在相应的设备解决，查看回声消除功能是否正常开启并起效，是否有其他设备接入产生音频环路导致回声。\n如果使用天花麦做回声消除处理，产生回声消除的原因是回声消除算法未生效，需要将视频会议软件、视频会议主机、外接的音频处理器和调音台、有算法的扬声器等设备的所有处理算法关闭保留原声。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_9mddb1",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "一键调音失败了怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_jt2rka",
+        "question": "一键调音失败了怎么办？",
+        "expected": "需要查看调音失败的反馈结果，按照提示操作即可。一般需要后级设备没有开启算法任何算法。如：未检测到扬声器或者混响过大，则查看通道类型是不是设置成扬声器，或者扬声器音量太小导致失败；如果AEC调音失败，重启一下设备或者需要擦除主从麦设备参数重新调音。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_8xrw4v",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "用手持麦讲话音箱尖锐的电波声音怎么处理？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_k1ckfr",
+        "question": "用手持麦讲话音箱尖锐的电波声音怎么处理？",
+        "expected": "手持麦接受机自身故障，如果现场解决需要打开手持麦接收机外壳将主排线用力按压或者重新插拔使之充分接触。如果现场无法解决则返厂维修。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "应该参考《YM-AWM301、WP1无线手持麦常见问题答疑》第11条，修改一下把标准答案加进去",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_2nfjy5",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "本地说话有回声",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_s489r5",
+        "question": "本地说话有回声",
+        "expected": "一般情况下是扬声器音量太大产生的声音反射，可以将整体扩声音量降低，或者单独降低离强反射面（如玻璃幕墙、漆木、PVC）距离近的扬声器音量"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "实际上第3点才是需要的答案，可能问题问的不够专业。这似乎也不太好解决吧，因为用户有时候确实不能准确表达",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_fgf0vh",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "主从麦级联的时候有回声，单独只使用主麦时没有回声，是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_b05kcc",
+        "question": "主从麦级联的时候有回声，单独只使用主麦时没有回声，是什么原因？",
+        "expected": "因为主从麦级联的时候AEC算法没有同步，需要重新进行AEC参数调音或者一键调音"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_pn9ibl",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "视频会议开了一段时间后线上就会听到强刺耳的噪音是什么问题？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_2hpa1w",
+        "question": "视频会议开了一段时间后线上就会听到强刺耳的噪音是什么问题？",
+        "expected": "一般这种情况是电脑USB口不稳定造成的，如果频繁出现则建议更换主机。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_r8hgo7",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦在使用时在会议软件里或者操作系统里可以识别到麦克风和扬声器，但是打开调音软件串口无法连接，是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_qymz3h",
+        "question": "天花麦在使用时在会议软件里或者操作系统里可以识别到麦克风和扬声器，但是打开调音软件串口无法连接，是什么原因？",
+        "expected": "先查看调音软件里有没有识别到串口，如果没有识别到串口则需要安装设备驱动。\n如果识别到串口仍然无法连接，需要在电脑的设备管理器中更改串口号（建议200以上）重试"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_bbvt5f",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "遥控器按键没反应，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_1fz0qz",
+        "question": "遥控器按键没反应，怎么解决？",
+        "expected": "检查遥控器上的指示灯，按键后是否有闪烁，如果不闪烁则需要更换电池。\n如果天花麦硬件版本为3.0，则需要安装外置红外接收器才可以使用遥控器，请检查红外接收器的位置和连接状态；\n如果是旧版黑灰色遥控器的扩声开关按键没反应，一般原因是需要配置好参数后保存第一个（扩声关）和第二个（扩声开）flash模式，按键功能才生效；或者是扩声开的音量太小主观感受不到效果，则需要使用遥控器增加扩声音量。\n如果某些按键不起作用，则比较常见的原因是设备长时间运行状态不正常导致，则需要断电重启或者在调试软件里进行重启。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1i2x6s",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦指示灯经常自己变红，或者音量变大了，或者变小了，是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_7ixx7s",
+        "question": "天花麦指示灯经常自己变红，或者音量变大了，或者变小了，是什么原因？",
+        "expected": "如果指示指示灯变红，可以查看一下设备周边有没有空调或者风扇直吹。\n查看一下房间内有没有其他有红外设备干扰。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "前面回答完全正确，但后面的：若需要进一步检查设备物理连接，可参考下方音频处理器接口连接示意图（通用示意，阵麦连接逻辑类似）：图片  是毫不相关的答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_hr66k6",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦DT2的指示灯闪烁、四个等颜色不一致是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_la92e3",
+        "question": "天花麦DT2的指示灯闪烁、四个等颜色不一致是什么原因？",
+        "expected": "设备启动异常，需要断电重启、恢复全部参数，如果仍然无法解决需要返厂维修。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_q1xxcb",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦通电后不亮灯是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_zuel8x",
+        "question": "天花麦通电后不亮灯是什么原因？",
+        "expected": "检查设备后面板的开关是否开始，检查适配器的状态等是否常亮，将扬声器接线端子拔掉断电重启。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的比较准确，实际上从麦不亮灯可能是另外的问题，但是可能是参考文档不或者描述不精确全导致的，答案没问题。",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_o3np04",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦声场均衡方案调试步骤是什么？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_i3mz30",
+        "question": "天花麦声场均衡方案调试步骤是什么？",
+        "expected": "1.设备接线完成并通电正常运行，设备安装必须指示灯（DT2黑色灯）指向大屏。\n2.调音软件主界面右上方选择“打开本地扩“声复选框\n3.一键调音，等待约3分钟，调音结束。\n4.房间区域绘制页面绘制房间区域：DT1加载270°的快捷布局，DT2加载0°的快捷布局，将4个房间区域每个区域的波束宽度由原来的2改成3，并点击”设置波束宽度“按键。\n5.调整扬声器音量：将主机面扬声器1、2、3、4的音量值调整到-15左右，在混音矩阵页面AFC列，最上面4个按钮从分别上到下先右键点击，然后调整音量-10、-6、0、0，根据需要增加音量值，一般后面的通道可以多增加，前面的适当微调。\n6.调试完成后，保存当前参数。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的比较好了，但不是标准的步骤，因为没有说明手册总结过。可以把标准答案放到参考文件里的一个条目并与现在的答案融合就完美了。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_wzu52o",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦外接处理器或者调音台怎么调试？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_ee8iin",
+        "question": "天花麦外接处理器或者调音台怎么调试？",
+        "expected": "1.一般天花麦外接处理器需要连接4条音频线，2进（手持麦闪避+互动参考）2出（本地扩声+线上会议）\n2.天花麦的Line in 和Line out按照平衡法接线\n3.在调音软件内通道设置：Line out做本地扩声的通道类型设置成扬声器，Line out给线上的通道类型设置成录音。输入通道开启平衡模式，输出通道1、3或者2、4改成反相，操作时先获取然后再更改并点击设置按钮。\n4.在调音软件主界面将Line in接手持麦的通道选择，点击设置按钮。\n5.在调音通道设置页面将Line in接线上声音的通道类型设置为互动。\n6.在混音矩阵页面，先点击右上角更新矩阵参数，然后将所有Line in通道关闭。\n7.确保第三方处理器对天花麦的输入和输出没有开启任何算法即直通的状态。\n8.一键调音，等待调试完成，并按需要调整输入输出音量，合理调整增益架构。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的很到位，其实这个问题明显是参考资料没有包含答案，建议后期将问题100条加入到参考文献里",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1djsbz",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦接有源音箱怎么调试？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_4mmrh0",
+        "question": "天花麦接有源音箱怎么调试？",
+        "expected": "1.天花麦的Line out建议按照平衡法接线，如果非平衡接线有噪音则需要安装音频隔离器。\n2.在调音软件内通道设置：Line out做本地扩声的通道类型设置成扬声器，Line out给线上的通道类型设置成录音。如果输出通道是平衡接线，则输出1、3或者2、4改成反相，操作时先获取然后再更改并点击设置按钮。\n3.一键调音，等待调试完成，并按需要调整输入输出音量，合理调整增益架构。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的很到位，其实这个问题明显是参考资料没有包含答案，建议后期将问题100条加入到参考文献里",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ktpq59",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦接手持麦怎么调试？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_3w760o",
+        "question": "天花麦接手持麦怎么调试？",
+        "expected": "1.在调音软件主界面将Line in接手持麦的通道选择，点击设置按钮。\n2.在混音矩阵页面，先点击右上角更新矩阵参数，然后将Line in给到输出给线上通道开关关闭，将其对应的AEC列对应线上输出通道打开。\n3.调整【闪避器】页面内的阈值参数到合适的位置，需根据现场环境及手持话筒发言电平确定。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "一、有问题，锁频不是必须的，可以建议锁频。二.2的混音矩阵配置，需要参考标准答案的2。手持麦调音不是必须的，可以建议。可以把标准答案加到《WP1手持麦-安装注意事项及接口说明》里。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_fuasfv",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦接天花麦后说话声音不清晰怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_j2hf7l",
+        "question": "手持麦接天花麦后说话声音不清晰怎么办？",
+        "expected": "没有开启闪避功能或者闪避值设置不合理。\n1.在调音软件主界面将Line in接手持麦的通道选择，点击设置按钮。\n2.查看电平信号页面手持麦讲话时的点评值。\n3.在闪避器设置页面设置合理的闪避阈值和闪避值。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，还要检查手持麦接的通道类型是否设置为【手持无线】，并且要观察输入电平是否本身就过小",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_l4cq4p",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "录课一段时间后出现噪声或滋滋啦啦的声音，怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_mqdbdf",
+        "question": "录课一段时间后出现噪声或滋滋啦啦的声音，怎么办？",
+        "expected": "先确认下本地扩声是不是正常的，如果是正常的则可能是USB线缆、接口、电脑主机的问题，需要逐个排查。查看下USB线缆是否盘成一圈，需要分散开避免产生电磁信号，更换USB线、更换USB接口到黑色的2.0接口，更换电脑测试。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "关于USB排查的内容基本正确，还需要补充一个检查USB线缆是否盘成圈，以及更换USB线缆的尝试",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ou2hcs",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "Line in或者Line out连接设备有电流噪声，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_876yvt",
+        "question": "Line in或者Line out连接设备有电流噪声，怎么解决？",
+        "expected": "尝试采用平衡接线法，并将Line输入输出改成平衡模式，方法为：在调音软件内通道设置页面内，输入通道开启平衡模式。输出通道1、3或者2、4改成反相，操作时先获取然后再更改并点击设置按钮。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "并没有在参考文档里找到相关内容？回答1的答案第三条不合理，与问题无关。参考的内容非天花麦的？ 当然引用的非常合理，其他答案也正确。因为天花麦的linein和out接口与其他处理器不太一样，建议将标准答案加到天花麦的常见问题文档内。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_euxw2a",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "多个安装阵列麦房间之间视频会议有回音，什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_m50daq",
+        "question": "多个安装阵列麦房间之间视频会议有回音，什么原因？",
+        "expected": "阵列麦应升级到相同固件版本。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_auoqpd",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "本地扩声音有的地方声音小、有的地方声音大，不均匀，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_j7ushc",
+        "question": "本地扩声音有的地方声音小、有的地方声音大，不均匀，怎么解决？",
+        "expected": "原因可能为音箱接线/分组错误、扩声参数设置不当、房间混响过大导致无法开大声。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "可以增加一个检查音箱分组是否正确、扩声音量参数是否合适的条目",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_23fpxm",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "腾讯会议开一会就没有声音了，是什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_0ueujz",
+        "question": "腾讯会议开一会就没有声音了，是什么原因？",
+        "expected": "没有声音的时候查看下会议使用的麦克风和扬声器是什么设备，有可能是设备掉线了，尝试更换USB线缆或者将USB网传的网线换成屏蔽网线。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考的内容非天花麦的？建议将标准答案加到天花麦的常见问题文档内。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_4mday0",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "用HDMI音频用音频线接入天花麦时，现场扩声出现“吞字”、“延迟”，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_5ghq9c",
+        "question": "用HDMI音频用音频线接入天花麦时，现场扩声出现“吞字”、“延迟”，怎么解决？",
+        "expected": "矩阵针对HDMI信号解嵌音频的处理延时，可尝试模拟音频线直连播放设备"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_jgvleg",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "自动调音后，扩声音量基本足够，但个别位置有啸叫迹象或尾音出现，怎么办?",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_dwzu4a",
+        "question": "自动调音后，扩声音量基本足够，但个别位置有啸叫迹象或尾音出现，怎么办?",
+        "expected": "1)、 将【均衡器】中【ANF】标签页的【主动反馈值】改为【59】，尝试再次【反馈抑制调音】，调音完成后进行全场扩声测试，看是否还有尾音出现（若此时场地较大，音箱音量本身较高，有可能初次点击反馈抑制调音时无法正常进行，可多次尝试）；\n2)、 现场通过测试设备捕捉啸叫频率，在【均衡器】-【波束-PEQ】中做一定的均衡处理；\n3)、 如果是小声说话时容易出现尾音，可以尝试关闭【控制模块】【AGC】功能。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答内容问题不大，可以补充【均衡器】【波束-PEQ】的参数调整条目",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_2mium6",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "Line out的一个输出口连接一对有源音箱，其中第二个音箱没有声音,怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_sl6vd9",
+        "question": "Line out的一个输出口连接一对有源音箱，其中第二个音箱没有声音,怎么办？",
+        "expected": "有源音箱需要立体声输入，检查阵麦的Line out接口接线，两芯信号线都要分别连接到端子或者并在一起，目的是有源音箱端的左右声道都有信号。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_38lf96",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin线上录课或者互动有杂音怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_xz59qo",
+        "question": "classin线上录课或者互动有杂音怎么解决？",
+        "expected": "断电重启天花麦或者用YYTuner调试软件将矩阵设置页面输出给USB的矩阵节点修改回AEC"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "已有回答可以作为参考，但针对DT1、DT2设备，应把“断电重启天花麦或者用YYTuner调试软件将矩阵设置页面输出给USB的矩阵节点修改回AEC”作为优先项目体现",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_aluhhu",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "录音和或者巡课不想受遥控器控制，怎么设置？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_rojw76",
+        "question": "录音和或者巡课不想受遥控器控制，怎么设置？",
+        "expected": "将对应输出通道的通道类型设置为耳机为不受遥控器控制。该通道的通道类型设置为录音则受遥控器控制。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "软件中将对应输出通道的通道类型设置为耳机为不受遥控器控制。该通道的通道类型设置为录音则受遥控器控制。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_3o443a",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "教室较长，配置有多组喇叭，前排学生反馈听感回声较大，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_vr63b3",
+        "question": "教室较长，配置有多组喇叭，前排学生反馈听感回声较大，怎么解决？",
+        "expected": "可能是默认的调音程序后，设置的1、2组音箱音量过小，导致前排学生没有直达声，听感上感觉回声较大，可以尝试增大AFC→前两组喇叭的音量，提升前排学生的直达声覆盖，改善听感。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "该问题针对的是本地扩声，因此第2条AEC参数相关的回答全都无关；第1条回答参数设置错误，改为标准答案的内容；第3、4、5条可保留参考",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ula4ww",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "使用腾讯会议开会时有断断续续的情况，什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_em67lw",
+        "question": "使用腾讯会议开会时有断断续续的情况，什么原因？",
+        "expected": "可能是腾讯会议中设置了【高】等级的降噪，叠加阵麦本身的降噪效果，导致线上会议存在断续情况；调整为【低】即可"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "第4条噪声抑制过度下的内容，可改为标准答案中的内容",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_w9i6wc",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦开机后迅速关机怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_rzafca",
+        "question": "手持麦开机后迅速关机怎么办？",
+        "expected": "如果开机出现通道号后关机，可能是接收机天线连接异常或者信号被遮挡屏蔽无法配对导致，也可能是接收机锁频而手持麦未锁频（屏幕没有出现锁的标志）。如果没有出现通道号迅速关机，可能是电池电量不足无法开机，"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，需要增加标准答案中的信号匹配和锁频条目",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1cxnes",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦无法开机怎么办",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_jfqcrv",
+        "question": "手持麦无法开机怎么办",
+        "expected": "电池故障，需要联系售后更换"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_tkj8lk",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦充满电后使用待机时间段怎么办",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_j4x2gm",
+        "question": "手持麦充满电后使用待机时间段怎么办",
+        "expected": "电池老化，需要联系售后更换"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "测试问题中【时间段】应改为【时间短】，增加电池老化需要更换的条目",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1zdz49",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持说话断断续续怎么办",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_5bw5rr",
+        "question": "手持说话断断续续怎么办",
+        "expected": "可能原因：1.天线被遮挡，需要改变天线的位置\n2.手持麦与接收机距离太远，导致信号弱，请减小活动范围讲话\n3.有信号干扰，一般情况下可以通过开关机重新对频，获取一个与原通道号间隔大的通道号，然后将接收机和手持麦同时锁频。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "第2条增加天线被遮挡的条目",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_rpmhrn",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦说话啸叫怎么办",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_fbm1n5",
+        "question": "手持麦说话啸叫怎么办",
+        "expected": "一般音量开的太大容易引起啸叫，请减小音量并避免距离扬声器过近讲话，可以通过调音软件进行手持麦调音"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "手持接入天花麦一般不需要单独的自动调音过程，增加DT2软件内调整手持话筒音量调整的内容",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_u6cose",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦怎么锁频",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_0jamj8",
+        "question": "手持麦怎么锁频",
+        "expected": "手持麦对频成功后开机状态，同时按翻页上+翻页下键2.5S,然后按音量+键"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_qs0bfq",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦怎么解锁",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_ufsdxa",
+        "question": "手持麦怎么解锁",
+        "expected": "手持麦开机状态，同时按翻页上+翻页下键2.5S,然后按音量-键"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_cvr7xn",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦不能控制PPT翻页了则么办",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_mxwniy",
+        "question": "手持麦不能控制PPT翻页了则么办",
+        "expected": "检查接收机到电脑的USB先连接情况"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_2srd0v",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦连接的音箱有杂音怎么处理？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_nab6ea",
+        "question": "天花麦连接的音箱有杂音怎么处理？",
+        "expected": "1.将天花麦断电重启一下能否解决\n2.将天花麦后面板的连接扬声器的端子断开，断电重启天花麦\n3.可能扬声器故障需要更换"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，已有答案可保留，增加标准答案的内容",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_auekf2",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦拾音距离太近，要贴近嘴边讲话才可以，怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_snur6r",
+        "question": "手持麦拾音距离太近，要贴近嘴边讲话才可以，怎么办？",
+        "expected": "手持麦默认情况下的确拾音距离比较近，可以手动开启AGC模式（方法为开机状态下同时按住音量+与音量-键，随后屏幕会出现AGC的标识）"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考资料里确实没有相关内容，将标准答案加到《YM-AWM301、WP1无线手持麦常见问题答疑》内吧",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_uywx10",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "音乐课录课录不到声音、音质很差，怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_owec0b",
+        "question": "音乐课录课录不到声音、音质很差，怎么办？",
+        "expected": "天花麦一般只适合语言采集处理，不适合音乐录课，因为会把除了人声之外的声音当做噪音抑制掉。建议安装别的麦克风拾取音乐的声音"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考资料里没有相关内容，因为算法的问题咱们的麦克风做到。将标准答案加到《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》内吧",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_qk4p8f",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "手持麦说话没有扩音怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_eg6xb2",
+        "question": "手持麦说话没有扩音怎么办？",
+        "expected": "1.检查是否没有成功对频，如果没有成功对频，可以尝试重新开机、重新对频并锁频；\n2.若始终无法成功对频，检查接收机是否设置了锁频拨码，解除锁频拨码后，重新对频并同时锁频；\n3.若已经成功对频，检查输入电平信号是否正常，如果不正常可能是音频线的问题，检查接收机的输出接口，只接莲花的红色后，对应阵麦的Line in接L和地；\n4.如果输入电频信号正常，检查通路和矩阵中是否有地方设置了静音；"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的不够完善，将标准答案合并回答就完美了，将标准答案列入《YM-AWM301、WP1无线手持麦常见问题答疑》作为一个条目",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_haln5a",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "大屏可以识别到DT1/DT2声卡，但classin内无法录课和播放声音？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_q87r21",
+        "question": "大屏可以识别到DT1/DT2声卡，但classin内无法录课和播放声音？",
+        "expected": "1.检查DT1是不是处于【待机状态】，如果是有第一代遥控器可通过遥控器控制；\n2.重启天花麦；\n3.插拔USB线；\n4.若都不是以上原因，检查USB音量是否有异常，可以导出配置，清楚所有参数后重新导入；\n5.若通过参数判断天花麦读取配置有异常，且联机不稳定，出现【待机状态】提示，则要考虑更换USB线缆；"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "检查classin软件内的音频输入输出，是否选择到我们的DT1/DT2声卡，如果未找到声卡，联系FAE。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_y9gfj4",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦级联从麦为什么不亮灯？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_hoge2u",
+        "question": "天花麦级联从麦为什么不亮灯？",
+        "expected": "如果主麦灯亮，从麦灯不亮，按照以下步骤检查：\n1.断电重启主麦\n2.按照说明书检查主从麦网线接口是否正确，主麦接EXT MICIN,从麦接EXT MICOUT,确认接触牢靠\n3.检查网络线缆及水晶头压线质量，双端标砖568B线序，确认网线总长度不超过40米"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "这个问题不能参考其他产品的资料，或者建议将标准答案加入《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_l84p53",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦级联有时候不识别从麦，什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_m72p37",
+        "question": "天花麦级联有时候不识别从麦，什么原因？",
+        "expected": "如果从麦指示灯一直正常，则可能是从麦外接了电源，需要断开从麦电源。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "这个问题不能参考其他产品的资料，或者建议将标准答案加入《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_canekl",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦接中控怎么接线？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_q1ly4n",
+        "question": "天花麦接中控怎么接线？",
+        "expected": "上位机控制线连接主麦的EXT MICOUT  接口（RJ45），采用568B标准线序,接口定义白橙TX、 橙RX  白绿\\绿 GND"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "接线指南到图片之前都是错误的回答。应该参考串口协议文档，但是串口协议文档内也没说明如何接线，汗。把标准答案加到《DT1、DT2、DT2Pro智能阵列麦克风安装手册》里吧 ，或者我们提供一份完整的说明文件。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_l6g7j9",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦接中控无法控制怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_v6f0gv",
+        "question": "天花麦接中控无法控制怎么办？",
+        "expected": "按照以下步骤检查：1.需要检查控制线缆连接情况2.检查接口连接及线序是否正确3.检查控制指令是否正确，控制指令与设备固件版本对应，请参照指令文档或者在调试软件日志获取正确的指令"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答的正确，但是不够准确，因为没有参考材料，建议引用一下串口协议文档，不清楚资料包里没有串口协议文档是什么原因？。建议把标准答案加到《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》内",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_4jf9v7",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦接了多组喇叭（超过4组），有几组喇叭没声音怎么回事？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_4zuxog",
+        "question": "天花麦接了多组喇叭（超过4组），有几组喇叭没声音怎么回事？",
+        "expected": "一般是前4组喇叭直接接在天花麦的功放口，若这4组喇叭正常，其他的喇叭没声音，则可能是多的喇叭接在了独立的功放上，此时要检查该功放有没有正常供电，前面板旋钮有没有开到正常位置。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_d7ohr0",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin直播/录课怎么没有PPT或其他多媒体的声音？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_m6aned",
+        "question": "classin直播/录课怎么没有PPT或其他多媒体的声音？",
+        "expected": "需要在classin系统设置【录课模式】中选择【系统声音】，该选项默认是【软件声音】，因此不录制系统中的课件多媒体声音"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "这实际上应该是classin软件的使用问题，建议把标准答案加到《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》内",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_cql4cl",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin直播时使用手持的声音怎么不清晰？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_boxh66",
+        "question": "classin直播时使用手持的声音怎么不清晰？",
+        "expected": "学校可能使用的是第三方的手持，接入的是调音台等学校原有音频系统，未直接接入天花麦，需要增加一路音频线缆，从调音台/处理器等设备到天花麦输入，采集手持话筒信号，设置该通道为【手持无线】，调整【闪避器】优先级相关参数设置，才能录制的更清晰"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "检查手持麦是否接入到我们阵麦系统里。如果没有，会导致我们阵麦与手持麦同步拾音的情况，且我们阵麦会拾取到手持麦从音箱扩声的声音，导致声音浑浊。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_8n6xxd",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "classin或其他软件录课一段时间后出现雪花噪声，再过一段时间又自动恢复正常，什么原因？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_6bbi14",
+        "question": "classin或其他软件录课一段时间后出现雪花噪声，再过一段时间又自动恢复正常，什么原因？",
+        "expected": "1.根据以前相似现象的排查经验推测可能是USB线盘成圈之后与大屏之间产生的电磁干扰，需要改变USB线缆的放置位置或更换较短的USB线缆；\n2.有可能是电脑主机有问题，若相同USB线缆连接别的电脑主机没有同样现象，则要考虑更换电脑主机；"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "可能是丢字节了，我也不知道怎么回答",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ffweqz",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦DT2正常工作，但有一个指示灯不亮？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_7tyibe",
+        "question": "天花麦DT2正常工作，但有一个指示灯不亮？",
+        "expected": "天花麦正常工作则代表不是启动异常导致，考虑硬件故障，可能是灯组元件故障，需要更换"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "回答逻辑完全错误，就像“没过大脑”一样，亮灯了为什么还要检查电源连接？建议将标准答案加入《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_mi1sqb",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "有个教室不开灯时正常使用，只要一开灯就有很大的电流声怎么回事？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_b23usl",
+        "question": "有个教室不开灯时正常使用，只要一开灯就有很大的电流声怎么回事？",
+        "expected": "有可能是手持输入音频线与灯膜之间的电流干扰，尝试换音频线单独接入排查有没有相关干扰电流声，考虑更换新的音频线连接手持话筒到阵麦输入即可"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_9pdceh",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦安装教室为计算机教室，老师一直反馈上课时有回声，包括本地扩声和线上录制都有回声？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_u1stfj",
+        "question": "天花麦安装教室为计算机教室，老师一直反馈上课时有回声，包括本地扩声和线上录制都有回声？",
+        "expected": "1.如果是机房类的教室，本地扩声回声实际是因为上课时老师会将教师机的信号广播到所有学院机，因此听到的回声实际上是学院机上连接的耳机发出的声音，并非DT1/DT2系统产生的回声;\n2.如果计算机教室上课所用的软件是【极域】软件，软件内麦克风和喇叭的音量控制控的是Windows系统的音量，因此，若想没有本地回声，关闭极域内的麦克风音量即可，但此时Windows系统的麦克风也被关闭，无法进行录课；\n3.临时解决方案：不录课时，关闭极域内的麦克风音量；需要录课时，要求学生将学员机的音量静音"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "可以增加一段：在教室内，当老师使用第二个设备进入教室时，两个麦克风同时收音，导致声音信号互相循环，形成了回路反馈。同时，扬声器也会把麦克风收的声音放出来，进一步加剧了回声。所以请您关闭第二个设备的麦克风和扬声器，只使用一个设备来互动，这样就能避免回声和噪音。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_f7lusb",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦DT2开机后不能正常工作，本地扩声和线上录制都没效果，重启后有可能恢复正常，有可能需要多次重启才能恢复正常，如何解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_krykws",
+        "question": "天花麦DT2开机后不能正常工作，本地扩声和线上录制都没效果，重启后有可能恢复正常，有可能需要多次重启才能恢复正常，如何解决？",
+        "expected": "如果天花麦上电后不能稳定开机，且多次重启中频繁出现死机现象，则可能有主板故障，需要考虑联系厂家进行售后检测"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "直接申请售后处理",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_rjiqf1",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "安装天花麦的教室，给老师配备了对应的遥控器，但很容易被老师和学生误触导致录课或拉流没声音，怎么解决？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_65vbq1",
+        "question": "安装天花麦的教室，给老师配备了对应的遥控器，但很容易被老师和学生误触导致录课或拉流没声音，怎么解决？",
+        "expected": "1.建议学校对遥控器进行统一管控；\n2.若每间教室的音量需要单独调整，或老师确有使用遥控器的需求，可更改对应遥控器控制线上静音的相关代码，使该按钮无效。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_n2i3nz",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦配合奥威亚录播系统进行录制，怎么有重音？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_bbmdev",
+        "question": "天花麦配合奥威亚录播系统进行录制，怎么有重音？",
+        "expected": "1.使用Windows自带录音机进行测试，排查是否天花麦录到的声音本身有问题，还是Line out给到奥威亚录播主机的信号有问题；\n2.可能是Line out音量设置有异常，需检查Line out音量设置，或联系厂家技术进一步查看；\n3.清空所有参数，重新调音设置。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "1.使用Windows自带录音机进行测试，排查是否天花麦录到的声音本身有问题，还是Line out给到奥威亚录播主机的信号有问题； 2.可能是Line out音量设置有异常，需检查Line out音量设置，或联系厂家技术进一步查看； 3.清空所有参数，重新调音设置。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_mqkmwz",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦和大屏之间的USB传输采用的网传连接，怎么有时候一通电就识别不到设备了？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_i2o40i",
+        "question": "天花麦和大屏之间的USB传输采用的网传连接，怎么有时候一通电就识别不到设备了？",
+        "expected": "检查网传设备之间的网线是否采用的是屏蔽网线，如果不用屏蔽网线，容易受电磁干扰（比如大功率设备、中控等开关机）导致USB掉线"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_x2jeu2",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以安装在空调附近吗，最近能离空调多远距离？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_if4bi9",
+        "question": "天花麦可以安装在空调附近吗，最近能离空调多远距离？",
+        "expected": "空调出风会产生持续气流噪声影响天花麦的拾音，建议避开空调出风口安装，距离至少1米以上，或者在空调朝着天花麦的出风口上安装空调挡板。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_tu99th",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦能不能和原有音响系统一起使用？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_7p69c2",
+        "question": "天花麦能不能和原有音响系统一起使用？",
+        "expected": "可以。通过Line In/Line Out接口接入原有处理器、功放或调音台即可，但建议关闭第三方设备算法避免冲突。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "天花麦不可以通过忘了配置",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_35h0eu",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦安装后录音声音很小怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_dtzsn2",
+        "question": "天花麦安装后录音声音很小怎么办？",
+        "expected": "1.检查调试软件中USB输出音量是否过低；2.检查会议软件内麦克风输入音量是否被降低；3.查看波束区域是否覆盖老师活动区域；4.检查安装高度是否超出推荐范围。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_pble6n",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦能否24小时不关机运行？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_i4bzz0",
+        "question": "天花麦能否24小时不关机运行？",
+        "expected": "可以长期运行，但建议学校寒暑假或长期停用时断电，有利于延长设备寿命。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ifc92v",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦离老师越近效果越好吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_c27off",
+        "question": "天花麦离老师越近效果越好吗？",
+        "expected": "不一定。需安装在推荐高度范围内，过近可能导致拾音覆盖不足。再混响较大的教室，建议安装距离靠近老师位置。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不一定。需安装在推荐高度范围内，过近可能导致拾音覆盖不足。再混响较大的教室，建议安装距离靠近老师位置。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_8cxgra",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以联网吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_e6pntn",
+        "question": "天花麦可以联网吗？",
+        "expected": "目前设备不可以联网。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考文档错误",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_rov8tj",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "设备断电后参数会丢失吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_cuxzoz",
+        "question": "设备断电后参数会丢失吗？",
+        "expected": "不会，正常保存的参数会存储在设备内部。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不会，正常保存的参数会存储在设备内部。",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_hzm822",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "为什么教室人数多的时候录音效果变差？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_zsljlz",
+        "question": "为什么教室人数多的时候录音效果变差？",
+        "expected": "人数增多后环境噪声增加，可适当提高降噪等级。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-09T01:06:33.514623Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1esjbu",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "设备支持自动升级吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_9fvgci",
+        "question": "设备支持自动升级吗？",
+        "expected": "不可以，设备暂时没有联网，可接usb线离线升级。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，可在回答内容里可增加标准答案内容",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ixajbm",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "升级固件会不会影响已经调好的参数？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_c4fyde",
+        "question": "升级固件会不会影响已经调好的参数？",
+        "expected": "建议升级前导出配置备份。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不够完善，该问题针对的是对已调好参数设置或已保存的参数设置会不会被升级固件给影响，回答内容只是指调好参数设置没有保存的情况，没有回答设备在升级固件后其已调好或保存后的参数设置会不会被升级固件影响，建议根据标准答案再深化回答",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_h8w528",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦支持Mac电脑吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_tx0rg9",
+        "question": "天花麦支持Mac电脑吗？",
+        "expected": "支持标准USB Audio设备的系统一般均可识别，但是调试软件没有MAC版，可以先在windows电脑上调试完成后USB接到Mac电脑上。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考文档错误，可以参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_u44ocm",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "为什么录课画面正常但没有声音？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_zwc01i",
+        "question": "为什么录课画面正常但没有声音？",
+        "expected": "检查录课软件音频源是否选择DT1/DT2。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答不完善，对应设备没有列举出来，可增加参考文档，根据《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》、《阵列麦系统使用手册 V2.2.3》等文档结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ohgac8",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "设备能不能安装在灯具旁边？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_34cvut",
+        "question": "设备能不能安装在灯具旁边？",
+        "expected": "可以，但需避免强电干扰。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_07nrf0",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦最远拾音距离是多少？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_usz71c",
+        "question": "天花麦最远拾音距离是多少？",
+        "expected": "与安装高度和环境有关，需参考产品规格。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "参考标准回答",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_pqiu72",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "设备支持POE供电吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_1hrh8z",
+        "question": "设备支持POE供电吗？",
+        "expected": "不支持，我们设备网口采用的是A2B协议，擅自接入POE网线可能烧坏接口。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答不完善，对应设备没有列举出来，可增加参考文档，根据《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》、《阵列麦系统使用手册 V2.2.3》等文档结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_wvws8l",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "USB线最长可以接多少米？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_i0psz3",
+        "question": "USB线最长可以接多少米？",
+        "expected": "我们标配USB线长20米，如需更长，请自行购买USB网传器或者光纤USB线。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答不完善，对应设备没有列举出来，可增加参考文档，根据《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》、《阵列麦系统使用手册 V2.2.3》等文档结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_7z6b1m",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "电源线和音频线能一起走线吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_1t66s9",
+        "question": "电源线和音频线能一起走线吗？",
+        "expected": "短距离（10米内）可以，长距离不行，且不能和强电走同一管路，避免强电电磁干扰。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_lkwysi",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "设备连接的网线有什么要求？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_dir63l",
+        "question": "设备连接的网线有什么要求？",
+        "expected": "最好采用STP类网线。也可以用六类或更高网线，但可能会出现电磁干扰或者静电浪涌导致设备短暂断音。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_aea95f",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "一个遥控器能控制多个教室吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_dp2v96",
+        "question": "一个遥控器能控制多个教室吗？",
+        "expected": "可以，我们的遥控器是通用的。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_udz0c8",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "学生坐第一排和最后一排录音效果差别很大怎么办？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_45mk9o",
+        "question": "学生坐第一排和最后一排录音效果差别很大怎么办？",
+        "expected": "检查最后一排是否超过拾音范围，如超过建议增加从麦。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，可在回答内容里可增加标准答案内容",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_r1u4kv",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以出声音吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_ln4ioc",
+        "question": "天花麦可以出声音吗？",
+        "expected": "不可以，我们的天花麦只提供声音拾取或着音源输出，可以接无源音箱或者有源音箱来实现本地扩声。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_i1q5hr",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以接几只音箱？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_r9ycpz",
+        "question": "天花麦可以接几只音箱？",
+        "expected": "天花麦内置4路扬声器输出，每路内置功放功率50W 6Ω，可以直接连接无源音箱输出。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "每路通道可以并联两只我们的音箱，所以可以接8只",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_pzbwle",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以与中控做对接吗？比如关闭与打开声音？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_k9iqng",
+        "question": "天花麦可以与中控做对接吗？比如关闭与打开声音？",
+        "expected": "可以，我们天花麦有一路接口EXT MIC OUT可以做为RS232串口使用，可以对天花麦发送一些常用的集控命令做为与中控的对接。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_v86d8h",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "有中控485接口吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_ghpdv4",
+        "question": "有中控485接口吗？",
+        "expected": "没有，暂时只提供RS232接口。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答可在《阵列麦系统使用手册 V2.2.3》接口说明等内容结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_ww0sze",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "有网络控制接口给中控对接吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_7oo4kg",
+        "question": "有网络控制接口给中控对接吗？",
+        "expected": "没有，暂时只提供RS232接口。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答可在《阵列麦系统使用手册 V2.2.3》接口说明等内容结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_tnfuey",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以接枪杆麦吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_p6q90c",
+        "question": "天花麦可以接枪杆麦吗？",
+        "expected": "不可以，枪杆麦需要48V幻象供电，天花麦暂时没有接口有48V幻象供电"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考标准答案，枪杆麦需要MIC in与48V幻象供电",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_sfxvyc",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以设置定时开关机吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_bahmmo",
+        "question": "天花麦可以设置定时开关机吗？",
+        "expected": "不可以，暂时没有这个功能"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_r0n1rk",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以通过手机进行设置打开关闭声音吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_grs1cr",
+        "question": "天花麦可以通过手机进行设置打开关闭声音吗？",
+        "expected": "不可以，暂时没有这个功能"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答可根据参考文档得出天花麦主要在电脑端进行声音设置，可在回答内容里可增加标准答案内容",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_1l7rr7",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦可以通过网络调试吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_1f5bga",
+        "question": "天花麦可以通过网络调试吗？",
+        "expected": "目前设备不可以联网。"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "不完善，可在回答内容里可增加标准答案内容",
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_okpvnm",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "调试软件上的通道可以根据使用修改名称吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_n3pkc1",
+        "question": "调试软件上的通道可以根据使用修改名称吗？",
+        "expected": "不可以，暂时没有这个功能"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_wu2xhw",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "调试软件上的房间区域是根据现场环境大小自动识别的吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_nqx9xy",
+        "question": "调试软件上的房间区域是根据现场环境大小自动识别的吗？",
+        "expected": "不是，需要技术人员根据实际需求添加"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": null,
+    "lastTestedAt": "2026-06-04T09:24:21.528213Z"
+  },
+  {
+    "id": "case_mpxs2jnc_qjblme",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "从麦可以接音频信号线吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_8fj45c",
+        "question": "从麦可以接音频信号线吗？",
+        "expected": "从麦只接网线级联,不连接其他设备"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "no",
+    "lastRemark": "参考文档错误，参考标准答案",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_yqd6sv",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "天花麦从麦怎么接线？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_k3m4ec",
+        "question": "天花麦从麦怎么接线？",
+        "expected": "从麦只接一条标准568B线序的网线到EXT MICOUT接口"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答错误，回答内容不应根据参考文档显示，参考文档设备与问题设备并不相同，根据《DT1、DT2、DT2 Pro现场常见问题排查及音效调整》、《阵列麦系统使用手册 V2.2.3》等文档结合标准答案来解析问题",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_tmdzck",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "国产操作系统麒麟或者统信无法识别麦克风和扬声器设备",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_k7mctp",
+        "question": "国产操作系统麒麟或者统信无法识别麦克风和扬声器设备",
+        "expected": "国产操作系统一般可以正常使用，如果出现不识别音频设备的情况，建议咨询电脑或者操作系统厂家解决"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "参考标准回答",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  },
+  {
+    "id": "case_mpxs2jnc_xvcfw4",
+    "categoryId": "cat_mpxs20qr_ctzvlg",
+    "name": "安卓的设备可以连接天花麦使用吗？",
+    "note": null,
+    "turns": [
+      {
+        "id": "turn_mpxs2jnc_aswmw4",
+        "question": "安卓的设备可以连接天花麦使用吗？",
+        "expected": "可以"
+      }
+    ],
+    "sortOrder": 0,
+    "lastVerdict": "yes",
+    "lastRemark": "回答内容不应根据参考文档显示，参考文档设备与问题设备并不相同，可增加天花麦跨系统对接适配规范与会议终端和利旧扩声系统对接标准化流程来解析回答",
+    "lastTestedAt": "2026-06-09T05:49:38.233794Z"
+  }
+]
