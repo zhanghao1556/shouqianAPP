@@ -120,7 +120,7 @@
 
 ## Backup Retention
 
-Daily closing backups must keep the newest two `.codex-backups` snapshot zip files. Create and verify the new snapshot first, then delete only backup zip files older than the newest two valid snapshots.
+Daily closing backups must keep only the newest one valid `.codex-backups` snapshot zip file. Create and verify the new snapshot first, then delete only backup zip files older than the newest valid snapshot.
 
 ## 发布包售前采集清空规则
 

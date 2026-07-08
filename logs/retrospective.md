@@ -470,9 +470,9 @@ Resolved after confirmation:
 
 ### 2026-07-06 Backup Retention
 
-- Future daily closing backups should retain the newest two `.codex-backups` snapshots, not only the newest one.
+- Superseded on 2026-07-08: future daily closing backups should retain only the newest one valid `.codex-backups` snapshot zip because Git now keeps dated daily / release archive points.
 - Create and verify the new snapshot before deleting older snapshots.
-- Delete only snapshots older than the two newest valid backup zip files.
+- Delete only snapshots older than the newest valid backup zip file.
 
 ### 2026-07-06 Ceiling Center-Column Avoidance
 
@@ -1000,7 +1000,7 @@ Resolved after confirmation:
 - User requested final packaging after the topology / report visual calibration pass.
 - Release workflow must remain in this order:
   - write/update logs;
-  - create and verify a fresh `.codex-backups` snapshot, keeping newest two valid zips;
+  - create and verify a fresh `.codex-backups` snapshot, keeping only the newest one valid zip;
   - run strict checks and safe release scans;
   - generate single-file release;
   - generate universal release directory;
@@ -1058,3 +1058,16 @@ Resolved after confirmation:
   - `daily` and `release` modes intentionally allow empty commits when the working tree is clean, so the history still has a visible dated archive point.
 - Guardrail:
   - This creates Git history checkpoints only. It does not replace `.codex-backups` retention, and it does not permit protected business-rule changes without the normal confirmation boundary.
+
+### 2026-07-08 Zip Backup Retention Reminder
+
+- User changed `.codex-backups` retention after Git dated archive points were added.
+- Current zip retention:
+  - Keep only the newest one valid `.codex-backups` snapshot zip.
+  - Always create and verify the new snapshot first.
+  - Delete only older snapshot zip files after the newest snapshot is confirmed valid.
+- Git remains the dated daily / release history system:
+  - Daily closing still runs `scripts/git-checkpoint.ps1 -Kind daily`.
+  - Packaging / release still runs `scripts/git-checkpoint.ps1 -Kind release`.
+- Guardrail:
+  - This is storage-retention policy only. Do not change protected speaker, array-mic, topology, wiring, device-quantity, release clean-state, or presales-draft rules under this cleanup.

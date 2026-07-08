@@ -4295,3 +4295,19 @@ Boundary:
 - Git archive workflow only. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
 
 Timestamp: 2026-07-08 20:55:00
+
+Goal:
+
+Reduce `.codex-backups` zip retention from two snapshots to one.
+
+Actions:
+
+- User confirmed that Git now provides dated daily / release history points and asked to keep only one zip snapshot.
+- Updated `AGENTS.md` backup retention rule so daily closing backups keep only the newest one valid `.codex-backups` snapshot zip.
+- Kept the safety order unchanged: create and verify the new snapshot first, then delete only older snapshot zip files.
+
+Boundary:
+
+- Backup retention policy only. Git dated checkpoints remain required. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
+
+Timestamp: 2026-07-08 21:02:00
