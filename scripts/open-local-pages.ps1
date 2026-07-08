@@ -4,7 +4,8 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $services = @(
   @{ Name = "main app"; Script = "dev"; Port = 5174; Url = "http://127.0.0.1:5174/" },
   @{ Name = "point calibration"; Script = "dev:calibration"; Port = 5175; Url = "http://127.0.0.1:5175/" },
-  @{ Name = "wiring topology calibration"; Script = "dev:wiring-calibration"; Port = 5176; Url = "http://127.0.0.1:5176/" }
+  @{ Name = "wiring topology calibration"; Script = "dev:wiring-calibration"; Port = 5176; Url = "http://127.0.0.1:5176/" },
+  @{ Name = "mobile preview"; Script = "dev"; Args = @("--", "--port", "5177"); Port = 5177; Url = "http://127.0.0.1:5177/" }
 )
 
 function Test-Page {
@@ -35,8 +36,12 @@ Set-Location $projectRoot
 foreach ($service in $services) {
   if (-not (Test-Page -Url $service.Url)) {
     Stop-StaleProjectVite -Port $service.Port
+    $arguments = @("run", $service.Script)
+    if ($service.ContainsKey("Args")) {
+      $arguments += @($service.Args)
+    }
     Start-Process -FilePath "npm.cmd" `
-      -ArgumentList @("run", $service.Script) `
+      -ArgumentList $arguments `
       -WorkingDirectory $projectRoot `
       -WindowStyle Hidden
   }

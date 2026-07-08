@@ -1082,3 +1082,26 @@ Resolved after confirmation:
 - Current operational note:
   - If `git status -sb` shows `[ahead N]`, local commits exist but are not yet on GitHub.
   - Retry `git push` after network access to `github.com:443` recovers.
+
+### 2026-07-08 Mobile Header Font Fallback Reminder
+
+- Finding:
+  - `音翼AI售前工具` can still wrap on a phone if the environment does not honor the container-query-unit title shrink.
+- Correction:
+  - Use a `vw`-based font-size fallback first, then the `cqw` value as progressive enhancement.
+  - Explicitly override header `text-wrap: balance` on `.engineeringHeader .workspaceTitle`.
+- Guardrail:
+  - This is header CSS only. Do not change presales draft logic, release clean-state behavior, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic.
+
+### 2026-07-08 Port 5177 Mobile Preview Reminder
+
+- User requirement:
+  - `5177` and later should be treated as the mobile-side preview / mobile mode entry.
+  - Keep `5174` as the main development page unless separately changed.
+  - Do not create a separate desktop cmd / standalone mobile script; wire 5177 into the existing open-local-pages flow.
+- Intended use:
+  - Future mobile UI checks should be able to open `http://127.0.0.1:5177/` directly for the mobile view.
+  - Implementation may involve dev scripts / open-page workflow / mobile-preview CSS or viewport handling, but this log entry only records the requirement.
+- Guardrail:
+  - This is a preview workflow / UI validation convention only.
+  - Do not change protected speaker, array-mic, topology, wiring, cable-quantity, device-quantity, presales-draft, or release clean-state rules under this requirement.

@@ -204,10 +204,14 @@ button {
 .engineeringHeader .workspaceTitle {
   margin: 0;
   color: var(--color-brand-dark);
+  font-size: clamp(18px, 5.75vw, 36px);
   font-size: clamp(18px, 13cqw, 36px);
   line-height: 1.12;
   font-weight: 900;
   white-space: nowrap;
+  text-wrap: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .sectionBadge {
@@ -2023,6 +2027,109 @@ th {
   border-radius: 8px;
   padding: 18px;
   color: var(--color-muted);
+}
+
+.mobilePreviewMode body {
+  min-width: 0;
+  background:
+    linear-gradient(90deg, rgba(6, 63, 49, 0.16), rgba(6, 63, 49, 0.04) 18%, rgba(6, 63, 49, 0.04) 82%, rgba(6, 63, 49, 0.16)),
+    var(--color-page);
+}
+
+.mobilePreviewMode #root {
+  width: min(100vw, 390px);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--color-page);
+  box-shadow: 0 0 0 1px rgba(8, 67, 47, 0.08), 0 18px 48px rgba(8, 67, 47, 0.16);
+}
+
+.mobilePreviewMode .engineeringShell {
+  padding: 12px;
+}
+
+.mobilePreviewMode .engineeringHeader,
+.mobilePreviewMode .engineeringGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.mobilePreviewMode .brandCluster {
+  align-items: center;
+  gap: 10px;
+}
+
+.mobilePreviewMode .yiouHeader {
+  padding: 20px;
+}
+
+.mobilePreviewMode .yiouLogo {
+  width: clamp(92px, 32vw, 118px);
+  min-width: 0;
+  height: 46px;
+  padding: 5px 7px;
+}
+
+.mobilePreviewMode .brandText {
+  flex: 1 1 auto;
+}
+
+.mobilePreviewMode .workspaceSubTitle {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.mobilePreviewMode .headerToolBar {
+  justify-content: stretch;
+}
+
+.mobilePreviewMode .headerToolBar button {
+  flex: 1 1 0;
+}
+
+.mobilePreviewMode .intakePanel {
+  max-height: none;
+}
+
+.mobilePreviewMode .profileFacts,
+.mobilePreviewMode .checkList,
+.mobilePreviewMode .needGrid,
+.mobilePreviewMode .choiceGrid {
+  grid-template-columns: 1fr;
+}
+
+.mobilePreviewMode .doubleGrid,
+.mobilePreviewMode .siteFactorEditor,
+.mobilePreviewMode .audioPlanGrid,
+.mobilePreviewMode .externalDeviceGroups,
+.mobilePreviewMode .panelHeader,
+.mobilePreviewMode .sectionTitleRow {
+  grid-template-columns: 1fr;
+  display: grid;
+}
+
+.mobilePreviewMode .tripleGrid,
+.mobilePreviewMode .dimensionGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobilePreviewMode .objectEditor {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mobilePreviewMode .outputTabs {
+  display: flex;
+}
+
+.mobilePreviewMode .referenceNotice {
+  position: static;
+  max-width: none;
+  margin: 12px auto 0;
+  pointer-events: auto;
+}
+
+.mobilePreviewMode .engineeringCanvas {
+  min-height: 260px;
 }
 
 @media (max-width: 1320px) {

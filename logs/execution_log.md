@@ -4332,3 +4332,132 @@ Boundary:
 - Git checkpoint script reliability only. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
 
 Timestamp: 2026-07-08 21:08:00
+
+Issue:
+
+- User provided another mobile screenshot showing `音翼AI售前工具` still split into two lines as `音翼AI / 售前工具`.
+- Likely cause: the previous responsive title fix depended on container query units (`cqw`) as the main shrink behavior; some phone / release viewing environments may not apply that unit and can fall back to the larger base header `h1` style.
+
+Fix plan:
+
+- Add a normal `vw`-based font-size fallback for `.engineeringHeader .workspaceTitle`.
+- Keep `cqw` as progressive enhancement only when supported.
+- Explicitly override the base header `text-wrap: balance` with no-wrap behavior on the workspace title.
+
+Boundary:
+
+- Header title responsive CSS only. No application state, release clean-state, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic.
+
+Timestamp: 2026-07-08 21:15:00
+
+Requirement logged:
+
+- User requested that port `5177` and later should be set up as the mobile-side preview / mobile mode entry.
+- Current understanding: keep `5174` as the main development page; reserve `5177` for viewing the same app in a mobile-oriented preview so future mobile UI checks can use that port directly.
+
+Boundary:
+
+- This entry records the requested workflow / preview-port convention only.
+- Do not use this as permission to change speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantity logic, presales draft persistence, or release clean-state behavior.
+- Implementation still needs a separate code change, likely around dev scripts / local open-page workflow / optional mobile-preview styling or viewport handling.
+
+Timestamp: 2026-07-08 21:20:00
+
+Implementation note:
+
+- User clarified: do not create a separate script for the 5177 mobile preview.
+- Implementation should use the existing desktop/open-local-pages entry and include 5177 there.
+- Avoid adding a separate desktop cmd or separate mobile-only shell script.
+
+Boundary:
+
+- Open workflow / dev preview entry only. No protected business rules or release-state logic.
+
+Timestamp: 2026-07-08 21:28:00
+
+Result:
+
+- Implemented `5177` mobile preview using the existing open-local-pages flow, without creating a separate desktop cmd or standalone mobile script.
+- `scripts/open-local-pages.ps1` now starts and opens:
+  - `5174` main app;
+  - `5175` point calibration;
+  - `5176` wiring/topology calibration;
+  - `5177` mobile preview.
+- `5177` reuses the existing `dev` npm script with a port override instead of adding a separate `dev:mobile` script.
+- `src/main.tsx` adds `mobilePreviewMode` to the document when serving on port `5177` or later.
+- `src/styles.css` constrains `5177` to a mobile-width preview shell while keeping the same app content.
+- Desktop cmd verified:
+  - `C:\Users\73921\Desktop\打开收前APP页面.cmd` still calls the existing project open script.
+  - Running it successfully opened / started all four local pages.
+- Checks passed:
+  - `npm.cmd run build`
+  - `http://127.0.0.1:5174/` returned `200`
+  - `http://127.0.0.1:5175/` returned `200`
+  - `http://127.0.0.1:5176/` returned `200`
+  - `http://127.0.0.1:5177/` returned `200`
+  - Browser verification on `5177` showed `mobilePreviewMode`, root width `390px`, main content present, no framework overlay, and no console warnings/errors.
+
+Boundary:
+
+- Dev/open workflow and mobile preview styling only. No protected speaker, array-mic, topology-routing, wiring-generation, cable-quantity, device-quantity, presales-draft, or release clean-state logic changed.
+
+Timestamp: 2026-07-08 21:36:00
+
+Goal:
+
+Repackage and republish `音翼AI售前工具` 1.1 after the latest workflow / mobile-preview changes.
+
+Actions:
+
+- User requested `重新打包发布`.
+- Re-read `AGENTS.md`, `logs/execution_log.md`, and `logs/retrospective.md` before continuing.
+- Confirmed current release workflow:
+  - write logs first;
+  - create and verify a fresh `.codex-backups` snapshot, keeping only the newest valid zip;
+  - run strict checks and safe release scans;
+  - generate single-file release and universal release directory;
+  - run release mobile compatibility test;
+  - run `scripts/git-checkpoint.ps1 -Kind release` after package verification.
+
+Boundary:
+
+- Repackage / release workflow only. Do not change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft persistence, or release clean-state behavior.
+
+Timestamp: 2026-07-08 21:29:00
+
+Release result:
+
+- Created and verified backup:
+  - `.codex-backups/stable-20260708-212935.zip`
+  - size: `797.09 MB`
+  - entries: `1002`
+  - backup retention kept only newest zip: `stable-20260708-212935.zip`
+  - removed older backups: `stable-20260708-174639.zip`, `stable-20260708-131742.zip`
+- Release prechecks passed:
+  - `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters`
+  - `npm.cmd run build`
+  - source scan found no `翼欧`, `AP150`, `YM-AP150`, or `ap150` matches in `src`, `scripts`, `index.html`, or `package.json`
+  - mojibake / old print HTML export scan found no matches in source release paths
+- Regenerated release artifacts:
+  - single-file source: `outputs/yinyi-ai-presales-tool-1.1-internal-test/音翼AI售前工具-1.1-内部测试版.html`
+  - release directory: `outputs/音翼AI售前工具-1.1-内部测试版-260708`
+  - release zip: `outputs/音翼AI售前工具-1.1-内部测试版-260708.zip`
+- Release package contents:
+  - `音翼AI售前工具-1.1.html`
+  - `README-打开说明.txt`
+  - `音翼AI售前工具-1.1-软件大纲.md`
+- Release output scan found no `翼欧`, `AP150`, `YM-AP150`, `ap150`, or known mojibake matches in the generated release output directory and single-file staging directory.
+- `npm.cmd run test:release-mobile` passed:
+  - structural inline script/style checks passed;
+  - no external asset tags;
+  - Chinese title is `音翼AI售前工具`;
+  - release build marker present;
+  - Android Pixel 7 profile passed;
+  - iPhone 14 / WebKit profile passed;
+  - first project/customer text fields are empty and first dimension inputs are `0`, confirming clean release-state startup.
+
+Boundary:
+
+- Repackaged the already confirmed 1.1 state only. No protected speaker, array-mic, topology-routing, wiring-generation, cable-quantity, device-quantity, presales-draft, or release-clean-state rules were changed during packaging.
+
+Timestamp: 2026-07-08 21:32:00
