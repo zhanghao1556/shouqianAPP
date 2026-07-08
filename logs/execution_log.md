@@ -4461,3 +4461,21 @@ Boundary:
 - Repackaged the already confirmed 1.1 state only. No protected speaker, array-mic, topology-routing, wiring-generation, cable-quantity, device-quantity, presales-draft, or release-clean-state rules were changed during packaging.
 
 Timestamp: 2026-07-08 21:32:00
+
+Git checkpoint note:
+
+- Ran `scripts/git-checkpoint.ps1 -Kind release` after package verification.
+- Local release checkpoint commit was created:
+  - `ff3697d release checkpoint 2026-07-08 21:32`
+- `git push` failed because command-line access to GitHub was reset:
+  - `fatal: unable to access 'https://github.com/zhanghao1556/shouqianAPP.git/': Recv failure: Connection was reset`
+- Current Git state after the failed push:
+  - `main...origin/main [ahead 3]`
+  - latest commits: `ff3697d`, `deaaeaa`, `a3a6c2b`
+- Release package is still generated and locally verified; GitHub sync remains pending until network access to GitHub recovers.
+
+Boundary:
+
+- Git sync failure record only. No release artifacts, application code, protected speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantity logic, presales draft persistence, or release clean-state behavior was changed by this note.
+
+Timestamp: 2026-07-08 21:33:00
