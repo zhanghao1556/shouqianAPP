@@ -1044,3 +1044,17 @@ Resolved after confirmation:
   - Destructive rollback commands such as `git restore .`, `git reset --hard`, `git clean`, and `git push --force` require explicit user confirmation after showing status and recent commits.
 - Scope:
   - This is process automation only. It does not permit changing speaker selection, speaker point count, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, release clean-state behavior, or presales draft persistence without the normal rule boundaries.
+
+### 2026-07-08 Dated Daily / Release Archive Reminder
+
+- User requirement:
+  - Every daily closing and every packaging / release run must save a new Git archive point.
+  - Archive history labels must include date and time accurate to the minute.
+- Workflow:
+  - Daily closing: after logs, `.codex-backups` snapshot, cleanup, and checks, run `scripts/git-checkpoint.ps1 -Kind daily`.
+  - Packaging / release: after the generated package is verified, run `scripts/git-checkpoint.ps1 -Kind release`.
+  - Expected commit labels look like `daily checkpoint 2026-07-08 20:58` or `release checkpoint 2026-07-08 21:03`.
+- Important detail:
+  - `daily` and `release` modes intentionally allow empty commits when the working tree is clean, so the history still has a visible dated archive point.
+- Guardrail:
+  - This creates Git history checkpoints only. It does not replace `.codex-backups` retention, and it does not permit protected business-rule changes without the normal confirmation boundary.

@@ -4276,3 +4276,22 @@ Boundary:
 - Git workflow / process automation only. No application code, release script, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
 
 Timestamp: 2026-07-08 20:45:00
+
+Goal:
+
+Require dated Git archive checkpoints for daily closing and packaging.
+
+Actions:
+
+- User requested an automatic new archive point at every daily closing or packaging step, with history labels accurate to the minute.
+- Updated `AGENTS.md` so daily closing now includes a fourth step: run `scripts/git-checkpoint.ps1 -Kind daily`.
+- Updated the release / packaging workflow so after the package is generated and verified, Codex must run `scripts/git-checkpoint.ps1 -Kind release`.
+- Updated `scripts/git-checkpoint.ps1` with `-Kind checkpoint|daily|release`.
+- Daily and release modes now create messages such as `daily checkpoint 2026-07-08 20:58` and `release checkpoint 2026-07-08 21:03`.
+- Daily and release modes create an empty commit when the working tree is clean, so Git history still records the dated archive point.
+
+Boundary:
+
+- Git archive workflow only. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
+
+Timestamp: 2026-07-08 20:55:00
