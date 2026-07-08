@@ -4311,3 +4311,24 @@ Boundary:
 - Backup retention policy only. Git dated checkpoints remain required. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
 
 Timestamp: 2026-07-08 21:02:00
+
+Issue:
+
+- While committing the zip-retention rule update, `scripts/git-checkpoint.ps1` created the local commit successfully but `git push` failed because command-line access to `github.com:443` was unavailable / reset.
+- The script still printed `Checkpoint pushed`, which was misleading because native Git command failures were not explicitly checked.
+
+Fix:
+
+- Updated `scripts/git-checkpoint.ps1` to check `$LASTEXITCODE` after `git add`, `git commit`, and `git push`.
+- Future push failures now throw an error instead of printing a successful checkpoint message.
+
+Current state:
+
+- Local commit `a3a6c2b reduce zip backup retention` exists.
+- GitHub push is still pending because the command-line network cannot reach GitHub.
+
+Boundary:
+
+- Git checkpoint script reliability only. No application code, release build logic, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
+
+Timestamp: 2026-07-08 21:08:00

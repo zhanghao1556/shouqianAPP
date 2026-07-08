@@ -1071,3 +1071,14 @@ Resolved after confirmation:
   - Packaging / release still runs `scripts/git-checkpoint.ps1 -Kind release`.
 - Guardrail:
   - This is storage-retention policy only. Do not change protected speaker, array-mic, topology, wiring, device-quantity, release clean-state, or presales-draft rules under this cleanup.
+
+### 2026-07-08 Git Push Failure Handling Reminder
+
+- Finding:
+  - `scripts/git-checkpoint.ps1` originally printed `Checkpoint pushed` even when `git push` failed due command-line GitHub network errors.
+- Correction:
+  - Check `$LASTEXITCODE` after native Git write commands.
+  - Throw on `git add`, `git commit`, or `git push` failure so the user sees the real sync state.
+- Current operational note:
+  - If `git status -sb` shows `[ahead N]`, local commits exist but are not yet on GitHub.
+  - Retry `git push` after network access to `github.com:443` recovers.
