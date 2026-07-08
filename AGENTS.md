@@ -70,6 +70,25 @@
 - 如果当前环境没有 `pwsh` 或 PowerShell 7 无法启动，才回退到系统默认 PowerShell，并在回复或日志中说明。
 - 涉及中文文件、日志、AGENTS.md、报告文案读取时，仍优先按 UTF-8 读取，避免把终端编码显示问题误判为文件损坏。
 
+## Git 自动存档与回滚规则
+
+本项目已经初始化为 Git 仓库，并推送到 GitHub：`https://github.com/zhanghao1556/shouqianAPP.git`。
+
+以后 Codex 在本项目中完成代码、脚本、规则、日志、文档等有效改动后，默认自动执行 Git 存档：
+
+1. 先运行 `git status -sb`，确认工作区改动范围。
+2. 如果改动都属于当前用户请求，自动提交并推送到 GitHub；可使用 `scripts/git-checkpoint.ps1 -Message "说明"` 或等效的 `git add -A && git commit && git push`。
+3. 提交信息要简短说明本次改动，例如 `document git checkpoint automation`、`fix mobile header title`。
+4. 提交前不得把 `.codex-backups`、`node_modules`、`dist`、`outputs`、`output`、`work`、`docx_2` 等本地大目录加入 Git；这些目录应继续由 `.gitignore` 排除。
+5. 如果工作区存在与当前任务无关、用户可能手动改过的文件，不得自动 `git add -A`；必须先说明差异并询问哪些文件要进入提交。
+6. 每次成功提交 / 推送后，在回复中告知提交号和远端分支状态。
+
+回滚属于高风险操作：
+
+- `git restore .`、`git reset --hard`、`git clean`、`git push --force` 等会丢弃或改写历史的命令，必须先运行 `git status -sb` 和 `git log --oneline -5`，说明会影响哪些内容，并取得用户明确确认后才能执行。
+- 用户只说“回滚”时，默认先分析当前改动和可回滚点，不直接执行破坏性命令。
+- 回滚前如果存在未提交改动，优先建议先做一个临时提交或备份分支，避免误删用户工作。
+
 ## 每日收工流程
 
 每天结束工作时，Codex 必须自动执行三步：

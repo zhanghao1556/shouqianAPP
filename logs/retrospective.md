@@ -1028,3 +1028,19 @@ Resolved after confirmation:
   - Keep the title customer-visible and on one line by allowing the brand title to shrink with its available container width.
   - Header h1 base styles have higher specificity than `.workspaceTitle`; mobile title overrides must use a selector at least as specific as `.engineeringHeader .workspaceTitle`.
   - Do not use this UI polish to change presales defaults, release draft behavior, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic.
+
+### 2026-07-08 Git Checkpoint Automation Reminder
+
+- Project Git remote:
+  - `https://github.com/zhanghao1556/shouqianAPP.git`
+- Confirmed workflow:
+  - After Codex completes effective changes in this project, check `git status -sb`.
+  - If all changes belong to the current user request, commit and push automatically.
+  - Use `scripts/git-checkpoint.ps1 -Message "说明"` when appropriate so the user does not need to remember the raw Git commands.
+  - Report the commit hash and branch tracking state after a successful push.
+- Guardrail:
+  - Do not commit ignored local-heavy folders such as `.codex-backups`, `node_modules`, `dist`, `outputs`, `output`, `work`, or `docx_2`.
+  - If unrelated user changes are present, do not stage everything automatically; explain the mixed worktree and ask what belongs in the commit.
+  - Destructive rollback commands such as `git restore .`, `git reset --hard`, `git clean`, and `git push --force` require explicit user confirmation after showing status and recent commits.
+- Scope:
+  - This is process automation only. It does not permit changing speaker selection, speaker point count, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, release clean-state behavior, or presales draft persistence without the normal rule boundaries.

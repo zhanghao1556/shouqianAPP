@@ -4258,3 +4258,21 @@ Boundary:
 - Header responsive CSS only. No protected speaker, array-mic, topology-routing, wiring-generation, cable-quantity, device-quantity, presales-draft, or release clean-state logic was changed.
 
 Timestamp: 2026-07-08 20:34:00
+
+Goal:
+
+Add automatic Git checkpoint workflow to project rules and logs.
+
+Actions:
+
+- User asked to automate Git usage and write the rule into the bottom project rules and logs.
+- Added `Git 自动存档与回滚规则` to `AGENTS.md`.
+- Added `scripts/git-checkpoint.ps1`, which checks the working tree, stages non-ignored changes, commits with a message, and pushes to the configured GitHub remote.
+- Set the default Codex behavior for this project: after effective code / script / rule / log / document changes, run `git status -sb`, commit in-scope changes, and push to GitHub automatically.
+- Added explicit high-risk rollback guardrails: `git restore .`, `git reset --hard`, `git clean`, and `git push --force` require status/log inspection, impact explanation, and explicit user confirmation before execution.
+
+Boundary:
+
+- Git workflow / process automation only. No application code, release script, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantity logic, or presales draft behavior was changed.
+
+Timestamp: 2026-07-08 20:45:00
