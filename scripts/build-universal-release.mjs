@@ -262,5 +262,7 @@ function transformBrandText(value) {
     .replace(/DT2 Pro/g, "智能语音阵列麦克风")
     .replace(/音翼科技/g, "音曼")
     .replace(/音翼/g, "音曼")
+    .replace(/yinyi/g, "yinman")
+    .replace(/Yinyi/g, "Yinman")
     .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");
 }

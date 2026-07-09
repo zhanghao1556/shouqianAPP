@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
@@ -22,6 +23,7 @@ if (!jsName || !cssName) {
 
 const css = fs.readFileSync(path.join(dist, "assets", cssName), "utf8");
 let js = fs.readFileSync(path.join(dist, "assets", jsName), "utf8");
+const sourceAssetByHash = getSourceAssetHashMap();
 
 const mimeByExt = {
   ".png": "image/png",
@@ -30,11 +32,14 @@ const mimeByExt = {
 
 for (const assetName of assetNames) {
   const ext = path.extname(assetName).toLowerCase();
-  const mime = mimeByExt[ext];
-  const assetPath = getReplacementAssetPath(assetName) ?? path.join(dist, "assets", assetName);
+  const sourceAssetName = getSourceAssetName(assetName);
+  const replacement = getReplacementAsset(assetName, sourceAssetName);
+  const assetPath = replacement?.path ?? path.join(dist, "assets", assetName);
+  const mime = replacement?.mime ?? mimeByExt[ext];
   const dataUri = `data:${mime};base64,${fs.readFileSync(assetPath).toString("base64")}`;
   js = js.replaceAll(`new URL("${assetName}",import.meta.url).href`, JSON.stringify(dataUri));
 }
+js = isolateInlineBrandAssets(js);
 js = js.replaceAll("</script", "<\\/script");
 
 const html = index
@@ -70,22 +75,89 @@ function getBrandConfig(value) {
   };
 }
 
-function getReplacementAssetPath(assetName) {
-  if (brandConfig.id !== "yinman") return undefined;
-  if (/yinyi-tech-logo/i.test(assetName)) {
-    const logoPath = path.join(releaseDir, "yinman-logo.svg");
-    fs.mkdirSync(releaseDir, { recursive: true });
-    fs.writeFileSync(logoPath, createYinmanLogoSvg(), "utf8");
-    return logoPath;
+function getReplacementAsset(_assetName, sourceAssetName) {
+  if (brandConfig.id === "yinyi") {
+    if (sourceAssetName === "yinman-logo.png") return assetReplacement("yinyi-tech-logo.svg");
+    if (sourceAssetName === "yinman-array-mic-pointmap.png") return assetReplacement("topology-array-mic.png");
+    if (sourceAssetName === "yinman-array-mic-topology.png") return assetReplacement("topology-array-mic.png");
+    return undefined;
   }
-  if (arrayMicImage && /topology-array-mic/i.test(assetName)) {
-    const resolved = path.resolve(root, arrayMicImage);
-    if (!fs.existsSync(resolved)) {
-      throw new Error(`Yinman array mic image was not found: ${resolved}`);
+
+  if (sourceAssetName === "yinyi-tech-logo.svg") return assetReplacement("yinman-logo.png");
+  if (sourceAssetName === "yiou-logo.png") return assetReplacement("yinman-logo.png");
+  if (sourceAssetName === "topology-array-mic.png") {
+    if (arrayMicImage) {
+      const resolved = path.resolve(root, arrayMicImage);
+      if (!fs.existsSync(resolved)) {
+        throw new Error(`Yinman array mic image was not found: ${resolved}`);
+      }
+      return { path: resolved, mime: mimeByExt[path.extname(resolved).toLowerCase()] };
     }
-    return resolved;
+    return assetReplacement("yinman-array-mic-topology.png");
   }
   return undefined;
+}
+
+function assetReplacement(sourceAssetName) {
+  const replacementPath = path.join(root, "src", "assets", sourceAssetName);
+  if (!fs.existsSync(replacementPath)) {
+    throw new Error(`Replacement asset was not found: ${replacementPath}`);
+  }
+  return {
+    path: replacementPath,
+    mime: mimeByExt[path.extname(replacementPath).toLowerCase()]
+  };
+}
+
+function isolateInlineBrandAssets(value) {
+  let next = value;
+  if (brandConfig.id === "yinyi") {
+    next = replaceInlineAsset(next, "yinman-logo.png", "yinyi-tech-logo.svg");
+    next = replaceInlineAsset(next, "yinman-array-mic-pointmap.png", "topology-array-mic.png");
+    next = replaceInlineAsset(next, "yinman-array-mic-topology.png", "topology-array-mic.png");
+    return next;
+  }
+
+  next = replaceInlineAsset(next, "yinyi-tech-logo.svg", "yinman-logo.png");
+  next = replaceInlineAsset(next, "yiou-logo.png", "yinman-logo.png");
+  next = replaceInlineAsset(next, "topology-array-mic.png", "yinman-array-mic-topology.png");
+  return next;
+}
+
+function replaceInlineAsset(value, forbiddenAssetName, replacementAssetName) {
+  const forbidden = dataUriForSourceAsset(forbiddenAssetName);
+  const replacement = dataUriForSourceAsset(replacementAssetName);
+  return value.replaceAll(forbidden, replacement);
+}
+
+function dataUriForSourceAsset(sourceAssetName) {
+  const assetPath = path.join(root, "src", "assets", sourceAssetName);
+  if (!fs.existsSync(assetPath)) {
+    throw new Error(`Source asset was not found: ${assetPath}`);
+  }
+  const mime = mimeByExt[path.extname(assetPath).toLowerCase()];
+  return `data:${mime};base64,${fs.readFileSync(assetPath).toString("base64")}`;
+}
+
+function getSourceAssetHashMap() {
+  const assetsDir = path.join(root, "src", "assets");
+  const map = new Map();
+  if (!fs.existsSync(assetsDir)) return map;
+  for (const name of fs.readdirSync(assetsDir)) {
+    if (!/\.(png|svg)$/i.test(name)) continue;
+    const assetPath = path.join(assetsDir, name);
+    map.set(hashFile(assetPath), name);
+  }
+  return map;
+}
+
+function getSourceAssetName(assetName) {
+  const assetPath = path.join(dist, "assets", assetName);
+  return sourceAssetByHash.get(hashFile(assetPath)) ?? "";
+}
+
+function hashFile(filePath) {
+  return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 }
 
 function transformBrandText(value) {
@@ -94,6 +166,8 @@ function transformBrandText(value) {
       .replace(/音曼AI售前工具/g, "音翼AI售前工具")
       .replace(/音曼售前方案/g, "音翼售前方案")
       .replace(/音曼/g, "音翼")
+      .replace(/yinman/g, "yinyi")
+      .replace(/Yinman/g, "Yinyi")
       .replace(/Yinman AI Presales Tool/g, "Yinyi AI Presales Tool");
   }
   return value
@@ -102,14 +176,7 @@ function transformBrandText(value) {
     .replace(/DT2 Pro/g, "智能语音阵列麦克风")
     .replace(/音翼科技/g, "音曼")
     .replace(/音翼/g, "音曼")
+    .replace(/yinyi/g, "yinman")
+    .replace(/Yinyi/g, "Yinman")
     .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");
-}
-
-function createYinmanLogoSvg() {
-  return `<svg width="320" height="112" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="音曼">
-  <rect x="10" y="10" width="92" height="92" rx="24" fill="#0b7a55"/>
-  <path d="M34 66c12-28 32-34 58-30-18 8-30 22-36 44-5-12-12-15-22-14Z" fill="#ffffff"/>
-  <path d="M42 44c8-10 20-16 35-17-11 7-19 16-24 28-3-5-7-8-11-11Z" fill="#c9f7df"/>
-  <text x="122" y="66" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="44" font-weight="800" fill="#08372b">音曼</text>
-</svg>`;
 }

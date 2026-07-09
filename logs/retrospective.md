@@ -1333,3 +1333,16 @@ Solution:
 Guardrail:
 
 - Do not rewrite Chinese files, change business rules, or report an app bug just because a nested shell diagnostic command was parsed incorrectly.
+
+### 2026-07-09 Brand Asset Data-URI Verification Reminder
+
+- Brand separation cannot rely only on visible text checks or dist asset filenames.
+- Vite may inline small images such as logos directly into JavaScript as data URIs instead of emitting them into `dist/assets`.
+- Release verification must check final HTML for forbidden cross-brand image base64, not only strings like `音翼` / `音曼`.
+- Final 260709-8 release passed only after adding both:
+  - content-hash replacement for emitted dist image assets;
+  - inline data-URI replacement for small brand assets.
+
+Guardrail:
+
+- If a future release fails with `forbiddenAssetMatches`, do not bypass the verifier. Fix the asset replacement path and regenerate a new release sequence.

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
@@ -11,14 +12,16 @@ const brands = [
     label: "音翼",
     appName: "音翼AI售前工具",
     slug: "yinyi-ai-presales-tool",
-    forbidden: ["音曼", "翼欧", "AP150", "YM-AP150", "ap150", "\uFFFD"]
+    forbidden: ["音曼", "yinman", "Yinman", "翼欧", "AP150", "YM-AP150", "ap150", "\uFFFD"],
+    forbiddenAssets: ["yinman-logo.png", "yinman-array-mic-pointmap.png", "yinman-array-mic-topology.png"]
   },
   {
     id: "yinman",
     label: "音曼",
     appName: "音曼AI售前工具",
     slug: "yinman-ai-presales-tool",
-    forbidden: ["音翼", "DT2 Pro", "DT2 pro", "翼欧", "AP150", "YM-AP150", "ap150", "\uFFFD"]
+    forbidden: ["音翼", "yinyi", "Yinyi", "DT2 Pro", "DT2 pro", "翼欧", "AP150", "YM-AP150", "ap150", "\uFFFD"],
+    forbiddenAssets: ["yinyi-tech-logo.svg", "yiou-logo.png", "topology-array-mic.png"]
   }
 ];
 
@@ -44,6 +47,7 @@ if (
     (result) =>
       result.missingRequired.length > 0 ||
       result.forbiddenMatches.length > 0 ||
+      result.forbiddenAssetMatches.length > 0 ||
       !result.releaseHtmlIsFreshForSource ||
       !result.singleFileHtmlIsFreshForSource ||
       !result.headerCssMatchesDist
@@ -81,6 +85,7 @@ function verifyBrand(brand) {
     headerCssMatchesDist: releaseWorkspaceTitleRule === distWorkspaceTitleRule,
     missingRequired: required.filter((token) => !releaseHtml.includes(token)),
     forbiddenMatches: brand.forbidden.filter((token) => releaseHtml.includes(token)),
+    forbiddenAssetMatches: findForbiddenAssetMatches(releaseHtml, brand.forbiddenAssets),
     releaseWorkspaceTitleRule
   };
 }
@@ -171,4 +176,13 @@ function checkReleaseScripts(scripts) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findForbiddenAssetMatches(html, assetNames) {
+  return assetNames.filter((assetName) => {
+    const assetPath = path.join(root, "src", "assets", assetName);
+    if (!fs.existsSync(assetPath)) return false;
+    const encoded = fs.readFileSync(assetPath).toString("base64");
+    return html.includes(encoded) || html.includes(crypto.createHash("sha256").update(fs.readFileSync(assetPath)).digest("hex"));
+  });
 }

@@ -5271,3 +5271,71 @@ Boundary:
 
 - Log / workflow note only.
 - No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.
+
+Timestamp: 2026-07-09 17:10:00
+
+Goal:
+
+Prepare a new dual-brand 1.1 release package after the latest calibration and process-rule updates.
+
+Actions started:
+
+- User requested `重新打包发布`.
+- Release scope follows current bottom-level rules:
+  - default release includes both Yinyi and Yinman;
+  - run closing workflow before packaging;
+  - do not push GitHub by default;
+  - release packages must be locally committed and left for manual upload script;
+  - Yinyi / Yinman package assets must be fully separated.
+- Before packaging, updated release scripts to enforce brand asset separation:
+  - `scripts/build-single-file-release.mjs` now identifies dist image assets by content hash and replaces cross-brand logo / array-mic assets with the active brand's assets.
+  - `scripts/verify-release-current.mjs` now checks forbidden brand assets by base64 content in the final release HTML.
+
+Verification so far:
+
+- `node --check scripts/build-single-file-release.mjs` passed.
+- `node --check scripts/verify-release-current.mjs` passed.
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+
+Boundary:
+
+- Release script / packaging verification only.
+- No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantity, device quantity, presales draft behavior, or release clean-state logic was changed.
+
+Release result:
+
+- Created and verified backup `.codex-backups/stable-20260709-184032.zip` with 770 entries, then retained only the newest backup zip.
+- First release attempt generated `260709-6`, but the new brand-asset verifier correctly blocked it:
+  - Yinyi package still contained Yinman logo base64;
+  - Yinman package still contained Yinyi logo base64.
+- Root cause:
+  - large dist assets were replaced by content hash, but small logo assets were inlined by Vite directly into JS and needed a second inline data-URI replacement pass.
+- Fix:
+  - added inline data-URI replacement for cross-brand logo / array-mic assets in `scripts/build-single-file-release.mjs`;
+  - expanded `scripts/verify-release-current.mjs` to block lowercase / English cross-brand identifiers and forbidden asset base64.
+- Second stricter release attempt `260709-8` passed.
+- Removed intermediate failed / superseded `260709-6` and `260709-7` release directories and zip files so the deliverable set is unambiguous.
+
+Final release artifacts:
+
+- `outputs/音翼AI售前工具-1.1-内部测试版-260709-8`
+- `outputs/音翼AI售前工具-1.1-内部测试版-260709-8.zip`
+- `outputs/音曼AI售前工具-1.1-内部测试版-260709-8`
+- `outputs/音曼AI售前工具-1.1-内部测试版-260709-8.zip`
+
+Final verification:
+
+- `npm.cmd run release:all` passed for final `260709-8`.
+- `verify-release-current` passed:
+  - both brands rebuilt before packaging;
+  - final HTML fresh against current source;
+  - header CSS matches current dist;
+  - no forbidden brand text;
+  - no forbidden cross-brand asset base64.
+- `npm.cmd run test:release-mobile -- --brand yinyi` passed.
+- `npm.cmd run test:release-mobile -- --brand yinman` passed.
+
+Boundary:
+
+- Release packaging, brand-asset isolation, and release verification only.
+- No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantity, device quantity, presales draft behavior, or release clean-state logic was changed.
