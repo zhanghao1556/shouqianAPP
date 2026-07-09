@@ -1287,3 +1287,28 @@ Guardrail:
 Guardrail:
 
 - Do not reintroduce automatic `git push` into daily checkpoints, release checkpoints, or normal task checkpoints unless the user explicitly changes this workflow again.
+
+### 2026-07-09 Yinyi / Yinman Release Separation Reminder
+
+- Yinyi and Yinman are separate software deliverables, not two skins inside one customer package.
+- Yinyi release packages must not contain:
+  - Yinman logo;
+  - Yinman array-mic point-map image;
+  - Yinman array-mic topology image;
+  - Yinman brand copy;
+  - Yinman-only filenames;
+  - any other Yinman-specific asset information.
+- Yinman release packages must not contain:
+  - Yinyi logo;
+  - Yinyi array-mic point-map image;
+  - Yinyi array-mic topology image;
+  - Yinyi brand copy;
+  - Yinyi-only filenames;
+  - `DT2 Pro` model copy;
+  - any other Yinyi-specific asset information.
+- This applies to final HTML, README, software outline, zip contents, release directory filenames, and inline base64 images. UI hiding is not enough.
+
+Guardrail:
+
+- If cross-brand text or assets are detected in a release package, stop the release and fix it before delivery.
+- Brand separation is a packaging / asset-boundary rule. Do not use it to change speaker rules, array-mic point rules, topology routing, wiring generation, device quantities, or presales logic.

@@ -5214,3 +5214,23 @@ Boundary:
 
 - Manual GitHub upload helper diagnostics only.
 - No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.
+
+Timestamp: 2026-07-09 16:35:00
+
+Goal:
+
+Record strict Yinyi / Yinman release package separation as a bottom-level rule.
+
+Actions:
+
+- Updated `AGENTS.md` release workflow rules:
+  - Yinyi and Yinman release packages must be fully separated.
+  - Yinyi packages must not contain Yinman logo, Yinman array-mic point-map image, Yinman array-mic topology image, Yinman brand copy, Yinman-only filenames, or other Yinman asset information.
+  - Yinman packages must not contain Yinyi logo, Yinyi array-mic point-map image, Yinyi array-mic topology image, Yinyi brand copy, Yinyi-only filenames, `DT2 Pro` model copy, or other Yinyi asset information.
+  - Hiding the wrong brand in UI is not enough; final HTML, README, software outline, zip contents, inline base64 images, and release directory filenames must all be brand-isolated.
+  - If cross-brand assets or copy are found, release must stop and be fixed before customer delivery.
+
+Boundary:
+
+- Process / release-rule documentation only.
+- No release script, asset, UI, package content, speaker rule, array-mic rule, topology routing, wiring generation, cable quantity, device quantity, presales draft behavior, or release clean-state behavior was changed in this step.
