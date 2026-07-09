@@ -5020,3 +5020,40 @@ Verification:
 Boundary:
 
 - Release process, release verification, project-rule documentation, and release artifact regeneration only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
+Timestamp: 2026-07-09 14:55:00
+
+Goal:
+
+Recreate the desktop script that automatically opens the local app pages.
+
+Actions:
+
+- User requested an automatic opener for `5174`, `5175`, `5176`, and `5180`, then clarified that `5177` should also be included.
+- Confirmed `scripts/open-local-pages.ps1` already manages:
+  - `5174` main app;
+  - `5175` point calibration;
+  - `5176` wiring / topology calibration;
+  - `5177` mobile preview;
+  - `5180` Yinman preview.
+- Rebuilt repo entry `open-shouqian-pages.cmd` with:
+  - fixed project path;
+  - real PowerShell 7 preference including current Store PowerShell path;
+  - fallback to Windows PowerShell only if PowerShell 7 is not available;
+  - missing-script check;
+  - pause-on-failure behavior.
+- Recreated desktop `C:\Users\73921\Desktop\打开收前APP页面.cmd` from the repo entry.
+
+Verification:
+
+- Ran `scripts\open-local-pages.ps1` successfully with PowerShell 7.
+- Verified all required local pages returned HTTP 200:
+  - `5174`
+  - `5175`
+  - `5176`
+  - `5177`
+  - `5180`
+
+Boundary:
+
+- Launch helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
