@@ -4840,3 +4840,24 @@ Boundary:
 
 - Release workflow, packaging script, mobile release verification, release artifact tracking, and process-rule documentation only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state logic was changed.
+
+Timestamp: 2026-07-09 13:45:00
+
+Goal:
+
+Fix the double-click GitHub upload helper flash-close issue.
+
+Finding:
+
+- `上传到GitHub.cmd` directly called `pwsh`, which can resolve to the unusable WindowsApps stub on this machine and close before the PowerShell helper displays its pause.
+- `scripts/push-to-github.ps1` also failed under Windows PowerShell 5.1 with a parsing error, so the fallback path could still close immediately.
+
+Actions:
+
+- Updated `上传到GitHub.cmd` to prefer the real PowerShell 7 install path, fall back to Windows PowerShell only when needed, and keep a command-window `pause` after success or failure.
+- Rewrote `scripts/push-to-github.ps1` with ASCII-only console text and an end-of-script `Read-Host` pause, avoiding Chinese encoding parsing problems under Windows PowerShell 5.1.
+- Verified `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\push-to-github.ps1 -RepoPath . -NoPause` now runs and reports the current GitHub network failure instead of crashing.
+
+Boundary:
+
+- GitHub upload helper only. No application behavior, release artifact content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand display was changed.
