@@ -11,8 +11,8 @@ if not exist "%PS_EXE%" set "PS_EXE=powershell.exe"
 
 if not exist "%SCRIPT%" (
   echo.
-  echo 上传脚本不存在：%SCRIPT%
-  echo 请确认项目目录是否移动。
+  echo Upload script not found: %SCRIPT%
+  echo Please check whether the project folder was moved.
   echo.
   pause
   exit /b 1
@@ -21,8 +21,8 @@ if not exist "%SCRIPT%" (
 "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" -RepoPath "%ROOT%"
 if errorlevel 1 (
   echo.
-  echo 上传脚本执行失败，错误码：%errorlevel%
-  echo 如果上面显示网络未通或 GitHub 连接失败，请网络恢复后再双击。
+  echo Upload script failed. Exit code: %errorlevel%
+  echo If the window says network or GitHub failed, try again later.
   echo.
   pause
   exit /b %errorlevel%

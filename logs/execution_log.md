@@ -5087,6 +5087,12 @@ Verification:
 - The script reached GitHub network check successfully.
 - Because current script changes were uncommitted at test time, it correctly refused to upload and displayed the pending files instead of pushing.
 
+Follow-up mistake:
+
+- User screenshot showed the desktop `上传到GitHub.cmd` was being executed as garbled commands.
+- Root cause: the desktop `.cmd` had been written as UTF-8 with BOM and LF line endings while also containing Chinese `echo` text. `cmd.exe` treated the BOM / line parsing badly, so the batch file was not interpreted as intended.
+- Correction: keep `.cmd` files ASCII-only with CRLF line endings and move Chinese status output into the PowerShell `.ps1` helper. This prevents `cmd.exe` from corrupting or misreading the launcher.
+
 Boundary:
 
 - GitHub upload helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
