@@ -5057,3 +5057,36 @@ Verification:
 Boundary:
 
 - Launch helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
+Timestamp: 2026-07-09 15:05:00
+
+Goal:
+
+Recreate the manual GitHub upload helper.
+
+Actions:
+
+- User requested a script that does not upload when the network is unavailable, and lets the user manually click it again when the network recovers.
+- Rewrote `scripts/push-to-github.ps1` with Chinese status output:
+  - check `github.com:443` first;
+  - if network is unavailable, do not run `git push`;
+  - if network is available but uncommitted files exist, do not run `git push`;
+  - if network is available and the worktree is clean, run `git push`;
+  - always display whether upload succeeded or failed;
+  - keep the window open unless `-NoPause` is used.
+- Rebuilt repo `上传到GitHub.cmd` with:
+  - fixed project root path;
+  - real PowerShell 7 preference, including current Store PowerShell path;
+  - missing-script checks;
+  - pause-on-failure behavior.
+- Recreated desktop `C:\Users\73921\Desktop\上传到GitHub.cmd` from the repo entry.
+
+Verification:
+
+- Ran `scripts\push-to-github.ps1 -RepoPath . -NoPause`.
+- The script reached GitHub network check successfully.
+- Because current script changes were uncommitted at test time, it correctly refused to upload and displayed the pending files instead of pushing.
+
+Boundary:
+
+- GitHub upload helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
