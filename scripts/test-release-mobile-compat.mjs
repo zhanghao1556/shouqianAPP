@@ -4,7 +4,14 @@ import path from "node:path";
 import { chromium, devices, webkit } from "playwright";
 
 const root = process.cwd();
-const releaseHtml = "音翼AI售前工具-1.1.html";
+const args = process.argv.slice(2);
+const brand = getArgValue("--brand") ?? "yinyi";
+if (brand !== "yinyi" && brand !== "yinman") {
+  throw new Error(`Unsupported brand: ${brand}`);
+}
+
+const brandLabel = brand === "yinman" ? "音曼" : "音翼";
+const releaseHtml = `${brandLabel}AI售前工具-1.1.html`;
 const releaseDir = getLatestReleaseDir();
 const releasePath = path.join(releaseDir, releaseHtml);
 
@@ -14,7 +21,7 @@ if (!fs.existsSync(releasePath)) {
 
 function getLatestReleaseDir() {
   const outputsDir = path.join(root, "outputs");
-  const releasePattern = /^音翼AI售前工具-1\.1-内部测试版-(\d{6})(?:-(\d+))?$/;
+  const releasePattern = new RegExp(`^${brandLabel}AI售前工具-1\\.1-内部测试版-(\\d{6})(?:-(\\d+))?$`);
   if (!fs.existsSync(outputsDir)) {
     throw new Error(`Outputs directory not found: ${outputsDir}`);
   }
@@ -47,7 +54,7 @@ const structuralChecks = {
   hasInlineScript: /<script>[\s\S]*<\/script>/.test(html),
   hasInlineStyle: /<style>[\s\S]*<\/style>/.test(html),
   hasNoExternalAssetTags: !/(?:src|href)="\.\/assets\//.test(html),
-  hasChineseTitle: html.includes("<title>音翼AI售前工具</title>"),
+  hasChineseTitle: html.includes(`<title>${brandLabel}AI售前工具</title>`),
   hasNoKnownMojibake: !knownMojibakePattern.test(html)
 };
 
@@ -129,7 +136,7 @@ async function runCase({ browser, contextOptions, name, url }) {
   await page.goto(url, { waitUntil: "load", timeout: 15000 });
   await page.waitForTimeout(500);
 
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate((activeBrandLabel) => {
     const bodyText = document.body?.innerText || "";
     const firstDimensionValues = Array.from(document.querySelectorAll('input[type="number"]'))
       .slice(0, 3)
@@ -143,9 +150,9 @@ async function runCase({ browser, contextOptions, name, url }) {
       h1: document.querySelector("h1")?.textContent?.trim() || "",
       bodyLength: bodyText.length,
       rootChildren: document.querySelector("#root")?.children.length || 0,
-      pointMapCount: document.querySelectorAll('svg[aria-label="音翼阵列麦与音箱点位图"]').length,
+      pointMapCount: document.querySelectorAll(`svg[aria-label="${activeBrandLabel}阵列麦与音箱点位图"]`).length,
       fallbackStillVisible: bodyText.includes("页面正在加载"),
-      hasWorkbench: bodyText.includes("音翼AI售前工具"),
+      hasWorkbench: bodyText.includes(`${activeBrandLabel}AI售前工具`),
       hasPointMapText: bodyText.includes("点位图"),
       hasReleaseBuildMarker: window.__YIOU_RELEASE_BUILD__ === true,
       firstDimensionValues,
@@ -153,12 +160,12 @@ async function runCase({ browser, contextOptions, name, url }) {
       innerWidth: window.innerWidth,
       scrollWidth: document.documentElement.scrollWidth
     };
-  });
+  }, brandLabel);
 
   await context.close();
 
   const passed =
-    result.h1 === "音翼AI售前工具" &&
+    result.h1 === `${brandLabel}AI售前工具` &&
     result.rootChildren > 0 &&
     !result.fallbackStillVisible &&
     result.hasWorkbench &&
@@ -170,6 +177,12 @@ async function runCase({ browser, contextOptions, name, url }) {
     errors.length === 0;
 
   return { name, passed, result, errors };
+}
+
+function getArgValue(name) {
+  const index = args.indexOf(name);
+  if (index < 0) return undefined;
+  return args[index + 1];
 }
 
 if (Object.values(structuralChecks).some((passed) => !passed)) {

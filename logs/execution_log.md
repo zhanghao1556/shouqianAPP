@@ -4776,6 +4776,67 @@ Follow-up UI correction:
 - Added a Yinman-scoped logo-frame height of `72px` and kept the image centered with `object-fit: contain`.
 - Browser verification on `http://127.0.0.1:5180/` confirmed the image is fully contained in the logo frame and centered with about `0.2px` vertical delta; console warnings/errors were empty.
 
+Timestamp: 2026-07-09 13:05:00
+
+Goal:
+
+Package and publish both Yinyi and Yinman releases by default.
+
+Actions planned:
+
+- User requested packaging after the Yinman image/logo work and explicitly confirmed that future default packaging should include both Yinyi and Yinman.
+- Added the default dual-brand publishing rule to `AGENTS.md`.
+- Release workflow will follow the required order:
+  - update logs;
+  - create and verify a fresh `.codex-backups` snapshot, retaining only the newest valid zip;
+  - run strict checks and safe source scans;
+  - generate Yinyi and Yinman release packages;
+  - run release verification for both brands where scripts support it;
+  - create release checkpoint and push to GitHub.
+
+Boundary:
+
+- Release workflow / brand packaging only. Do not change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state rules during this packaging run.
+
 Boundary:
 
 - Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
+
+Timestamp: 2026-07-09 13:30:00
+
+Goal:
+
+Complete dual-brand 1.1 packaging and publishing for Yinyi and Yinman.
+
+Actions:
+
+- Continued after context compression by rereading `AGENTS.md`, `logs/execution_log.md`, and `logs/retrospective.md`.
+- `pwsh` still resolved to the WindowsApps stub and failed with `CreateProcessAsUserW failed: 5`; used `cmd` / Node fallback for this release close.
+- Added `release:all` to `package.json` so future default publishing can build both brands.
+- Extended `scripts/test-release-mobile-compat.mjs` with `--brand yinyi|yinman`, latest brand-specific release directory detection, and brand-specific title / point-map checks.
+- Updated `.gitignore` so final Yinman release directories and zip files can be tracked like final Yinyi release artifacts.
+- Created and verified fresh backup `.codex-backups/stable-20260709-120236.zip` before packaging, keeping only the newest valid snapshot.
+- Generated final same-day sequence `260709-2` release artifacts:
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-2`
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-2.zip`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-2`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-2.zip`
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `node --check scripts/build-single-file-release.mjs` passed.
+- `node --check scripts/build-universal-release.mjs` passed.
+- `node --check scripts/test-release-mobile-compat.mjs` passed.
+- `npm.cmd run build` passed after rerunning outside the sandbox for the known Vite / esbuild config-read issue.
+- `npm.cmd run test:release-mobile -- --brand yinyi` passed for the latest Yinyi release package.
+- `npm.cmd run test:release-mobile -- --brand yinman` passed for the latest Yinman release package.
+- Source scan found no `翼欧`, `AP150`, or `YM-AP150` in `src`, `scripts`, `index.html`, `package.json`, or `AGENTS.md`.
+- Latest release scan found:
+  - Yinyi package contains no `音曼`, `翼欧`, `AP150`, `YM-AP150`, `ap150`, or replacement-character mojibake.
+  - Yinman package contains no `音翼`, `DT2 Pro`, `DT2 pro`, `翼欧`, `AP150`, `YM-AP150`, `ap150`, or replacement-character mojibake.
+
+Boundary:
+
+- Release workflow, packaging script, mobile release verification, release artifact tracking, and process-rule documentation only.
+- No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state logic was changed.

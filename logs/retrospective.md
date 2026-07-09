@@ -1193,3 +1193,17 @@ Process note:
 - Verification note:
   - Sandboxed Vite builds can still fail on `vite.config.ts` access and should be rerun outside the sandbox when this known failure appears.
   - Playwright visual checks may be unavailable if the local Chromium executable is not installed; record that as a verification limitation.
+
+### 2026-07-09 Dual-Brand Release Reminder
+
+- Future user requests for `打包发布`, `发布新版本`, `发布包`, or `发版` default to publishing both Yinyi and Yinman unless the user explicitly names only one brand.
+- Yinyi release keeps the Yinyi green / white brand, Yinyi logo, and existing Yinyi array-mic assets.
+- Yinman release keeps the Yinman blue / white brand, Yinman logo, Yinman array-mic topology / point-map assets, and displays the array mic as `智能语音阵列麦克风` without `DT2 Pro`.
+- Final release directories and zip files for both brands are Git-tracked release deliverables and must be included in the release checkpoint / GitHub sync.
+- Same-day repeated releases use separate sequence suffixes such as `260709-1`, `260709-2`, `260709-3`; do not overwrite older packages.
+- Use `npm.cmd run test:release-mobile -- --brand yinyi` and `npm.cmd run test:release-mobile -- --brand yinman` to verify the latest brand-specific packages.
+
+Guardrail:
+
+- Dual-brand publishing is packaging / brand-display workflow only.
+- Do not use release packaging to change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior.

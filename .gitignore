@@ -22,3 +22,9 @@ docx_2/
 .env
 .env.*
 !.env.example
+
+!outputs/音曼AI售前工具-*.zip
+!outputs/音曼AI售前工具-*-内部测试版-*/
+!outputs/音曼AI售前工具-*-内部测试版-*/**
+outputs/音曼AI售前工具-1.1-内部测试版-260709-1.zip
+outputs/音曼AI售前工具-1.1-内部测试版-260709-1/
