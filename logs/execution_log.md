@@ -4528,3 +4528,26 @@ Boundary:
 - Verification / release artifact tracking only. No protected business rules or app behavior were changed.
 
 Timestamp: 2026-07-09 10:02:00
+
+Goal:
+
+Add a double-click GitHub upload helper for unstable command-line GitHub connectivity.
+
+Actions:
+
+- User requested a clickable script that automatically uploads to GitHub when the network is available and clearly shows whether upload succeeded.
+- Added `scripts/push-to-github.ps1`:
+  - checks `github.com:443`;
+  - shows current `git status -sb`;
+  - refuses to push when uncommitted files exist, preventing accidental upload of unreviewed changes;
+  - runs `git push` for already committed local changes;
+  - prints success / failure in colored terminal output;
+  - pauses at the end when launched interactively.
+- Added double-click entry `上传到GitHub.cmd`, which launches the PowerShell helper with the project path.
+- Self-check confirmed the helper detects network availability and correctly refuses to push while the helper files themselves are still uncommitted.
+
+Boundary:
+
+- Git upload helper / workflow only. No application behavior, release clean-state logic, presales draft persistence, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, or device quantity logic was changed.
+
+Timestamp: 2026-07-09 10:08:00
