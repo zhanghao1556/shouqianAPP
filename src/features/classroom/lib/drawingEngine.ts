@@ -1191,7 +1191,7 @@ const getCeilingSpeakerRowCounts = (count: number, columns: number, firstRowCoun
 };
 
 const shouldLimitClassroomFirstCeilingSpeakerRowToTwo = (profile: ClassroomProfile) =>
-  isClassroomScenario(profile.scenario) && !shouldUseMeetingStyleCeilingSpeakerRules(profile) && profile.roomGeometry.width <= 12;
+  isClassroomScenario(profile.scenario) && profile.roomGeometry.width <= 12;
 
 const getClassroomFirstCeilingSpeakerRowReduction = (profile: ClassroomProfile, columns: number) =>
   shouldLimitClassroomFirstCeilingSpeakerRowToTwo(profile) ? Math.max(0, columns - 2) : 0;

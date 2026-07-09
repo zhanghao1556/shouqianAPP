@@ -1187,6 +1187,9 @@ Process note:
 - Implementation boundary:
   - This rule is limited to classroom ceiling-speaker default quantity and first-row point layout.
   - It must not be treated as permission to change meeting-room ceiling layouts, wall-speaker layouts, array-mic quantity/coordinates, topology routing, wiring generation, or device quantities.
+- Pitfall:
+  - Some classroom cases, especially standard classroom with local amplification, intentionally reuse the meeting-style ceiling layout path.
+  - Do not exclude `shouldUseMeetingStyleCeilingSpeakerRules(profile)` when applying a rule that the user scoped as "教室场景"; use `isClassroomScenario(profile.scenario)` to exclude real meeting rooms instead.
 - Verification note:
   - Sandboxed Vite builds can still fail on `vite.config.ts` access and should be rerun outside the sandbox when this known failure appears.
   - Playwright visual checks may be unavailable if the local Chromium executable is not installed; record that as a verification limitation.

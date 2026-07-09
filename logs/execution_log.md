@@ -4707,6 +4707,13 @@ Boundary:
 - Ceiling-speaker default quantity and first-row point layout only for the confirmed classroom width case.
 - No wall-speaker rule, meeting-room ceiling rule, array-mic quantity/coordinate rule, topology routing, wiring generation, cable quantity, device quantity, brand variant, mobile layout, or release workflow behavior was changed.
 
+Follow-up correction:
+
+- User reported the 10m x 10m classroom point map still showed three ceiling speakers in the first row.
+- Root cause: standard classrooms with local amplification reuse the existing meeting-style ceiling-speaker layout path, and the first implementation accidentally excluded that path with `!shouldUseMeetingStyleCeilingSpeakerRules(profile)`.
+- Corrected the trigger to apply to all classroom scenarios with width `<= 12m`, including classroom cases that reuse meeting-style ceiling layout.
+- Real meeting rooms remain excluded because the trigger still requires `isClassroomScenario(profile.scenario)`.
+
 Boundary:
 
 - Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
