@@ -204,12 +204,10 @@ button {
 .engineeringHeader .workspaceTitle {
   margin: 0;
   color: var(--color-brand-dark);
-  font-size: clamp(18px, 5.75vw, 36px);
-  font-size: clamp(18px, 13cqw, 36px);
-  line-height: 1.12;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
   font-weight: 900;
   white-space: nowrap;
-  text-wrap: nowrap;
   word-break: keep-all;
   overflow-wrap: normal;
 }
@@ -2074,6 +2072,16 @@ th {
   flex: 1 1 auto;
 }
 
+.mobilePreviewMode .engineeringHeader .workspaceTitle {
+  font-size: clamp(18px, 5.75vw, 30px);
+  font-size: clamp(18px, 13cqw, 30px);
+  line-height: 1.12;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
 .mobilePreviewMode .workspaceSubTitle {
   font-size: 13px;
   line-height: 1.25;
@@ -2228,6 +2236,16 @@ th {
 
   .brandText {
     flex: 1 1 auto;
+  }
+
+  .engineeringHeader .workspaceTitle {
+    font-size: clamp(18px, 5.75vw, 30px);
+    font-size: clamp(18px, 13cqw, 30px);
+    line-height: 1.12;
+    white-space: nowrap;
+    text-wrap: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
 
   .workspaceSubTitle {

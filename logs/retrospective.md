@@ -1121,3 +1121,19 @@ Resolved after confirmation:
 - Guardrail:
   - This is release workflow / artifact tracking only.
   - Do not change application behavior, release clean-state logic, presales draft persistence, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic under this requirement.
+
+### 2026-07-09 Desktop / Mobile CSS Isolation Reminder
+
+- User found that a mobile header change affected the 5174 desktop web page.
+- Root cause:
+  - Mobile title shrink / no-wrap styling was applied to `.engineeringHeader .workspaceTitle` globally instead of being scoped to mobile preview or narrow screens.
+- Current rule:
+  - 5174 is the desktop / main web work page and must not change when tuning mobile preview.
+  - 5177 and later ports are mobile preview entries.
+  - Mobile-specific layout, title shrinking, one-column behavior, button stretching, and preview width constraints must be scoped to `.mobilePreviewMode` or explicit narrow-screen media queries.
+  - Desktop title can still use `nowrap` / keep-all to stay horizontal; the desktop regression came from globally changing title sizing and then dropping the horizontal-title guard.
+- Verification habit:
+  - After mobile UI changes, check both 5174 desktop width and 5177 mobile preview.
+- Guardrail:
+  - This is CSS / preview isolation only.
+  - Do not change presales defaults, release clean-state behavior, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic under this cleanup.

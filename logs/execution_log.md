@@ -4551,3 +4551,37 @@ Boundary:
 - Git upload helper / workflow only. No application behavior, release clean-state logic, presales draft persistence, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, or device quantity logic was changed.
 
 Timestamp: 2026-07-09 10:08:00
+
+Goal:
+
+Restore 5174 desktop header after mobile-title styling affected the web page.
+
+Finding:
+
+- User reported that a mobile-side change caused the 5174 web header to change.
+- Root cause: `.engineeringHeader .workspaceTitle` mobile shrink / no-wrap styling was written as a global rule, so the desktop 5174 header also used mobile-oriented sizing.
+
+Actions:
+
+- Restored the global `.engineeringHeader .workspaceTitle` to the desktop header sizing.
+- Follow-up correction: restored desktop `white-space: nowrap` / keep-all behavior on the global workspace title, because removing it caused the Chinese title to collapse into a vertical one-character column on 5174.
+- Scoped the mobile title shrink / no-wrap behavior to:
+  - `.mobilePreviewMode .engineeringHeader .workspaceTitle` for 5177 mobile preview;
+  - `@media (max-width: 560px)` for real narrow screens.
+- Added a new `桌面端 / 移动端样式隔离` rule to `AGENTS.md`.
+- The rule states that mobile changes must not affect the 5174 desktop page, and that mobile-specific styles should stay under `.mobilePreviewMode` or explicit narrow-screen media queries.
+
+Boundary:
+
+- Header CSS isolation and project-rule documentation only. No application state, release clean-state behavior, presales draft persistence, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, or device quantity logic was changed.
+
+Timestamp: 2026-07-09 10:18:00
+
+Verification:
+
+- `npm.cmd run build` passed.
+- Browser verification:
+  - `http://127.0.0.1:5174/` desktop title is horizontal, `32px`, and `nowrap`;
+  - `http://127.0.0.1:5177/` mobile preview title is horizontal, uses mobile preview sizing, and remains scoped under `mobilePreviewMode`.
+
+Timestamp: 2026-07-09 10:23:00
