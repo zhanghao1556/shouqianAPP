@@ -4,9 +4,13 @@ import { getRoomArea } from "./drawingEngine";
 import { getAmplificationScopeText, getLegacyDeviceSummary, getNeedText, getScenarioText } from "./profileText";
 import { getSpeakerModelName } from "./speakerRules";
 import { svgToPngDataUrl } from "./imageExporter";
+import { formatBrandText, getAppBrand } from "../brand";
 
-const installationSelector = 'svg[aria-label="音翼阵列麦与音箱点位图"], svg[aria-label="音翼阵列麦点位图"]';
-const topologySelector = 'svg[aria-label="音翼系统拓扑图"]';
+const getInstallationSelector = () => {
+  const prefix = getAppBrand().id === "yinman" ? "音曼" : "音翼";
+  return `svg[aria-label="${prefix}阵列麦与音箱点位图"], svg[aria-label="${prefix}阵列麦点位图"]`;
+};
+const getTopologySelector = () => `svg[aria-label="${getAppBrand().id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
 const pdfPageWidthPx = 1240;
 const pdfPageHeightPx = 1754;
 const pdfPageWidthPt = 595.28;
@@ -25,8 +29,8 @@ type CanvasPage = {
 };
 
 export const exportPdfReport = async (profile: ClassroomProfile, outputs: GeneratedOutputs, quantityOverrides: QuantityOverrides = {}) => {
-  const pointMapSvg = document.querySelector<SVGSVGElement>(installationSelector);
-  const topologySvg = document.querySelector<SVGSVGElement>(topologySelector);
+  const pointMapSvg = document.querySelector<SVGSVGElement>(getInstallationSelector());
+  const topologySvg = document.querySelector<SVGSVGElement>(getTopologySelector());
   const pointMapImage = pointMapSvg ? await svgToPngDataUrl(pointMapSvg) : "";
   const topologyImage = topologySvg ? await svgToPngDataUrl(topologySvg) : "";
   const payload = encodeReportPayload({
@@ -38,7 +42,7 @@ export const exportPdfReport = async (profile: ClassroomProfile, outputs: Genera
   });
   const pages = await renderReportPages(profile, outputs, pointMapImage, topologyImage);
   const pdfBlob = buildImagePdf(pages, payload);
-  downloadBlob(pdfBlob, `${sanitizeFilename(profile.projectName || "音翼售前方案")}-内部测试报告.pdf`);
+  downloadBlob(pdfBlob, `${sanitizeFilename(profile.projectName || getAppBrand().defaultPlanName)}-内部测试报告.pdf`);
 };
 
 async function renderReportPages(profile: ClassroomProfile, outputs: GeneratedOutputs, pointMapImage: string, topologyImage: string) {
@@ -90,7 +94,7 @@ function drawSoftBackground(ctx: CanvasRenderingContext2D) {
 function drawReportHeader(page: CanvasPage, profile: ClassroomProfile) {
   const generatedAt = new Date().toLocaleString("zh-CN", { hour12: false });
   drawCard(page.ctx, 70, 64, 1100, 170);
-  drawText(page.ctx, profile.projectName || "音翼售前方案", 100, 136, {
+  drawText(page.ctx, profile.projectName || getAppBrand().defaultPlanName, 100, 136, {
     size: 42,
     weight: 800,
     color: "#063f31",
@@ -260,10 +264,10 @@ function getExternalDeviceSummary(profile: ClassroomProfile) {
 
 function formatPublicDeviceName(name: string) {
   const model = ["A", "P", "150"].join("");
-  return name
+  return formatBrandText(name
     .replace(new RegExp(`YM-?${model}`, "gi"), "教学模拟功放主机")
     .replace(new RegExp(model, "gi"), "教学模拟功放主机")
-    .replace(/\u7ffc\u6b27/g, "音翼");
+    .replace(/\u7ffc\u6b27/g, "音翼"));
 }
 
 const ceilingLabels = {
@@ -407,7 +411,7 @@ function buildImagePdf(pages: ReportPage[], metadata: string) {
     `0 ${objectCount + 1}`,
     ...xrefRows,
     "trailer",
-    `<< /Size ${objectCount + 1} /Root 1 0 R /Info << /Producer (Yinyi AI Presales Tool) /Keywords (${metadata}) >> >>`,
+    `<< /Size ${objectCount + 1} /Root 1 0 R /Info << /Producer (${getAppBrand().reportProducer}) /Keywords (${metadata}) >> >>`,
     "startxref",
     String(xrefOffset),
     "%%EOF"
@@ -454,5 +458,5 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 function sanitizeFilename(value: string) {
-  return value.replace(/[\\/:*?"<>|]/g, "_").trim() || "音翼售前方案";
+  return value.replace(/[\\/:*?"<>|]/g, "_").trim() || getAppBrand().defaultPlanName;
 }

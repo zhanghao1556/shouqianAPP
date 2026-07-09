@@ -4,20 +4,22 @@ import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
 const version = "1.1";
-const releasePrefix = `音翼AI售前工具-${version}-内部测试版`;
+const brand = getArgValue("--brand") || "yinyi";
+const brandConfig = getBrandConfig(brand);
+const releasePrefix = `${brandConfig.appName}-${version}-内部测试版`;
 const releaseDate = formatReleaseDate(new Date());
 const releaseIndex = getNextReleaseIndex(releaseDate);
 const releaseLabel = `${releaseDate}-${releaseIndex}`;
-const source = path.join(root, "outputs", "yinyi-ai-presales-tool-1.1-internal-test", "音翼AI售前工具-1.1-内部测试版.html");
+const source = path.join(root, "outputs", `${brandConfig.slug}-1.1-internal-test`, `${brandConfig.appName}-1.1-内部测试版.html`);
 const outDirName = `${releasePrefix}-${releaseLabel}`;
 const outDir = path.join(root, "outputs", outDirName);
 const outZip = path.join(root, "outputs", `${outDirName}.zip`);
-const outHtml = path.join(outDir, "音翼AI售前工具-1.1.html");
+const outHtml = path.join(outDir, `${brandConfig.appName}-1.1.html`);
 const outReadme = path.join(outDir, "README-打开说明.txt");
-const outOutline = path.join(outDir, "音翼AI售前工具-1.1-软件大纲.md");
+const outOutline = path.join(outDir, `${brandConfig.appName}-1.1-软件大纲.md`);
 const mirrorOutlines = [
-  path.join(root, "outputs", "音翼AI售前工具-1.1-软件大纲.md"),
-  path.join(root, "outputs", "yinyi-ai-presales-tool-1.1-internal-test", "音翼AI售前工具-1.1-软件大纲.md")
+  path.join(root, "outputs", `${brandConfig.appName}-1.1-软件大纲.md`),
+  path.join(root, "outputs", `${brandConfig.slug}-1.1-internal-test`, `${brandConfig.appName}-1.1-软件大纲.md`)
 ];
 
 if (!fs.existsSync(source)) {
@@ -29,6 +31,28 @@ function formatReleaseDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}${month}${day}`;
+}
+
+function getArgValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
+}
+
+function getBrandConfig(value) {
+  if (value === "yinman") {
+    return {
+      id: "yinman",
+      slug: "yinman-ai-presales-tool",
+      appName: "音曼AI售前工具",
+      companyName: "音曼"
+    };
+  }
+  return {
+    id: "yinyi",
+    slug: "yinyi-ai-presales-tool",
+    appName: "音翼AI售前工具",
+    companyName: "音翼科技"
+  };
 }
 
 function getNextReleaseIndex(dateLabel) {
@@ -70,14 +94,14 @@ if (!html.includes('name="theme-color"')) {
   );
 }
 
-html = html.replace(/<title>.*?<\/title>/, "<title>音翼AI售前工具</title>");
+html = transformBrandText(html.replace(/<title>.*?<\/title>/, `<title>${brandConfig.appName}</title>`));
 
 html = html.replace(
   '<div id="root"></div>',
   `<div id="root">
       <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px;background:#f5f7fb;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',Arial,sans-serif;">
         <div style="max-width:520px;border:1px solid #dbe3ef;border-radius:16px;background:#fff;padding:24px;box-shadow:0 14px 36px rgba(15,23,42,.08);line-height:1.7;">
-          <h1 style="margin:0 0 12px;font-size:22px;">音翼AI售前工具</h1>
+          <h1 style="margin:0 0 12px;font-size:22px;">${brandConfig.appName}</h1>
           <p style="margin:0 0 10px;">页面正在加载。如果长时间停留在这里，说明当前预览器限制了本地 HTML 脚本执行。</p>
           <p style="margin:0;">iOS 建议先保存到“文件”再用 Safari 打开；安卓 / 鸿蒙建议用系统浏览器、Chrome、Edge 或华为浏览器打开，不建议长期使用微信 / QQ 文件预览。</p>
         </div>
@@ -85,10 +109,10 @@ html = html.replace(
     </div>`
 );
 
-const readme = `音翼AI售前工具 1.1 内部测试版（${releaseLabel}）
+const readme = `${brandConfig.appName} 1.1 内部测试版（${releaseLabel}）
 
 交付文件：
-- 音翼AI售前工具-1.1.html
+- ${brandConfig.appName}-1.1.html
 
 打开方式：
 1. 电脑：直接用 Chrome、Edge、Safari 等浏览器打开 HTML 文件。
@@ -103,7 +127,7 @@ const readme = `音翼AI售前工具 1.1 内部测试版（${releaseLabel}）
 - 如需多人稳定访问，后续可以把同一个 HTML 放到 HTTPS 静态网页地址。
 `;
 
-const outline = `# 音翼AI售前工具软件开发大纲
+const outline = `# ${brandConfig.appName}软件开发大纲
 
 ## 总方向
 
@@ -137,7 +161,7 @@ const outline = `# 音翼AI售前工具软件开发大纲
 - 显示售前采集、项目档案、设备清单、点位图和系统拓扑图。
 - 支持导入 / 导出 PDF 报告，导出报告包含项目档案、非零设备清单、点位图、系统拓扑图，并保留可回导的内部校准数据。
 - 隐藏校准台、接线图、拓扑图、总文字报告预览、规则变更锁、推荐原因、工程依据和校准依据等内部规则说明。
-- 提供电脑 / 手机共用的单文件 HTML，发布包内主文件为“音翼AI售前工具-1.1.html”。
+- 提供电脑 / 手机共用的单文件 HTML，发布包内主文件为“${brandConfig.appName}-1.1.html”。
 
 ## 2.0 接线与拓扑图版
 
@@ -187,12 +211,12 @@ if (fs.existsSync(outDir)) {
   fs.rmSync(outDir, { recursive: true, force: true });
 }
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(outHtml, html, "utf8");
-fs.writeFileSync(outReadme, readme, "utf8");
-fs.writeFileSync(outOutline, outline, "utf8");
+fs.writeFileSync(outHtml, transformBrandText(html), "utf8");
+fs.writeFileSync(outReadme, transformBrandText(readme), "utf8");
+fs.writeFileSync(outOutline, transformBrandText(outline), "utf8");
 for (const mirrorOutline of mirrorOutlines) {
   fs.mkdirSync(path.dirname(mirrorOutline), { recursive: true });
-  fs.writeFileSync(mirrorOutline, outline, "utf8");
+  fs.writeFileSync(mirrorOutline, transformBrandText(outline), "utf8");
 }
 writeReleaseZip(outDir, outZip);
 
@@ -228,4 +252,15 @@ if ($entryCount -lt 3) { throw "Release zip has too few entries: $entryCount" }
 
 function quotePowerShell(value) {
   return `'${value.replace(/'/g, "''")}'`;
+}
+
+function transformBrandText(value) {
+  if (brandConfig.id !== "yinman") return value;
+  return value
+    .replace(/DT2 Pro 智能语音阵列麦克风/g, "智能语音阵列麦克风")
+    .replace(/DT2 pro 智能语音阵列麦克风/gi, "智能语音阵列麦克风")
+    .replace(/DT2 Pro/g, "智能语音阵列麦克风")
+    .replace(/音翼科技/g, "音曼")
+    .replace(/音翼/g, "音曼")
+    .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");
 }

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Upload } from "lucide-react";
-import { createInitialProfile, yiouBrand } from "./data/initialProfile";
+import { createInitialProfile } from "./data/initialProfile";
 import { EngineeringOutputs } from "./components/EngineeringOutputs";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { Questionnaire } from "./components/Questionnaire";
 import { exportPdfReport } from "./lib/pdfExporter";
 import { generateEngineeringOutputs } from "./lib/engineeringRules";
 import { normalizeProfile } from "./lib/profileNormalization";
+import { getAppBrand, getBrandLogoSrc } from "./brand";
 import type { ClassroomProfile, LegacySpeakerType, LegacyWallAdjustability, Point, QuantityOverrides } from "./types";
 import yinyiTechLogo from "../../assets/yinyi-tech-logo.svg";
 
@@ -17,6 +18,7 @@ const oldDefaultProjectName = `${legacyBrandText}大客户普通教室音频方�
 const oldDefaultCustomerName = `${legacyBrandText}大客户`;
 
 export function ClassroomEngineeringApp() {
+  const brand = getAppBrand();
   const [initialDraft] = useState(() => (isReleaseBuild() ? createCleanReleasePresalesDraft() : loadSavedPresalesDraft()));
   const [profile, setProfile] = useState<ClassroomProfile>(() => sanitizeHiddenProfileState(initialDraft.profile));
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>(() => initialDraft.quantityOverrides);
@@ -122,11 +124,11 @@ export function ClassroomEngineeringApp() {
     <main className="engineeringShell yiouShell">
       <header className="engineeringHeader yiouHeader">
         <div className="brandCluster">
-          <div className="yiouLogo" aria-label={yiouBrand.fullName}>
-            <img src={yinyiTechLogo} alt="音翼科技 logo" />
+          <div className="yiouLogo" aria-label={brand.companyName}>
+            <img src={getBrandLogoSrc(yinyiTechLogo)} alt={`${brand.companyName} logo`} />
           </div>
           <div className="brandText">
-            <h1 className="workspaceTitle">音翼AI售前工具</h1>
+            <h1 className="workspaceTitle">{brand.appName}</h1>
             <p className="workspaceSubTitle">高端教育空间声学方案</p>
           </div>
         </div>

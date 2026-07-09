@@ -5,7 +5,8 @@ $services = @(
   @{ Name = "main app"; Script = "dev"; Port = 5174; Url = "http://127.0.0.1:5174/" },
   @{ Name = "point calibration"; Script = "dev:calibration"; Port = 5175; Url = "http://127.0.0.1:5175/" },
   @{ Name = "wiring topology calibration"; Script = "dev:wiring-calibration"; Port = 5176; Url = "http://127.0.0.1:5176/" },
-  @{ Name = "mobile preview"; Script = "dev"; Args = @("--", "--port", "5177"); Port = 5177; Url = "http://127.0.0.1:5177/" }
+  @{ Name = "mobile preview"; Script = "dev"; Args = @("--", "--port", "5177"); Port = 5177; Url = "http://127.0.0.1:5177/" },
+  @{ Name = "yinman preview"; Script = "dev:yinman"; Port = 5180; Url = "http://127.0.0.1:5180/" }
 )
 
 function Test-Page {

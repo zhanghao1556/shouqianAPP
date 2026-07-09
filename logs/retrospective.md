@@ -1137,3 +1137,18 @@ Resolved after confirmation:
 - Guardrail:
   - This is CSS / preview isolation only.
   - Do not change presales defaults, release clean-state behavior, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic under this cleanup.
+
+### 2026-07-09 Yinman Variant / 5180 Preview Reminder
+
+- `5174` remains the Yinyi main desktop page.
+- `5177-5179` are mobile preview entries.
+- `5180` is the Yinman independent desktop preview entry and must not inherit `.mobilePreviewMode`.
+- Yinman must be implemented as a brand variant / release path, not by globally replacing Yinyi source text.
+- Customer-visible Yinman output should replace `音翼` with `音曼` and display the array mic product as `智能语音阵列麦克风` without `DT2 Pro`.
+- Keep Yinyi default behavior untouched; verify both 5174 and 5180 after brand-related edits.
+- Final Yinman packaging should wait for the user-provided array mic physical image so topology and point-map mic visuals can be replaced only for Yinman.
+
+Guardrail:
+
+- Brand, logo, product-display naming, preview-port, and release-package changes are display / packaging work only.
+- Do not change speaker rules, array-mic placement / count rules, topology routing, wiring generation, cable quantities, device quantities, or presales draft logic under Yinman branding work unless separately confirmed.

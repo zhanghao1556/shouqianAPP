@@ -4585,3 +4585,35 @@ Verification:
   - `http://127.0.0.1:5177/` mobile preview title is horizontal, uses mobile preview sizing, and remains scoped under `mobilePreviewMode`.
 
 Timestamp: 2026-07-09 10:23:00
+
+Timestamp: 2026-07-09 10:55:00
+
+Goal:
+
+Add an independent Yinman preview / release variant without affecting the existing Yinyi app.
+
+Actions:
+
+- Added runtime brand detection and formatting for `音翼` / `音曼` variants.
+- Port `5180` is now reserved for the `音曼` desktop preview and sets `window.__APP_BRAND__ = "yinman"`.
+- Narrowed mobile preview auto-classing to `5177-5179` so `5180` is not accidentally rendered as mobile preview.
+- Added `dev:yinman` and wired the existing open-local-pages flow to open `http://127.0.0.1:5180/`.
+- Added Yinman-capable single-file and universal release script parameters; `release:yinman` now builds a Yinman package path.
+- Yinman display text replaces customer-visible `音翼` with `音曼` and removes `DT2 Pro` from the array mic display name, showing `智能语音阵列麦克风`.
+- Generated a temporary Yinman release package without the final Yinman array-mic physical image, only to verify the packaging path.
+
+Verification:
+
+- `npm.cmd run build` passed.
+- `node --check scripts/build-single-file-release.mjs` passed after fixing a script path return bug.
+- `node --check scripts/build-universal-release.mjs` passed.
+- `node --check scripts/test-release-mobile-compat.mjs` passed.
+- Browser verification:
+  - `http://127.0.0.1:5180/` shows `音曼AI售前工具`, has `window.__APP_BRAND__ = "yinman"`, does not have `mobilePreviewMode`, and does not show the `DT2 Pro 智能语音阵列麦克风` product text.
+  - `http://127.0.0.1:5174/` still shows `音翼AI售前工具`, has no Yinman brand text, and does not have `mobilePreviewMode`.
+- Temporary Yinman release output scan found no `音翼`, `音翼科技`, `DT2 Pro`, or `DT2 pro` matches.
+
+Boundary:
+
+- Brand variant / preview / release packaging only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
+- Final Yinman release should wait for the user-provided array mic physical image, then replace the Yinman topology array-mic image and generate the point-map usable mic image before final packaging.

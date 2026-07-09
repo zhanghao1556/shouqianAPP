@@ -10,6 +10,7 @@ import {
   getExternalSpeakerCount,
   getSpeakerOutputGroups
 } from "../lib/speakerRules";
+import { formatBrandText, getAppBrand } from "../brand";
 import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
 import topologyAllInOneImage from "../../../assets/topology-all-in-one.png";
 import topologyAmplifierImage from "../../../assets/topology-amplifier.png";
@@ -530,7 +531,7 @@ function InstallationDiagram({
         className={addingCentralAir || addingLegacySpeaker || addingManualArrayMic || addingManualSpeaker || aimingLegacySpeaker || aimingManualSpeaker ? "engineeringCanvas cadCanvas installationCanvas markingCanvas" : "engineeringCanvas cadCanvas installationCanvas"}
         style={{ aspectRatio: `${installationViewBox.width} / ${installationViewBox.height}` }}
         role="img"
-        aria-label={micOnly ? "音翼阵列麦点位图" : "音翼阵列麦与音箱点位图"}
+        aria-label={micOnly ? `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}阵列麦点位图` : `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图`}
         onClick={handleCanvasClick}
       >
         <defs>
@@ -1167,7 +1168,7 @@ function WiringDiagram({ connections }: { connections: ConnectionLine[] }) {
         className="engineeringCanvas cadCanvas adaptiveCadCanvas"
         style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
         role="img"
-        aria-label="音翼接口接线图"
+        aria-label={`${getAppBrand().id === "yinman" ? "音曼" : "音翼"}接口接线图`}
       >
         <rect x="18" y="18" width={canvasWidth - 36} height={canvasHeight - 40} fill="#ffffff" stroke="#111827" strokeWidth="1" />
         <text x={canvasWidth / 2} y="46" textAnchor="middle" className="cadTitle">
@@ -1192,8 +1193,8 @@ function WiringDiagram({ connections }: { connections: ConnectionLine[] }) {
           const isBidirectional = connection.cableType.includes("USB");
           return (
             <g key={connection.id}>
-              <WiringDeviceBlock x={fromX} y={y} w={blockWidth} h={blockHeight} title={connection.fromDevice} port={connection.fromPort} />
-              <WiringDeviceBlock x={toX} y={y} w={blockWidth} h={blockHeight} title={connection.toDevice} port={connection.toPort} />
+              <WiringDeviceBlock x={fromX} y={y} w={blockWidth} h={blockHeight} title={formatBrandText(connection.fromDevice)} port={formatBrandText(connection.fromPort)} />
+              <WiringDeviceBlock x={toX} y={y} w={blockWidth} h={blockHeight} title={formatBrandText(connection.toDevice)} port={formatBrandText(connection.toPort)} />
               <line x1={lineStartX} y1={lineY} x2={lineEndX} y2={lineY} stroke="#111827" strokeWidth="1.5" />
               {isBidirectional && <path d={`M ${lineStartX + 9} ${lineY - 5} L ${lineStartX} ${lineY} L ${lineStartX + 9} ${lineY + 5}`} fill="none" stroke="#111827" strokeWidth="1.5" />}
               <path d={`M ${lineEndX - 9} ${lineY - 5} L ${lineEndX} ${lineY} L ${lineEndX - 9} ${lineY + 5}`} fill="none" stroke="#111827" strokeWidth="1.5" />
@@ -1247,7 +1248,7 @@ function TopologyDiagram({ profile, connections, generatedPoints }: { profile: C
         className="engineeringCanvas cadCanvas adaptiveCadCanvas"
         style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
         role="img"
-        aria-label="音翼系统拓扑图"
+        aria-label={`${getAppBrand().id === "yinman" ? "音曼" : "音翼"}系统拓扑图`}
       >
         <rect x="18" y="18" width={frame.width - 36} height={frame.height - 40} fill="#ffffff" stroke="#111827" strokeWidth="1" />
         <text x={frame.width / 2} y="54" textAnchor="middle" className="cadTitle">
@@ -1340,7 +1341,7 @@ function SystemDiagram({ profile, connections, generatedPoints }: { profile: Cla
         className="engineeringCanvas cadCanvas adaptiveCadCanvas"
         style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
         role="img"
-        aria-label="音翼接线与拓扑合并图"
+        aria-label={`${getAppBrand().id === "yinman" ? "音曼" : "音翼"}接线与拓扑合并图`}
       >
         <rect x="18" y="18" width={canvasWidth - 36} height={canvasHeight - 40} fill="#ffffff" stroke="#111827" strokeWidth="1" />
         <text x={canvasWidth / 2} y={titleY} textAnchor="middle" className="cadTitle">
@@ -1382,20 +1383,20 @@ function SystemDiagram({ profile, connections, generatedPoints }: { profile: Cla
           return (
             <g key={`wiring-${connection.id}`}>
               <text x={fromDeviceX} y={y} className="cadSmall">
-                {connection.fromDevice}
+                {formatBrandText(connection.fromDevice)}
               </text>
               <text x={fromPortX} y={y} className="cadSmall">
-                {connection.fromPort}
+                {formatBrandText(connection.fromPort)}
               </text>
               <line x1={lineStartX} y1={y - 5} x2={lineEndX} y2={y - 5} stroke="#111827" strokeWidth="1.5" />
               <text x={cableX} y={y - 10} textAnchor="middle" className="cadSmall">
                 {connection.cableType}
               </text>
               <text x={toDeviceX} y={y} className="cadSmall">
-                {connection.toDevice}
+                {formatBrandText(connection.toDevice)}
               </text>
               <text x={toPortX} y={y} className="cadSmall">
-                {connection.toPort}
+                {formatBrandText(connection.toPort)}
               </text>
             </g>
           );
@@ -2707,7 +2708,7 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
   const imageSize = getTopologyImageSize(node);
   const imageX = x + (w - imageSize.width) / 2;
   const imageY = y + 28;
-  const label = `${node.label}${node.quantity && node.quantity > 1 ? ` ×${node.quantity}` : ""}`;
+  const label = formatBrandText(`${node.label}${node.quantity && node.quantity > 1 ? ` ×${node.quantity}` : ""}`);
 
   return (
     <g>

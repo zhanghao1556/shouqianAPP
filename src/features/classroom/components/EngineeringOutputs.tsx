@@ -1,6 +1,7 @@
 ﻿import { Download } from "lucide-react";
 import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
+import { formatBrandText, getAppBrand } from "../brand";
 import { DrawingCanvas } from "./DrawingCanvas";
 
 interface EngineeringOutputsProps {
@@ -27,16 +28,17 @@ export function EngineeringOutputs({
   onLegacySpeakerPointTargetChange
 }: EngineeringOutputsProps) {
   const exportDrawingImage = (type: "installation" | "topology") => {
+      const brand = getAppBrand();
       const selector =
         type === "installation"
-          ? 'svg[aria-label="音翼阵列麦与音箱点位图"], svg[aria-label="音翼阵列麦点位图"]'
-          : 'svg[aria-label="音翼系统拓扑图"]';
+          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"]`
+          : `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
     const svg = document.querySelector<SVGSVGElement>(selector);
     if (!svg) {
       window.alert("当前图纸还没有生成，暂时无法导出图片。");
       return;
     }
-    void downloadSvgAsPng(svg, `${profile.projectName || "音翼方案"}-${drawingLabel(type)}`);
+    void downloadSvgAsPng(svg, `${profile.projectName || `${brand.id === "yinman" ? "音曼" : "音翼"}方案`}-${drawingLabel(type)}`);
   };
 
   return (
@@ -65,7 +67,7 @@ export function EngineeringOutputs({
                 {outputs.productSelection.map((item, index) => (
                   <tr key={item.productId}>
                     <td>{index + 1}</td>
-                    <td>{item.name}</td>
+                    <td>{formatBrandText(item.name)}</td>
                     <td>
                       <QuantityStepper
                         item={item}
@@ -192,11 +194,11 @@ function QuantityStepper({
 
   return (
     <div className="quantityStepper">
-      <button type="button" onClick={decrement} disabled={item.quantity <= min} aria-label={`${item.name} 减少数量`}>
+      <button type="button" onClick={decrement} disabled={item.quantity <= min} aria-label={`${formatBrandText(item.name)} 减少数量`}>
         -
       </button>
       <strong>{item.quantity}</strong>
-      <button type="button" onClick={increment} disabled={item.quantity >= max} aria-label={`${item.name} 增加数量`}>
+      <button type="button" onClick={increment} disabled={item.quantity >= max} aria-label={`${formatBrandText(item.name)} 增加数量`}>
         +
       </button>
       {isOverridden && <span>手动</span>}

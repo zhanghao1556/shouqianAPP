@@ -7,11 +7,13 @@
         "dev": "vite --host 127.0.0.1 --port 5174 --strictPort",
         "dev:calibration": "vite --host 127.0.0.1 --port 5175 --strictPort",
         "dev:wiring-calibration": "vite --host 127.0.0.1 --port 5176 --strictPort",
+        "dev:yinman": "vite --host 127.0.0.1 --port 5180 --strictPort",
         "dev:selection-calibration": "npm.cmd run dev:wiring-calibration",
         "build": "tsc && vite build",
         "preview": "vite preview --host 127.0.0.1",
         "generate:random-presales": "node scripts/generateRandomPresales.mjs",
         "release:universal": "node scripts/build-universal-release.mjs",
+        "release:yinman": "npm.cmd run build && node scripts/build-single-file-release.mjs --brand yinman && node scripts/build-universal-release.mjs --brand yinman",
         "test:release-mobile": "node scripts/test-release-mobile-compat.mjs",
         "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1"
     },
