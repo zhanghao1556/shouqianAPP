@@ -14,7 +14,7 @@ function Test-Page {
 
   try {
     $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2
-    return $response.StatusCode -ge 200 -and $response.StatusCode -lt 500
+    return $response.StatusCode -ge 200 -and $response.StatusCode -lt 400
   } catch {
     return $false
   }

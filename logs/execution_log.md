@@ -4714,6 +4714,34 @@ Follow-up correction:
 - Corrected the trigger to apply to all classroom scenarios with width `<= 12m`, including classroom cases that reuse meeting-style ceiling layout.
 - Real meeting rooms remain excluded because the trigger still requires `isClassroomScenario(profile.scenario)`.
 
+Timestamp: 2026-07-09 12:42:00
+
+Goal:
+
+Fix desktop launch and the unavailable Yinman `5180` preview.
+
+Finding:
+
+- `5174` was running normally.
+- `5180` had a process listening, but `http://127.0.0.1:5180/` returned `404`, so the port was occupied by a bad / stale service instead of the normal Yinman Vite page.
+- `scripts/open-local-pages.ps1` treated any HTTP status below `500` as healthy, so a `404` page was incorrectly considered started and the script did not restart the service.
+- Running Vite from inside the Codex sandbox still hits the known `vite.config.ts` access issue; starting the dev server outside the sandbox works.
+
+Actions:
+
+- Changed `Test-Page` in `scripts/open-local-pages.ps1` to accept only `200-399` responses.
+- Updated desktop `打开收前APP页面.cmd` to prefer `%ProgramFiles%\PowerShell\7\pwsh.exe`, fall back to `powershell.exe` only when PowerShell 7 is not installed, and pause on startup failure so the user can see the error.
+- Stopped the stale `5180` process and restarted `npm.cmd run dev:yinman` outside the sandbox.
+
+Verification:
+
+- `http://127.0.0.1:5174/` returned `200 OK`.
+- `http://127.0.0.1:5180/` returned `200 OK` after restarting the Yinman preview.
+
+Boundary:
+
+- Launch workflow / health-check behavior only. No speaker rules, array-mic rules, topology routing, wiring generation, device quantities, brand display, mobile styles, release packaging, or presales draft behavior was changed.
+
 Boundary:
 
 - Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
