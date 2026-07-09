@@ -1124,28 +1124,28 @@ const shouldUseMeetingStyleCeilingSpeakerRules = (profile: ClassroomProfile) =>
 
 const getCeilingSpeakerPositions = (profile: ClassroomProfile, count: number, arrayMics: GeneratedPoint[], preserveSpeakerCount = false) => {
   const columns = Math.max(1, Math.min(count, getCeilingSpeakerColumnCount(profile)));
-  const rows = Math.ceil(count / columns);
+  const firstRowCount = getCeilingSpeakerFirstRowCount(profile, count, columns);
+  const rowCounts = getCeilingSpeakerRowCounts(count, columns, firstRowCount);
+  const rows = rowCounts.length;
   const reserveTeacherMonitorRow = shouldReserveTeacherMonitorSpeakerRow(profile) && !shouldUseMeetingStyleCeilingSpeakerRules(profile);
-  const teacherMonitorYRatio = getTeacherMonitorCeilingSpeakerYRatio(profile, arrayMics, columns);
+  const teacherMonitorYRatio = getTeacherMonitorCeilingSpeakerYRatio(profile, arrayMics, firstRowCount);
   const rearRowCount = Math.max(0, rows - 1);
-  const layout = Array.from({ length: count }, (_, index) => {
-    const row = Math.floor(index / columns);
-    const rowStartIndex = row * columns;
-    const rowItemCount = Math.min(columns, count - rowStartIndex);
-    const column = index - rowStartIndex;
-    const yRatio =
-      shouldUseMeetingStyleCeilingSpeakerRules(profile)
-        ? getMeetingCeilingSpeakerYRatio(profile, row, rows)
-        : row === 0
-        ? reserveTeacherMonitorRow
-          ? teacherMonitorYRatio
-          : getFrontCeilingSpeakerYRatio(profile, 0.22)
-        : getRearCeilingSpeakerYRatio(profile, arrayMics, row - 1, rearRowCount);
-    return {
-      xRatio: getCeilingSpeakerXRatio(profile, column, rowItemCount),
-      yRatio
-    };
-  });
+  const layout = rowCounts.flatMap((rowItemCount, row) =>
+    Array.from({ length: rowItemCount }, (_, column) => {
+      const yRatio =
+        shouldUseMeetingStyleCeilingSpeakerRules(profile)
+          ? getMeetingCeilingSpeakerYRatio(profile, row, rows)
+          : row === 0
+          ? reserveTeacherMonitorRow
+            ? teacherMonitorYRatio
+            : getFrontCeilingSpeakerYRatio(profile, 0.22)
+          : getRearCeilingSpeakerYRatio(profile, arrayMics, row - 1, rearRowCount);
+      return {
+        xRatio: getCeilingSpeakerXRatio(profile, column, rowItemCount),
+        yRatio
+      };
+    })
+  );
   const micRowsForAvoidance = getArrayMicRowsForCeilingSpeakerRemoval(profile, arrayMics);
   const useCenterColumnGapAvoidance =
     profile.roomGeometry.length > profile.roomGeometry.width &&
@@ -1172,6 +1172,29 @@ const getCeilingSpeakerPositions = (profile: ClassroomProfile, count: number, ar
       : centerColumnSafeLayout;
   return finalLayout.map((target) => getCeilingSpeakerPositionAwayFromMics(profile, target, arrayMics));
 };
+
+const getCeilingSpeakerFirstRowCount = (profile: ClassroomProfile, count: number, columns: number) => {
+  if (!shouldLimitClassroomFirstCeilingSpeakerRowToTwo(profile)) return Math.min(count, columns);
+  return Math.min(count, columns, 2);
+};
+
+const getCeilingSpeakerRowCounts = (count: number, columns: number, firstRowCount: number) => {
+  if (count <= 0 || columns <= 0) return [];
+  const rowCounts = [Math.min(count, Math.max(1, firstRowCount))];
+  let remaining = count - rowCounts[0];
+  while (remaining > 0) {
+    const rowCount = Math.min(columns, remaining);
+    rowCounts.push(rowCount);
+    remaining -= rowCount;
+  }
+  return rowCounts;
+};
+
+const shouldLimitClassroomFirstCeilingSpeakerRowToTwo = (profile: ClassroomProfile) =>
+  isClassroomScenario(profile.scenario) && !shouldUseMeetingStyleCeilingSpeakerRules(profile) && profile.roomGeometry.width <= 12;
+
+const getClassroomFirstCeilingSpeakerRowReduction = (profile: ClassroomProfile, columns: number) =>
+  shouldLimitClassroomFirstCeilingSpeakerRowToTwo(profile) ? Math.max(0, columns - 2) : 0;
 
 const removeNearestCenterColumnCeilingSpeakerNearArrayMic = (
   profile: ClassroomProfile,
@@ -1999,7 +2022,11 @@ export const getDefaultSpeakerCount = (profile: ClassroomProfile, usesWallSpeake
   const { length, width } = profile.roomGeometry;
   if (length <= 0 || width <= 0) return 0;
 
-  if (!usesWallSpeaker) return Math.min(RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER, getCeilingSpeakerRowCount(profile) * getCeilingSpeakerColumnCount(profile));
+  if (!usesWallSpeaker) {
+    const columns = getCeilingSpeakerColumnCount(profile);
+    const firstRowReduction = getClassroomFirstCeilingSpeakerRowReduction(profile, columns);
+    return Math.min(RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER, getCeilingSpeakerRowCount(profile) * columns - firstRowReduction);
+  }
   if (shouldUseMeetingStyleFullRoomWallSpeakerRules(profile)) return getFullRoomWallSpeakerCountByRoomSpan(profile);
   if (profile.scenario === "auditorium") return getRearFillRowCountByPrimaryMicRearDepth(profile) * 2;
   if (shouldReserveTeacherMonitorSpeakerRow(profile)) return getPodiumSpeakerCountByPrimaryMicRearDepth(profile);

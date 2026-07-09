@@ -1178,3 +1178,15 @@ Process note:
 
 - If `pwsh` resolves to the WindowsApps stub and fails with `CreateProcessAsUserW failed: 5`, record it as a shell resolution issue and use a safe fallback shell / Node command for the turn.
 - Do not rewrite UTF-8 Chinese project files just because a fallback terminal displays Chinese output as mojibake.
+
+### 2026-07-09 Classroom Ceiling First-Row Reduction Reminder
+
+- User confirmed the protected ceiling-speaker rule change:
+  - In classroom scenarios, when the room width is `<= 12m` and ceiling speakers are used, the first row defaults to 2 speakers.
+  - The default total should be reduced by the number of removed first-row speakers; do not move the extra speaker into later rows.
+- Implementation boundary:
+  - This rule is limited to classroom ceiling-speaker default quantity and first-row point layout.
+  - It must not be treated as permission to change meeting-room ceiling layouts, wall-speaker layouts, array-mic quantity/coordinates, topology routing, wiring generation, or device quantities.
+- Verification note:
+  - Sandboxed Vite builds can still fail on `vite.config.ts` access and should be rerun outside the sandbox when this known failure appears.
+  - Playwright visual checks may be unavailable if the local Chromium executable is not installed; record that as a verification limitation.

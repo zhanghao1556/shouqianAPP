@@ -4678,6 +4678,35 @@ Issue recorded:
 - The shell tool attempted to resolve `pwsh` / `powershell` to `C:\Users\73921\AppData\Local\Microsoft\WindowsApps\pwsh.exe`, which failed with `CreateProcessAsUserW failed: 5`.
 - Used `cmd` / Node as a fallback for this turn. This appears to be a local shell resolution issue, not a project source encoding issue.
 
+Timestamp: 2026-07-09 12:05:00
+
+Goal:
+
+Apply the confirmed classroom ceiling-speaker first-row reduction rule.
+
+Confirmed rule:
+
+- In classroom scenarios only, when ceiling speakers are used and room width is `<= 12m`, the first row of ceiling speakers defaults to `2` speakers.
+- The extra first-row speaker count is removed from the default total instead of being moved to later rows.
+- Meeting rooms, auditoriums, wall speakers, and classrooms wider than `12m` are not changed by this rule.
+
+Actions:
+
+- Updated ceiling-speaker default quantity calculation so the first-row overage above 2 is subtracted for the confirmed classroom-width case.
+- Updated ceiling-speaker point layout so the first row uses 2 points while later rows keep the existing column-count rule.
+- Kept the existing array-mic avoidance / center-column cleanup flow after the base first-row layout is generated.
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` failed inside the sandbox with the known Vite/esbuild `vite.config.ts` access issue, then passed when rerun outside the sandbox.
+- Browser-style Playwright verification could not run because the local Playwright Chromium executable is not installed in `C:\Users\73921\AppData\Local\ms-playwright`; this is recorded as a verification limitation, not an app failure.
+
+Boundary:
+
+- Ceiling-speaker default quantity and first-row point layout only for the confirmed classroom width case.
+- No wall-speaker rule, meeting-room ceiling rule, array-mic quantity/coordinate rule, topology routing, wiring generation, cable quantity, device quantity, brand variant, mobile layout, or release workflow behavior was changed.
+
 Boundary:
 
 - Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
