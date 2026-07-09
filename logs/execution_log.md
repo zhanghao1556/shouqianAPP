@@ -5156,3 +5156,30 @@ Boundary:
 
 - 5176 calibration workbench / launch workflow only.
 - No reverberation threshold, scoring rule, speaker selection, speaker quantity, speaker coordinate, speaker coverage, array-mic count, array-mic coordinate, topology routing, wiring generation, cable quantity, device quantity, release behavior, or brand UI rule was changed.
+
+Timestamp: 2026-07-09 16:05:00
+
+Goal:
+
+Change GitHub sync workflow so Codex no longer pushes by default.
+
+Actions:
+
+- Updated `AGENTS.md` Git rules:
+  - Codex now defaults to local Git commits / checkpoints only.
+  - GitHub synchronization is manual through desktop `上传到GitHub.cmd`, unless the user explicitly asks Codex to push.
+  - Release artifacts are still committed locally, but release workflow no longer defaults to pushing GitHub.
+- Updated `scripts/git-checkpoint.ps1`:
+  - removed automatic `git push`;
+  - daily / release / checkpoint commits now stop after local commit;
+  - script output tells the user to run the desktop upload script when the network is ready.
+
+Current Git state:
+
+- `main` is ahead of `origin/main` because previous GitHub push attempts failed on network access.
+- This change intentionally keeps future work in the same local-ahead state until the user manually runs the upload script.
+
+Boundary:
+
+- Git workflow / documentation / checkpoint script only.
+- No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.

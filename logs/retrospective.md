@@ -1273,3 +1273,17 @@ Guardrail:
 - Do not change reverberation thresholds, scoring weights, speaker rules, array-mic placement / quantity rules, topology routing, wiring generation, or device quantities from 5176 observations without first explaining the current trigger, proposed rule change, affected scenarios, and getting explicit user confirmation.
 - If future work needs the old wiring / topology calibration workbench again, add a new port or route deliberately instead of silently moving 5176 back.
 - Complex inline PowerShell checks are fragile on this machine. Prefer the real PowerShell 7 path plus simple commands, checked-in scripts, or Node snippets for verification.
+
+### 2026-07-09 Manual GitHub Push Reminder
+
+- User changed the Git workflow: Codex should not push to GitHub by default anymore.
+- After effective changes, Codex should still save local Git commits / checkpoints when appropriate.
+- GitHub synchronization is manual by default:
+  - user clicks desktop `上传到GitHub.cmd` when the network is ready;
+  - Codex only runs `git push` when the user explicitly asks for push / upload in that turn.
+- `scripts/git-checkpoint.ps1` should create local commits only and then remind the user to run the upload script.
+- When finishing a task, report the local commit hash and `ahead` count instead of trying to make `origin/main` synchronized.
+
+Guardrail:
+
+- Do not reintroduce automatic `git push` into daily checkpoints, release checkpoints, or normal task checkpoints unless the user explicitly changes this workflow again.

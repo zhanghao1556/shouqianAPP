@@ -30,12 +30,9 @@ if (-not $status) {
     if ($LASTEXITCODE -ne 0) {
       throw "git commit failed with exit code $LASTEXITCODE"
     }
-    git push
-    if ($LASTEXITCODE -ne 0) {
-      throw "git push failed with exit code $LASTEXITCODE"
-    }
-    Write-Host "Checkpoint pushed:"
+    Write-Host "Local checkpoint saved. GitHub push is manual:"
     git log --oneline --decorate -1
+    Write-Host "Run the desktop upload script when network is ready."
     exit 0
   }
 
@@ -61,10 +58,7 @@ git commit -m $Message
 if ($LASTEXITCODE -ne 0) {
   throw "git commit failed with exit code $LASTEXITCODE"
 }
-git push
-if ($LASTEXITCODE -ne 0) {
-  throw "git push failed with exit code $LASTEXITCODE"
-}
 
-Write-Host "Checkpoint pushed:"
+Write-Host "Local checkpoint saved. GitHub push is manual:"
 git log --oneline --decorate -1
+Write-Host "Run the desktop upload script when network is ready."
