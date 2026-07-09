@@ -4973,3 +4973,50 @@ Verification:
 Boundary:
 
 - Desktop helper scripts and repo upload helper entry only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
+Timestamp: 2026-07-09 14:35:00
+
+Goal:
+
+Implement the confirmed release-process hardening plan.
+
+Confirmed plan:
+
+- Release must rebuild from current source, not only wrap an existing single-file intermediate artifact.
+- Default release remains dual-brand: Yinyi and Yinman both publish unless the user explicitly asks for one brand only.
+- Release validation must compare final package content with the current build, not just confirm the package can open.
+- PowerShell 7 path handling and desktop helper script rules must stay explicit in the project rules.
+
+Actions:
+
+- Updated `AGENTS.md` with:
+  - real PowerShell 7 path preference, including the current Store PowerShell 7 path;
+  - release rebuild chain for both Yinyi and Yinman;
+  - mandatory `verify-release-current` style verification after dual-brand packaging;
+  - desktop `.cmd` project-root and pause-on-failure rules.
+- Added `scripts/verify-release-current.mjs`.
+- Added `verify:release-current` to `package.json`.
+- Updated `release:all` so it runs Yinyi release, Yinman release, then `verify:release-current`.
+- The verifier checks:
+  - release scripts rebuild before packaging;
+  - latest Yinyi / Yinman release directories are selected;
+  - final HTML and single-file HTML are newer than relevant source files;
+  - packaged header CSS matches the current built CSS;
+  - required title / brand / release marker / subtitle tokens exist;
+  - forbidden brand/model residues do not exist in the final HTML.
+- Regenerated a new corrected dual-brand release sequence:
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-5`
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-5.zip`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-5`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-5.zip`
+
+Verification:
+
+- `node --check scripts\verify-release-current.mjs` passed.
+- `npm.cmd run release:all` passed, including the new `verify:release-current` step.
+- `npm.cmd run test:release-mobile -- --brand yinyi` passed.
+- `npm.cmd run test:release-mobile -- --brand yinman` passed.
+
+Boundary:
+
+- Release process, release verification, project-rule documentation, and release artifact regeneration only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.

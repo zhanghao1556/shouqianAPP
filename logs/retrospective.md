@@ -1237,3 +1237,23 @@ Guardrail:
 Guardrail:
 
 - This is launch / upload helper workflow only. Do not use desktop script fixes to change app rules, release content, speaker / array-mic behavior, topology, wiring, or brand UI.
+
+### 2026-07-09 Release Verification Script Reminder
+
+- `scripts/verify-release-current.mjs` is the guard against stale release packages.
+- `npm.cmd run release:all` now runs:
+  - `release:yinyi`
+  - `release:yinman`
+  - `verify:release-current`
+- The verifier intentionally checks final packaged HTML, not just the staging single-file output.
+- The verifier should fail if:
+  - either brand no longer rebuilds before packaging;
+  - latest release HTML is older than relevant source files;
+  - packaged header CSS no longer matches the current built CSS;
+  - Yinyi / Yinman brand text leaks into the wrong release;
+  - old visible release-forbidden text such as `翼欧`, `AP150`, `YM-AP150`, or `DT2 Pro` appears where it should not.
+- If the verifier fails after changing release scripts, do not bypass it. Fix the release chain or regenerate a new same-day sequence package.
+
+Guardrail:
+
+- This script verifies packaging freshness and brand hygiene only. Do not use it to change business rules, speaker / array-mic algorithms, topology routing, wiring generation, or device quantity logic.

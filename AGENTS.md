@@ -78,6 +78,7 @@
 以后在本项目里执行命令时，默认优先使用 PowerShell 7（`pwsh`）。
 
 - 需要手动指定 shell 或启动新终端时，优先用 `pwsh`，不要默认用 Windows PowerShell 5.1。
+- 在本机不得裸调用户目录下的 WindowsApps `pwsh` alias；优先使用真实 PowerShell 7 路径。传统安装路径是 `C:\Program Files\PowerShell\7\pwsh.exe`，当前 Store 版路径是 `C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.exe`。
 - 如果当前环境没有 `pwsh` 或 PowerShell 7 无法启动，才回退到系统默认 PowerShell，并在回复或日志中说明。
 - 涉及中文文件、日志、AGENTS.md、报告文案读取时，仍优先按 UTF-8 读取，避免把终端编码显示问题误判为文件损坏。
 
@@ -143,6 +144,21 @@
 - 两个品牌发布包都要按同一天多次打包的递增编号规则生成，不得互相覆盖。
 - 两个品牌发布包都要完成对应验证并随发布 checkpoint 一起提交、推送到 GitHub。
 - 若用户明确指定只发布某一个品牌，才按用户指定品牌单独发布。
+
+发布包必须从当前源码重新生成，不得只包装旧的单文件中间产物：
+
+- 音翼发布流程必须执行：`build -> build-single-file-release --brand yinyi -> build-universal-release --brand yinyi`。
+- 音曼发布流程必须执行：`build -> build-single-file-release --brand yinman -> build-universal-release --brand yinman`。
+- `release:all` 必须同时跑音翼和音曼，并在打包后运行 `verify-release-current` 或等效脚本。
+- 发布验证不能只看“包能打开”；必须校验最终 HTML 的标题、品牌、关键 header CSS、release marker、禁止文案残留、以及与当前 `dist` CSS 的关键样式一致性。
+- 5174 开发页保留本地草稿、发布包清空售前采集是预期差异；除此之外，UI / CSS / 最近校准规则 / 品牌资产不得因为旧中间产物而不一致。
+
+桌面脚本规则：
+
+- 桌面 `.cmd` 文件不得使用 `%~dp0` 作为项目根目录，除非 `.cmd` 文件就在项目根目录。
+- 桌面启动 / 上传脚本必须指向真实项目路径：`C:\Users\73921\Documents\Codex\2026-06-24\shouqianAPP`。
+- 桌面脚本必须优先真实 PowerShell 7 路径，最后才回退 Windows PowerShell 5.1。
+- 桌面脚本失败时必须 `pause`，让用户能看到错误内容。
 
 ## Backup Retention
 
