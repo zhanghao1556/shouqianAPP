@@ -5093,6 +5093,28 @@ Follow-up mistake:
 - Root cause: the desktop `.cmd` had been written as UTF-8 with BOM and LF line endings while also containing Chinese `echo` text. `cmd.exe` treated the BOM / line parsing badly, so the batch file was not interpreted as intended.
 - Correction: keep `.cmd` files ASCII-only with CRLF line endings and move Chinese status output into the PowerShell `.ps1` helper. This prevents `cmd.exe` from corrupting or misreading the launcher.
 
+Timestamp: 2026-07-09 15:12:00
+
+Goal:
+
+Fix and record the desktop local-page opener `.cmd` encoding failure.
+
+Finding:
+
+- User reported `打开收前APP页面.cmd` was broken after the same type of upload-helper issue.
+- Inspection confirmed the desktop opener was UTF-8 with BOM and LF line endings, and also contained Chinese `echo` text.
+- This is unsafe for `cmd.exe` on this machine and can cause the launcher to be interpreted as garbled commands.
+
+Actions:
+
+- Updated repo `open-shouqian-pages.cmd` so `.cmd` output text is ASCII-only.
+- Rewrote both repo `open-shouqian-pages.cmd` and desktop `C:\Users\73921\Desktop\打开收前APP页面.cmd` as ASCII without BOM and with CRLF line endings.
+- Kept Chinese / detailed runtime status in the PowerShell layer where UTF-8 handling is stable.
+
+Boundary:
+
+- Desktop opener encoding / launcher reliability only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
 Boundary:
 
 - GitHub upload helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.

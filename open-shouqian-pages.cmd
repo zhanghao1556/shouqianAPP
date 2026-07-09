@@ -10,8 +10,8 @@ if not exist "%PS_EXE%" set "PS_EXE=powershell.exe"
 
 if not exist "%SCRIPT%" (
   echo.
-  echo 启动脚本不存在：%SCRIPT%
-  echo 请确认项目目录是否移动。
+  echo Open script not found: %SCRIPT%
+  echo Please check whether the project folder was moved.
   echo.
   pause
   exit /b 1
@@ -20,7 +20,7 @@ if not exist "%SCRIPT%" (
 "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
 if errorlevel 1 (
   echo.
-  echo 启动失败，请把这个窗口内容发给 Codex。
+  echo Open script failed. Please send this window text to Codex.
   pause
   exit /b %errorlevel%
 )
