@@ -1152,3 +1152,17 @@ Guardrail:
 
 - Brand, logo, product-display naming, preview-port, and release-package changes are display / packaging work only.
 - Do not change speaker rules, array-mic placement / count rules, topology routing, wiring generation, cable quantities, device quantities, or presales draft logic under Yinman branding work unless separately confirmed.
+
+### 2026-07-09 Yinman Blue / White Theme Reminder
+
+- Yinman uses the user-provided blue waveform logo stored at `src/assets/yinman-logo.png`.
+- Yinman theme is blue / white and should stay scoped under `yinmanShell` / `yinmanHeader`.
+- Yinyi theme remains green / white under `yiouShell` / `yiouHeader`.
+- After Yinman theme edits, verify both:
+  - `5180`: Yinman logo, blue variables, no `mobilePreviewMode`;
+  - `5174`: Yinyi logo, green variables, no Yinman text.
+
+Process note:
+
+- If `pwsh` resolves to the WindowsApps stub and fails with `CreateProcessAsUserW failed: 5`, record it as a shell resolution issue and use a safe fallback shell / Node command for the turn.
+- Do not rewrite UTF-8 Chinese project files just because a fallback terminal displays Chinese output as mojibake.

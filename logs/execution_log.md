@@ -4617,3 +4617,37 @@ Boundary:
 
 - Brand variant / preview / release packaging only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
 - Final Yinman release should wait for the user-provided array mic physical image, then replace the Yinman topology array-mic image and generate the point-map usable mic image before final packaging.
+
+Timestamp: 2026-07-09 11:12:00
+
+Goal:
+
+Apply the confirmed Yinman logo and change the Yinman visual theme to blue / white.
+
+Actions:
+
+- Added the user-provided Yinman logo image to `src/assets/yinman-logo.png`.
+- Updated the runtime brand logo helper so Yinman uses the provided PNG logo while Yinyi still uses the existing `yinyi-tech-logo.svg`.
+- Changed the app shell / header class selection so:
+  - Yinyi uses `yiouShell` / `yiouHeader`;
+  - Yinman uses `yinmanShell` / `yinmanHeader`.
+- Added Yinman-scoped blue / white theme variables and header background in `src/styles.css`.
+- Kept the existing green / white Yinyi style scoped to the original Yinyi shell.
+
+Verification:
+
+- Initial `npm.cmd run build` in the sandbox failed with the known Vite / esbuild sandbox config-read problem.
+- Non-sandbox `npm.cmd run build` passed.
+- Browser verification:
+  - `http://127.0.0.1:5180/` shows `音曼AI售前工具`, uses `yinmanShell` / `yinmanHeader`, has brand color `#4f7dff`, page color `#f4f8ff`, uses the provided `244x134` Yinman logo, and does not have `mobilePreviewMode`.
+  - `http://127.0.0.1:5174/` still shows `音翼AI售前工具`, uses `yiouShell`, has brand color `#00a870`, page color `#f3faf6`, uses the existing `320x112` Yinyi logo, has no Yinman text, and does not have `mobilePreviewMode`.
+- No console errors or warnings were reported for either page.
+
+Issue recorded:
+
+- The shell tool attempted to resolve `pwsh` / `powershell` to `C:\Users\73921\AppData\Local\Microsoft\WindowsApps\pwsh.exe`, which failed with `CreateProcessAsUserW failed: 5`.
+- Used `cmd` / Node as a fallback for this turn. This appears to be a local shell resolution issue, not a project source encoding issue.
+
+Boundary:
+
+- Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.

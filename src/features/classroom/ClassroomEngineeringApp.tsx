@@ -10,6 +10,7 @@ import { normalizeProfile } from "./lib/profileNormalization";
 import { getAppBrand, getBrandLogoSrc } from "./brand";
 import type { ClassroomProfile, LegacySpeakerType, LegacyWallAdjustability, Point, QuantityOverrides } from "./types";
 import yinyiTechLogo from "../../assets/yinyi-tech-logo.svg";
+import yinmanLogo from "../../assets/yinman-logo.png";
 
 const defaultCentralAirConditionerSize = { width: 0.8, depth: 0.8 };
 const presalesDraftStorageKey = "yiou-presales-draft-v1";
@@ -121,11 +122,11 @@ export function ClassroomEngineeringApp() {
   };
 
   return (
-    <main className="engineeringShell yiouShell">
-      <header className="engineeringHeader yiouHeader">
+    <main className={`engineeringShell ${brand.id === "yinman" ? "yinmanShell" : "yiouShell"}`}>
+      <header className={`engineeringHeader ${brand.id === "yinman" ? "yinmanHeader" : "yiouHeader"}`}>
         <div className="brandCluster">
           <div className="yiouLogo" aria-label={brand.companyName}>
-            <img src={getBrandLogoSrc(yinyiTechLogo)} alt={`${brand.companyName} logo`} />
+            <img src={getBrandLogoSrc(yinyiTechLogo, yinmanLogo)} alt={`${brand.companyName} logo`} />
           </div>
           <div className="brandText">
             <h1 className="workspaceTitle">{brand.appName}</h1>

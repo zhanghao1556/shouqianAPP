@@ -43,13 +43,6 @@ export function formatBrandText(value: string): string {
     .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");
 }
 
-export function getBrandLogoSrc(defaultLogoSrc: string): string {
-  if (getAppBrand().id !== "yinman") return defaultLogoSrc;
-  const svg = `<svg width="320" height="112" viewBox="0 0 320 112" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="音曼">
-  <rect x="10" y="10" width="92" height="92" rx="24" fill="#0b7a55"/>
-  <path d="M34 66c12-28 32-34 58-30-18 8-30 22-36 44-5-12-12-15-22-14Z" fill="#ffffff"/>
-  <path d="M42 44c8-10 20-16 35-17-11 7-19 16-24 28-3-5-7-8-11-11Z" fill="#c9f7df"/>
-  <text x="122" y="66" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="44" font-weight="800" fill="#08372b">音曼</text>
-</svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+export function getBrandLogoSrc(defaultLogoSrc: string, yinmanLogoSrc: string): string {
+  return getAppBrand().id === "yinman" ? yinmanLogoSrc : defaultLogoSrc;
 }
