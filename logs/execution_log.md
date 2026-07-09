@@ -4936,3 +4936,40 @@ New guardrails:
 Boundary:
 
 - Log / process correction only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed by this note.
+
+Timestamp: 2026-07-09 14:20:00
+
+Goal:
+
+Fix the two desktop helper scripts after the user reported they were broken.
+
+Finding:
+
+- Desktop `上传到GitHub.cmd` was still the old version from 10:16.
+- Its `ROOT=%~dp0` logic is correct only when the `.cmd` file lives in the project root. On the desktop, `%~dp0` resolves to `C:\Users\73921\Desktop\`, so it tried to call `Desktop\scripts\push-to-github.ps1` and failed.
+- The desktop scripts also assumed a traditional PowerShell 7 install path under `C:\Program Files\PowerShell\7\pwsh.exe`.
+- This machine currently uses the Microsoft Store PowerShell 7 path: `C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.exe`.
+- `cmd` could not reliably enumerate `WindowsApps` with a wildcard, so the scripts could fall back to Windows PowerShell 5.1 even though PowerShell 7 exists.
+
+Actions:
+
+- Updated desktop `上传到GitHub.cmd` to use the fixed project root `C:\Users\73921\Documents\Codex\2026-06-24\shouqianAPP`.
+- Updated desktop `上传到GitHub.cmd` and `打开收前APP页面.cmd` to prefer:
+  1. traditional PowerShell 7 path;
+  2. the current Microsoft Store PowerShell 7 path;
+  3. wildcard Store path when available;
+  4. Windows PowerShell only as final fallback.
+- Added missing-script checks and pause-on-failure behavior so desktop windows do not silently close.
+- Updated the repo copy `上传到GitHub.cmd` with the same PowerShell 7 Store-path fallback, so future copied helpers keep the fix.
+
+Verification:
+
+- Simulated the `.cmd` PowerShell selection logic and confirmed it now resolves to `C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.exe`.
+- Verified `scripts\open-local-pages.ps1` exists.
+- Verified `http://127.0.0.1:5174/` returned `200`.
+- Verified `http://127.0.0.1:5180/` returned `200`.
+- Ran `scripts\push-to-github.ps1 -RepoPath . -NoPause`; it executed normally and reported the current GitHub network failure instead of flash-closing.
+
+Boundary:
+
+- Desktop helper scripts and repo upload helper entry only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.

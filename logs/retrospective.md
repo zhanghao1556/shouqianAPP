@@ -1222,3 +1222,18 @@ Guardrail:
 Guardrail:
 
 - This is release-process memory only. It does not permit changing speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, release clean-state behavior, or brand UI design without the normal confirmation boundary.
+
+### 2026-07-09 Desktop Helper Script Reminder
+
+- Desktop `.cmd` files must not use `%~dp0` as the project root unless the `.cmd` itself is inside the project root.
+- For desktop shortcuts / helpers, hardcode or otherwise resolve the real project root:
+  - `C:\Users\73921\Documents\Codex\2026-06-24\shouqianAPP`
+- PowerShell 7 on this machine may be the Microsoft Store install:
+  - `C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.exe`
+- Desktop helpers should prefer traditional PowerShell 7, then the current Store PowerShell 7 path, then wildcard Store lookup when it works, and only then Windows PowerShell 5.1.
+- Do not rely on bare `pwsh`, because `where pwsh` can point to the bad user-local WindowsApps alias.
+- Always include missing-script checks and `pause` on failure so users can send the visible error instead of seeing a flash-close.
+
+Guardrail:
+
+- This is launch / upload helper workflow only. Do not use desktop script fixes to change app rules, release content, speaker / array-mic behavior, topology, wiring, or brand UI.
