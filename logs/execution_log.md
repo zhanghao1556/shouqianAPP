@@ -4742,6 +4742,40 @@ Boundary:
 
 - Launch workflow / health-check behavior only. No speaker rules, array-mic rules, topology routing, wiring generation, device quantities, brand display, mobile styles, release packaging, or presales draft behavior was changed.
 
+Timestamp: 2026-07-09 12:55:00
+
+Goal:
+
+Replace the Yinman array-mic point-map and topology images with the confirmed files from `output`.
+
+Actions:
+
+- Copied the two user-provided Yinman array-mic PNG files from `output` into stable source asset names:
+  - `src/assets/yinman-array-mic-topology.png`
+  - `src/assets/yinman-array-mic-pointmap.png`
+- Updated `DrawingCanvas` so only the Yinman brand (`5180`) uses these images:
+  - topology main/slave mic nodes use the Yinman topology physical image;
+  - generated point-map array-mic symbols use the Yinman point-map image with the top direction mark.
+- Yinyi (`5174`) continues to use the existing topology array-mic image and SVG point-map symbol.
+
+Verification:
+
+- Visually inspected both copied PNG assets before integration.
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` failed inside the sandbox with the known Vite/esbuild `vite.config.ts` access issue, then passed when rerun outside the sandbox.
+- Production build output included both new Yinman image assets.
+
+Boundary:
+
+- Yinman brand image replacement only. No Yinyi image, speaker rule, array-mic placement/count rule, topology routing, wiring generation, cable quantity, device quantity, mobile layout, release packaging, or presales draft behavior was changed.
+
+Follow-up UI correction:
+
+- User reported the Yinman logo was not centered inside its white logo frame on `5180`.
+- Browser inspection found the Yinman logo image rendered at about `110 x 60px`, while the original logo frame was only `52px` high, causing the image to overflow vertically.
+- Added a Yinman-scoped logo-frame height of `72px` and kept the image centered with `object-fit: contain`.
+- Browser verification on `http://127.0.0.1:5180/` confirmed the image is fully contained in the logo frame and centered with about `0.2px` vertical delta; console warnings/errors were empty.
+
 Boundary:
 
 - Logo / color theme / brand display only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.

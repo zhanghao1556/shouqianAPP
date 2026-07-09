@@ -28,6 +28,8 @@ import topologyVideoConferenceTerminalImage from "../../../assets/topology-video
 import topologyWallSpeakerImage from "../../../assets/topology-wall-speaker.png";
 import topologyWiredMicImage from "../../../assets/topology-wired-mic.png";
 import topologyWirelessReceiverImage from "../../../assets/topology-wireless-receiver.png";
+import yinmanArrayMicPointMapImage from "../../../assets/yinman-array-mic-pointmap.png";
+import yinmanArrayMicTopologyImage from "../../../assets/yinman-array-mic-topology.png";
 
 const pointColors: Record<GeneratedPoint["type"], string> = {
   arrayMic: "#00a6a6",
@@ -2752,7 +2754,7 @@ function getTopologyImageSize(node: TopologyNode) {
 }
 
 function getTopologyDeviceImage(node: TopologyNode) {
-  if (node.kind === "mainMic" || node.kind === "slaveMic") return topologyArrayMicImage;
+  if (node.kind === "mainMic" || node.kind === "slaveMic") return getAppBrand().id === "yinman" ? yinmanArrayMicTopologyImage : topologyArrayMicImage;
   if (node.kind === "speaker" && node.label.includes("吸顶")) return topologyCeilingSpeakerImage;
   if (node.kind === "speaker" && node.label.includes("壁挂")) return topologyWallSpeakerImage;
   if (node.kind === "legacy") return topologyWallSpeakerImage;
@@ -3679,6 +3681,7 @@ function GeneratedPointMarker({
   const coverageStroke = muted ? "#94a3b8" : "#f59e0b";
   const coverageOpacity = muted ? 0.2 : 0.88;
   const coverageRingOpacity = muted ? 0.28 : 0.46;
+  const useYinmanArrayMicImage = point.type === "arrayMic" && getAppBrand().id === "yinman";
   return (
     <g opacity={muted ? 0.62 : 1}>
       {point.type === "arrayMic" ? (
@@ -3701,10 +3704,23 @@ function GeneratedPointMarker({
             strokeDasharray="4 4"
             opacity="0.28"
           />
-          <rect x={canvasPoint.x - micSize / 2} y={canvasPoint.y - micSize / 2} width={micSize} height={micSize} fill="#ffffff" stroke={pointColors[point.type]} strokeWidth="2" />
-          <line x1={canvasPoint.x - micSize / 2} y1={canvasPoint.y - micSize / 2} x2={canvasPoint.x + micSize / 2} y2={canvasPoint.y + micSize / 2} stroke={pointColors[point.type]} />
-          <line x1={canvasPoint.x + micSize / 2} y1={canvasPoint.y - micSize / 2} x2={canvasPoint.x - micSize / 2} y2={canvasPoint.y + micSize / 2} stroke={pointColors[point.type]} />
-          <ArrayMicDirectionDot x={canvasPoint.x} y={canvasPoint.y - micSize / 2 + 4.8} />
+          {useYinmanArrayMicImage ? (
+            <image
+              href={yinmanArrayMicPointMapImage}
+              x={canvasPoint.x - micSize / 2}
+              y={canvasPoint.y - micSize / 2}
+              width={micSize}
+              height={micSize}
+              preserveAspectRatio="xMidYMid meet"
+            />
+          ) : (
+            <>
+              <rect x={canvasPoint.x - micSize / 2} y={canvasPoint.y - micSize / 2} width={micSize} height={micSize} fill="#ffffff" stroke={pointColors[point.type]} strokeWidth="2" />
+              <line x1={canvasPoint.x - micSize / 2} y1={canvasPoint.y - micSize / 2} x2={canvasPoint.x + micSize / 2} y2={canvasPoint.y + micSize / 2} stroke={pointColors[point.type]} />
+              <line x1={canvasPoint.x + micSize / 2} y1={canvasPoint.y - micSize / 2} x2={canvasPoint.x - micSize / 2} y2={canvasPoint.y + micSize / 2} stroke={pointColors[point.type]} />
+              <ArrayMicDirectionDot x={canvasPoint.x} y={canvasPoint.y - micSize / 2 + 4.8} />
+            </>
+          )}
         </>
       ) : point.label.includes("吸顶音箱") ? (
         <>
