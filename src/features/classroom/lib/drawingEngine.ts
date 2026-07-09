@@ -190,6 +190,7 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
       const coverageRadius = speakerCoverageRadii[index] ?? getSpeakerCoverageRadius(profile, usesWallSpeaker, position, speakerPositions, arrayMics);
       const isFrontWallSpeaker = usesWallSpeaker && position.y === 0;
       const isBackWallSpeaker = usesWallSpeaker && Math.abs(position.y - depth) <= 0.05;
+      const usesMeetingStyleFullRoomWallSpeaker = usesWallSpeaker && shouldUseMeetingStyleFullRoomWallSpeakerRules(profile);
       const isTeacherMonitorSpeaker =
         shouldReserveTeacherMonitorSpeakerRow(profile) &&
         (isFrontWallSpeaker || (!usesWallSpeaker && !shouldUseMeetingStyleCeilingSpeakerRules(profile) && position.y <= primaryArrayMicY));
@@ -233,7 +234,11 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         afcSendLevelOffset: position.forcePerpendicularAim ? MEETING_WALL_SPEAKER_CENTER_FILL_AFC_SEND_OFFSET : undefined,
         target: wallTarget,
         reason: usesWallSpeaker
-          ? isFrontWallSpeaker
+          ? usesMeetingStyleFullRoomWallSpeaker
+            ? position.forcePerpendicularAim
+              ? `${scopeText}壁挂音柱按房间长宽跨距补充中区覆盖；墙面条件、门窗和屏幕位置会影响安装微调。`
+              : `${scopeText}壁挂音柱按房间整体覆盖布置；墙面条件、门窗和屏幕位置会影响安装微调。`
+            : isFrontWallSpeaker
             ? isTeacherMonitorSpeaker
               ? `${scopeText}前墙保留一组补声/监听点位，用于多媒体声音和老师小信号 AFC 监听；前墙音柱正对阵麦时 AFC 余量较低，仅按基础补声处理。`
               : `${scopeText}前墙壁挂补声点位，前墙音柱正对阵麦时 AFC 余量较低，仅按基础补声处理。`
@@ -1521,8 +1526,7 @@ const getWallSpeakerPositions = (profile: ClassroomProfile, count: number, prima
 const shouldUseFullRoomWallSpeakerOrientationByRoomShape = (profile: ClassroomProfile) => shouldUseMeetingStyleFullRoomWallSpeakerRules(profile);
 
 const shouldUseMeetingStyleFullRoomWallSpeakerRules = (profile: ClassroomProfile) =>
-  isMeetingScenario(profile.scenario) ||
-  (getEffectiveAmplificationScope(profile) === "full" && (profile.scenario === "standardClassroom" || profile.scenario === "lectureClassroom"));
+  isMeetingScenario(profile.scenario) || getEffectiveAmplificationScope(profile) === "full";
 
 const getFullRoomWallSpeakerPositionsByRoomShape = (profile: ClassroomProfile, count: number) => {
   const { length, width } = profile.roomGeometry;

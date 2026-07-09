@@ -1153,6 +1153,18 @@ Guardrail:
 - Brand, logo, product-display naming, preview-port, and release-package changes are display / packaging work only.
 - Do not change speaker rules, array-mic placement / count rules, topology routing, wiring generation, cable quantities, device quantities, or presales draft logic under Yinman branding work unless separately confirmed.
 
+### 2026-07-09 Full-Room Wall-Speaker Placement Reminder
+
+- User confirmed that full-room amplification wall speakers should not be arranged as front-field / rear-field side-wall rows.
+- Full-room wall-speaker point placement should follow the meeting-room whole-room coverage layout even when the scenario is `other`, standard classroom, or another non-meeting full-room case.
+- For square / near-square spaces such as the 10m x 10m `湖北孝感实验室` case, the expected result is whole-room symmetric/corner-style coverage, not side-wall front/rear grouping.
+- Customer-visible point reasons for this path should describe coverage-impact relationships and site-condition impacts, not internal rear-row distribution logic.
+
+Guardrail:
+
+- This reminder covers full-room wall-speaker point distribution and customer-visible point reason text only.
+- Do not use it to change ceiling-speaker rules, podium/stage amplification wall-speaker rules, speaker selection, array-mic quantity or coordinates, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior without separate confirmation.
+
 ### 2026-07-09 Yinman Blue / White Theme Reminder
 
 - Yinman uses the user-provided blue waveform logo stored at `src/assets/yinman-logo.png`.

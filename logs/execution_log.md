@@ -4618,6 +4618,36 @@ Boundary:
 - Brand variant / preview / release packaging only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantity logic, presales draft behavior, or release clean-state rules were changed.
 - Final Yinman release should wait for the user-provided array mic physical image, then replace the Yinman topology array-mic image and generate the point-map usable mic image before final packaging.
 
+Timestamp: 2026-07-09 11:13:00
+
+Goal:
+
+Align non-meeting full-room wall-speaker placement with the meeting-room full-room wall-speaker layout.
+
+Finding:
+
+- User reviewed the 5174 point map for `湖北孝感实验室` and corrected that full-room amplification wall speakers should not be split into front-field / rear-field side-wall rows.
+- Current code only applied the meeting-style full-room wall-speaker layout to meeting rooms, standard classrooms, and lecture classrooms, so `other + full-room amplification + wall speaker` fell back to side-wall front/rear distribution.
+
+Actions:
+
+- After user confirmation, changed `shouldUseMeetingStyleFullRoomWallSpeakerRules` so every effective full-room amplification wall-speaker case uses the meeting-style whole-room layout.
+- Updated wall-speaker point reasons for this full-room path so customer-visible text describes whole-room coverage and site-condition impacts instead of rear-field multi-row logic.
+- Verified current 5174 `湖北孝感实验室` 10m x 10m case after reload:
+  - project draft remained loaded;
+  - point-map speaker labels now appear in whole-room symmetric/corner-style positions;
+  - old `后场多排` / `前段优先补齐` text was not visible.
+
+Checks:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` failed inside sandbox with the known Vite/esbuild `vite.config.ts` access issue, then passed when rerun outside the sandbox.
+
+Boundary:
+
+- Wall-speaker full-room point distribution and point reason text only.
+- No ceiling-speaker rules, podium/stage amplification wall-speaker rules, speaker selection rules, speaker quantity rule outside the existing meeting-style full-room count path, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior were changed.
+
 Timestamp: 2026-07-09 11:12:00
 
 Goal:
