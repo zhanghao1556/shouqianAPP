@@ -89,7 +89,13 @@ function getReplacementAssetPath(assetName) {
 }
 
 function transformBrandText(value) {
-  if (brandConfig.id !== "yinman") return value;
+  if (brandConfig.id !== "yinman") {
+    return value
+      .replace(/音曼AI售前工具/g, "音翼AI售前工具")
+      .replace(/音曼售前方案/g, "音翼售前方案")
+      .replace(/音曼/g, "音翼")
+      .replace(/Yinman AI Presales Tool/g, "Yinyi AI Presales Tool");
+  }
   return value
     .replace(/DT2 Pro 智能语音阵列麦克风/g, "智能语音阵列麦克风")
     .replace(/DT2 pro 智能语音阵列麦克风/gi, "智能语音阵列麦克风")

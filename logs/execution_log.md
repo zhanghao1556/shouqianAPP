@@ -4861,3 +4861,45 @@ Actions:
 Boundary:
 
 - GitHub upload helper only. No application behavior, release artifact content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand display was changed.
+
+Timestamp: 2026-07-09 13:58:00
+
+Goal:
+
+Fix stale Yinyi release packaging after the user found the 5174 page and the packaged Yinyi HTML did not match.
+
+Finding:
+
+- 5174 showed the current desktop header style, but the packaged Yinyi `260709-2` HTML showed the older smaller / wrapped title layout.
+- Root cause: `release:universal` only ran `scripts/build-universal-release.mjs`, which wraps the existing `outputs/yinyi-ai-presales-tool-1.1-internal-test` single-file HTML.
+- Unlike `release:yinman`, the Yinyi path did not run `npm.cmd run build` and `scripts/build-single-file-release.mjs` before packaging, so the final Yinyi zip could use a stale intermediate single-file build.
+
+Actions:
+
+- Added `release:yinyi` to rebuild and regenerate the Yinyi single-file HTML before universal packaging.
+- Changed `release:universal` to call `release:yinyi` for backwards compatibility.
+- Changed `release:all` to run `release:yinyi` and `release:yinman`, so both brands rebuild from current source before packaging.
+
+Boundary:
+
+- Release script correction only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
+Follow-up:
+
+- Regenerated both brands after the script fix.
+- `260709-3` was an intermediate regenerated package and was removed before commit.
+- Added single-brand text cleanup in `scripts/build-single-file-release.mjs` so Yinyi release HTML does not retain Yinman visible brand text and Yinman release HTML does not retain Yinyi / `DT2 Pro` text.
+- Final corrected release artifacts are:
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-4`
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-4.zip`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-4`
+  - `outputs/音曼AI售前工具-1.1-内部测试版-260709-4.zip`
+
+Verification:
+
+- `npm.cmd run release:all` passed and rebuilt both Yinyi and Yinman from current source before packaging.
+- Latest release scan passed:
+  - Yinyi `260709-4` contains required Yinyi title/subtitle/header CSS and no `音曼`, `翼欧`, `AP150`, `YM-AP150`, `ap150`, or replacement-character mojibake.
+  - Yinman `260709-4` contains required Yinman title/subtitle/header CSS and no `音翼`, `DT2 Pro`, `DT2 pro`, `翼欧`, `AP150`, `YM-AP150`, `ap150`, or replacement-character mojibake.
+- `npm.cmd run test:release-mobile -- --brand yinyi` passed.
+- `npm.cmd run test:release-mobile -- --brand yinman` passed.

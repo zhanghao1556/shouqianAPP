@@ -12,9 +12,10 @@
         "build": "tsc && vite build",
         "preview": "vite preview --host 127.0.0.1",
         "generate:random-presales": "node scripts/generateRandomPresales.mjs",
-        "release:universal": "node scripts/build-universal-release.mjs",
+        "release:yinyi": "npm.cmd run build && node scripts/build-single-file-release.mjs --brand yinyi && node scripts/build-universal-release.mjs --brand yinyi",
+        "release:universal": "npm.cmd run release:yinyi",
         "release:yinman": "npm.cmd run build && node scripts/build-single-file-release.mjs --brand yinman && node scripts/build-universal-release.mjs --brand yinman",
-        "release:all": "npm.cmd run release:universal && npm.cmd run release:yinman",
+        "release:all": "npm.cmd run release:yinyi && npm.cmd run release:yinman",
         "test:release-mobile": "node scripts/test-release-mobile-compat.mjs",
         "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1"
     },
