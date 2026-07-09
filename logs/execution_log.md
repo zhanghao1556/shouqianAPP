@@ -5234,3 +5234,40 @@ Boundary:
 
 - Process / release-rule documentation only.
 - No release script, asset, UI, package content, speaker rule, array-mic rule, topology routing, wiring generation, cable quantity, device quantity, presales draft behavior, or release clean-state behavior was changed in this step.
+
+Timestamp: 2026-07-09 16:50:00
+
+Goal:
+
+Record the recurring PowerShell inline-command parsing problem and the fixed handling plan.
+
+Finding:
+
+- The same command-construction problem appeared several times today.
+- When Codex runs complex inline commands through `pwsh -Command`, PowerShell may pre-parse tokens that were intended for another layer:
+  - `$_` inside `Where-Object` / nested strings;
+  - `$env:...`;
+  - `$()` interpolation;
+  - JavaScript object literals such as `{ host: "127.0.0.1" }`;
+  - regex / pipe-heavy commands embedded inside quoted strings.
+- Symptoms included misleading errors such as:
+  - `-match: The term '-match' is not recognized`;
+  - `=1: The term '=1' is not recognized`;
+  - parser errors in Node one-liners before Node actually ran.
+- These were command-wrapper problems, not app bugs, source-file corruption, or business-rule failures.
+
+Solution:
+
+- Keep using the real PowerShell 7 executable path for normal shell work.
+- Do not put complex nested code that contains `$_`, `$env:`, `$()`, `{}` object literals, or heavy regex directly into `pwsh -Command`.
+- For complex checks, prefer one of these safer patterns:
+  - checked-in scripts under `scripts/`;
+  - a temporary Node `.mjs` helper when the command has complex quoting or JSON / JavaScript syntax;
+  - `cmd /c node ...` only for short Node snippets that do not need PowerShell interpolation;
+  - simple PowerShell commands with single-purpose arguments only.
+- If a shell error appears while running a diagnostic command, first inspect whether it is a wrapper / quoting problem before treating it as a code problem.
+
+Boundary:
+
+- Log / workflow note only.
+- No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.

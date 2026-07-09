@@ -1312,3 +1312,24 @@ Guardrail:
 
 - If cross-brand text or assets are detected in a release package, stop the release and fix it before delivery.
 - Brand separation is a packaging / asset-boundary rule. Do not use it to change speaker rules, array-mic point rules, topology routing, wiring generation, device quantities, or presales logic.
+
+### 2026-07-09 PowerShell Inline Command Parsing Reminder
+
+- Repeated issue: complex commands passed through `pwsh -Command` can be parsed by PowerShell before the intended tool receives them.
+- High-risk tokens:
+  - `$_`;
+  - `$env:...`;
+  - `$()`;
+  - JavaScript object literals with `{}`;
+  - nested regex / pipe-heavy one-liners.
+- Typical symptom: the terminal reports a parser or command-not-found error even though the app/source being checked is fine.
+
+Solution:
+
+- Use the real PowerShell 7 path for normal commands, but keep `pwsh -Command` calls simple.
+- For complex diagnostics, prefer checked-in scripts, temporary Node `.mjs` helpers, or short `cmd /c node ...` calls.
+- If a diagnostic command fails with a strange parser error, first classify it as a shell-wrapper issue and rewrite the command safely before drawing conclusions.
+
+Guardrail:
+
+- Do not rewrite Chinese files, change business rules, or report an app bug just because a nested shell diagnostic command was parsed incorrectly.
