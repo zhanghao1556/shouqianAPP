@@ -5118,3 +5118,41 @@ Boundary:
 Boundary:
 
 - GitHub upload helper only. No application behavior, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed.
+
+Timestamp: 2026-07-09 15:45:00
+
+Goal:
+
+Change port 5176 into a reverberation calibration workbench.
+
+Actions:
+
+- Added `src/features/classroom/ReverberationCalibrationWorkbench.tsx`.
+- Changed `src/App.tsx` so port `5176` loads `混响校准测试台`.
+- Added `dev:reverb-calibration` and kept `dev:wiring-calibration` as a compatibility alias to the new 5176 reverberation workbench.
+- Updated `scripts/open-local-pages.ps1` so the 5176 service is named `reverberation calibration`.
+- Added scoped CSS for the reverberation workbench input form, preset buttons, risk display, score breakdown, impact values, and responsive layout.
+- The workbench exposes the current rule output for small / medium / large reverberation, including score breakdown, hard triggers, central-air avoidance clearance, and array-mic install height.
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` passed.
+- `scripts\open-local-pages.ps1` ran without error.
+- HTTP checks returned `200` for `5174`, `5175`, `5176`, `5177`, and `5180`.
+- Edge / Playwright channel render check confirmed `http://127.0.0.1:5176/` shows:
+  - `混响校准测试台`;
+  - `校准混响大 / 中 / 小判定，不直接改点位规则`;
+  - preset entry `小混响样例`;
+  - result section `当前判断`.
+- Playwright's bundled Chromium executable is not installed locally, so the first Chromium check failed; the Microsoft Edge channel render check succeeded.
+- One transient console `404` was captured in the first Edge render attempt, but a follow-up 404 response trace found no business-resource 404.
+
+Process note:
+
+- Inline PowerShell commands containing `$()` and JavaScript object syntax were fragile in this environment. For similar local checks, prefer checked-in scripts, Node helper snippets, or simpler commands instead of complex nested PowerShell strings.
+
+Boundary:
+
+- 5176 calibration workbench / launch workflow only.
+- No reverberation threshold, scoring rule, speaker selection, speaker quantity, speaker coordinate, speaker coverage, array-mic count, array-mic coordinate, topology routing, wiring generation, cable quantity, device quantity, release behavior, or brand UI rule was changed.

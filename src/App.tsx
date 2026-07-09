@@ -11,12 +11,12 @@ export default function App() {
     );
   }
   if (__ENABLE_CALIBRATION_WORKBENCHES__ && window.location.port === "5176") {
-    const WiringTopologyCalibrationWorkbench = lazy(() =>
-      import("./features/classroom/WiringTopologyCalibrationWorkbench").then((module) => ({ default: module.WiringTopologyCalibrationWorkbench }))
+    const ReverberationCalibrationWorkbench = lazy(() =>
+      import("./features/classroom/ReverberationCalibrationWorkbench").then((module) => ({ default: module.ReverberationCalibrationWorkbench }))
     );
     return (
       <Suspense fallback={null}>
-        <WiringTopologyCalibrationWorkbench />
+        <ReverberationCalibrationWorkbench />
       </Suspense>
     );
   }

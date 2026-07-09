@@ -1257,3 +1257,19 @@ Guardrail:
 Guardrail:
 
 - This script verifies packaging freshness and brand hygiene only. Do not use it to change business rules, speaker / array-mic algorithms, topology routing, wiring generation, or device quantity logic.
+
+### 2026-07-09 Port 5176 Reverberation Calibration Reminder
+
+- Port `5176` is now the `混响校准测试台`.
+- It is for inspecting and calibrating the current reverberation small / medium / large judgement path.
+- Current implementation displays the active assessment, score breakdown, hard trigger notes, central-air avoidance clearance, and array-mic install height derived from the selected room/acoustic inputs.
+- `dev:reverb-calibration` is the direct npm script for 5176.
+- `dev:wiring-calibration` is temporarily kept as a compatibility alias to 5176 so older launcher scripts do not break.
+- The opener script label for 5176 is `reverberation calibration`.
+- This port change does not mean reverberation thresholds have been recalibrated.
+
+Guardrail:
+
+- Do not change reverberation thresholds, scoring weights, speaker rules, array-mic placement / quantity rules, topology routing, wiring generation, or device quantities from 5176 observations without first explaining the current trigger, proposed rule change, affected scenarios, and getting explicit user confirmation.
+- If future work needs the old wiring / topology calibration workbench again, add a new port or route deliberately instead of silently moving 5176 back.
+- Complex inline PowerShell checks are fragile on this machine. Prefer the real PowerShell 7 path plus simple commands, checked-in scripts, or Node snippets for verification.
