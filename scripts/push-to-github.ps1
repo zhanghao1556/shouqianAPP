@@ -28,6 +28,28 @@ function Write-Bad($Message) {
   Write-Host $Message -ForegroundColor Red
 }
 
+function Invoke-GitChecked {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments,
+
+    [Parameter(Mandatory = $true)]
+    [string]$FailMessage
+  )
+
+  $output = & git @Arguments 2>&1
+  $code = $LASTEXITCODE
+  foreach ($line in $output) {
+    Write-Host $line
+  }
+
+  if ($code -ne 0) {
+    throw "$FailMessage，退出码 $code"
+  }
+
+  return $output
+}
+
 try {
   Set-Location -LiteralPath $RepoPath
   Write-Title "GitHub 上传助手"
@@ -43,15 +65,9 @@ try {
     Write-Ok "网络已通：github.com:443 可以连接。"
 
     Write-Step "2. 检查本地 Git 状态"
-    git status -sb
-    if ($LASTEXITCODE -ne 0) {
-      throw "git status 执行失败，退出码 $LASTEXITCODE"
-    }
+    Invoke-GitChecked -Arguments @("status", "-sb") -FailMessage "git status 执行失败" | Out-Null
 
-    $porcelain = git status --porcelain
-    if ($LASTEXITCODE -ne 0) {
-      throw "git status --porcelain 执行失败，退出码 $LASTEXITCODE"
-    }
+    $porcelain = Invoke-GitChecked -Arguments @("status", "--porcelain") -FailMessage "git status --porcelain 执行失败"
 
     if ($porcelain) {
       Write-Bad "发现未提交文件。为避免误上传，本次不会执行 git push。"
@@ -63,17 +79,14 @@ try {
       Write-Warn "请先让 Codex 提交这些改动，或你手动确认后再上传。"
       $exitCode = 3
     } else {
-      Write-Step "3. 上传到 GitHub"
-      git push
-      if ($LASTEXITCODE -ne 0) {
-        throw "git push 执行失败，退出码 $LASTEXITCODE"
-      }
+      Write-Step "3. 检查 GitHub 仓库访问"
+      Invoke-GitChecked -Arguments @("ls-remote", "--heads", "origin", "main") -FailMessage "GitHub 仓库访问失败，本次不会上传" | Out-Null
 
-      Write-Step "4. 确认同步结果"
-      git status -sb
-      if ($LASTEXITCODE -ne 0) {
-        throw "最终 git status 执行失败，退出码 $LASTEXITCODE"
-      }
+      Write-Step "4. 上传到 GitHub"
+      Invoke-GitChecked -Arguments @("push", "origin", "main") -FailMessage "git push 执行失败" | Out-Null
+
+      Write-Step "5. 确认同步结果"
+      Invoke-GitChecked -Arguments @("status", "-sb") -FailMessage "最终 git status 执行失败" | Out-Null
 
       Write-Ok "上传成功：本地 main 已同步到 GitHub。"
     }

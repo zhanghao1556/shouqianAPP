@@ -5183,3 +5183,34 @@ Boundary:
 
 - Git workflow / documentation / checkpoint script only.
 - No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.
+
+Timestamp: 2026-07-09 16:20:00
+
+Goal:
+
+Diagnose and improve the manual GitHub upload helper after user screenshot showed `git push` exit code `128`.
+
+Finding:
+
+- The upload helper correctly found a clean worktree with local commits ahead of `origin/main`.
+- `Test-NetConnection github.com:443` reported success, but actual Git HTTPS operations still failed:
+  - `git push` failed with exit code `128`;
+  - `git push --dry-run origin main` reported `Failed to connect to github.com port 443 after 21012 ms`;
+  - `git ls-remote --heads origin main` reported `Recv failure: Connection was reset`.
+- Root cause is not local Git status or missing commits. The network can open TCP 443, but Git's HTTPS request to the GitHub repository is being reset / timing out.
+- The script's old output was incomplete because it only printed the exit code from `git push`, not the underlying Git error text.
+
+Actions:
+
+- Updated `scripts/push-to-github.ps1` with an `Invoke-GitChecked` helper that captures and prints Git stdout / stderr before throwing.
+- Added a repository-access check before push:
+  - after the basic `github.com:443` check;
+  - before `git push`;
+  - runs `git ls-remote --heads origin main`.
+- If repository access fails, the helper now stops before push and shows the real Git error.
+- The manual upload helper remains the only default GitHub sync path; Codex still does not push by default.
+
+Boundary:
+
+- Manual GitHub upload helper diagnostics only.
+- No application UI, rule logic, release package content, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI was changed.
