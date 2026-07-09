@@ -136,6 +136,14 @@
 - 发布验证脚本必须针对最新发布目录运行，不能写死旧日期。
 - 如果 GitHub 推送失败，必须明确告诉用户本地提交号、ahead 数量和失败原因；网络恢复后要继续推送，直到 `main` 与 `origin/main` 同步。
 
+以后用户要求“打包发布”“发布新版本”“发布包”“发版”且未特别限定品牌时，默认同时发布音翼和音曼两个版本：
+
+- 音翼发布包使用音翼品牌、绿色 / 白色基调、音翼阵麦与既有音翼资源。
+- 音曼发布包使用音曼品牌、蓝色 / 白色基调、音曼 logo、音曼阵麦点位图与拓扑图资源。
+- 两个品牌发布包都要按同一天多次打包的递增编号规则生成，不得互相覆盖。
+- 两个品牌发布包都要完成对应验证并随发布 checkpoint 一起提交、推送到 GitHub。
+- 若用户明确指定只发布某一个品牌，才按用户指定品牌单独发布。
+
 ## Backup Retention
 
 Daily closing backups must keep only the newest one valid `.codex-backups` snapshot zip file. Create and verify the new snapshot first, then delete only backup zip files older than the newest valid snapshot.
