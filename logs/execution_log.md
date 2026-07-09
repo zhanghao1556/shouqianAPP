@@ -4903,3 +4903,36 @@ Verification:
   - Yinman `260709-4` contains required Yinman title/subtitle/header CSS and no `音翼`, `DT2 Pro`, `DT2 pro`, `翼欧`, `AP150`, `YM-AP150`, `ap150`, or replacement-character mojibake.
 - `npm.cmd run test:release-mobile -- --brand yinyi` passed.
 - `npm.cmd run test:release-mobile -- --brand yinman` passed.
+
+Timestamp: 2026-07-09 14:05:00
+
+Goal:
+
+Record today's release mistakes and corrective guardrails after user review.
+
+Mistakes:
+
+- Mistook "release package generated" for "release package generated from the latest source". The Yinyi release path wrapped an existing single-file intermediate output instead of rebuilding it first, so the packaged `260709-2` Yinyi HTML did not match the live 5174 page.
+- Verified too broadly and not visually enough. Build / mobile smoke / brand residual scans passed, but the checks did not compare the packaged desktop header and layout against the current 5174 source page.
+- Did not strictly execute the PowerShell 7 rule at first. Some commands used bare `pwsh`, which resolved to the broken WindowsApps stub, and some fallback commands used Windows PowerShell 5.1 / cmd inline quoting, causing encoding and quoting detours.
+- Used fragile inline commands for Chinese paths and shell quoting. This caused failed cleanup attempts and avoidable noise while handling release artifacts.
+- Initially answered the user's release mismatch question too defensively by explaining intended differences before fully inspecting the release script chain. The correct first response should have been to compare 5174, the release HTML, and the packaging pipeline.
+
+Corrective actions:
+
+- Added `release:yinyi` so Yinyi now runs `npm.cmd run build`, `build-single-file-release.mjs --brand yinyi`, and then universal packaging.
+- Changed `release:all` so both Yinyi and Yinman rebuild from current source before packaging.
+- Added single-brand cleanup in `build-single-file-release.mjs` so Yinyi release output does not retain Yinman text and Yinman release output does not retain Yinyi / `DT2 Pro` text.
+- Generated corrected dual-brand release `260709-4` and removed intermediate `260709-3` before commit.
+- Confirmed future shell work should call the real PowerShell 7 executable path, `C:\Program Files\PowerShell\7\pwsh.exe`, rather than relying on bare `pwsh` resolution.
+
+New guardrails:
+
+- Before declaring a release valid, verify the final packaged HTML was regenerated after the latest source build, not only that the outer zip was created.
+- Release validation must include a package-vs-current-source check for at least header/title CSS, brand text, release clean-start marker, and key recently changed rules/assets.
+- For Windows + Chinese paths, prefer checked-in or temporary UTF-8 Node scripts over complex inline cmd / PowerShell command strings.
+- When the user reports a mismatch between 5174 and a release package, inspect the exact packaged file and the packaging script chain before explaining expected release/development differences.
+
+Boundary:
+
+- Log / process correction only. No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, release clean-state behavior, or brand UI design was changed by this note.

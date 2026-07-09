@@ -1207,3 +1207,18 @@ Guardrail:
 
 - Dual-brand publishing is packaging / brand-display workflow only.
 - Do not use release packaging to change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior.
+
+### 2026-07-09 Mistake Review: Release Must Rebuild From Current Source
+
+- Do not assume a release zip reflects current source just because packaging succeeded.
+- Yinyi previously used `release:universal`, which only wrapped an existing single-file intermediate HTML. If that intermediate file is stale, the final zip is stale too.
+- Both Yinyi and Yinman releases must rebuild from source before packaging: build -> single-file HTML -> universal release directory / zip.
+- Release validation must compare the packaged result against the current app for recently changed visible areas, especially header layout, brand text, device assets, and rules the user just calibrated.
+- Expected differences between 5174 and release are limited, for example release clean-start data vs 5174 draft persistence. UI/CSS/rule output should not be stale.
+- Use the real PowerShell 7 path (`C:\Program Files\PowerShell\7\pwsh.exe`) instead of bare `pwsh` on this machine because bare `pwsh` can resolve to a broken WindowsApps stub.
+- Avoid fragile inline shell commands for Chinese paths; use UTF-8 Node scripts or simple repo scripts, then delete temporary scripts after use.
+- When the user reports a mismatch, investigate first and explain after verifying. Do not defend the previous result before checking the package pipeline.
+
+Guardrail:
+
+- This is release-process memory only. It does not permit changing speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, release clean-state behavior, or brand UI design without the normal confirmation boundary.
