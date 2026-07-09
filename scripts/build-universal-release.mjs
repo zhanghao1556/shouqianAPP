@@ -1,11 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
-const releaseDate = "260708";
+const version = "1.1";
+const releasePrefix = `音翼AI售前工具-${version}-内部测试版`;
+const releaseDate = formatReleaseDate(new Date());
+const releaseIndex = getNextReleaseIndex(releaseDate);
+const releaseLabel = `${releaseDate}-${releaseIndex}`;
 const source = path.join(root, "outputs", "yinyi-ai-presales-tool-1.1-internal-test", "音翼AI售前工具-1.1-内部测试版.html");
-const outDirName = `音翼AI售前工具-1.1-内部测试版-${releaseDate}`;
+const outDirName = `${releasePrefix}-${releaseLabel}`;
 const outDir = path.join(root, "outputs", outDirName);
+const outZip = path.join(root, "outputs", `${outDirName}.zip`);
 const outHtml = path.join(outDir, "音翼AI售前工具-1.1.html");
 const outReadme = path.join(outDir, "README-打开说明.txt");
 const outOutline = path.join(outDir, "音翼AI售前工具-1.1-软件大纲.md");
@@ -16,6 +22,31 @@ const mirrorOutlines = [
 
 if (!fs.existsSync(source)) {
   throw new Error(`Source single-file release was not found: ${source}`);
+}
+
+function formatReleaseDate(date) {
+  const year = String(date.getFullYear()).slice(-2);
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function getNextReleaseIndex(dateLabel) {
+  const outputsDir = path.join(root, "outputs");
+  if (!fs.existsSync(outputsDir)) return 1;
+  const pattern = new RegExp(`^${escapeRegExp(releasePrefix)}-${dateLabel}-(\\d+)$`);
+  const indexes = fs
+    .readdirSync(outputsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name.match(pattern)?.[1])
+    .filter(Boolean)
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+  return indexes.length ? Math.max(...indexes) + 1 : 1;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 let html = fs.readFileSync(source, "utf8");
@@ -54,7 +85,7 @@ html = html.replace(
     </div>`
 );
 
-const readme = `音翼AI售前工具 1.1 内部测试版（${releaseDate}）
+const readme = `音翼AI售前工具 1.1 内部测试版（${releaseLabel}）
 
 交付文件：
 - 音翼AI售前工具-1.1.html
@@ -163,8 +194,38 @@ for (const mirrorOutline of mirrorOutlines) {
   fs.mkdirSync(path.dirname(mirrorOutline), { recursive: true });
   fs.writeFileSync(mirrorOutline, outline, "utf8");
 }
+writeReleaseZip(outDir, outZip);
 
 console.log(`Universal release dir: ${outDir}`);
+console.log(`Universal release zip: ${outZip}`);
 console.log(`Universal HTML written: ${outHtml}`);
 console.log(`Universal readme written: ${outReadme}`);
 console.log(`Universal outline written: ${outOutline}`);
+
+function writeReleaseZip(sourceDir, zipPath) {
+  if (fs.existsSync(zipPath)) {
+    fs.rmSync(zipPath, { force: true });
+  }
+
+  const command = `
+$ErrorActionPreference = 'Stop'
+Compress-Archive -LiteralPath ${quotePowerShell(sourceDir)} -DestinationPath ${quotePowerShell(zipPath)} -CompressionLevel Optimal
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead(${quotePowerShell(zipPath)})
+$entryCount = $zip.Entries.Count
+$zip.Dispose()
+if ($entryCount -lt 3) { throw "Release zip has too few entries: $entryCount" }
+`;
+
+  const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { stdio: "pipe", encoding: "utf8" });
+  if (result.status !== 0) {
+    const fallback = spawnSync("powershell", ["-NoProfile", "-Command", command], { stdio: "pipe", encoding: "utf8" });
+    if (fallback.status !== 0) {
+      throw new Error(`Failed to create release zip:\n${result.stderr || result.stdout}\n${fallback.stderr || fallback.stdout}`);
+    }
+  }
+}
+
+function quotePowerShell(value) {
+  return `'${value.replace(/'/g, "''")}'`;
+}

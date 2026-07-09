@@ -1105,3 +1105,19 @@ Resolved after confirmation:
 - Guardrail:
   - This is a preview workflow / UI validation convention only.
   - Do not change protected speaker, array-mic, topology, wiring, cable-quantity, device-quantity, presales-draft, or release clean-state rules under this requirement.
+
+### 2026-07-09 Release Artifact GitHub Sync Reminder
+
+- User requirement:
+  - Every packaged release version must be synced to GitHub under `zhanghao1556/shouqianAPP`.
+  - Release directories and release zip files are final deliverables, not disposable staging files.
+  - Same-day repeated packaging must not overwrite old packages.
+- Naming rule:
+  - Same-day packages append a sequence after the date, such as `260709-1`, `260709-2`, `260709-3`.
+  - Release verification should always target the latest release directory and must not stay hardcoded to an old date.
+- Git rule:
+  - Release artifacts must be included in the release checkpoint commit and pushed to GitHub.
+  - If push fails, report the local commit hash, ahead count, and failure reason; retry after command-line GitHub access recovers.
+- Guardrail:
+  - This is release workflow / artifact tracking only.
+  - Do not change application behavior, release clean-state logic, presales draft persistence, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, or device quantity logic under this requirement.

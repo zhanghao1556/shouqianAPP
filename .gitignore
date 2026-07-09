@@ -10,7 +10,10 @@ vite-dev.err.log
 .git-invalid-*/
 work/
 output/
-outputs/
+outputs/*
+!outputs/音翼AI售前工具-*.zip
+!outputs/音翼AI售前工具-*-内部测试版-*-*/
+!outputs/音翼AI售前工具-*-内部测试版-*-*/**
 
 # Large source/reference documents kept outside git by default
 docx_2/

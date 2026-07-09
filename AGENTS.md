@@ -118,6 +118,13 @@
 
 不得跳过每日收工流程直接打包。发布包必须放在整个流程最后生成。
 
+所有发布版本都必须同步到 GitHub：
+
+- 发布包目录和发布 zip 属于最终交付物，必须随发布 checkpoint 一起提交并推送到 `zhanghao1556/shouqianAPP`。
+- 同一天多次打包发布时，不得覆盖旧发布包；发布目录和 zip 名称必须在日期后追加递增序号，例如 `260709-1`、`260709-2`、`260709-3`。
+- 发布验证脚本必须针对最新发布目录运行，不能写死旧日期。
+- 如果 GitHub 推送失败，必须明确告诉用户本地提交号、ahead 数量和失败原因；网络恢复后要继续推送，直到 `main` 与 `origin/main` 同步。
+
 ## Backup Retention
 
 Daily closing backups must keep only the newest one valid `.codex-backups` snapshot zip file. Create and verify the new snapshot first, then delete only backup zip files older than the newest valid snapshot.

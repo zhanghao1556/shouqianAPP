@@ -4479,3 +4479,52 @@ Boundary:
 - Git sync failure record only. No release artifacts, application code, protected speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantity logic, presales draft persistence, or release clean-state behavior was changed by this note.
 
 Timestamp: 2026-07-08 21:33:00
+
+Goal:
+
+Require every packaged release to be synced to GitHub with same-day sequence numbers.
+
+Actions:
+
+- User requested that all future packaged release versions must be published / synced to `zhanghao1556/shouqianAPP`.
+- Added the rule to `AGENTS.md`:
+  - final release directories and release zip files are release deliverables and must be committed / pushed with the release checkpoint;
+  - same-day repeated packages must not overwrite each other;
+  - same-day release names append an increasing date suffix such as `260709-1`, `260709-2`, `260709-3`;
+  - release verification scripts must target the latest release directory instead of a hardcoded old date;
+  - if GitHub push fails, report the local commit, ahead count, and retry when network recovers.
+- Updated `scripts/build-universal-release.mjs`:
+  - release date is now dynamic from the current date;
+  - same-day release index is automatically incremented;
+  - output directory names now use `音翼AI售前工具-1.1-内部测试版-YYMMDD-N`.
+- Updated `scripts/test-release-mobile-compat.mjs`:
+  - automatically locates the latest release directory;
+  - keeps compatibility with the old no-sequence `260708` release directory.
+- Updated `.gitignore`:
+  - keeps general `outputs` staging files ignored;
+  - allows final release zip files and final release directories to be tracked by Git.
+
+Boundary:
+
+- Release workflow / packaging artifact tracking only. No application behavior, release clean-state logic, presales draft persistence, speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, or device quantity logic was changed.
+
+Timestamp: 2026-07-09 00:00:00
+
+Verification / result:
+
+- `npm.cmd run build` passed.
+- `node --check scripts/build-universal-release.mjs` passed.
+- `node --check scripts/test-release-mobile-compat.mjs` passed.
+- `npm.cmd run release:universal` generated the first sequenced release for the day:
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-1`
+  - `outputs/音翼AI售前工具-1.1-内部测试版-260709-1.zip`
+- `npm.cmd run test:release-mobile` passed and automatically targeted the latest valid release directory.
+- Release output scan found no `翼欧`, `AP150`, `YM-AP150`, `ap150`, or known mojibake matches in the new release output.
+- `.gitignore` was narrowed so Git tracks final release zip files and future sequenced release directories, while keeping general `outputs` staging content ignored.
+- The old no-sequence `260708` release zip is now eligible for Git tracking as the previous final package; its locally abnormal extracted directory remains ignored.
+
+Boundary:
+
+- Verification / release artifact tracking only. No protected business rules or app behavior were changed.
+
+Timestamp: 2026-07-09 10:02:00

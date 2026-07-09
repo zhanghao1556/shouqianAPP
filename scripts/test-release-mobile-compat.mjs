@@ -4,13 +4,41 @@ import path from "node:path";
 import { chromium, devices, webkit } from "playwright";
 
 const root = process.cwd();
-const releaseDate = "260708";
-const releaseDir = path.join(root, "outputs", `音翼AI售前工具-1.1-内部测试版-${releaseDate}`);
 const releaseHtml = "音翼AI售前工具-1.1.html";
+const releaseDir = getLatestReleaseDir();
 const releasePath = path.join(releaseDir, releaseHtml);
 
 if (!fs.existsSync(releasePath)) {
   throw new Error(`Release HTML not found: ${releasePath}`);
+}
+
+function getLatestReleaseDir() {
+  const outputsDir = path.join(root, "outputs");
+  const releasePattern = /^音翼AI售前工具-1\.1-内部测试版-(\d{6})(?:-(\d+))?$/;
+  if (!fs.existsSync(outputsDir)) {
+    throw new Error(`Outputs directory not found: ${outputsDir}`);
+  }
+  const candidates = fs
+    .readdirSync(outputsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const match = entry.name.match(releasePattern);
+      if (!match) return null;
+      const fullPath = path.join(outputsDir, entry.name);
+      if (!fs.existsSync(path.join(fullPath, releaseHtml))) return null;
+      return {
+        fullPath,
+        date: Number(match[1]),
+        index: match[2] ? Number(match[2]) : 0,
+        mtimeMs: fs.statSync(fullPath).mtimeMs
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.date - a.date || b.index - a.index || b.mtimeMs - a.mtimeMs);
+  if (!candidates.length) {
+    throw new Error(`No release directory found under ${outputsDir}`);
+  }
+  return candidates[0].fullPath;
 }
 
 const html = fs.readFileSync(releasePath, "utf8");
