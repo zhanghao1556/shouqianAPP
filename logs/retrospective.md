@@ -1346,3 +1346,26 @@ Guardrail:
 Guardrail:
 
 - If a future release fails with `forbiddenAssetMatches`, do not bypass the verifier. Fix the asset replacement path and regenerate a new release sequence.
+
+### 2026-07-10 Release Brand-Class Replacement Mistake
+
+- Mistake:
+  - The `260709-8` Yinyi release package looked like Yinyi by title, but rendered blue.
+  - Root cause was global replacement of internal lowercase brand identifiers during release packaging.
+  - The replacement changed runtime CSS / class strings such as `yinmanShell` into `yinyiShell`, so the Yinman blue CSS selector effectively got attached to the Yinyi page.
+- Correct rule:
+  - Do not globally replace internal lowercase brand identifiers such as `yinman`, `yinyi`, `Yinman`, or `Yinyi` inside final HTML / JS / CSS.
+  - Brand separation should replace only customer-visible brand copy and forbidden cross-brand image data URIs / asset references.
+  - Internal runtime identifiers are allowed to coexist in bundled code when they are part of the shared dual-brand app, as long as the rendered package selects the correct active brand.
+- Verification required:
+  - For Yinyi release, verify actual rendered `main` / `header` classes are `yiouShell` / `yiouHeader` and brand color is green `#00a870`.
+  - For Yinman release, verify actual rendered `main` / `header` classes are `yinmanShell` / `yinmanHeader` and brand color is blue `#4f7dff`.
+  - Do not rely only on page title, visible Chinese text, or base64 asset checks.
+- Artifact rule:
+  - If a released package is found to have a brand theme regression, remove or clearly supersede that package from `outputs` and regenerate a new same-day sequence.
+  - The valid replacement for the bad `260709-8` release is `260710-1`.
+
+Guardrail:
+
+- This is a release packaging / verification rule only.
+- Do not change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior while fixing this class of release issue.

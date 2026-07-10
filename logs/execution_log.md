@@ -5339,3 +5339,66 @@ Boundary:
 
 - Release packaging, brand-asset isolation, and release verification only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, avoidance / reflow, topology routing, wiring generation, cable quantity, device quantity, presales draft behavior, or release clean-state logic was changed.
+
+Timestamp: 2026-07-10 00:20:00
+
+Goal:
+
+Fix the Yinyi release package color regression reported by the user.
+
+Finding:
+
+- Development page `5174` still rendered as Yinyi:
+  - title `音翼AI售前工具`;
+  - `mainClass = engineeringShell yiouShell`;
+  - `headerClass = engineeringHeader yiouHeader`;
+  - `--color-brand = #00a870`.
+- The `260709-8` Yinyi release package rendered incorrectly:
+  - title remained `音翼AI售前工具`;
+  - but `mainClass = engineeringShell yinyiShell`;
+  - `headerClass = engineeringHeader yinyiHeader`;
+  - `--color-brand = #4f7dff`.
+- Root cause:
+  - To enforce brand isolation, the release script globally replaced internal lowercase `yinman` / `Yinman` tokens in the Yinyi HTML.
+  - That accidentally renamed runtime CSS class strings such as `yinmanShell` into `yinyiShell`.
+  - The matching CSS selector was also renamed, so the Yinman blue theme became attached to the Yinyi release page.
+
+Fix:
+
+- Updated `scripts/build-single-file-release.mjs`:
+  - no longer globally replaces internal lowercase brand IDs such as `yinman`, `yinyi`, `Yinman`, or `Yinyi`;
+  - still replaces visible brand copy and forbidden cross-brand image data URIs.
+- Updated `scripts/verify-release-current.mjs`:
+  - no longer treats internal lowercase brand identifiers as forbidden by themselves;
+  - still blocks visible cross-brand Chinese copy, formal English producer strings, forbidden model text, and forbidden cross-brand image base64.
+
+Boundary:
+
+- Release script and release verification correction only.
+- No source app brand behavior, speaker rules, array-mic rules, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior was changed.
+
+Follow-up:
+
+- Regenerated corrected dual-brand release packages as `260710-1`.
+- Verified the corrected Yinyi package renders with:
+  - title `音翼AI售前工具`;
+  - `mainClass = engineeringShell yiouShell`;
+  - `headerClass = engineeringHeader yiouHeader`;
+  - `--color-brand = #00a870`.
+- Verified the corrected Yinman package renders with:
+  - title `音曼AI售前工具`;
+  - `mainClass = engineeringShell yinmanShell`;
+  - `headerClass = engineeringHeader yinmanHeader`;
+  - `--color-brand = #4f7dff`.
+- `npm.cmd run release:all` passed for `260710-1`.
+- `npm.cmd run test:release-mobile -- --brand yinyi` passed.
+- `npm.cmd run test:release-mobile -- --brand yinman` passed.
+- Removed the superseded / bad `260709-8` release directories and zip files from `outputs` so they are not accidentally delivered.
+- During cleanup, a complex inline `pwsh -Command` deletion command hit the known PowerShell variable parsing problem and failed before deleting anything; corrected by using simple one-target `Remove-Item -LiteralPath` commands. This confirms the existing rule: avoid complex nested PowerShell one-liners for file operations.
+
+Current valid release artifacts:
+
+- `outputs/音翼AI售前工具-1.1-内部测试版-260710-1`
+- `outputs/音翼AI售前工具-1.1-内部测试版-260710-1.zip`
+- `outputs/音曼AI售前工具-1.1-内部测试版-260710-1`
+- `outputs/音曼AI售前工具-1.1-内部测试版-260710-1.zip`

@@ -166,8 +166,6 @@ function transformBrandText(value) {
       .replace(/音曼AI售前工具/g, "音翼AI售前工具")
       .replace(/音曼售前方案/g, "音翼售前方案")
       .replace(/音曼/g, "音翼")
-      .replace(/yinman/g, "yinyi")
-      .replace(/Yinman/g, "Yinyi")
       .replace(/Yinman AI Presales Tool/g, "Yinyi AI Presales Tool");
   }
   return value
@@ -176,7 +174,5 @@ function transformBrandText(value) {
     .replace(/DT2 Pro/g, "智能语音阵列麦克风")
     .replace(/音翼科技/g, "音曼")
     .replace(/音翼/g, "音曼")
-    .replace(/yinyi/g, "yinman")
-    .replace(/Yinyi/g, "Yinman")
     .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");
 }
