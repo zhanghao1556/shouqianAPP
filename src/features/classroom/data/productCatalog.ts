@@ -40,12 +40,12 @@ export const classroomProductRules: ClassroomProductRule[] = [
   },
   {
     productId: "WIRELESS-HANDHELD",
-    name: "音翼无线手持麦",
+    name: "AWM301/WP1 无线手持麦克风系统",
     category: "wireless",
     applyWhen: [],
-    source: "WP1 手持麦安装注意事项及接口说明、手持麦克风系统应用方案",
-    installation: "房间混响风险较高时，接收机放置在授课区设备侧，手持麦用于主持、问答和临时发言，减少远距离拾音受混响影响。",
-    wiring: "接收机优先使用 LINE OUT RCA 输出，接入 DT 系列模拟输入 L/R/G；也可按现场接口使用 BAL OUT。"
+    source: "AWM301_T/R 整机规格书、WP1 手持麦安装注意事项及接口说明、手持麦克风系统应用方案",
+    installation: "接收机放置在讲台、设备柜或音频设备区，UHF、2.4G 和红外相关天线需引出金属柜并保持无遮挡；手持麦用于授课、主持、问答和临时发言，建议按 15m 以内最佳使用距离做现场复核。",
+    wiring: "接收机优先使用 LINE OUT RCA 输出，单接 L 或 R 即可；也可按现场接口使用 BAL OUT 平衡输出或 6.35mm 输出。音频输出接入 DT 系列模拟输入 L/R/G，USB-B 仅用于 PPT 翻页 / 电脑控制，不作为主音频链路。"
   },
   {
     productId: "YY-POWER-AMP",

@@ -5501,3 +5501,60 @@ Protected scope:
 - No speaker selection formula, speaker count rule, speaker point formula, array-mic count rule, or array-mic point formula was edited.
 - Existing consumers now use the confirmed shared reverberation result; the speaker-specific high-ceiling selector remains separate and unchanged.
 - No release package was generated and no GitHub push was performed.
+
+### Product-document audit shell-wrapper recurrence
+
+- While querying Chinese product-document names from the generated index, a complex inline `node -e` command was corrupted by PowerShell quote escaping and failed before reading or writing product data.
+- No source document, extracted index, application file, or rule was changed by the failed command.
+- Continued the audit with standalone UTF-8 helper scripts under the Git-ignored `work/product-doc-audit` directory.
+- Reconfirmed the existing rule: do not use nested inline PowerShell / Node commands for complex Chinese arrays or JSON payloads.
+
+### Product-document audit AWM301/WP1 calibration
+
+Goal:
+
+- Continue the `docx_2` product-document audit and apply low-risk product identity corrections for the Yinyi wireless handheld microphone system.
+
+Findings:
+
+- User clarified that `AWM301` and `WP1` are the same device family / product system, with different model names or variants.
+- Official documents support one product family composed of a handheld transmitter and a receiver:
+  - `AWM301_T` handheld transmitter;
+  - `AWM301_R` receiver;
+  - WP1 interface guide shows the same handheld / receiver usage pattern.
+- Existing app topology assets were generic:
+  - `topology-handheld-mic.png` was a black generic handheld microphone;
+  - `topology-wireless-receiver.png` was a generic dual-channel rack receiver with four antennas.
+
+Actions:
+
+- Updated `src/features/classroom/data/productCatalog.ts`:
+  - renamed `WIRELESS-HANDHELD` from `音翼无线手持麦` to `AWM301/WP1 无线手持麦克风系统`;
+  - expanded the source to include `AWM301_T/R 整机规格书`, WP1 interface guidance, and the handheld-system application plan;
+  - clarified receiver placement, antenna / line-of-sight requirements, and conservative 15m best-use guidance;
+  - clarified that receiver audio output should prefer `LINE OUT RCA` with one side connected, or use `BAL OUT` / `6.35mm` where needed, while USB-B is for PPT / computer control rather than the main audio chain.
+- Replaced the topology handheld and wireless receiver images with verified AWM301/WP1 source-document images.
+- Created `work/product-doc-audit/product-audit-recommendations.md` as the audit recommendation file:
+  - separates directly changed product facts from rule changes requiring user confirmation;
+  - records DT1 / DT2 / DT2 Pro positioning as unresolved;
+  - records AWM301 / WP1 default customer-facing naming and operating-distance promise as items for user confirmation;
+  - records the duplicate / old product architecture in `src/data/products.ts` as a future cleanup candidate.
+
+Shell / image-processing notes:
+
+- A complex `rg` command with a regex pipe was misparsed by the outer PowerShell command. No files were changed by the failed command.
+- A Bash-style here-doc attempt for Python also failed because PowerShell does not support that redirection syntax. No files were changed by the failed command.
+- A quick 5174 `Invoke-WebRequest` check that used `$_.Exception` in an inline `pwsh -Command` string was also misparsed by the outer command wrapper. No source file was changed by the failed command; the check was rerun with `curl.exe`.
+- Continued with a standalone UTF-8 Python helper under `work/product-doc-audit`.
+- First automatic background-removal attempt damaged the white handheld microphone because the white device body was too close to the gray background; corrected by using clean opaque crops instead of forcing transparent cutouts.
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` passed.
+- `curl.exe -I --max-time 5 http://127.0.0.1:5174/` returned `HTTP/1.1 200 OK`.
+
+Boundary:
+
+- Product name, product-source copy, wireless-handheld installation / wiring copy, verified topology asset identity, and audit recommendation documentation only.
+- No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.

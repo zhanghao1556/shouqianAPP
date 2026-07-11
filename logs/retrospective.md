@@ -1407,3 +1407,37 @@ Guardrail:
 - The shared assessment may affect existing linked array-mic clearance / install-height outputs, but do not change their formulas under reverberation calibration without separate confirmation.
 - Keep `scripts/verify-reverberation-rules.mjs` in the normal verification set whenever reverberation targets, inputs, confidence, or override logic changes.
 - Required UI regression set for this work remains `5174`, `5176`, `5177`, and `5180`; 5174 / 5180 must stay desktop-isolated and 5177 must remain a narrow mobile preview.
+
+### 2026-07-11 Product Audit Command Reminder
+
+- The PowerShell quote-parsing issue recurred when a long inline `node -e` command embedded a JSON array of Chinese filenames.
+- For product-document audits, write a standalone UTF-8 helper under `work/product-doc-audit` and pass file paths as normal arguments.
+- Treat an inline parser failure as a shell-wrapper problem first; do not infer that Chinese filenames or document contents are damaged.
+- Avoid inline PowerShell verification commands that contain `$_.Exception`; the outer command wrapper may strip or pre-parse `$_`. Use `curl.exe`, a simple script, or a variable-free command for HTTP checks.
+
+### 2026-07-11 Product Audit AWM301/WP1 Reminder
+
+- AWM301 and WP1 should be treated as one Yinyi wireless handheld microphone system / product family unless the user later provides a commercial split.
+- The current safe customer-facing name is `AWM301/WP1 无线手持麦克风系统`; a cleaner public name such as `无线手持麦克风系统` still needs user confirmation.
+- The system consists of a handheld transmitter and a receiver. Do not model AWM301 and WP1 as unrelated devices.
+- Wireless handheld topology should use:
+  - handheld transmitter -> receiver as wireless signal;
+  - receiver -> DT / original audio system as audio line.
+- Receiver audio output priority from the documents:
+  - prefer `LINE OUT RCA`, usually connect only L or only R;
+  - `BAL OUT` and `6.35mm` are valid depending on the field interface;
+  - USB-B is for PPT / computer control or program/debug use, not the main audio link.
+- Distance claims conflict across documents:
+  - 15m is the best-use recommendation;
+  - around 20m is normal-use guidance;
+  - 30m is an unobstructed / no-interference specification;
+  - 50m appears as marketing copy.
+- Use conservative wording in customer-facing output until the user confirms the sales promise.
+- Product assets matter: the old generic black handheld and generic rack receiver did not match the AWM301/WP1 family and should not be restored.
+- White product photos are difficult to cut out from gray / white backgrounds with simple color-key removal. Prefer clean opaque crops unless using a stronger verified cutout workflow.
+
+Guardrail:
+
+- Product facts and product images can be corrected from official documents.
+- Do not turn DT1 / DT2 / DT2 Pro product-positioning differences, wireless operating-distance promises, or YY-URO1 auto-inclusion into production rules until the user confirms the intended sales / delivery口径.
+- Do not use this audit to change speaker selection, speaker quantity, speaker coordinates, array-mic count, array-mic coordinates, topology routing, wiring generation, or cable quantity rules.
