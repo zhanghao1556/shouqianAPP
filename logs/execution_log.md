@@ -5558,3 +5558,45 @@ Boundary:
 
 - Product name, product-source copy, wireless-handheld installation / wiring copy, verified topology asset identity, and audit recommendation documentation only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.
+
+### OEM-facing presales model-name hiding rule
+
+Goal:
+
+- User clarified that the presales software must never expose concrete product model names because Yinyi is a source manufacturer serving large customers and OEM scenarios.
+
+Confirmed rule:
+
+- Customer-facing software output should always use generic product names such as `智能语音阵列麦克风`, `无线手持麦克风系统`, `教学模拟功放主机`, `吸顶音箱`, and `壁挂音柱`.
+- Concrete model names such as `DT1`, `DT2`, `DT2 Pro`, `AWM301`, `WP1`, `AP150`, and `YY-URO1` are internal-only.
+- Internal model names may remain in code IDs, internal source references, logs, audit files, and verification blacklists, but must not render in the customer-facing page, drawings, reports, release package copy, README, or software outline.
+
+Actions:
+
+- Added the model-hiding rule to `AGENTS.md`.
+- Changed active classroom product display names:
+  - array mic displays as `智能语音阵列麦克风`;
+  - wireless handheld displays as `无线手持麦克风系统`;
+  - USB extender / amplifier copy uses generic wording.
+- Removed customer-visible `DT2 Pro` / `AWM301/WP1` / `DT` wording from:
+  - product catalog names and wiring copy;
+  - point-map array-mic labels;
+  - report cover product scope;
+  - wiring / topology notes;
+  - audio plan and risk wording;
+  - drawing legend;
+  - speaker-capacity summary wording;
+  - the older product rules' display names.
+- Kept internal product IDs such as `DT2-Pro`, `YM-AWM301`, and `YY-URO1` unchanged for code stability.
+
+Verification:
+
+- Source scan found remaining model strings only in internal safeguards / internal IDs:
+  - `brand.ts` model-name replacement fallback;
+  - internal product IDs;
+  - internal speaker capacity constants.
+
+Boundary:
+
+- Customer-visible naming and process-rule documentation only.
+- No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.

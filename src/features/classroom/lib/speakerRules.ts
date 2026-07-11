@@ -175,7 +175,7 @@ export const getSpeakerCapacityText = (speakerName = "音箱") =>
 
 export const getExternalAmplifierSummary = (quantity: number) => {
   const externalSpeakerCount = getExternalSpeakerCount(quantity);
-  if (externalSpeakerCount <= 0) return "音箱数量未超过 DT 内置 SPK 输出容量，无需外接扩展功放。";
+  if (externalSpeakerCount <= 0) return "音箱数量未超过阵列麦主机内置 SPK 输出容量，无需外接扩展功放。";
   const amplifierCount = getExternalAmplifierCountForSpeakers(quantity);
   const expandedSpeakerCount = Math.min(externalSpeakerCount, EXTERNAL_AMPLIFIER_SPEAKER_CAPACITY);
   const channelCount = getExternalAmplifierChannelCountForSpeakers(quantity);
@@ -190,7 +190,7 @@ export const getSpeakerOutputSummary = (quantity: number) => {
   if (quantity <= 0) return "未配置新增音箱。";
   const usedOutputCount = getUsedSpeakerOutputCount(quantity);
   const externalText = hasSpeakerCapacityOverflow(quantity) ? `；${getExternalAmplifierSummary(quantity)}` : "";
-  return `共 ${quantity} 只，其中 ${Math.min(quantity, MAX_SPEAKERS_PER_DT)} 只使用 DT 内置 SPK 输出，占用 ${usedOutputCount} / ${DT_SPK_OUTPUT_COUNT} 路 SPK 功放输出；每路最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只${externalText}。`;
+  return `共 ${quantity} 只，其中 ${Math.min(quantity, MAX_SPEAKERS_PER_DT)} 只使用阵列麦主机内置 SPK 输出，占用 ${usedOutputCount} / ${DT_SPK_OUTPUT_COUNT} 路 SPK 功放输出；每路最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只${externalText}。`;
 };
 
 export const allocateSpeakerOutputs = (speakerLabels: string[]) => {

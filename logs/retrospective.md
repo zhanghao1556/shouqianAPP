@@ -1418,7 +1418,8 @@ Guardrail:
 ### 2026-07-11 Product Audit AWM301/WP1 Reminder
 
 - AWM301 and WP1 should be treated as one Yinyi wireless handheld microphone system / product family unless the user later provides a commercial split.
-- The current safe customer-facing name is `AWM301/WP1 无线手持麦克风系统`; a cleaner public name such as `无线手持麦克风系统` still needs user confirmation.
+- User confirmed the presales app must never expose concrete model names because Yinyi is a source manufacturer serving large customers and OEM scenarios.
+- The customer-facing name is `无线手持麦克风系统`; do not show `AWM301` or `WP1` in the page, reports, drawings, release copy, README, or software outline.
 - The system consists of a handheld transmitter and a receiver. Do not model AWM301 and WP1 as unrelated devices.
 - Wireless handheld topology should use:
   - handheld transmitter -> receiver as wireless signal;
@@ -1439,5 +1440,7 @@ Guardrail:
 Guardrail:
 
 - Product facts and product images can be corrected from official documents.
-- Do not turn DT1 / DT2 / DT2 Pro product-positioning differences, wireless operating-distance promises, or YY-URO1 auto-inclusion into production rules until the user confirms the intended sales / delivery口径.
+- Do not expose concrete model names in customer-facing software. Use generic product names such as `智能语音阵列麦克风`, `无线手持麦克风系统`, `教学模拟功放主机`, `吸顶音箱`, and `壁挂音柱`.
+- Concrete model names such as `DT1`, `DT2`, `DT2 Pro`, `AWM301`, `WP1`, `AP150`, and `YY-URO1` are allowed only in internal product IDs, internal source references, logs, product audit files, calibration notes, and verification blacklists.
+- Do not turn internal model-positioning differences, wireless operating-distance promises, or USB extender auto-inclusion into production rules until the user confirms the intended sales / delivery口径.
 - Do not use this audit to change speaker selection, speaker quantity, speaker coordinates, array-mic count, array-mic coordinates, topology routing, wiring generation, or cable quantity rules.

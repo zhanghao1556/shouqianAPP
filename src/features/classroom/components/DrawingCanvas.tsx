@@ -4268,7 +4268,7 @@ function Legend({ micOnly = false, hasManualArrayMic = false }: { micOnly?: bool
   return (
     <div className="canvasLegend">
       <span>
-        <i style={{ background: "#00a6a6" }} /> DT 阵列麦
+        <i style={{ background: "#00a6a6" }} /> 智能语音阵列麦克风
       </span>
       {hasManualArrayMic && (
         <span>

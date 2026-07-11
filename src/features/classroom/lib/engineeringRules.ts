@@ -148,7 +148,7 @@ export const generateEngineeringOutputs = (profile: ClassroomProfile, quantityOv
       ]
     },
     { title: "接口接线图", type: "wiring" as const, notes: ["按产品资料生成接口级连接关系，无需销售补充线路路径。"] },
-    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、DT 阵列麦、电脑 / 录播平台和音箱之间的系统链路。"] }
+    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、智能语音阵列麦克风、电脑 / 录播平台和音箱之间的系统链路。"] }
   ];
   const report = {
     pdfReportModel: {
@@ -189,7 +189,7 @@ const getAudioPlan = (profile: ClassroomProfile, points: GeneratedPoint[], acous
   return {
     mode,
     summary:
-      "本方案以 DT 阵列麦作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
+      "本方案以智能语音阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
     pickupGoal: hasOnline
       ? oversizedForFullRoomAmp
         ? `面向远程互动、录播或会议平台，后场以线上拾音为主；线上拾音半径按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 作为点位复核依据，优先保证教师区和后场发言清晰。`
@@ -207,7 +207,7 @@ const getAudioPlan = (profile: ClassroomProfile, points: GeneratedPoint[], acous
     areaBoundary: getAreaBoundary(profile, area, arrayCount),
     environmentBoundary: `建议背景噪声不高于 45dBSPL，混响时间控制在 800ms 以内；若采用精品分区均衡扩音模式，建议混响时间控制在 600ms 以内。当前声学评估为：${acousticAssessment.label}。`,
     tuning: [
-      "调试前确认 DT 固件和调试软件版本，完成设备联网、供电、USB / 模拟音频链路检查。",
+      "调试前确认阵列麦主机固件和调试软件版本，完成设备联网、供电、USB / 模拟音频链路检查。",
       `按场景选择声场模式：${mode}。需要同时线上采集和本地扩声时，优先选择兼容拾音与扩音的模式。`,
       "先执行一键自适应声场调音，再微调输入、输出、均衡、反馈抑制和噪声抑制参数。",
       "调音完成后保存 Flash / 场景参数；若接入中控或遥控器，现场复核模式切换和音量控制。",
@@ -237,7 +237,7 @@ const getEffectiveAmplificationScopeText = (profile: ClassroomProfile) => {
 
 const getAreaBoundary = (profile: ClassroomProfile, area: number, arrayCount: number) => {
   if (area <= 0) return "待补充房间尺寸后判断声场适用边界。";
-  if (area < 60) return "面积小于 60 平方米，DT 阵列麦可用但产品价值不易完全发挥，仍需结合客户预算判断扩声收益。";
+  if (area < 60) return "面积小于 60 平方米，智能语音阵列麦克风可用但产品价值不易完全发挥，仍需结合客户预算判断扩声收益。";
   if (area <= 80) return "面积处于 60-80 平方米，适合单麦方案；后排听感和拾音清晰度需在复勘或调试时确认。";
   if (isOversizedForFullRoomAmplification(profile)) {
     return `按房间长宽估算，若坚持全场本地扩声约需 ${getRequiredArrayMicCountForFullRoomAmplification(profile)} 只阵麦，已超过一主四从 5 只上限；提示无法做全场扩声，建议改为${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"} + 全场线上拾音，并按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 线上拾音半径复核。`;
@@ -250,7 +250,7 @@ const getAreaBoundary = (profile: ClassroomProfile, area: number, arrayCount: nu
   if (profile.roomGeometry.length <= 9) return arrayCount >= 2 ? "房间纵深小于等于约 9m，当前因互动、后排发言或特殊采集需求增加从麦；复勘时重点确认后排座位、两侧座位和啸叫余量。" : "房间纵深小于等于约 9m，主麦安装在前墙约 3m 后，按 5m 最佳理想扩声距离可优先单麦覆盖教师区与主要听音区。";
   if (profile.roomGeometry.length <= 16) return arrayCount >= 2 ? "房间纵深约 9-16m，已增加从麦用于补强中后区；5m 是最佳理想扩声距离而非硬边界，复勘时需重点试听中后区清晰度。" : "房间纵深约 9-16m，当前仍为单麦方案，需现场复核后排听感；若全场扩声、录播或学生发言要求较高，建议评估 2 麦。";
   if (area <= 150) return arrayCount >= 3 ? "房间纵深超过 16m，已按 3 麦级联覆盖前场、中区和后场；需复核中后区发言和两侧座位覆盖。" : "房间纵深超过 16m，中后区与后场座位会影响阵麦数量。";
-  return "面积超过 150 平方米，单套 DT 阵列麦和吸顶音箱难以完全覆盖，建议拆分声区或转为专项声场设计。";
+  return "面积超过 150 平方米，单套智能语音阵列麦克风和吸顶音箱难以完全覆盖，建议拆分声区或转为专项声场设计。";
 };
 
 export const getInstallationGuide = (profile: ClassroomProfile, points: GeneratedPoint[]): InstallationGuideItem[] =>
@@ -473,7 +473,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
     risks.push("利旧壁挂可调角度会影响阵麦啸叫余量。");
   }
   if (hasSpeakerCapacityOverflow(points.filter((item) => item.type === "speaker").length)) {
-    risks.push("音箱点位数量会影响 DT / 扩展功放配置。");
+    risks.push("音箱点位数量会影响阵列麦主机 / 扩展功放配置。");
   }
   const speakerCount = points.filter((item) => item.type === "speaker").length;
   if (hasRecommendedSpeakerSystemOverflow(speakerCount)) {
@@ -505,7 +505,7 @@ export const getReviewItems = (profile: ClassroomProfile, completeness: Complete
   "阵麦数量会影响后场和两侧座位拾音覆盖。",
   `扩声范围“${getEffectiveAmplificationScopeText(profile)}”会影响音箱数量和点位。`,
   "已有设备信息会影响系统接入方式。",
-  "接口信息会影响 DT 接入和功放输出。",
+  "接口信息会影响阵列麦主机接入和功放输出。",
   profile.needs.includes("recording")
     ? "录播平台信息会影响阵麦音频接入方式。"
     : "录播扩展信息会影响阵麦音频接入方式。"
@@ -557,7 +557,7 @@ export const getEngineeringBasis = (
     result: acousticAssessment.label
   },
   {
-    item: "DT 阵列麦点位",
+    item: "智能语音阵列麦克风点位",
     basis: "教师活动区、录播 / 互动需求、教室面积、混响风险",
     result: points.filter((item) => item.type === "arrayMic").map((item) => item.label).join("、") || "未选择阵列麦需求"
   },
@@ -570,7 +570,7 @@ export const getEngineeringBasis = (
   },
   {
     item: "接口连接",
-    basis: "DT 系列说明书、WP1 手持麦接口说明、功放输出端子定义",
+    basis: "智能语音阵列麦克风产品资料、无线手持麦接口说明、功放输出端子定义",
     result: `${connectionCount} 条接口级连接`
   },
   ...selection.map((item) => ({

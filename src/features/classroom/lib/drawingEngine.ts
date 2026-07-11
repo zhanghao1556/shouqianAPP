@@ -143,13 +143,13 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         type: "arrayMic",
         label: isMeeting
           ? isTeacherMic
-            ? "DT2 Pro 会议区阵列麦"
-            : "DT2 Pro 会议区补充阵列麦"
+            ? "会议区阵列麦"
+            : "会议区补充阵列麦"
           : isTeacherMic
-          ? "DT2 Pro 教师区阵列麦"
+          ? "教师区阵列麦"
           : isRearRow
-            ? "DT2 Pro 后场补充阵列麦"
-            : "DT2 Pro 学生区补充阵列麦",
+            ? "后场补充阵列麦"
+            : "学生区补充阵列麦",
         position: { x: position.x, y: position.y },
         installHeight: arrayMicInstallHeight,
         reason:
@@ -1642,7 +1642,7 @@ const getPodiumSpeakerRowsReason = (profile: ClassroomProfile, speakerCount: num
   const singleRowText = rearFillRows === 1 && rearDepth >= 6.9 && rearDepth <= 8 ? "后场 1 排在 D=6.9-8m 时按 D 线性过渡，D=6.9m 为主麦后 1m，D=8m 为离后墙约 6m；" : "";
   const cappedText =
     rearFillRows >= WALL_SPEAKER_MAX_REAR_FILL_ROWS
-      ? `已达到单套 DT + 1 台扩展功放的推荐上限 ${RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER} 只，若仍覆盖不足需拆区或增加系统；`
+      ? `已达到单套阵列麦主机 + 1 台扩展功放的推荐上限 ${RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER} 只，若仍覆盖不足需拆区或增加系统；`
       : "";
   return `前墙补声/监听组不计入后场排数，按主麦到后墙约 ${rearDepth}m、壁挂最大覆盖半径 ${WALL_SPEAKER_MAX_COVERAGE_RADIUS_M}m 和后排覆盖递增规则判定后场补声 ${rearFillRows} 排；${singleRowText}${cappedText}最后一排离后墙硬下限为 ${getWallColumnBackWallHardLimit(rearFillRows, rearDepth).toFixed(1)}m；`;
 };

@@ -54,7 +54,7 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
       id: "cover",
       type: "cover",
       title: profile.projectName || "音翼教室音频方案",
-      body: `${yiouBrand.fullName}\n客户：${profile.customerName || "待补充"}\n产品范围：DT2 Pro / 吸顶音箱 / 音柱 / 无线手持麦 / 教学模拟功放主机\n图纸格式：PNG 图片\n生成时间：${date}`
+      body: `${yiouBrand.fullName}\n客户：${profile.customerName || "待补充"}\n产品范围：智能语音阵列麦克风 / 吸顶音箱 / 音柱 / 无线手持麦 / 教学模拟功放主机\n图纸格式：PNG 图片\n生成时间：${date}`
     },
     {
       id: "profile",

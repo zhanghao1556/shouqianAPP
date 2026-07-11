@@ -49,7 +49,7 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
       toDevice: usbDevice,
       toPort: "USB 音频接口",
       cableType: "标配USB线",
-      note: "DT 系列说明书：数字输入 / 输出接口使用 USB Type-B，承载数字音频输入 / 输出。"
+      note: "阵列麦主机数字输入 / 输出接口使用 USB Type-B，承载数字音频输入 / 输出。"
     });
   }
 
@@ -77,7 +77,7 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
       toDevice: device,
       toPort: "音频输入",
       cableType: "音频线",
-      note: "录播主机使用音频线接入 DT 模拟输出。"
+      note: "录播主机使用音频线接入阵列麦主机模拟输出。"
     });
   });
 
@@ -104,7 +104,7 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
       toDevice: `无线接收机 × ${wirelessMicrophones.length}`,
       toPort: "无线接收",
       cableType: "无线信号",
-      note: "无线话筒先到无线接收机，接收机再输出音频到 DT 模拟输入。"
+      note: "无线话筒先到无线接收机，接收机再输出音频到阵列麦主机模拟输入。"
     });
   });
 
@@ -160,7 +160,7 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
       toDevice: `${speakerMode} SPK1 单声道分组`,
       toPort: "音箱 + / -",
       cableType: "音箱线",
-      note: `无感扩声为单声道扩声，不区分左右声道；DT 阵麦共有 ${DT_SPK_OUTPUT_COUNT} 路 SPK 功放输出，每路最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只音箱；音箱端保持极性一致。${getSpeakerOutputSummary(speakerCount)}`
+      note: `无感扩声为单声道扩声，不区分左右声道；阵列麦主机共有 ${DT_SPK_OUTPUT_COUNT} 路 SPK 功放输出，每路最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只音箱；音箱端保持极性一致。${getSpeakerOutputSummary(speakerCount)}`
     });
     lines.push({
       id: "dt-speaker-group-2",
@@ -334,7 +334,7 @@ function applyAudioLineCapacityRules(lines: ConnectionLine[], dtName: string) {
           ...line,
           toPort: `${line.toPort}（Line In超4）`,
           cableType: "无法接入（Line In超4）",
-          note: `${line.note} DT Line In 上限为 ${DT_AUDIO_LINE_IN_LIMIT} 路，超过上限的输入无法直接接入。`
+          note: `${line.note} 阵列麦主机 Line In 上限为 ${DT_AUDIO_LINE_IN_LIMIT} 路，超过上限的输入无法直接接入。`
         };
       }
     }
@@ -344,7 +344,7 @@ function applyAudioLineCapacityRules(lines: ConnectionLine[], dtName: string) {
         ...line,
         fromPort: `${line.fromPort}（Line Out超4并联）`,
         cableType: `${line.cableType}（Line Out并联）`,
-        note: `${line.note} DT Line Out 上限为 ${DT_AUDIO_LINE_OUT_LIMIT} 路；输出为相同 AFC / AEC 信号时，超过上限可并联。`
+        note: `${line.note} 阵列麦主机 Line Out 上限为 ${DT_AUDIO_LINE_OUT_LIMIT} 路；输出为相同 AFC / AEC 信号时，超过上限可并联。`
       };
     }
 
@@ -397,8 +397,8 @@ function isWirelessMicrophoneDevice(device: string) {
 }
 
 function getExternalMicrophoneConnectionNote(device: string) {
-  if (device.includes("无线接收机")) return "无线接收机信号输出优先使用 LINE OUT RCA；DT 系列模拟输入为 L/R/G。";
-  if (isWirelessMicrophoneDevice(device)) return "现场外接无线手持麦需复核接收机输出接口，优先接入 DT 模拟输入 L/R/G。";
-  if (device.includes("有线")) return "DT 模拟输入不提供幻象供电；有线麦克风需自供电或由前级设备供电，并向 DT 提供线路 / 麦克风音频信号。";
-  return "外接麦克风需复核前级输出接口，优先接入 DT 模拟输入 L/R/G。";
+  if (device.includes("无线接收机")) return "无线接收机信号输出优先使用 LINE OUT RCA；阵列麦主机模拟输入为 L/R/G。";
+  if (isWirelessMicrophoneDevice(device)) return "现场外接无线手持麦需复核接收机输出接口，优先接入阵列麦主机模拟输入 L/R/G。";
+  if (device.includes("有线")) return "阵列麦主机模拟输入不提供幻象供电；有线麦克风需自供电或由前级设备供电，并向阵列麦主机提供线路 / 麦克风音频信号。";
+  return "外接麦克风需复核前级输出接口，优先接入阵列麦主机模拟输入 L/R/G。";
 }

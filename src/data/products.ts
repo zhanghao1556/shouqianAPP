@@ -63,11 +63,11 @@ export const productRules: ProductRule[] = [
   },
   {
     productId: "YM-DT2-Pro",
-    name: "DT2 Pro 智能语音阵列麦克风",
+    name: "智能语音阵列麦克风",
     category: "pickup",
     matchedScenarios: ["classroom", "lecture"],
     matchedNeeds: ["interactiveClass", "recording", "remoteTeaching"],
-    source: "DT2 Pro阵列麦说明书.docx / ClassIn Mic DT2 Pro白皮书.docx",
+    source: "智能语音阵列麦克风产品资料 / 互动课堂音频系统应用方案",
     quantityRule: (profile) => Math.max(1, Math.ceil(area(profile.space.length, profile.space.width) / 70)),
     reason: () => "适合教学空间的阵列拾音，兼顾教师活动区和学生互动声音采集。"
   },
@@ -107,21 +107,21 @@ export const productRules: ProductRule[] = [
   },
   {
     productId: "YM-AWM301",
-    name: "AWM301/WP1 无线手持麦克风系统",
+    name: "无线手持麦克风系统",
     category: "wireless",
     matchedScenarios: ["classroom", "lecture", "auditorium", "meeting"],
     matchedNeeds: ["wirelessMic", "localAmplification"],
-    source: "AWM301_T/R整机规格书.doc / WP1手持麦安装注意事项.docx",
+    source: "无线手持麦克风系统规格资料 / 手持麦安装注意事项.docx",
     quantityRule: (profile) => (profile.scenario === "auditorium" ? 2 : 1),
     reason: () => "满足主持、临时发言和互动问答的移动拾音需求。"
   },
   {
     productId: "YY-URO1",
-    name: "YY-URO1 USB 网线传输器",
+    name: "USB 网线传输器",
     category: "accessory",
     matchedScenarios: ["meeting", "classroom", "lecture", "auditorium"],
     matchedNeeds: ["videoConference", "recording", "remoteTeaching"],
-    source: "YY-URO1 USB网线传输器使用手册.docx",
+    source: "USB 网线传输器使用手册.docx",
     quantityRule: (profile) => (profile.space.externalDevices.length > 0 || profile.needs.includes("recording") ? 1 : 0),
     reason: () => "用于延长 USB 或外接设备链路，降低前后场设备布线限制。"
   },
