@@ -1485,3 +1485,8 @@ PowerShell reminder:
 - Finish and verify the confirmed point capability / unified validation implementation before generating any package; a later release request does not permit packaging a partially completed worktree.
 - Run the daily checkpoint first, then rebuild both Yinyi and Yinman from current source, verify brand isolation and customer-model hiding, and only then create the release checkpoint.
 - Release checkpoints remain local by default. GitHub synchronization waits for the user's desktop upload script or a separate explicit push request.
+
+### 2026-07-11 Windows zip-listing encoding reminder
+
+- `tar.exe -tf` may render valid UTF-8 Chinese zip entry names as mojibake in the current terminal even when the archive is correct.
+- Verify Unicode package names with .NET `System.IO.Compression.ZipFile` / `ZipArchive` before classifying a release zip as damaged. Do not rebuild or rename customer files based only on the terminal listing.

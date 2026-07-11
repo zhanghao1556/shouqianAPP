@@ -5710,3 +5710,14 @@ Boundary:
 - Daily closing backup completed at `.codex-backups/stable-20260711-211816.zip`: the archive opened successfully with 1204 entries and the older snapshot was removed only after verification.
 - Final closing checks passed again: strict TypeScript unused checks, point-system rules, reverberation rules, product-document incremental audit tests, 66-source product audit and production build.
 - Cleanup scans found no `debugger` / `console.log` residue, no scanned mojibake markers, and no `RING08` / `AJ350` text in `src` or `dist`.
+
+### Dual-brand 1.1 release 260711-1 completed
+
+- Ran `npm.cmd run release:all` after the daily checkpoint, so both brands were rebuilt from the current source before single-file and universal packaging.
+- Generated Yinyi package `outputs/音翼AI售前工具-1.1-内部测试版-260711-1.zip` with SHA-256 `EC585ECB488EF17BE512E24CA602397BB67FED6F6D99ABC83CA0DF4C16ECE4FC`.
+- Generated Yinman package `outputs/音曼AI售前工具-1.1-内部测试版-260711-1.zip` with SHA-256 `70067594A38EA7D609DE875A4DC363626C3C07956C749EC0C5385909D9EDCF96`.
+- `verify:release-current` passed for both brands: current-source freshness, title, release marker, brand selection, required copy, header CSS parity, forbidden brand text and forbidden image data all passed with empty missing / forbidden lists.
+- Android Pixel 7 Chromium and iPhone 14 WebKit checks passed for both final HTML files with clean release forms, no fallback screen, no console errors and no horizontal page overflow.
+- Both zip archives reopened successfully and contain exactly the expected HTML, README and software outline files with brand-correct Unicode names.
+- `tar.exe -tf` displayed the Chinese zip entry names as mojibake in the terminal. A .NET `ZipArchive` read returned the correct Unicode names, confirming this was terminal display encoding rather than package corruption; no package content was rewritten.
+- No GitHub push was performed. Final synchronization remains the user's manual desktop upload step.
