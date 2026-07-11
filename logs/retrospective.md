@@ -1369,3 +1369,16 @@ Guardrail:
 
 - This is a release packaging / verification rule only.
 - Do not change speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing, wiring generation, cable quantities, device quantities, presales draft behavior, or release clean-state behavior while fixing this class of release issue.
+### 2026-07-11 Reverberation Calibration Research Reminder
+
+- Reverberation classification for classrooms and meeting rooms must distinguish physical RT60 from background-noise risk. HVAC/noise concerns can be shown alongside the result but must not be added to the reverberation score.
+- Use room volume and surface absorption as primary estimators. Do not treat floor area or ceiling height alone as a physical reverberation trigger.
+- Structural ceiling type and acoustic ceiling finish are different inputs. A suspended absorptive ceiling can reduce RT while a hard gypsum ceiling can remain reflective.
+- Classroom reference limits vary by room function and volume. Language/multimedia/interactive use should be evaluated more strictly than an ordinary classroom.
+- Reference limits are generally for a finished/furnished but unoccupied room. Do not let the number of people hide a poor empty-room acoustic condition.
+- Keep one shared reverberation assessment implementation. The UI, array-mic central-air clearance, array-mic install height, report, and risk reminders must not maintain separate scoring copies.
+- 5176 should record the algorithm result, the human expected small/medium/large label, pass/fail, notes, and source profile so calibration evidence can be exported and reviewed before production rule changes.
+
+Guardrail:
+
+- This research does not authorize changing production thresholds or downstream array-mic behavior. Explain the proposed rule and affected scenarios, then obtain explicit user confirmation before implementation.

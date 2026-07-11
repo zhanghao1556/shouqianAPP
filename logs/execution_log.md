@@ -5402,3 +5402,26 @@ Current valid release artifacts:
 - `outputs/音翼AI售前工具-1.1-内部测试版-260710-1.zip`
 - `outputs/音曼AI售前工具-1.1-内部测试版-260710-1`
 - `outputs/音曼AI售前工具-1.1-内部测试版-260710-1.zip`
+## 2026-07-11
+
+### Reverberation research and current-rule audit
+
+- Read the project rules and both project logs before continuing the new-day calibration work.
+- Verified the current 5176 reverberation workbench and the production assessment path without changing thresholds or scoring.
+- Reviewed public reference material focused on classrooms and meeting rooms:
+  - GB 50118-2010 table 5.3.4: ordinary classrooms use empty-room 500 Hz-1000 Hz limits of 0.8 s up to 200 m3 and 1.0 s above 200 m3; language/multimedia classrooms use 0.6 s up to 300 m3 and 0.8 s above 300 m3.
+  - UK Department for Education BB93 table 6: primary classrooms 0.6 s, secondary/general teaching rooms 0.8 s, small lecture rooms 0.8 s, large lecture rooms 1.0 s, and meeting/video-conference rooms 0.8 s in the furnished but unoccupied condition.
+  - ANSI/ASA and ASHA references confirm that room volume, room shape, and surface absorption affect RT60 and that background noise must be assessed separately from reverberation.
+  - NI's room-acoustics guide documents the Sabine relationship, equivalent absorption area, frequency-dependent material absorption, and an approximately 0.6 s speech-room target.
+- Current-rule problems found and not yet fixed:
+  - `getAcousticAssessment` and `drawingEngine.getSimpleReverberationRisk` duplicate the classifier and are already inconsistent; the drawing-engine copy adds a height-over-3.6 m point that the displayed assessment does not.
+  - The 5176 `中混响样例` currently scores 1 and is therefore displayed as low under the active 0-1 / 2-4 / 5+ thresholds.
+  - `suspended ceiling + height >= 4 m` is a hard high-risk trigger even though an absorptive acoustic ceiling and a hard gypsum ceiling can have opposite effects.
+  - Area is scored while the standards and Sabine relation depend primarily on volume and equivalent absorption.
+  - Occupant density reduces the current score even though the cited classroom limits are evaluated in a furnished but unoccupied state.
+  - The large-glass input is only a boolean and the ceiling's acoustic finish is not collected, leaving two high-impact surface conditions too coarse or missing.
+
+Boundary:
+
+- Research, audit, and logging only.
+- No reverberation threshold, scoring weight, acoustic field, speaker rule, array-mic rule, point placement, device quantity, topology, wiring, release, or brand behavior was changed.
