@@ -1,5 +1,9 @@
 import {
+  ceilingAcousticTreatmentLabels,
+  echoObservationLabels,
   floorMaterialLabels,
+  furnishingDensityLabels,
+  glassCoverageLabels,
   softTreatmentLabels,
   wallMaterialLabels,
   yiouBrand
@@ -65,8 +69,14 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
       bullets: [
         `地面：${floorMaterialLabels[profile.acousticEnvironment.floorMaterial]}`,
         `墙面：${wallMaterialLabels[profile.acousticEnvironment.wallMaterial]}`,
+        `顶面吸声：${ceilingAcousticTreatmentLabels[profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"]}`,
         `软装 / 吸音：${softTreatmentLabels[profile.acousticEnvironment.softTreatment]}`,
-        `玻璃墙：${profile.acousticEnvironment.hasGlassWall ? "有大面积玻璃墙" : "无大面积玻璃墙"}`,
+        `玻璃比例：${glassCoverageLabels[profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")]}`,
+        `家具布置：${furnishingDensityLabels[profile.acousticEnvironment.furnishingDensity]}`,
+        `拍手测试：${echoObservationLabels[profile.acousticEnvironment.echoObservation ?? "unknown"]}`,
+        profile.acousticEnvironment.measuredRt60
+          ? `RT60：实测 ${profile.acousticEnvironment.measuredRt60.toFixed(2)}s`
+          : `RT60：估算 ${acoustic.estimatedRt.toFixed(2)}s（${acoustic.estimatedRtRange.min.toFixed(2)}-${acoustic.estimatedRtRange.max.toFixed(2)}s）`,
         `混响判断：${acoustic.label}`,
         "混响风险会影响阵麦拾音清晰度。"
       ]

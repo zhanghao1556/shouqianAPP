@@ -5425,3 +5425,79 @@ Boundary:
 
 - Research, audit, and logging only.
 - No reverberation threshold, scoring weight, acoustic field, speaker rule, array-mic rule, point placement, device quantity, topology, wiring, release, or brand behavior was changed.
+
+### Reverberation calibration rule confirmation
+
+Goal:
+
+- Replace the old area / point-score reverberation classifier with a room-use-targeted RT60 assessment and complete the manual calibration workbench on port 5176.
+
+User-confirmed production rules:
+
+- Interpret low / medium / high as reverberation risk relative to the room-use target, not as an absolute material score.
+- Valid measured RT60 takes priority. Without a measurement, estimate a range from room volume and equivalent absorption area.
+- Classify `RT60 <= target` as low, `target < RT60 <= target + 0.2s` as medium, and higher values as high.
+- Obvious echo or flutter echo forces high; an audible reverberant tail is at least medium.
+- Missing critical acoustic fields cannot produce a low-risk result.
+- Remove the old `suspended ceiling + height >= 4m => high` rule and replace floor-area scoring with room volume.
+- Occupancy no longer reduces empty-room risk. Furniture density remains a separate absorption input.
+- HVAC / background noise remains a separate risk and must not be included in reverberation classification.
+
+Implementation scope:
+
+- Use one shared reverberation assessment in the main app, reports, array-mic clearance / install-height consumers, and port 5176.
+- Port 5176 must support human expected risk, pass / fail, notes, versioned local records, random and standard cases, counters, mismatch display, and JSON export.
+- Do not alter speaker selection, speaker count, speaker coordinates, array-mic count, or array-mic coordinates. Keep `speakerRules.hasHighCeilingReverberationRisk` unchanged for its existing speaker-selection behavior.
+
+Progress at context recovery:
+
+- Added the shared Sabine-based assessment and new acoustic inputs (ceiling absorption, glass coverage, clap-test observation, optional measured RT60).
+- Updated normalization and random profile generation for backward compatibility.
+- Main remaining work is to replace the old score-based 5176 UI, update report / profile summaries, verify representative cases, and run desktop/mobile browser checks.
+
+### Reverberation calibration implementation completed
+
+Actions:
+
+- Added one shared RT60 assessment module for the main output, 5176, array-mic clearance, array-mic install height, reports, and risk summaries.
+- Added presales inputs for ceiling absorption, glass coverage, furniture-only room furnishing, clap-test observation, and optional measured mid-frequency RT60.
+- Kept old `hasGlassWall` imports backward compatible through profile normalization.
+- Rebuilt port 5176 with:
+  - six standard rule cases and random cases;
+  - measured / estimated RT60, estimate range, room target, high-risk boundary, room volume, confidence, factors, reasons, and linked array-mic values;
+  - human expected low / medium / high, pass / fail, notes, mismatch display and counters;
+  - versioned browser-local records, load / update / delete / clear actions, and JSON export.
+- Updated the project archive, report builder, PDF archive summary, 5175 case summary, and main project facts with the new acoustic fields and RT60 result.
+- Added `scripts/verify-reverberation-rules.mjs` and `npm run test:reverberation` for repeatable rule regression checks.
+- Tightened the 5176 record table after browser QA so all actions remain visible at the 1084px desktop width without horizontal overflow.
+
+Rule checks:
+
+- Meeting target boundary `0.60s` -> low.
+- Meeting medium boundary `0.80s` -> medium.
+- `0.81s` -> high.
+- Valid measured RT60 overrides material estimation.
+- Audible tail is at least medium; obvious echo / flutter echo forces high.
+- Missing critical acoustic information or room volume cannot produce low.
+- A 4.2m absorptive suspended-ceiling room is no longer forced high by the reverberation classifier.
+- `speakerRules.hasHighCeilingReverberationRisk` remains active and unchanged for existing speaker selection.
+- Central-air presence does not alter reverberation risk.
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run test:reverberation` passed all 11 assertions.
+- `npm.cmd run build` passed.
+- Browser QA passed on:
+  - `5174`: Yinyi desktop, green theme, new acoustic fields in a two-column layout, no horizontal overflow;
+  - `5176`: RT60 result updates live, save / counters / reload persistence / delete work, no record-table overflow;
+  - `5177`: 390px mobile preview, new acoustic fields present, no horizontal overflow;
+  - `5180`: Yinman desktop, blue theme, no accidental mobile-preview class.
+- All four pages rendered nonblank with no Vite error overlay and no console warning / error.
+- The temporary browser QA calibration records were deleted and the empty state persisted after reload.
+
+Protected scope:
+
+- No speaker selection formula, speaker count rule, speaker point formula, array-mic count rule, or array-mic point formula was edited.
+- Existing consumers now use the confirmed shared reverberation result; the speaker-specific high-ceiling selector remains separate and unchanged.
+- No release package was generated and no GitHub push was performed.

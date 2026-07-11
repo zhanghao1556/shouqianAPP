@@ -26,6 +26,7 @@ export function normalizeProfile(profile: ClassroomProfile): ClassroomProfile {
     .filter((need) => need !== "interactiveClass")
     .slice(0, 2);
   const normalizedNeeds = hasInteractive && needs.length < 2 ? [...needs, "interactiveClass" as const] : needs;
+  const acousticEnvironment = normalizeAcousticEnvironment(profile);
   return normalizeProfileForScenario({
     ...profile,
     engineeringConstraints: {
@@ -47,9 +48,34 @@ export function normalizeProfile(profile: ClassroomProfile): ClassroomProfile {
       ...profile.existingDevices,
       legacySpeakerPoints: normalizeLegacySpeakerPoints(profile)
     },
+    acousticEnvironment,
     needs: normalizedNeeds.length ? normalizedNeeds : ["localAmplification"],
     customNeed: normalizedNeeds.includes("other") && !cleanedCustomNeed.trim() ? "现场补充需求" : cleanedCustomNeed
   });
+}
+
+function normalizeAcousticEnvironment(profile: ClassroomProfile): ClassroomProfile["acousticEnvironment"] {
+  const environment = profile.acousticEnvironment ?? {
+    floorMaterial: "unknown",
+    wallMaterial: "unknown",
+    softTreatment: "unknown",
+    furnishingDensity: "unknown",
+    hasGlassWall: false
+  };
+  const glassCoverage = environment.glassCoverage ?? (environment.hasGlassWall ? "large" : "none");
+  const measuredRt60 = Number(environment.measuredRt60);
+  return {
+    ...environment,
+    floorMaterial: environment.floorMaterial ?? "unknown",
+    wallMaterial: environment.wallMaterial ?? "unknown",
+    softTreatment: environment.softTreatment ?? "unknown",
+    furnishingDensity: environment.furnishingDensity ?? "unknown",
+    ceilingAcousticTreatment: environment.ceilingAcousticTreatment ?? "unknown",
+    glassCoverage,
+    echoObservation: environment.echoObservation ?? "unknown",
+    hasGlassWall: glassCoverage === "large",
+    measuredRt60: Number.isFinite(measuredRt60) && measuredRt60 >= 0.1 && measuredRt60 <= 10 ? measuredRt60 : undefined
+  };
 }
 
 function normalizeStageSize(profile: ClassroomProfile) {

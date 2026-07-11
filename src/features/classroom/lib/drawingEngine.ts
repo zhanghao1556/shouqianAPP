@@ -1,10 +1,10 @@
 import type { ClassroomProfile, GeneratedPoint, LegacySpeakerPoint, Point } from "../types";
 import { needsAuditoriumRearFillSpeakers as hasAuditoriumRearFillNeed } from "./auditoriumRules";
 import { isClassroomScenario, isMeetingScenario } from "./scenarioRules";
+import { getReverberationRisk } from "./reverberationRules";
 import {
   getSpeakerModelName,
   getSpeakerProductId,
-  hasHighCeilingReverberationRisk,
   RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER,
   type SpeakerProductId
 } from "./speakerRules";
@@ -695,7 +695,7 @@ const hasLocalAmplificationNeed = (profile: ClassroomProfile) =>
   profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
 
 export const getArrayMicCentralAirRequiredClearance = (profile: ClassroomProfile) => {
-  const risk = getSimpleReverberationRisk(profile);
+  const risk = getReverberationRisk(profile);
   if (risk === "high") return MAX_ARRAY_MIC_TO_CENTRAL_AIR_DISTANCE_M;
   if (risk === "medium") return 0.8;
   return MIN_ARRAY_MIC_TO_CENTRAL_AIR_DISTANCE_M;
@@ -2275,7 +2275,7 @@ const getPrimaryArrayMicY = (profile: ClassroomProfile) => {
 
 export const getArrayMicInstallHeight = (profile: ClassroomProfile) => {
   const { height } = profile.roomGeometry;
-  const risk = getSimpleReverberationRisk(profile);
+  const risk = getReverberationRisk(profile);
   if (profile.engineeringConstraints.ceiling === "suspended") {
     return getCeilingFlushInstallHeight(profile);
   }
@@ -2306,31 +2306,11 @@ export const getArrayMicInstallLabel = (profile: ClassroomProfile) => {
 };
 
 export const getArrayMicInstallAdvice = (profile: ClassroomProfile) => {
-  const risk = getSimpleReverberationRisk(profile);
+  const risk = getReverberationRisk(profile);
   if (hasSuspendedCeiling(profile)) {
     return "吊顶高度会影响阵麦和吸顶音箱安装高度。";
   }
   return `无吊顶时采用吊挂支架安装；扩声模式下推荐高度 2.6-3.3m，当前按${risk === "high" ? "混响较大" : risk === "medium" ? "混响中等" : "混响较小"}取 ${getArrayMicInstallHeight(profile).toFixed(1)}m，混响越大越应适当降低，增强人声直达声。`;
-};
-
-const getSimpleReverberationRisk = (profile: ClassroomProfile) => {
-  if (hasHighCeilingReverberationRisk(profile)) return "high";
-  let score = 0;
-  if (profile.acousticEnvironment.floorMaterial === "tile") score += 2;
-  if (profile.acousticEnvironment.floorMaterial === "carpet") score -= 2;
-  if (profile.acousticEnvironment.wallMaterial === "hard") score += 2;
-  if (profile.acousticEnvironment.wallMaterial === "acoustic") score -= 2;
-  if (profile.acousticEnvironment.softTreatment === "none") score += 2;
-  if (profile.acousticEnvironment.softTreatment === "curtains" || profile.acousticEnvironment.softTreatment === "mixed") score -= 1;
-  if (profile.acousticEnvironment.softTreatment === "acousticPanels") score -= 2;
-  if (profile.acousticEnvironment.furnishingDensity === "empty") score += 1;
-  if (profile.acousticEnvironment.furnishingDensity === "dense") score -= 1;
-  if (profile.acousticEnvironment.hasGlassWall) score += 2;
-  if (getRoomArea(profile) >= 80) score += 1;
-  if (profile.roomGeometry.height > 3.6) score += 1;
-  if (score >= 5) return "high";
-  if (score >= 2) return "medium";
-  return "low";
 };
 
 const getUnifiedWallSpeakerInstallHeight = (profile: ClassroomProfile, maxCoverageLength: number) => {

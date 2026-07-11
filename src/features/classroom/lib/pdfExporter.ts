@@ -1,5 +1,15 @@
 import type { ClassroomProfile, GeneratedOutputs, QuantityOverrides } from "../types";
-import { auditoriumRearFillSpeakerLabels, floorMaterialLabels, podiumPositionLabels, softTreatmentLabels, wallMaterialLabels } from "../data/initialProfile";
+import {
+  auditoriumRearFillSpeakerLabels,
+  ceilingAcousticTreatmentLabels,
+  echoObservationLabels,
+  floorMaterialLabels,
+  furnishingDensityLabels,
+  glassCoverageLabels,
+  podiumPositionLabels,
+  softTreatmentLabels,
+  wallMaterialLabels
+} from "../data/initialProfile";
 import { getRoomArea } from "./drawingEngine";
 import { getAmplificationScopeText, getLegacyDeviceSummary, getNeedText, getScenarioText } from "./profileText";
 import { getSpeakerModelName } from "./speakerRules";
@@ -210,7 +220,10 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ["扩声形态", getSpeakerMode(profile)],
     ["吊顶条件", ceilingLabels[profile.engineeringConstraints.ceiling]],
     ["讲台位置", podiumPositionLabels[profile.engineeringConstraints.podiumPosition]],
-    ["声学风险", outputs.acousticAssessment.label],
+    [
+      "声学风险",
+      `${outputs.acousticAssessment.label} / ${outputs.acousticAssessment.source === "measured" ? "实测" : "估算"} RT60 ${outputs.acousticAssessment.estimatedRt.toFixed(2)}s`
+    ],
     ["声学环境", getAcousticSummary(profile)],
     ["中央空调", getCentralAirSummary(profile)],
     ["外接设备", getExternalDeviceSummary(profile)],
@@ -239,9 +252,12 @@ function getAcousticSummary(profile: ClassroomProfile) {
   return [
     floorMaterialLabels[acoustic.floorMaterial],
     wallMaterialLabels[acoustic.wallMaterial],
+    ceilingAcousticTreatmentLabels[acoustic.ceilingAcousticTreatment ?? "unknown"],
     softTreatmentLabels[acoustic.softTreatment],
     furnishingDensityLabels[acoustic.furnishingDensity],
-    acoustic.hasGlassWall ? "有玻璃墙" : ""
+    glassCoverageLabels[acoustic.glassCoverage ?? (acoustic.hasGlassWall ? "large" : "none")],
+    echoObservationLabels[acoustic.echoObservation ?? "unknown"],
+    acoustic.measuredRt60 ? `实测 RT60 ${acoustic.measuredRt60.toFixed(2)}s` : ""
   ]
     .filter(Boolean)
     .join(" / ");
@@ -273,13 +289,6 @@ function formatPublicDeviceName(name: string) {
 const ceilingLabels = {
   suspended: "有吊顶",
   exposed: "无吊顶",
-  unknown: "待确认"
-} as const;
-
-const furnishingDensityLabels = {
-  empty: "空旷",
-  normal: "正常",
-  dense: "较密集",
   unknown: "待确认"
 } as const;
 

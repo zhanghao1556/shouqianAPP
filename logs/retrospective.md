@@ -1382,3 +1382,28 @@ Guardrail:
 Guardrail:
 
 - This research does not authorize changing production thresholds or downstream array-mic behavior. Explain the proposed rule and affected scenarios, then obtain explicit user confirmation before implementation.
+
+### 2026-07-11 Reverberation Calibration Implementation Guardrail
+
+- The user confirmed the researched RT60-based redesign for implementation.
+- Measured RT60 is authoritative when valid; otherwise estimate a range with room volume and equivalent absorption.
+- Risk bands are relative to the selected room-use target: at or below target is low, up to target plus 0.2 seconds is medium, and above that is high.
+- Obvious echo / flutter echo forces high, audible tail forces at least medium, and incomplete critical acoustic information prevents a low result.
+- Do not reintroduce the old area score, occupancy credit, or `suspended ceiling + height >= 4m` hard trigger.
+- Keep HVAC / background-noise concerns outside the reverberation classifier.
+- Port 5176 is an evidence-gathering calibration surface: preserve source profile, algorithm result, human expectation, pass / fail and notes in versioned local records and JSON exports.
+- This implementation must not change speaker selection / quantity / point placement or array-mic quantity / point placement. The existing speaker-specific high-ceiling selector remains untouched.
+
+### 2026-07-11 Reverberation Calibration Implementation Reminder
+
+- The production classifier now lives only in `src/features/classroom/lib/reverberationRules.ts`; do not create a second score copy in drawing, reports, or calibration UI.
+- Port 5176 records use `yinyi-reverberation-calibration-v1`. Future schema changes must increment the version or add an explicit migration rather than silently reinterpret saved evidence.
+- Keep measured RT60, estimated RT60, risk classification, and background-noise observations conceptually separate:
+  - measured RT60 replaces the absorption estimate when valid;
+  - obvious echo / flutter echo and audible tail remain observation overrides;
+  - HVAC / background noise remains outside reverberation risk.
+- Furniture density is an empty-room furnishing factor. Do not rename it back to people density or let occupancy mask poor empty-room acoustics.
+- Missing room volume or critical surface information must not produce a low result.
+- The shared assessment may affect existing linked array-mic clearance / install-height outputs, but do not change their formulas under reverberation calibration without separate confirmation.
+- Keep `scripts/verify-reverberation-rules.mjs` in the normal verification set whenever reverberation targets, inputs, confidence, or override logic changes.
+- Required UI regression set for this work remains `5174`, `5176`, `5177`, and `5180`; 5174 / 5180 must stay desktop-isolated and 5177 must remain a narrow mobile preview.

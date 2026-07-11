@@ -1,5 +1,13 @@
 import { classroomProductRules } from "../data/productCatalog";
-import { floorMaterialLabels, softTreatmentLabels, wallMaterialLabels } from "../data/initialProfile";
+import {
+  ceilingAcousticTreatmentLabels,
+  echoObservationLabels,
+  floorMaterialLabels,
+  furnishingDensityLabels,
+  glassCoverageLabels,
+  softTreatmentLabels,
+  wallMaterialLabels
+} from "../data/initialProfile";
 import type {
   AcousticAssessment,
   AudioPlan,
@@ -29,15 +37,17 @@ import {
   shouldGenerateNewSpeakers
 } from "./drawingEngine";
 import { getAmplificationScopeText, getLegacyDeviceSummary, getLegacySoundSystemText, getNeedText, getScenarioText } from "./profileText";
+import { getAcousticAssessment } from "./reverberationRules";
 import {
   clampSpeakerQuantity,
   EXTERNAL_AMPLIFIER_PRODUCT_ID,
   getExternalAmplifierCountForSpeakers,
   getSpeakerProductId,
-  hasHighCeilingReverberationRisk,
   hasRecommendedSpeakerSystemOverflow,
   hasSpeakerCapacityOverflow
 } from "./speakerRules";
+
+export { getAcousticAssessment } from "./reverberationRules";
 
 export const getCompleteness = (profile: ClassroomProfile): CompletenessItem[] => [
   {
@@ -75,9 +85,12 @@ export const getCompleteness = (profile: ClassroomProfile): CompletenessItem[] =
       profile.engineeringConstraints.ceiling !== "unknown" &&
       profile.acousticEnvironment.floorMaterial !== "unknown" &&
       profile.acousticEnvironment.wallMaterial !== "unknown" &&
-      profile.acousticEnvironment.softTreatment !== "unknown",
+      profile.acousticEnvironment.softTreatment !== "unknown" &&
+      (profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown") !== "unknown" &&
+      (profile.acousticEnvironment.glassCoverage ?? "unknown") !== "unknown" &&
+      profile.acousticEnvironment.furnishingDensity !== "unknown",
     blocking: false,
-    hint: "确认吊顶、地面、墙面和软装吸音情况。"
+    hint: "确认吊顶、顶面吸声、地面、墙面、软装、玻璃比例和家具布置。"
   },
   {
     key: "external",
@@ -95,81 +108,6 @@ export const getAiPrompt = (_profile: ClassroomProfile, completeness: Completene
   if (blocking.length > 0) return `先补齐“${blocking[0].label}”：${blocking[0].hint}`;
   if (risks.length > 0) return `方案条件已具备。我发现 ${risks.length} 个需要确认的声场 / 接口点：${risks[0]}`;
   return "音翼阵麦、音箱和接口级图纸已具备生成条件。下方可查看选型、点位图、接线图、拓扑图和报告。";
-};
-
-export const getAcousticAssessment = (profile: ClassroomProfile): AcousticAssessment => {
-  const reasons: string[] = [];
-  const suggestions: string[] = [];
-  let score = 0;
-
-  if (profile.acousticEnvironment.floorMaterial === "tile") {
-    score += 2;
-    reasons.push("地面为瓷砖 / 石材，反射偏明显。");
-  }
-  if (profile.acousticEnvironment.floorMaterial === "carpet") {
-    score -= 2;
-    reasons.push("地毯或软质地面对混响有一定抑制。");
-  }
-  if (profile.acousticEnvironment.wallMaterial === "hard") {
-    score += 2;
-    reasons.push("硬质墙面会增加反射。");
-  }
-  if (profile.acousticEnvironment.wallMaterial === "acoustic") {
-    score -= 2;
-    reasons.push("已有吸音墙面，混响风险降低。");
-  }
-  if (profile.acousticEnvironment.softTreatment === "none") {
-    score += 2;
-    reasons.push("缺少窗帘、吸音板等软装吸音。");
-  }
-  if (profile.acousticEnvironment.softTreatment === "curtains" || profile.acousticEnvironment.softTreatment === "mixed") {
-    score -= 1;
-    reasons.push("窗帘或少量软装可降低部分反射。");
-  }
-  if (profile.acousticEnvironment.softTreatment === "acousticPanels") {
-    score -= 2;
-    reasons.push("已有声学装修，混响风险降低。");
-  }
-  if (profile.acousticEnvironment.furnishingDensity === "empty") {
-    score += 1;
-    reasons.push("空间较空，声音衰减较慢。");
-  }
-  if (profile.acousticEnvironment.furnishingDensity === "dense") {
-    score -= 1;
-    reasons.push("家具和人员较多，有助于吸收和扩散。");
-  }
-  if (profile.acousticEnvironment.hasGlassWall) {
-    score += 2;
-    reasons.push("存在大面积玻璃墙，需要关注反射声。");
-  }
-  if (getRoomArea(profile) >= 80) {
-    score += 1;
-    reasons.push("面积较大，后场清晰度和扩声均匀性需要复核。");
-  }
-
-  if (hasHighCeilingReverberationRisk(profile)) {
-    reasons.push("吊顶高度大于等于 4m，会影响扩声清晰度。");
-  }
-
-  const risk = hasHighCeilingReverberationRisk(profile) ? "high" : score >= 5 ? "high" : score >= 2 ? "medium" : "low";
-  const label = risk === "high" ? "混响风险大" : risk === "medium" ? "混响风险中" : "混响风险小";
-
-  if (risk === "high") {
-    suggestions.push("建议优先选择指向控制更好的 DT2 Pro，并控制音箱覆盖角度。");
-    suggestions.push("如客户允许，建议增加窗帘、吸音板或软包降低反射。");
-  } else if (risk === "medium") {
-    suggestions.push("建议复勘时拍摄墙面、地面和窗帘情况，调试时重点关注啸叫和远端清晰度。");
-  } else {
-    suggestions.push("声学风险较小，阵麦和音箱可按常规教室方案生成。");
-  }
-
-  return {
-    risk,
-    score,
-    label,
-    reasons: reasons.length ? reasons : ["现场声学信息较少，暂按常规教室评估。"],
-    suggestions
-  };
 };
 
 export const generateEngineeringOutputs = (profile: ClassroomProfile, quantityOverrides: QuantityOverrides = {}): GeneratedOutputs => {
@@ -509,13 +447,12 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   if (profile.engineeringConstraints.ceiling === "suspended" && profile.roomGeometry.height > 3.6) {
     risks.push("吊顶高度会影响阵麦和吸顶音箱安装高度。");
   }
-  if (hasHighCeilingReverberationRisk(profile)) {
-    risks.push("吊顶高度会影响扩声清晰度。");
-  }
   if (profile.engineeringConstraints.ceiling === "exposed" && profile.needs.includes("localAmplification")) {
     risks.push("无吊顶条件会影响阵麦安装高度。");
   }
-  if (profile.acousticEnvironment.hasGlassWall) risks.push("玻璃墙会影响阵麦拾音清晰度。");
+  if ((profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")) === "large") {
+    risks.push("大面积玻璃会影响阵麦拾音清晰度。");
+  }
   if (profile.needs.includes("recording") && !profile.existingDevices.recordingHost) risks.push("录播主机信息会影响阵麦音频接入方式。");
   if (profile.existingDevices.legacySoundSystem.trim()) risks.push(`已填写${getLegacySoundSystemText(profile)}会影响接口、电平、功率和负载匹配。`);
   if (isOversizedForFullRoomAmplification(profile)) {
@@ -611,8 +548,11 @@ export const getEngineeringBasis = (
     basis: [
       floorMaterialLabels[profile.acousticEnvironment.floorMaterial],
       wallMaterialLabels[profile.acousticEnvironment.wallMaterial],
+      ceilingAcousticTreatmentLabels[profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"],
       softTreatmentLabels[profile.acousticEnvironment.softTreatment],
-      profile.acousticEnvironment.hasGlassWall ? "有大面积玻璃墙" : "无大面积玻璃墙"
+      glassCoverageLabels[profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")],
+      furnishingDensityLabels[profile.acousticEnvironment.furnishingDensity],
+      echoObservationLabels[profile.acousticEnvironment.echoObservation ?? "unknown"]
     ].join("、"),
     result: acousticAssessment.label
   },

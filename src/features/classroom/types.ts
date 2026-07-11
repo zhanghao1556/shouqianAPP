@@ -16,7 +16,12 @@ export type FloorMaterial = "tile" | "wood" | "carpet" | "unknown";
 export type WallMaterial = "painted" | "hard" | "acoustic" | "unknown";
 export type SoftTreatment = "none" | "curtains" | "acousticPanels" | "mixed" | "unknown";
 export type FurnishingDensity = "empty" | "normal" | "dense" | "unknown";
+export type CeilingAcousticTreatment = "hard" | "partial" | "acoustic" | "unknown";
+export type GlassCoverage = "none" | "partial" | "large" | "unknown";
+export type EchoObservation = "none" | "tail" | "obvious" | "unknown";
 export type ReverberationRisk = "low" | "medium" | "high";
+export type AcousticAssessmentSource = "measured" | "estimated";
+export type AcousticAssessmentConfidence = "high" | "medium" | "low";
 export type GeneratedPointType = "arrayMic" | "speaker";
 export type ProductCategory = "pickup" | "speaker" | "wireless" | "amplifier";
 export type ReportSectionType = "cover" | "summary" | "table" | "drawing" | "list";
@@ -71,6 +76,10 @@ export interface AcousticEnvironment {
   softTreatment: SoftTreatment;
   furnishingDensity: FurnishingDensity;
   hasGlassWall: boolean;
+  ceilingAcousticTreatment?: CeilingAcousticTreatment;
+  glassCoverage?: GlassCoverage;
+  echoObservation?: EchoObservation;
+  measuredRt60?: number;
 }
 
 export interface ClassroomProfile {
@@ -182,8 +191,23 @@ export interface AudioPlan {
 
 export interface AcousticAssessment {
   risk: ReverberationRisk;
-  score: number;
   label: string;
+  source: AcousticAssessmentSource;
+  confidence: AcousticAssessmentConfidence;
+  roomVolume: number;
+  targetRt: number;
+  highRiskRt: number;
+  estimatedRt: number;
+  estimatedRtRange: {
+    min: number;
+    max: number;
+  };
+  reference: string;
+  factors: Array<{
+    label: string;
+    impact: "increase" | "decrease" | "neutral";
+    detail: string;
+  }>;
   reasons: string[];
   suggestions: string[];
 }

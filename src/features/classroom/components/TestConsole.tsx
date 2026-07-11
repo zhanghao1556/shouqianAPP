@@ -1,7 +1,11 @@
 import { BookOpen, Download, Plus, RotateCcw } from "lucide-react";
 import {
   auditoriumRearFillSpeakerLabels,
+  ceilingAcousticTreatmentLabels,
+  echoObservationLabels,
   floorMaterialLabels,
+  furnishingDensityLabels,
+  glassCoverageLabels,
   podiumPositionLabels,
   scenarioLabels,
   softTreatmentLabels,
@@ -393,8 +397,12 @@ function acousticText(profile: ClassroomProfile) {
   return [
     floorMaterialLabels[profile.acousticEnvironment.floorMaterial],
     wallMaterialLabels[profile.acousticEnvironment.wallMaterial],
+    ceilingAcousticTreatmentLabels[profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"],
     softTreatmentLabels[profile.acousticEnvironment.softTreatment],
-    profile.acousticEnvironment.hasGlassWall ? "有大面积玻璃墙" : "无大面积玻璃墙"
+    furnishingDensityLabels[profile.acousticEnvironment.furnishingDensity],
+    glassCoverageLabels[profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")],
+    echoObservationLabels[profile.acousticEnvironment.echoObservation ?? "unknown"],
+    profile.acousticEnvironment.measuredRt60 ? `实测 RT60 ${profile.acousticEnvironment.measuredRt60.toFixed(2)}s` : "未实测 RT60"
   ].join("；");
 }
 

@@ -1,6 +1,10 @@
 import {
+  ceilingAcousticTreatmentLabels,
+  echoObservationLabels,
   floorMaterialLabels,
   externalDeviceOptions,
+  furnishingDensityLabels,
+  glassCoverageLabels,
   needOptions,
   podiumPositionLabels,
   scenarioOptions,
@@ -10,8 +14,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import type {
   AmplificationScope,
+  CeilingAcousticTreatment,
   ClassroomProfile,
+  EchoObservation,
   FloorMaterial,
+  FurnishingDensity,
+  GlassCoverage,
   Need,
   PodiumPosition,
   Scenario,
@@ -347,6 +355,14 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             />
           </label>
           <label>
+            顶面吸声
+            <CustomSelect
+              value={profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"}
+              options={Object.entries(ceilingAcousticTreatmentLabels).map(([value, label]) => ({ value, label }))}
+              onChange={(value) => setAcoustic({ ceilingAcousticTreatment: value as CeilingAcousticTreatment })}
+            />
+          </label>
+          <label>
             墙面情况
             <CustomSelect
               value={profile.acousticEnvironment.wallMaterial}
@@ -362,13 +378,48 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
               onChange={(value) => setAcoustic({ softTreatment: value as SoftTreatment })}
             />
           </label>
-          <label className="checkRow acousticCheck">
-            <input
-              type="checkbox"
-              checked={profile.acousticEnvironment.hasGlassWall}
-              onChange={(event) => setAcoustic({ hasGlassWall: event.target.checked })}
+          <label>
+            玻璃比例
+            <CustomSelect
+              value={profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")}
+              options={Object.entries(glassCoverageLabels).map(([value, label]) => ({ value, label }))}
+              onChange={(value) =>
+                setAcoustic({
+                  glassCoverage: value as GlassCoverage,
+                  hasGlassWall: value === "large"
+                })
+              }
             />
-            有大面积玻璃墙
+          </label>
+          <label>
+            房间布置（不含人员）
+            <CustomSelect
+              value={profile.acousticEnvironment.furnishingDensity}
+              options={Object.entries(furnishingDensityLabels).map(([value, label]) => ({ value, label }))}
+              onChange={(value) => setAcoustic({ furnishingDensity: value as FurnishingDensity })}
+            />
+          </label>
+          <label>
+            拍手测试
+            <CustomSelect
+              value={profile.acousticEnvironment.echoObservation ?? "unknown"}
+              options={Object.entries(echoObservationLabels).map(([value, label]) => ({ value, label }))}
+              onChange={(value) => setAcoustic({ echoObservation: value as EchoObservation })}
+            />
+          </label>
+          <label>
+            实测 RT60（可选，秒）
+            <input
+              type="number"
+              min="0.1"
+              max="10"
+              step="0.05"
+              placeholder="正常布置、无人状态"
+              value={profile.acousticEnvironment.measuredRt60 ?? ""}
+              onChange={(event) =>
+                setAcoustic({ measuredRt60: event.target.value ? Number(event.target.value) : undefined })
+              }
+            />
           </label>
         </div>
       </section>

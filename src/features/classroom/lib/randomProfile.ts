@@ -1,10 +1,13 @@
 import type {
   AcousticEnvironment,
   AmplificationScope,
+  CeilingAcousticTreatment,
   CeilingType,
   ClassroomProfile,
+  EchoObservation,
   FloorMaterial,
   FurnishingDensity,
+  GlassCoverage,
   Need,
   Scenario,
   SoftTreatment,
@@ -53,16 +56,25 @@ const floors: FloorMaterial[] = ["tile", "tile", "wood", "carpet", "unknown"];
 const walls: WallMaterial[] = ["painted", "painted", "hard", "acoustic", "unknown"];
 const softTreatments: SoftTreatment[] = ["none", "curtains", "mixed", "acousticPanels", "unknown"];
 const furnishing: FurnishingDensity[] = ["empty", "normal", "normal", "dense", "unknown"];
+const ceilingAcoustics: CeilingAcousticTreatment[] = ["hard", "partial", "partial", "acoustic", "unknown"];
+const glassCoverages: GlassCoverage[] = ["none", "none", "partial", "large", "unknown"];
+const echoObservations: EchoObservation[] = ["none", "none", "tail", "obvious", "unknown"];
 const podiumPositions: ClassroomProfile["engineeringConstraints"]["podiumPosition"][] = ["frontCenter", "frontCenter", "frontLeft", "frontRight", "unknown"];
 const aisleNotes = ["后排过道约1.2m，两侧为座位。", "后排过道约1.2m，两侧过道。", "后排过道约1.2m，单侧过道。", "无后排过道，两侧为座位。"];
 
-const buildEnvironment = (): AcousticEnvironment => ({
-  floorMaterial: pick(floors),
-  wallMaterial: pick(walls),
-  softTreatment: pick(softTreatments),
-  furnishingDensity: pick(furnishing),
-  hasGlassWall: maybe(0.32)
-});
+const buildEnvironment = (): AcousticEnvironment => {
+  const glassCoverage = pick(glassCoverages);
+  return {
+    floorMaterial: pick(floors),
+    wallMaterial: pick(walls),
+    softTreatment: pick(softTreatments),
+    furnishingDensity: pick(furnishing),
+    ceilingAcousticTreatment: pick(ceilingAcoustics),
+    glassCoverage,
+    echoObservation: pick(echoObservations),
+    hasGlassWall: glassCoverage === "large"
+  };
+};
 
 export const createRandomProfile = (index = 1): ClassroomProfile => {
   const scenario = pick(scenarioPools);

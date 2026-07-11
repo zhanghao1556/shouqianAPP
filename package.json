@@ -11,6 +11,7 @@
         "dev:yinman": "vite --host 127.0.0.1 --port 5180 --strictPort",
         "dev:selection-calibration": "npm.cmd run dev:wiring-calibration",
         "build": "tsc && vite build",
+        "test:reverberation": "node scripts/verify-reverberation-rules.mjs",
         "preview": "vite preview --host 127.0.0.1",
         "generate:random-presales": "node scripts/generateRandomPresales.mjs",
         "release:yinyi": "npm.cmd run build && node scripts/build-single-file-release.mjs --brand yinyi && node scripts/build-universal-release.mjs --brand yinyi",

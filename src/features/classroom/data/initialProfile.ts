@@ -1,4 +1,16 @@
-import type { AuditoriumRearFillSpeakerStatus, ClassroomProfile, FloorMaterial, Need, Scenario, SoftTreatment, WallMaterial } from "../types";
+import type {
+  AuditoriumRearFillSpeakerStatus,
+  CeilingAcousticTreatment,
+  ClassroomProfile,
+  EchoObservation,
+  FloorMaterial,
+  FurnishingDensity,
+  GlassCoverage,
+  Need,
+  Scenario,
+  SoftTreatment,
+  WallMaterial
+} from "../types";
 
 export const yiouBrand = {
   name: "音翼科技",
@@ -67,6 +79,34 @@ export const softTreatmentLabels: Record<SoftTreatment, string> = {
   unknown: "待确认"
 };
 
+export const ceilingAcousticTreatmentLabels: Record<CeilingAcousticTreatment, string> = {
+  hard: "硬质顶面 / 石膏板",
+  partial: "局部吸声处理",
+  acoustic: "大面积吸声吊顶",
+  unknown: "待确认"
+};
+
+export const glassCoverageLabels: Record<GlassCoverage, string> = {
+  none: "基本无玻璃墙",
+  partial: "少量玻璃",
+  large: "大面积玻璃",
+  unknown: "待确认"
+};
+
+export const echoObservationLabels: Record<EchoObservation, string> = {
+  none: "无明显拖尾",
+  tail: "有明显拖尾",
+  obvious: "有明显回声 / 颤动回声",
+  unknown: "未测试"
+};
+
+export const furnishingDensityLabels: Record<FurnishingDensity, string> = {
+  empty: "空房 / 家具很少",
+  normal: "正常桌椅布置",
+  dense: "家具布置密集",
+  unknown: "待确认"
+};
+
 export const podiumPositionLabels = {
   frontCenter: "前墙居中",
   frontLeft: "前墙左侧",
@@ -132,6 +172,9 @@ export const createInitialProfile = (): ClassroomProfile => ({
     wallMaterial: "painted",
     softTreatment: "none",
     furnishingDensity: "normal",
-    hasGlassWall: false
+    hasGlassWall: false,
+    ceilingAcousticTreatment: "unknown",
+    glassCoverage: "none",
+    echoObservation: "unknown"
   }
 });

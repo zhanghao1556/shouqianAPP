@@ -1680,6 +1680,15 @@ textarea:focus {
   grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
 }
 
+.reverberationHeader {
+  max-width: none;
+}
+
+.reverbInputPanel,
+.reverbResultPanel {
+  align-self: start;
+}
+
 .reverbPresetRow {
   display: flex;
   flex-wrap: wrap;
@@ -1702,7 +1711,9 @@ textarea:focus {
 }
 
 .reverbFormGrid input,
-.reverbFormGrid select {
+.reverbFormGrid select,
+.reverbReviewEditor input,
+.reverbReviewEditor textarea {
   min-height: 44px;
   border: 1px solid var(--color-line-strong);
   border-radius: 8px;
@@ -1713,15 +1724,10 @@ textarea:focus {
   padding: 0 12px;
 }
 
-.reverbFormGrid .checkRow {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  align-self: end;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: rgba(248, 253, 250, 0.85);
+.reverbReviewEditor textarea {
+  min-height: 104px;
+  padding-block: 10px;
+  resize: vertical;
 }
 
 .reverbRiskBadge.low {
@@ -1749,6 +1755,10 @@ textarea:focus {
   gap: 10px;
 }
 
+.reverbMetricGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .reverbImpactGrid > div {
   min-height: 82px;
   border: 1px solid var(--color-line);
@@ -1771,39 +1781,84 @@ textarea:focus {
   line-height: 1;
 }
 
-.reverbScoreTable,
+.reverbImpactGrid > .compact strong {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.reverbReferenceLine {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-brand-tint);
+}
+
+.reverbReferenceLine span {
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.reverbReferenceLine strong {
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.reverbFactorList,
 .reverbNotes {
   margin-top: 16px;
   border-top: 1px solid var(--color-line);
   padding-top: 14px;
 }
 
-.reverbScoreTable h3,
+.reverbFactorList h3,
 .reverbNotes h3 {
   margin: 0 0 10px;
   font-size: 16px;
 }
 
-.reverbScoreTable > div {
+.reverbFactor {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  min-height: 36px;
+  gap: 5px;
+  padding: 9px 0;
   border-bottom: 1px solid rgba(10, 84, 61, 0.08);
+}
+
+.reverbFactor > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reverbFactor strong {
   color: var(--color-ink);
+  font-size: 14px;
 }
 
-.reverbScoreTable strong {
-  font-size: 15px;
+.reverbFactor span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 850;
 }
 
-.reverbScoreTable .plus strong {
+.reverbFactor.increase span {
   color: #b42318;
 }
 
-.reverbScoreTable .minus strong {
+.reverbFactor.decrease span {
   color: #087443;
+}
+
+.reverbFactor p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .reverbNotes p,
@@ -1811,6 +1866,161 @@ textarea:focus {
   margin: 0;
   color: var(--color-muted);
   line-height: 1.7;
+}
+
+.reverbLinkedGrid {
+  margin-top: 16px;
+}
+
+.reverbCalibrationPanel {
+  grid-column: 1 / -1;
+}
+
+.reverbCounterGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.reverbCounterGrid > div {
+  min-height: 64px;
+  display: grid;
+  align-content: space-between;
+  padding: 11px 13px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.reverbCounterGrid span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.reverbCounterGrid strong {
+  color: var(--color-brand-dark);
+  font-size: 23px;
+  line-height: 1;
+}
+
+.reverbCounterGrid .pass strong {
+  color: #047857;
+}
+
+.reverbCounterGrid .fail strong {
+  color: #b91c1c;
+}
+
+.reverbCounterGrid .warn strong {
+  color: #9a6700;
+}
+
+.reverbCalibrationBody {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.reverbReviewEditor {
+  display: grid;
+  gap: 14px;
+  padding-right: 20px;
+  border-right: 1px solid var(--color-line);
+}
+
+.reverbReviewEditor label,
+.reverbReviewEditor fieldset {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.reverbReviewEditor legend {
+  padding: 0;
+  margin-bottom: 7px;
+}
+
+.reverbChoiceRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reverbChoiceRow.verdict {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.reverbMatchNotice {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  color: var(--color-muted);
+  background: var(--color-surface-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reverbMatchNotice.match {
+  border-color: rgba(34, 197, 94, 0.42);
+  background: #f0fdf4;
+}
+
+.reverbMatchNotice.mismatch {
+  border-color: rgba(239, 68, 68, 0.42);
+  background: #fff1f2;
+}
+
+.reverbMatchNotice strong {
+  color: var(--color-ink);
+}
+
+.reverbEditorActions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.reverbEditorActions span {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.reverbRecordTable {
+  max-height: 520px;
+  overflow: auto;
+}
+
+.reverbRecordTable table {
+  min-width: 640px;
+}
+
+.reverbRecordTable tr.active td {
+  background: var(--color-brand-tint);
+}
+
+.reverbRecordActions {
+  display: flex;
+  gap: 6px;
+}
+
+.reverbRecordActions .danger {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 .selectionRecommendation {
@@ -2224,8 +2434,17 @@ th {
 @media (max-width: 960px) {
   .reverberationWorkbenchGrid,
   .reverbFormGrid,
-  .reverbImpactGrid {
+  .reverbImpactGrid,
+  .reverbCalibrationBody,
+  .reverbCounterGrid {
     grid-template-columns: 1fr;
+  }
+
+  .reverbReviewEditor {
+    padding-right: 0;
+    padding-bottom: 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line);
   }
 }
 

@@ -34,9 +34,11 @@ export function ProfilePanel({ profile, completeness, risks, acousticAssessment 
         <Fact label="需求" value={needText} />
         <Fact label="尺寸" value={`${profile.roomGeometry.length}m x ${profile.roomGeometry.width}m x ${profile.roomGeometry.height}m`} />
         <Fact label="面积" value={`${getRoomArea(profile).toFixed(1)} 平方米`} />
+        <Fact label="体积" value={`${acousticAssessment.roomVolume.toFixed(1)} 立方米`} />
         <Fact label="扩声范围" value={getAmplificationScopeText(profile)} />
         <Fact label="扩声形态" value={getSpeakerMode(profile)} />
         <Fact label="混响风险" value={acousticAssessment.label} />
+        <Fact label="RT60" value={`${acousticAssessment.source === "measured" ? "实测" : "估算"} ${acousticAssessment.estimatedRt.toFixed(2)}s`} />
       </div>
 
       <div className={`acousticBlock ${acousticAssessment.risk}`}>
