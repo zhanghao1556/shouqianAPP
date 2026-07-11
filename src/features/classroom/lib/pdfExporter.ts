@@ -15,6 +15,7 @@ import { getAmplificationScopeText, getLegacyDeviceSummary, getNeedText, getScen
 import { getSpeakerModelName } from "./speakerRules";
 import { svgToPngDataUrl } from "./imageExporter";
 import { formatBrandText, getAppBrand } from "../brand";
+import { getCustomerPointValidationStatus } from "./pointValidation";
 
 const getInstallationSelector = () => {
   const prefix = getAppBrand().id === "yinman" ? "音曼" : "音翼";
@@ -230,6 +231,10 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ["利旧设备", getLegacyDeviceSummary(profile)],
     ["复勘备注", profile.engineeringConstraints.notes.trim() || "无"]
   ];
+  const pointValidationStatus = getCustomerPointValidationStatus(outputs.pointValidation);
+  if (pointValidationStatus) {
+    rows.push(["方案状态", pointValidationStatus]);
+  }
   if (profile.scenario === "auditorium") {
     rows.splice(8, 0, ["舞台尺寸", `${profile.engineeringConstraints.stageSize.width}m x ${profile.engineeringConstraints.stageSize.depth}m`]);
   }

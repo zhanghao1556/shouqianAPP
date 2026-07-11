@@ -3,22 +3,29 @@ import { createInitialProfile } from "./data/initialProfile";
 import { mistakeCaseSeeds } from "./data/mistakeCases";
 import { createRuleChangeApproval, ruleChangePolicy } from "./data/ruleGovernance";
 import { DrawingCanvas } from "./components/DrawingCanvas";
+import { PointValidationSummary } from "./components/PointValidationSummary";
 import { TestConsole, type CalibrationCase, type CalibrationStatus } from "./components/TestConsole";
 import { generateEngineeringOutputs } from "./lib/engineeringRules";
 import { createRandomProfile } from "./lib/randomProfile";
 import { normalizeProfile } from "./lib/profileNormalization";
 import type { ClassroomProfile, LegacySpeakerPoint, LegacySpeakerType, LegacyWallAdjustability, Point, QuantityOverrides } from "./types";
+import type { AppBrandId } from "./brand";
 
 const calibrationStorageKey = "yiou-audio-calibration-cases";
 const defaultCentralAirConditionerSize = { width: 0.8, depth: 0.8 };
 
 export function CalibrationWorkbench() {
+  const [brandId, setBrandId] = useState<AppBrandId>(() => {
+    const initialBrand = getInitialCalibrationBrand();
+    window.__APP_BRAND__ = initialBrand;
+    return initialBrand;
+  });
   const [profile, setProfile] = useState<ClassroomProfile>(() => normalizeProfile(createInitialProfile()));
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [calibrationCases, setCalibrationCases] = useState<CalibrationCase[]>(() => loadCalibrationCases());
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>({});
   const [exportStatus, setExportStatus] = useState("");
-  const outputs = useMemo(() => generateEngineeringOutputs(profile, quantityOverrides), [profile, quantityOverrides]);
+  const outputs = useMemo(() => generateEngineeringOutputs(profile, quantityOverrides, brandId), [profile, quantityOverrides, brandId]);
   const arrayMicPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "arrayMic"), [outputs.generatedPoints]);
   const speakerPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "speaker"), [outputs.generatedPoints]);
 
@@ -247,10 +254,30 @@ export function CalibrationWorkbench() {
     setExportStatus(calibrationCases.length ? `已导出 ${calibrationCases.length} 条记录（${exportedAt.slice(11, 19)}）` : "当前没有记录，已导出空记录文件。");
   };
 
+  const changeBrand = (nextBrand: AppBrandId) => {
+    window.__APP_BRAND__ = nextBrand;
+    setBrandId(nextBrand);
+    setQuantityOverrides({});
+    const url = new URL(window.location.href);
+    url.searchParams.set("brand", nextBrand);
+    window.history.replaceState(null, "", url);
+  };
+
   return (
-    <main className="engineeringShell yiouShell">
+    <main className={`engineeringShell ${brandId === "yinman" ? "yinmanShell" : "yiouShell"}`}>
+      <div className="calibrationBrandBar">
+        <div>
+          <strong>点位与系统校准台</strong>
+          <span>当前品牌：{brandId === "yinman" ? "音曼" : "音翼"}</span>
+        </div>
+        <div className="brandSegmentedControl" role="group" aria-label="校准品牌">
+          <button type="button" className={brandId === "yinyi" ? "active" : ""} onClick={() => changeBrand("yinyi")}>音翼</button>
+          <button type="button" className={brandId === "yinman" ? "active" : ""} onClick={() => changeBrand("yinman")}>音曼</button>
+        </div>
+      </div>
       <section className="engineeringGrid calibrationWorkbenchGrid">
         <TestConsole
+          brandId={brandId}
           cases={calibrationCases}
           activeCaseId={activeCaseId}
           onGenerateOne={() => generateCases(1)}
@@ -277,6 +304,7 @@ export function CalibrationWorkbench() {
             <span>接线 {outputs.connectionLines.length} 条</span>
             <span>{outputs.audioPlan.mode}</span>
           </div>
+          <PointValidationSummary result={outputs.pointValidation} mode="full" />
           <CalibrationPointMap
             profile={profile}
             outputs={outputs}
@@ -305,6 +333,10 @@ export function CalibrationWorkbench() {
       </section>
     </main>
   );
+}
+
+function getInitialCalibrationBrand(): AppBrandId {
+  return new URLSearchParams(window.location.search).get("brand") === "yinman" ? "yinman" : "yinyi";
 }
 
 function loadCalibrationCases(): CalibrationCase[] {

@@ -1,0 +1,608 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T12:44:35.986Z",
+  "sourceRoot": "docx_2",
+  "sourcePriority": [
+    "用户确认口径",
+    "正式规格书与安装手册",
+    "产品白皮书",
+    "解决方案",
+    "营销文案"
+  ],
+  "documents": [
+    {
+      "path": "3-ClassIn Mic DT2 Pro智能语音阵列麦克风白皮书20260319.docx",
+      "bytes": 52286865,
+      "modifiedAt": "2026-03-18T09:54:45.960Z",
+      "sha256": "9ce242ea44e66fe0b2b0d2871cb88089d9d658cf74faa6515ec2f9376b417aba",
+      "extractedSha256": "9ce242ea44e66fe0b2b0d2871cb88089d9d658cf74faa6515ec2f9376b417aba",
+      "extractionStatus": "current",
+      "cacheKey": "9ce242ea44e66fe0"
+    },
+    {
+      "path": "教学模拟功放系统安装手册.docx",
+      "bytes": 46367,
+      "modifiedAt": "2026-03-31T07:18:21.000Z",
+      "sha256": "d7d2426e891d07bae9c41d3657a938ed9da36bb3f807cd1948ec232d5287b748",
+      "extractedSha256": "d7d2426e891d07bae9c41d3657a938ed9da36bb3f807cd1948ec232d5287b748",
+      "extractionStatus": "current",
+      "cacheKey": "d7d2426e891d07ba"
+    },
+    {
+      "path": "教学模拟功放系统应用方案.docx",
+      "bytes": 13076858,
+      "modifiedAt": "2026-03-31T06:03:06.000Z",
+      "sha256": "42e58ed0794d96426f064679b41699fb1760d927a9c291673beac291d532c10f",
+      "extractedSha256": "42e58ed0794d96426f064679b41699fb1760d927a9c291673beac291d532c10f",
+      "extractionStatus": "current",
+      "cacheKey": "42e58ed0794d9642"
+    },
+    {
+      "path": "教学模拟功放主机（YM-AP150）产品规格书.docx",
+      "bytes": 230186,
+      "modifiedAt": "2025-11-25T07:41:39.000Z",
+      "sha256": "b740e0e29b2573761fb1c3b9026b396d508dda2a283276d370c79ed3abeef1c6",
+      "extractedSha256": "b740e0e29b2573761fb1c3b9026b396d508dda2a283276d370c79ed3abeef1c6",
+      "extractionStatus": "current",
+      "cacheKey": "b740e0e29b257376"
+    },
+    {
+      "path": "模拟功放主机使用说明书250728(95x95).docx",
+      "bytes": 1133258,
+      "modifiedAt": "2025-08-01T11:36:49.000Z",
+      "sha256": "cf6832bf77291ee71f7ea4aff07e021c08579036f56f27ec80db4a7d384a4659",
+      "extractedSha256": "cf6832bf77291ee71f7ea4aff07e021c08579036f56f27ec80db4a7d384a4659",
+      "extractionStatus": "current",
+      "cacheKey": "cf6832bf77291ee7"
+    },
+    {
+      "path": "手持麦接收机说明书.docx",
+      "bytes": 240318,
+      "modifiedAt": "2024-08-22T08:32:55.000Z",
+      "sha256": "687a685816d22590c5912fddc9efbe19e53171b0e5a6ee53cbb83091a68efc99",
+      "extractedSha256": "687a685816d22590c5912fddc9efbe19e53171b0e5a6ee53cbb83091a68efc99",
+      "extractionStatus": "current",
+      "cacheKey": "687a685816d22590"
+    },
+    {
+      "path": "手持麦克风系统应用方案.docx",
+      "bytes": 20309701,
+      "modifiedAt": "2026-03-31T06:05:55.000Z",
+      "sha256": "e6a5e35a697dec89273fcebbe33a7c94275924157fd51e83d853c30123cef12c",
+      "extractedSha256": "e6a5e35a697dec89273fcebbe33a7c94275924157fd51e83d853c30123cef12c",
+      "extractionStatus": "current",
+      "cacheKey": "e6a5e35a697dec89"
+    },
+    {
+      "path": "手持麦说明书 .docx",
+      "bytes": 217004,
+      "modifiedAt": "2024-06-17T07:07:43.000Z",
+      "sha256": "c83bf3d86333b9c57758aa859970f9c0292fe7e00153fff2822f6fa0466811ee",
+      "extractedSha256": "c83bf3d86333b9c57758aa859970f9c0292fe7e00153fff2822f6fa0466811ee",
+      "extractionStatus": "current",
+      "cacheKey": "c83bf3d86333b9c5"
+    },
+    {
+      "path": "音曼教学专用线阵音箱（YM-MX11）规格书.docx",
+      "bytes": 12185,
+      "modifiedAt": "2026-03-20T09:11:35.399Z",
+      "sha256": "22197f8ebbacd93784260510799e379709bba503f2dadef6ea3dab9b14771abd",
+      "extractedSha256": "22197f8ebbacd93784260510799e379709bba503f2dadef6ea3dab9b14771abd",
+      "extractionStatus": "current",
+      "cacheKey": "22197f8ebbacd937"
+    },
+    {
+      "path": "音曼线阵麦克风解决方案（AJ200).doc",
+      "bytes": 4807592,
+      "modifiedAt": "2026-04-03T02:12:07.854Z",
+      "sha256": "2bd0c15f78dbaef94f6123d8e80ea00c676e406d09bd1150232bc1d1c39ceecd",
+      "extractedSha256": "2bd0c15f78dbaef94f6123d8e80ea00c676e406d09bd1150232bc1d1c39ceecd",
+      "extractionStatus": "current",
+      "cacheKey": "2bd0c15f78dbaef9"
+    },
+    {
+      "path": "音曼线阵麦克风解决方案（AJ600).doc",
+      "bytes": 3896296,
+      "modifiedAt": "2026-04-01T01:11:19.253Z",
+      "sha256": "259ecf96661acaf64af1d19d07bfc585b9c2674995507c8cb4449b7040b980a7",
+      "extractedSha256": "259ecf96661acaf64af1d19d07bfc585b9c2674995507c8cb4449b7040b980a7",
+      "extractionStatus": "current",
+      "cacheKey": "259ecf96661acaf6"
+    },
+    {
+      "path": "音曼小振膜电容麦克风-LB102参数（铜管）.pdf",
+      "bytes": 444757,
+      "modifiedAt": "2023-03-07T06:54:48.000Z",
+      "sha256": "fca7890b61c90ecb21253d865b2ce90b1f82394ec5aa0f0adf0f16e8c5e412ae",
+      "extractedSha256": "fca7890b61c90ecb21253d865b2ce90b1f82394ec5aa0f0adf0f16e8c5e412ae",
+      "extractionStatus": "current",
+      "cacheKey": "fca7890b61c90ecb"
+    },
+    {
+      "path": "音曼智能会议室扩声系统解决方案.doc",
+      "bytes": 47080905,
+      "modifiedAt": "2026-04-03T01:27:49.344Z",
+      "sha256": "609d5c9113a7e652fd9c533a7ffd77473ed62decfad19e1e9eb354d27178368f",
+      "extractedSha256": "609d5c9113a7e652fd9c533a7ffd77473ed62decfad19e1e9eb354d27178368f",
+      "extractionStatus": "current",
+      "cacheKey": "609d5c9113a7e652"
+    },
+    {
+      "path": "音曼智能降噪麦克风白皮书Ring03.docx",
+      "bytes": 483601,
+      "modifiedAt": "2025-06-12T02:57:48.000Z",
+      "sha256": "1081912f392250d76b860c93cc83fdba5c388c815a216b24ed4832b7cd386a17",
+      "extractedSha256": "1081912f392250d76b860c93cc83fdba5c388c815a216b24ed4832b7cd386a17",
+      "extractionStatus": "current",
+      "cacheKey": "1081912f392250d7"
+    },
+    {
+      "path": "音曼智能降噪麦克风解决方案 .doc",
+      "bytes": 1087654,
+      "modifiedAt": "2026-04-03T02:11:27.762Z",
+      "sha256": "b7df9bd259b3225a78dd4a88217b798ae52f2397270a17ce3f9836ed405da3c0",
+      "extractedSha256": "b7df9bd259b3225a78dd4a88217b798ae52f2397270a17ce3f9836ed405da3c0",
+      "extractionStatus": "current",
+      "cacheKey": "b7df9bd259b3225a"
+    },
+    {
+      "path": "音曼智能天顶音阵解决方案 .doc",
+      "bytes": 6114855,
+      "modifiedAt": "2026-04-03T01:06:07.847Z",
+      "sha256": "7642ebd5cf1a3b2e764098c93882e2c2e153df6850773cfb72eb76629cdafb02",
+      "extractedSha256": "7642ebd5cf1a3b2e764098c93882e2c2e153df6850773cfb72eb76629cdafb02",
+      "extractionStatus": "current",
+      "cacheKey": "7642ebd5cf1a3b2e"
+    },
+    {
+      "path": "音曼智能天顶音阵MAX解决方案 V2.doc",
+      "bytes": 35902411,
+      "modifiedAt": "2026-04-03T01:28:10.251Z",
+      "sha256": "1a3fec5eeba86051d145430cde42df239d7d7548637894f681c196c53ba5de7d",
+      "extractedSha256": "1a3fec5eeba86051d145430cde42df239d7d7548637894f681c196c53ba5de7d",
+      "extractionStatus": "current",
+      "cacheKey": "1a3fec5eeba86051"
+    },
+    {
+      "path": "音曼智能语音系统解决方案 （2麦版）.doc",
+      "bytes": 3003674,
+      "modifiedAt": "2025-12-05T05:50:08.071Z",
+      "sha256": "2212e26c9225d040071cee8fbcb5b5219b7a3a790a00b8e18dda9281bb0667aa",
+      "extractedSha256": "2212e26c9225d040071cee8fbcb5b5219b7a3a790a00b8e18dda9281bb0667aa",
+      "extractionStatus": "current",
+      "cacheKey": "2212e26c9225d040"
+    },
+    {
+      "path": "音曼智能语音系统解决方案 （6麦版）.doc",
+      "bytes": 3439652,
+      "modifiedAt": "2026-04-03T01:06:06.141Z",
+      "sha256": "1fb1da07677379b54135f860f29ec2b5266567e85db82ff6087d6b455c4366fa",
+      "extractedSha256": "1fb1da07677379b54135f860f29ec2b5266567e85db82ff6087d6b455c4366fa",
+      "extractionStatus": "current",
+      "cacheKey": "1fb1da07677379b5"
+    },
+    {
+      "path": "音曼智能AI音频处理器白皮书AJ200.docx",
+      "bytes": 554267,
+      "modifiedAt": "2025-01-08T11:24:58.000Z",
+      "sha256": "e4f1215331dfe856ffd8566ff677afcd72aed75806135aaa1d6b93b75ff77faf",
+      "extractedSha256": "e4f1215331dfe856ffd8566ff677afcd72aed75806135aaa1d6b93b75ff77faf",
+      "extractionStatus": "current",
+      "cacheKey": "e4f1215331dfe856"
+    },
+    {
+      "path": "音曼智能AI音频处理器白皮书AJ600.docx",
+      "bytes": 401074,
+      "modifiedAt": "2025-05-30T06:37:22.000Z",
+      "sha256": "62ac85c85945f246ed33161b9b78c305fd65b83afabab251e757a3dd13342a8c",
+      "extractedSha256": "62ac85c85945f246ed33161b9b78c305fd65b83afabab251e757a3dd13342a8c",
+      "extractionStatus": "current",
+      "cacheKey": "62ac85c85945f246"
+    },
+    {
+      "path": "音频系统施工与布线规范.docx",
+      "bytes": 60826,
+      "modifiedAt": "2026-03-30T07:42:43.383Z",
+      "sha256": "f0d055431bc231c99f962f44f0eadd6bd4a2450e01254904d0a1bd49597f767f",
+      "extractedSha256": "f0d055431bc231c99f962f44f0eadd6bd4a2450e01254904d0a1bd49597f767f",
+      "extractionStatus": "current",
+      "cacheKey": "f0d055431bc231c9"
+    },
+    {
+      "path": "阵列麦克风说明书（SA110）.docx",
+      "bytes": 348191,
+      "modifiedAt": "2025-11-25T01:49:10.271Z",
+      "sha256": "9911f947e8ddc25c4236db84405b684c36ed54b61415572b69500bc627fc82e9",
+      "extractedSha256": "9911f947e8ddc25c4236db84405b684c36ed54b61415572b69500bc627fc82e9",
+      "extractionStatus": "current",
+      "cacheKey": "9911f947e8ddc25c"
+    },
+    {
+      "path": "阵列麦系统使用手册 V2.2.3.docx",
+      "bytes": 2116730,
+      "modifiedAt": "2025-09-09T01:44:36.000Z",
+      "sha256": "59a29c68026b419a9e7cfeeb42520630374d751c8281e51a6359b1076f9ced26",
+      "extractedSha256": "59a29c68026b419a9e7cfeeb42520630374d751c8281e51a6359b1076f9ced26",
+      "extractionStatus": "current",
+      "cacheKey": "59a29c68026b419a"
+    },
+    {
+      "path": "智能手持无线麦克风（AWM301-T_AWM302）产品介绍白皮书.docx",
+      "bytes": 23903,
+      "modifiedAt": "2026-04-09T07:38:45.423Z",
+      "sha256": "e0938e67695954fc35137784dbb398b63f1e613406ee99ceb74702ffd1c2e24f",
+      "extractedSha256": "e0938e67695954fc35137784dbb398b63f1e613406ee99ceb74702ffd1c2e24f",
+      "extractionStatus": "current",
+      "cacheKey": "e0938e67695954fc"
+    },
+    {
+      "path": "智能天顶音阵MAX说明书.docx",
+      "bytes": 253188,
+      "modifiedAt": "2026-03-25T07:08:34.028Z",
+      "sha256": "dd193bdd99393806ab9f4c608ddf61eae9429a0ca25a57c347cc64f2af4fa872",
+      "extractedSha256": "dd193bdd99393806ab9f4c608ddf61eae9429a0ca25a57c347cc64f2af4fa872",
+      "extractionStatus": "current",
+      "cacheKey": "dd193bdd99393806"
+    },
+    {
+      "path": "智能线阵麦克风使用说明书(SA100).docx",
+      "bytes": 1309385,
+      "modifiedAt": "2025-06-16T04:07:59.597Z",
+      "sha256": "e0f66e5df6e949fed93892722df67eef0dbdd206c069ded21bb66273a07b9f31",
+      "extractedSha256": "e0f66e5df6e949fed93892722df67eef0dbdd206c069ded21bb66273a07b9f31",
+      "extractionStatus": "current",
+      "cacheKey": "e0f66e5df6e949fe"
+    },
+    {
+      "path": "智能线阵麦克风SA100白皮书.docx",
+      "bytes": 104590,
+      "modifiedAt": "2026-04-09T03:00:33.107Z",
+      "sha256": "84416ee0a6a38a14bc5cac100265d49fc6aecc1b226d05e74fe0258e62426da5",
+      "extractedSha256": "84416ee0a6a38a14bc5cac100265d49fc6aecc1b226d05e74fe0258e62426da5",
+      "extractionStatus": "current",
+      "cacheKey": "84416ee0a6a38a14"
+    },
+    {
+      "path": "智能线阵麦克风SA110白皮书.docx",
+      "bytes": 104555,
+      "modifiedAt": "2026-04-09T03:00:09.825Z",
+      "sha256": "6d17e760ab24c1d36cb4b51d6624beea524a5ab5a2ec2074178d539a7d294cb0",
+      "extractedSha256": "6d17e760ab24c1d36cb4b51d6624beea524a5ab5a2ec2074178d539a7d294cb0",
+      "extractionStatus": "current",
+      "cacheKey": "6d17e760ab24c1d3"
+    },
+    {
+      "path": "智能语音阵列麦克风白皮书-DT1.docx",
+      "bytes": 2676373,
+      "modifiedAt": "2024-04-24T01:54:52.548Z",
+      "sha256": "18ab891421a677f2ae7e64d8aa096798e21b4822458969676870118dabf7d091",
+      "extractedSha256": "18ab891421a677f2ae7e64d8aa096798e21b4822458969676870118dabf7d091",
+      "extractionStatus": "current",
+      "cacheKey": "18ab891421a677f2"
+    },
+    {
+      "path": "AJ200、AJ600、AJ610现场常见问题排查及音效调整.docx",
+      "bytes": 35429,
+      "modifiedAt": "2026-04-03T08:29:20.000Z",
+      "sha256": "f05e4563bb92e16d89fe85ca89027a1d0abec1b00c5e2a27a381606fe39c47a3",
+      "extractedSha256": "f05e4563bb92e16d89fe85ca89027a1d0abec1b00c5e2a27a381606fe39c47a3",
+      "extractionStatus": "current",
+      "cacheKey": "f05e4563bb92e16d"
+    },
+    {
+      "path": "AJ200包装说明书.docx",
+      "bytes": 265465,
+      "modifiedAt": "2025-04-01T09:15:01.685Z",
+      "sha256": "01988bfab6244a797bccffee8a37f834913b393d803ba68806ec2c22db39d33f",
+      "extractedSha256": "01988bfab6244a797bccffee8a37f834913b393d803ba68806ec2c22db39d33f",
+      "extractionStatus": "current",
+      "cacheKey": "01988bfab6244a79"
+    },
+    {
+      "path": "AJ200整机规格书.doc",
+      "bytes": 956928,
+      "modifiedAt": "2026-04-01T10:33:50.000Z",
+      "sha256": "bf31df3430394653a4f4e069b848da08b0d1d1687464b98fb2224f4452466c5c",
+      "extractedSha256": "bf31df3430394653a4f4e069b848da08b0d1d1687464b98fb2224f4452466c5c",
+      "extractionStatus": "current",
+      "cacheKey": "bf31df3430394653"
+    },
+    {
+      "path": "AJ600（无屏幕）包装说明书.docx",
+      "bytes": 225587,
+      "modifiedAt": "2025-07-03T01:44:11.181Z",
+      "sha256": "0b861e2d58acba205e0e2553e9bc670fb348a4aacbb6d64eafc821ec28535908",
+      "extractedSha256": "0b861e2d58acba205e0e2553e9bc670fb348a4aacbb6d64eafc821ec28535908",
+      "extractionStatus": "current",
+      "cacheKey": "0b861e2d58acba20"
+    },
+    {
+      "path": "AJ600包装说明书.docx",
+      "bytes": 693134,
+      "modifiedAt": "2024-12-27T15:10:49.086Z",
+      "sha256": "17f3e06c7d5675908bfbb0c114174aa33f8dddb01d0306f5acc7da39187ea8ed",
+      "extractedSha256": "17f3e06c7d5675908bfbb0c114174aa33f8dddb01d0306f5acc7da39187ea8ed",
+      "extractionStatus": "current",
+      "cacheKey": "17f3e06c7d567590"
+    },
+    {
+      "path": "AJ600整机规格书.doc",
+      "bytes": 1944064,
+      "modifiedAt": "2026-04-01T10:33:16.000Z",
+      "sha256": "74882cd00e01538fbe3bee957520a9086fe0eaea92bbce5507d70a8922877c28",
+      "extractedSha256": "74882cd00e01538fbe3bee957520a9086fe0eaea92bbce5507d70a8922877c28",
+      "extractionStatus": "current",
+      "cacheKey": "74882cd00e01538f"
+    },
+    {
+      "path": "AP150整机规格书.doc",
+      "bytes": 1282560,
+      "modifiedAt": "2026-04-02T03:32:12.000Z",
+      "sha256": "9eb5927efab99367cb3cfa127c66b888a70fa62a4e7292a2369fb1472d48645e",
+      "extractedSha256": "9eb5927efab99367cb3cfa127c66b888a70fa62a4e7292a2369fb1472d48645e",
+      "extractionStatus": "current",
+      "cacheKey": "9eb5927efab99367"
+    },
+    {
+      "path": "AWM301_R整机规格书.doc",
+      "bytes": 1188864,
+      "modifiedAt": "2026-04-02T07:23:36.000Z",
+      "sha256": "f2da8c7148011e46a29179b9d101e2dc56c8eb7b1ced6b270113bc1c11c6f76a",
+      "extractedSha256": "f2da8c7148011e46a29179b9d101e2dc56c8eb7b1ced6b270113bc1c11c6f76a",
+      "extractionStatus": "current",
+      "cacheKey": "f2da8c7148011e46"
+    },
+    {
+      "path": "AWM301_T整机规格书.doc",
+      "bytes": 496691,
+      "modifiedAt": "2026-04-02T06:23:59.000Z",
+      "sha256": "415a6846d8d9e62fde25a75976186454bf63a3f855a2cf995c0ffc7e0fcdb902",
+      "extractedSha256": "415a6846d8d9e62fde25a75976186454bf63a3f855a2cf995c0ffc7e0fcdb902",
+      "extractionStatus": "current",
+      "cacheKey": "415a6846d8d9e62f"
+    },
+    {
+      "path": "ClassIn Mic DT1声场方案调试指导V1.0.pdf",
+      "bytes": 2039137,
+      "modifiedAt": "2026-06-25T07:30:00.864Z",
+      "sha256": "8bc90feaaded86cda8f8eeca51212c1214920f1ccf7ada174b920efab3485225",
+      "extractedSha256": "8bc90feaaded86cda8f8eeca51212c1214920f1ccf7ada174b920efab3485225",
+      "extractionStatus": "current",
+      "cacheKey": "8bc90feaaded86cd"
+    },
+    {
+      "path": "DT1、DT2、DT2 Pro现场常见问题排查及音效调整.docx",
+      "bytes": 50943,
+      "modifiedAt": "2026-04-02T07:55:10.555Z",
+      "sha256": "f1322ca87dfc225f698df9ae6985ad087b34aa5077e4d45d41effd46b0775ad2",
+      "extractedSha256": "f1322ca87dfc225f698df9ae6985ad087b34aa5077e4d45d41effd46b0775ad2",
+      "extractionStatus": "current",
+      "cacheKey": "f1322ca87dfc225f"
+    },
+    {
+      "path": "DT1、DT2、DT2Pro智能阵列麦克风安装手册.docx",
+      "bytes": 46197413,
+      "modifiedAt": "2026-03-31T07:40:01.000Z",
+      "sha256": "d5caa44073262f87d28eba6f2f9d61d6464773c19f483b6d547b206a5b1a71a4",
+      "extractedSha256": "d5caa44073262f87d28eba6f2f9d61d6464773c19f483b6d547b206a5b1a71a4",
+      "extractionStatus": "current",
+      "cacheKey": "d5caa44073262f87"
+    },
+    {
+      "path": "DT1、DT2、DT2Pro智能阵列麦克风互动课堂音频系统应用方案.docx",
+      "bytes": 46621480,
+      "modifiedAt": "2026-03-30T07:55:38.363Z",
+      "sha256": "3e023e15f86a40cfaab3c0edea774b6ba3f9004ccf49bf8a817f8ba9b7618291",
+      "extractedSha256": "3e023e15f86a40cfaab3c0edea774b6ba3f9004ccf49bf8a817f8ba9b7618291",
+      "extractionStatus": "current",
+      "cacheKey": "3e023e15f86a40cf"
+    },
+    {
+      "path": "DT1、DT2、DT2Pro智能阵列麦克风会议室音频系统应用方案 .docx",
+      "bytes": 48478982,
+      "modifiedAt": "2026-03-30T07:56:24.320Z",
+      "sha256": "5db81d4b0e8fd6425686f9884cd7b0cd9807a1aa952388722ac5c5b88c10d243",
+      "extractedSha256": "5db81d4b0e8fd6425686f9884cd7b0cd9807a1aa952388722ac5c5b88c10d243",
+      "extractionStatus": "current",
+      "cacheKey": "5db81d4b0e8fd642"
+    },
+    {
+      "path": "DT1、DT2、DT2Pro智能阵列麦克风天顶挂架规格及安装指南.docx",
+      "bytes": 70155587,
+      "modifiedAt": "2026-03-31T07:41:26.000Z",
+      "sha256": "5493b77c065fa3f24287717644210046635b68edee6eed28816c1d5f628f9657",
+      "extractedSha256": "5493b77c065fa3f24287717644210046635b68edee6eed28816c1d5f628f9657",
+      "extractionStatus": "current",
+      "cacheKey": "5493b77c065fa3f2"
+    },
+    {
+      "path": "DT1阵列麦说明书.docx",
+      "bytes": 466535,
+      "modifiedAt": "2026-06-04T02:17:34.944Z",
+      "sha256": "5c1bee6fdd6def88bc279d8c194a2f85868f5b9b9b60aec93c5075b238a95559",
+      "extractedSha256": "5c1bee6fdd6def88bc279d8c194a2f85868f5b9b9b60aec93c5075b238a95559",
+      "extractionStatus": "current",
+      "cacheKey": "5c1bee6fdd6def88"
+    },
+    {
+      "path": "DT2 阵列麦说明书.docx",
+      "bytes": 17748285,
+      "modifiedAt": "2026-03-17T09:29:36.806Z",
+      "sha256": "21f97925a57b9c4692efd0a85d42b7154bbddeaf726675f9516a2175c9359c62",
+      "extractedSha256": "21f97925a57b9c4692efd0a85d42b7154bbddeaf726675f9516a2175c9359c62",
+      "extractionStatus": "current",
+      "cacheKey": "21f97925a57b9c46"
+    },
+    {
+      "path": "DT2 Pro阵列麦说明书.docx",
+      "bytes": 17755266,
+      "modifiedAt": "2026-03-19T02:41:08.436Z",
+      "sha256": "22905c1f3bd40917999937f0ba06d38322ebf16d6185dbe4e811d022d470478c",
+      "extractedSha256": "22905c1f3bd40917999937f0ba06d38322ebf16d6185dbe4e811d022d470478c",
+      "extractionStatus": "current",
+      "cacheKey": "22905c1f3bd40917"
+    },
+    {
+      "path": "Ring01 02现场常见问题排查及音效调整.docx",
+      "bytes": 34914,
+      "modifiedAt": "2026-04-03T06:53:42.158Z",
+      "sha256": "096be25279346279d070190f50e9833ae6d0d3e4a315102f61b90a9c774b15f4",
+      "extractedSha256": "096be25279346279d070190f50e9833ae6d0d3e4a315102f61b90a9c774b15f4",
+      "extractionStatus": "current",
+      "cacheKey": "096be25279346279"
+    },
+    {
+      "path": "Ring01整机规格书.doc",
+      "bytes": 997888,
+      "modifiedAt": "2026-04-02T01:50:34.000Z",
+      "sha256": "daf4282eb565225b61a04c5df3286c57b1f9e15b5750db41fa2fc7a486f0d7cd",
+      "extractedSha256": "daf4282eb565225b61a04c5df3286c57b1f9e15b5750db41fa2fc7a486f0d7cd",
+      "extractionStatus": "current",
+      "cacheKey": "daf4282eb565225b"
+    },
+    {
+      "path": "Ring01智能天顶音阵使用说明书-主麦-印刷版-240828(95x95).docx",
+      "bytes": 3497257,
+      "modifiedAt": "2025-07-28T08:15:22.460Z",
+      "sha256": "5fd955b616e3597c36b730aa86a7ec829be90510c325470c6bd05335983479a7",
+      "extractedSha256": "5fd955b616e3597c36b730aa86a7ec829be90510c325470c6bd05335983479a7",
+      "extractionStatus": "current",
+      "cacheKey": "5fd955b616e3597c"
+    },
+    {
+      "path": "Ring02整机规格书.doc",
+      "bytes": 996864,
+      "modifiedAt": "2026-04-02T02:23:34.000Z",
+      "sha256": "a555cb45bb87d39e7bcc5c7d9fdb17787f431cb6b7b0c57dbd5972592cf8254b",
+      "extractedSha256": "a555cb45bb87d39e7bcc5c7d9fdb17787f431cb6b7b0c57dbd5972592cf8254b",
+      "extractionStatus": "current",
+      "cacheKey": "a555cb45bb87d39e"
+    },
+    {
+      "path": "Ring02智能天顶麦克风使用说明书-从麦-印刷版-240828(95x95).docx",
+      "bytes": 3564287,
+      "modifiedAt": "2025-09-03T09:51:48.731Z",
+      "sha256": "997cd57f7c327c33f13d6a98645533cf755f177e0d77feb47e828b1b1635ccf2",
+      "extractedSha256": "997cd57f7c327c33f13d6a98645533cf755f177e0d77feb47e828b1b1635ccf2",
+      "extractionStatus": "current",
+      "cacheKey": "997cd57f7c327c33"
+    },
+    {
+      "path": "Ring03整机规格书.doc",
+      "bytes": 510976,
+      "modifiedAt": "2026-04-03T07:48:26.000Z",
+      "sha256": "bc052d69584554897e6cf86bbc15bc4649e85cb723bc1fdba60f330187f8b1e3",
+      "extractedSha256": "bc052d69584554897e6cf86bbc15bc4649e85cb723bc1fdba60f330187f8b1e3",
+      "extractionStatus": "current",
+      "cacheKey": "bc052d6958455489"
+    },
+    {
+      "path": "Ring03智能降噪麦克风使用说明书20250411.docx",
+      "bytes": 2325687,
+      "modifiedAt": "2025-06-12T01:58:28.619Z",
+      "sha256": "3e43da6cf2accd69a542e8ef55006b98be77d2054252e2e6e67ad0d99e162ee7",
+      "extractedSha256": "3e43da6cf2accd69a542e8ef55006b98be77d2054252e2e6e67ad0d99e162ee7",
+      "extractionStatus": "current",
+      "cacheKey": "3e43da6cf2accd69"
+    },
+    {
+      "path": "SA100整机规格书.doc",
+      "bytes": 864819,
+      "modifiedAt": "2026-04-02T07:51:30.000Z",
+      "sha256": "6c30db5d62d0b3cc376dfb2379e0c5e720d31c2246e533fb71b3ff656afc30c8",
+      "extractedSha256": "6c30db5d62d0b3cc376dfb2379e0c5e720d31c2246e533fb71b3ff656afc30c8",
+      "extractionStatus": "current",
+      "cacheKey": "6c30db5d62d0b3cc"
+    },
+    {
+      "path": "SA110整机规格书.doc",
+      "bytes": 864819,
+      "modifiedAt": "2026-04-02T07:50:19.000Z",
+      "sha256": "ee19d6560d8bafdead10f51dc178c6d10d9d10afe1d08ae88b6c7495be843f21",
+      "extractedSha256": "ee19d6560d8bafdead10f51dc178c6d10d9d10afe1d08ae88b6c7495be843f21",
+      "extractionStatus": "current",
+      "cacheKey": "ee19d6560d8bafde"
+    },
+    {
+      "path": "WP1手持麦-安装注意事项及接口说明.docx",
+      "bytes": 2806200,
+      "modifiedAt": "2026-03-13T08:22:39.000Z",
+      "sha256": "d170f33b05529497b6f67c46872ddd2e49f4010d9aa5725aef640e301c329df1",
+      "extractedSha256": "d170f33b05529497b6f67c46872ddd2e49f4010d9aa5725aef640e301c329df1",
+      "extractionStatus": "current",
+      "cacheKey": "d170f33b05529497"
+    },
+    {
+      "path": "YM-AJ200音曼智能AI语音主机安装手册.docx",
+      "bytes": 818049,
+      "modifiedAt": "2026-04-03T09:30:38.160Z",
+      "sha256": "c93612cbc74eaae2fbfb6ee8d24b3a6739ca10b6c9cc312eae0f9d0dd00f3315",
+      "extractedSha256": "c93612cbc74eaae2fbfb6ee8d24b3a6739ca10b6c9cc312eae0f9d0dd00f3315",
+      "extractionStatus": "current",
+      "cacheKey": "c93612cbc74eaae2"
+    },
+    {
+      "path": "YM-AJ600 &AJ610音曼智能AI语音主机安装手册.docx",
+      "bytes": 1128296,
+      "modifiedAt": "2026-04-03T09:30:37.827Z",
+      "sha256": "197a40f592f350aa671e0c1dc829e1b871fd89020c68dfd75c2f736ee00f4777",
+      "extractedSha256": "197a40f592f350aa671e0c1dc829e1b871fd89020c68dfd75c2f736ee00f4777",
+      "extractionStatus": "current",
+      "cacheKey": "197a40f592f350aa"
+    },
+    {
+      "path": "YM-AJ600 &AJ610智能AI语音主机安装手册.docx",
+      "bytes": 891140,
+      "modifiedAt": "2026-04-03T01:48:48.988Z",
+      "sha256": "69e5743c50bd605d31674a49b7d523c01547865239a4dfee97499637ba0b467c",
+      "extractedSha256": "69e5743c50bd605d31674a49b7d523c01547865239a4dfee97499637ba0b467c",
+      "extractionStatus": "current",
+      "cacheKey": "69e5743c50bd605d"
+    },
+    {
+      "path": "YM-AWM301、WP1无线手持麦常见问题答疑.docx",
+      "bytes": 33364,
+      "modifiedAt": "2026-04-02T08:14:11.233Z",
+      "sha256": "d96b095b093d7616feabc8a07d6cbea3b61933d9d5f360dca472167e80b58f7c",
+      "extractedSha256": "d96b095b093d7616feabc8a07d6cbea3b61933d9d5f360dca472167e80b58f7c",
+      "extractionStatus": "current",
+      "cacheKey": "d96b095b093d7616"
+    },
+    {
+      "path": "YM-Ring01 音曼智能天顶音阵安装手册.docx",
+      "bytes": 839188,
+      "modifiedAt": "2026-04-09T09:13:02.252Z",
+      "sha256": "ac10475abc7221ec24e8f9fca74522b212078051e5336874548cc0858252928a",
+      "extractedSha256": "ac10475abc7221ec24e8f9fca74522b212078051e5336874548cc0858252928a",
+      "extractionStatus": "current",
+      "cacheKey": "ac10475abc7221ec"
+    },
+    {
+      "path": "YM-Ring03音曼智能降噪麦克风安装手册.docx",
+      "bytes": 1413885,
+      "modifiedAt": "2026-04-03T09:30:37.310Z",
+      "sha256": "c7aca7f8f4f1a2ff8d47cb32727f77520fd63a61183a6bc0b2395088a40a16ed",
+      "extractedSha256": "c7aca7f8f4f1a2ff8d47cb32727f77520fd63a61183a6bc0b2395088a40a16ed",
+      "extractionStatus": "current",
+      "cacheKey": "c7aca7f8f4f1a2ff"
+    },
+    {
+      "path": "YY-URO1 USB网线传输器使用手册.docx",
+      "bytes": 7734120,
+      "modifiedAt": "2026-03-31T11:01:02.000Z",
+      "sha256": "0e387f345ed66f2a05ce6fe22d594cf1761dd5287a79b62a4f98967083a25bca",
+      "extractedSha256": "0e387f345ed66f2a05ce6fe22d594cf1761dd5287a79b62a4f98967083a25bca",
+      "extractionStatus": "current",
+      "cacheKey": "0e387f345ed66f2a"
+    },
+    {
+      "path": "YY-YKO1、YY-YK02、YY-YK03 遥控器使用手册.docx",
+      "bytes": 2729930,
+      "modifiedAt": "2026-03-31T09:15:40.000Z",
+      "sha256": "7e55a221b3ac81d31b8b6800617dbff70acc0612c323fb0bbe5548f826ab08b7",
+      "extractedSha256": "7e55a221b3ac81d31b8b6800617dbff70acc0612c323fb0bbe5548f826ab08b7",
+      "extractionStatus": "current",
+      "cacheKey": "7e55a221b3ac81d3"
+    }
+  ]
+}

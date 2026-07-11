@@ -1,3 +1,4 @@
+import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, ConnectionLine, ProductRecommendation } from "../types";
 import {
   DT_SPK_OUTPUT_COUNT,
@@ -11,6 +12,11 @@ import {
   SPEAKERS_PER_SPK_OUTPUT,
   getSpeakerOutputSummary
 } from "./speakerRules";
+import {
+  AUDIO_PROCESSOR_HOST_PRODUCT_ID,
+  getBrandSystemCapability,
+  PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
+} from "./systemCapabilities";
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
@@ -18,7 +24,12 @@ export const DT_AUDIO_LINE_OUT_LIMIT = 4;
 export const getPrimaryDtProduct = (selection: ProductRecommendation[]) =>
   selection.find((item) => item.productId === "DT2-Pro" && item.quantity > 0);
 
-export const generateConnectionLines = (profile: ClassroomProfile, selection: ProductRecommendation[]): ConnectionLine[] => {
+export const generateConnectionLines = (
+  profile: ClassroomProfile,
+  selection: ProductRecommendation[],
+  brandId: AppBrandId = "yinyi"
+): ConnectionLine[] => {
+  if (brandId === "yinman") return generateProcessorDirectConnectionLines(profile, selection);
   const dt = getPrimaryDtProduct(selection);
   if (!dt) return [];
 
@@ -206,6 +217,181 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
 
   return applyAudioLineCapacityRules(lines, dtName);
 };
+
+function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selection: ProductRecommendation[]): ConnectionLine[] {
+  const arrayMic = selection.find((item) => item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID && item.quantity > 0);
+  const processor = selection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID && item.quantity > 0);
+  if (!arrayMic || !processor) return [];
+
+  const lines: ConnectionLine[] = [];
+  const coreName = processor.name;
+  const capability = getBrandSystemCapability("yinman");
+  const hasRemoteOrRecording =
+    profile.needs.includes("videoConference") || profile.needs.includes("remoteTeaching") || profile.needs.includes("recording");
+  const speakerProduct = selection.find((item) => item.category === "speaker" && item.quantity > 0);
+  const speakerCount = speakerProduct?.quantity ?? 0;
+  const speakerMode = speakerProduct?.name ?? "无源音箱";
+  const legacySound = profile.existingDevices.legacySoundSystem.trim();
+  const recordingDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.recordingHost));
+  const computerDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.computer));
+  const mediaDevices = uniqueDeviceList([...recordingDevices, ...computerDevices]);
+  const existingMicrophoneDevices = splitDeviceText(profile.existingDevices.legacyWirelessMic);
+  const legacyAudioInputDevice = getLegacyAudioInputDevice(profile);
+  const shouldRouteExternalToLegacyAudio = Boolean(legacySound && legacyAudioInputDevice);
+
+  Array.from({ length: arrayMic.quantity }, (_, index) => index + 1).forEach((index) => {
+    lines.push({
+      id: `array-mic-processor-network-${index}`,
+      fromDevice: `智能语音阵列麦克风 ${index}`,
+      fromPort: "网络音频接口",
+      toDevice: coreName,
+      toPort: `阵麦网络输入 ${index}`,
+      cableType: "网线",
+      note: "每只阵列麦使用独立网线直连智能音频处理主机，不采用主从级联。"
+    });
+  });
+
+  const usbDevice = selectPrimaryUsbDevice(
+    shouldRouteExternalToLegacyAudio ? mediaDevices.filter(isAllInOneUsbDevice) : mediaDevices,
+    hasRemoteOrRecording
+  );
+  if (usbDevice) {
+    lines.push({
+      id: "processor-usb-host-1",
+      fromDevice: coreName,
+      fromPort: "USB 数字音频接口",
+      toDevice: usbDevice,
+      toPort: "USB 音频接口",
+      cableType: "标配USB线",
+      note: "智能音频处理主机通过 USB 承载数字音频输入 / 输出。"
+    });
+  }
+
+  mediaDevices.filter(isControlHostDevice).forEach((device, index) => {
+    lines.push({
+      id: `processor-control-host-${index + 1}`,
+      fromDevice: coreName,
+      fromPort: "网络 / 控制接口",
+      toDevice: device,
+      toPort: "网络控制接口",
+      cableType: "网线",
+      note: "中控主机通过网线接入智能音频处理主机控制接口。"
+    });
+  });
+
+  recordingDevices.filter(isRecordingHostAudioDevice).forEach((device, index) => {
+    lines.push(
+      shouldRouteExternalToLegacyAudio
+        ? buildExternalToLegacyAudioLine(device, legacyAudioInputDevice, `recording-host-legacy-audio-${index + 1}`)
+        : {
+            id: `processor-recording-host-audio-${index + 1}`,
+            fromDevice: coreName,
+            fromPort: "Line Out / 模拟输出",
+            toDevice: device,
+            toPort: "音频输入",
+            cableType: "音频线",
+            note: "录播主机使用音频线接入智能音频处理主机模拟输出。"
+          }
+    );
+  });
+
+  const legacyWirelessMicrophones = existingMicrophoneDevices
+    .filter(isWirelessMicrophoneDevice)
+    .map(getLegacyWirelessMicrophoneLabel);
+  const hasNewWireless = selection.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0);
+  const wirelessMicrophones = legacyWirelessMicrophones.length ? legacyWirelessMicrophones : hasNewWireless ? ["无线手持麦"] : [];
+  const wiredMicrophones = existingMicrophoneDevices.filter((device) => !isWirelessMicrophoneDevice(device));
+  const wirelessReceiverName = `${legacyWirelessMicrophones.length ? "利旧无线接收机" : "无线接收机"} × ${wirelessMicrophones.length}`;
+
+  wirelessMicrophones.forEach((device, index) => {
+    lines.push({
+      id: `processor-wireless-mic-signal-${index + 1}`,
+      fromDevice: device,
+      fromPort: "无线发射",
+      toDevice: wirelessReceiverName,
+      toPort: "无线接收",
+      cableType: "无线信号",
+      note: "无线话筒先到无线接收机，再由接收机输出音频。"
+    });
+  });
+  if (wirelessMicrophones.length) {
+    lines.push(
+      shouldRouteExternalToLegacyAudio
+        ? buildExternalToLegacyAudioLine(wirelessReceiverName, legacyAudioInputDevice, "processor-wireless-receiver-legacy")
+        : {
+            id: "processor-wireless-receiver-audio",
+            fromDevice: wirelessReceiverName,
+            fromPort: "LINE OUT RCA / BAL OUT",
+            toDevice: coreName,
+            toPort: "模拟音频输入",
+            cableType: "音频线",
+            note: "无线接收机音频输出接入智能音频处理主机。"
+          }
+    );
+  }
+  wiredMicrophones.forEach((device, index) => {
+    lines.push(
+      shouldRouteExternalToLegacyAudio
+        ? buildExternalToLegacyAudioLine(device, legacyAudioInputDevice, `processor-wired-mic-legacy-${index + 1}`)
+        : {
+            id: `processor-wired-mic-audio-${index + 1}`,
+            fromDevice: device,
+            fromPort: "音频输出",
+            toDevice: coreName,
+            toPort: "模拟音频输入",
+            cableType: "音频线",
+            note: "有线麦克风需自供电或由前级设备供电，再向智能音频处理主机提供音频信号。"
+          }
+    );
+  });
+
+  if (legacySound) {
+    lines.push(...buildLegacySoundConnectionLines(profile, coreName));
+    if (profile.scenario === "auditorium") return lines;
+  }
+
+  if (speakerCount > 0) {
+    const directSpeakerCount = Math.min(speakerCount, capability.integratedSpeakerCapacity);
+    lines.push({
+      id: "processor-speaker-direct",
+      fromDevice: coreName,
+      fromPort: "功放输出",
+      toDevice: `${speakerMode} 主机直驱分组 × ${directSpeakerCount}`,
+      toPort: "音箱 + / -",
+      cableType: "音箱线",
+      note: `智能音频处理主机直接推动前 ${directSpeakerCount} 只无源音箱，现场复核阻抗、线径、极性和通道负载。`
+    });
+    if (speakerCount > capability.integratedSpeakerCapacity) {
+      const externalAmplifier = selection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0);
+      const externalSpeakerCount = Math.min(
+        speakerCount - capability.integratedSpeakerCapacity,
+        capability.totalSpeakerCapacity - capability.integratedSpeakerCapacity
+      );
+      if (externalAmplifier) {
+        lines.push({
+          id: "processor-lineout-amplifier",
+          fromDevice: coreName,
+          fromPort: "Line Out / 模拟输出",
+          toDevice: externalAmplifier.name,
+          toPort: "音频输入",
+          cableType: "音频线",
+          note: "第 9-16 只无源音箱通过一台教学模拟功放主机扩展。"
+        });
+        lines.push({
+          id: "processor-amplifier-speakers",
+          fromDevice: externalAmplifier.name,
+          fromPort: "功放输出",
+          toDevice: `${speakerMode} 扩展分组 × ${externalSpeakerCount}`,
+          toPort: "音箱 + / -",
+          cableType: "音箱线",
+          note: "超过主机直驱容量的无源音箱由教学模拟功放主机承载。"
+        });
+      }
+    }
+  }
+
+  return lines;
+}
 
 function splitDeviceText(value: string) {
   return value

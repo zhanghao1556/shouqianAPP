@@ -1,0 +1,423 @@
+import type { AppBrandId } from "../brand";
+import type {
+  ClassroomProfile,
+  GeneratedPoint,
+  Point,
+  PointValidationFinding,
+  PointValidationResult,
+  PointValidationSeverity
+} from "../types";
+import {
+  generateBrandEngineeringPoints,
+  getBrandSystemCapability,
+  getShortestManhattanCascadeRoute
+} from "./systemCapabilities";
+import { getArrayMicCentralAirRequiredClearance, getEffectiveAmplificationScope } from "./drawingEngine";
+
+const ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M = 1;
+const ARRAY_MIC_BODY_HALF_SIZE_M = 0.3;
+const MIC_SPEAKER_PREFERRED_DISTANCE_M = 2;
+const HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M = 3.5;
+
+export interface PointValidationInput {
+  profile: ClassroomProfile;
+  brandId: AppBrandId;
+  generatedPoints: GeneratedPoint[];
+  requiredArrayMicCount: number;
+  requiredSpeakerCount: number;
+}
+
+export function validatePointPlan(input: PointValidationInput): PointValidationResult {
+  const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount } = input;
+  const capability = getBrandSystemCapability(brandId);
+  const mics = generatedPoints.filter((point) => point.type === "arrayMic");
+  const speakers = generatedPoints.filter((point) => point.type === "speaker");
+  const findings: PointValidationFinding[] = [];
+
+  if (profile.roomGeometry.length > 0 && profile.roomGeometry.width > 0) {
+    findings.push({
+      code: "array.coverage-baseline",
+      severity: "info",
+      title: "阵麦覆盖口径",
+      actual: `线上 ${capability.onlinePickupRadiusM}m / 扩声 ${capability.localAmplificationRadiusM}m`,
+      internalMessage: `当前继续按主轴判断数量；线上拾音为半径 ${capability.onlinePickupRadiusM}m，本地扩声与互动课堂为半径 ${capability.localAmplificationRadiusM}m。`,
+      sourceRefs: ["用户确认的阵麦覆盖口径", "当前主轴数量算法"]
+    });
+  }
+
+  if (requiredArrayMicCount > capability.maxArrayMicCount) {
+    findings.push({
+      code: "array.capacity",
+      severity: "hard",
+      title: "阵麦能力上限",
+      actual: requiredArrayMicCount,
+      limit: capability.maxArrayMicCount,
+      internalMessage: `当前主轴算法理论需要 ${requiredArrayMicCount} 只，品牌能力最多部署 ${capability.maxArrayMicCount} 只；点位已按上限生成。`,
+      customerMessage: "房间长度与阵麦覆盖能力需要专项复核。",
+      sourceRefs: [brandId === "yinman" ? "音曼阵麦与音频处理主机能力确认" : "音翼一主四从能力确认"]
+    });
+  } else if (mics.length > 0) {
+    findings.push({
+      code: "array.capacity",
+      severity: "info",
+      title: "阵麦数量能力",
+      actual: mics.length,
+      limit: capability.maxArrayMicCount,
+      internalMessage: `当前生成 ${mics.length} 只，未超过品牌能力上限 ${capability.maxArrayMicCount} 只。`,
+      sourceRefs: ["用户确认的品牌阵麦能力"]
+    });
+  }
+
+  addCascadeRouteFinding(findings, brandId, mics);
+  addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
+  addInstallationHeightFinding(findings, profile, mics);
+  addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
+  addCentralAirFindings(findings, profile, brandId, mics);
+  addExistingCalibrationFindings(findings, profile, brandId, mics);
+
+  return summarizeFindings(findings);
+}
+
+export function getCustomerPointValidationStatus(result: PointValidationResult): string | undefined {
+  return result.hardCount > 0 ? "需专项复核" : undefined;
+}
+
+function addCascadeRouteFinding(findings: PointValidationFinding[], brandId: AppBrandId, mics: GeneratedPoint[]) {
+  const capability = getBrandSystemCapability(brandId);
+  if (capability.arrayMicTopology !== "cascade" || mics.length <= 1 || capability.cascadeRouteLimitM === undefined) return;
+  const route = getShortestManhattanCascadeRoute(mics.map((mic) => mic.position));
+  const routeText = route.pointOrder.map((point) => `(${point.x.toFixed(1)}, ${point.y.toFixed(1)})`).join(" -> ");
+  const overLimit = route.lengthM > capability.cascadeRouteLimitM;
+  findings.push({
+    code: "array.cascade-route",
+    severity: overLimit ? "hard" : "info",
+    title: "阵麦级联施工折线",
+    actual: `${route.lengthM.toFixed(1)}m`,
+    limit: `${capability.cascadeRouteLimitM}m`,
+    internalMessage: `按最短串联顺序累计 |Δx| + |Δy|，路径 ${routeText}，估算总长 ${route.lengthM.toFixed(1)}m。`,
+    customerMessage: overLimit ? "阵麦级联网线长度会影响系统连接，当前方案需专项复核。" : undefined,
+    sourceRefs: ["阵列麦安装与级联网线资料", "用户确认的施工折线路径口径"]
+  });
+}
+
+function addSpeakerCapacityFinding(
+  findings: PointValidationFinding[],
+  brandId: AppBrandId,
+  requiredSpeakerCount: number,
+  generatedSpeakerCount: number
+) {
+  const capability = getBrandSystemCapability(brandId);
+  if (requiredSpeakerCount > capability.totalSpeakerCapacity) {
+    findings.push({
+      code: "speaker.system-capacity",
+      severity: "hard",
+      title: "无源音箱系统容量",
+      actual: requiredSpeakerCount,
+      limit: capability.totalSpeakerCapacity,
+      internalMessage: `理论需要 ${requiredSpeakerCount} 只，当前自动生成 ${generatedSpeakerCount} 只且不超过系统 ${capability.totalSpeakerCapacity} 只上限；仍需拆区或专项设计。`,
+      customerMessage: "音箱数量与系统分区容量需要专项复核。",
+      sourceRefs: ["用户确认的音箱与扩展功放容量"]
+    });
+    return;
+  }
+  if (generatedSpeakerCount > capability.integratedSpeakerCapacity) {
+    findings.push({
+      code: "speaker.external-amplifier",
+      severity: "info",
+      title: "扩展功放配置",
+      actual: generatedSpeakerCount,
+      limit: capability.integratedSpeakerCapacity,
+      internalMessage: `前 ${capability.integratedSpeakerCapacity} 只由音频核心直接驱动，其余 ${generatedSpeakerCount - capability.integratedSpeakerCapacity} 只由 1 台教学模拟功放主机扩展。`,
+      sourceRefs: [brandId === "yinman" ? "音曼音频处理主机与功放容量确认" : "音翼内置功放与扩展功放容量确认"]
+    });
+  }
+}
+
+function addInstallationHeightFinding(findings: PointValidationFinding[], profile: ClassroomProfile, mics: GeneratedPoint[]) {
+  if (profile.engineeringConstraints.ceiling !== "suspended" || profile.roomGeometry.height <= HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M || !mics.length) return;
+  findings.push({
+    code: "array.install-height",
+    severity: "warning",
+    title: "高吊顶安装复核",
+    actual: `${profile.roomGeometry.height.toFixed(1)}m`,
+    limit: `资料建议 <= ${HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M}m`,
+    internalMessage: `按已确认规则继续贴顶安装，不移动点位；当前高度超过产品资料建议，需要复核直达声与调试余量。`,
+    sourceRefs: ["用户确认的吊顶贴顶安装规则", "阵列麦安装高度资料"]
+  });
+}
+
+function addMicSpeakerDistanceFinding(
+  findings: PointValidationFinding[],
+  profile: ClassroomProfile,
+  mics: GeneratedPoint[],
+  speakers: GeneratedPoint[]
+) {
+  const ceilingSpeakers = speakers.filter((speaker) => speaker.horizontalAngle === undefined && speaker.downTiltAngle === undefined);
+  if (!mics.length || !ceilingSpeakers.length) return;
+  const nearest = ceilingSpeakers.reduce<{
+    mic: GeneratedPoint;
+    speaker: GeneratedPoint;
+    distance: number;
+  } | null>((best, speaker) => {
+    const candidate = mics.reduce((micBest, mic) => {
+      const distance = getDistance(mic.position, speaker.position);
+      return !micBest || distance < micBest.distance ? { mic, speaker, distance } : micBest;
+    }, null as { mic: GeneratedPoint; speaker: GeneratedPoint; distance: number } | null);
+    return candidate && (!best || candidate.distance < best.distance) ? candidate : best;
+  }, null);
+  if (!nearest) return;
+
+  const isTeacherMonitor = nearest.speaker.reason.includes("老师区") || nearest.speaker.reason.includes("监听点位");
+  const isCenterBackfill = isApprovedCenterBackfill(profile, nearest.speaker, mics);
+  const belowPreferred = nearest.distance < MIC_SPEAKER_PREFERRED_DISTANCE_M;
+  const exception = belowPreferred && (isTeacherMonitor || isCenterBackfill);
+  findings.push({
+    code: "speaker.mic-distance",
+    severity: belowPreferred && !exception ? "warning" : "info",
+    title: "阵麦与吸顶音箱最近距离",
+    actual: `${nearest.distance.toFixed(1)}m`,
+    limit: `${MIC_SPEAKER_PREFERRED_DISTANCE_M}m`,
+    internalMessage: exception
+      ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，采用${isTeacherMonitor ? "老师区监听" : "中心列覆盖回填"}例外，点位保持不变。`
+      : belowPreferred
+        ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，未识别到已确认例外，需要现场复核。`
+        : `最近设备为 ${nearest.speaker.label} 与 ${nearest.mic.label}，距离 ${nearest.distance.toFixed(1)}m。`,
+    sourceRefs: ["阵麦与吸顶音箱距离资料", "用户确认的老师监听与中心回填例外"]
+  });
+}
+
+function addCentralAirFindings(
+  findings: PointValidationFinding[],
+  profile: ClassroomProfile,
+  brandId: AppBrandId,
+  mics: GeneratedPoint[]
+) {
+  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
+  if (profile.engineeringConstraints.hasCentralAirConditioner && centralAirPoints.length === 0) {
+    findings.push({
+      code: "site.central-air-position",
+      severity: "warning",
+      title: "中央空调点位待标注",
+      internalMessage: "现场有中央空调但尚未标点，无法完成阵麦避让校核。",
+      sourceRefs: ["现有5175中央空调校准规则"]
+    });
+    return;
+  }
+  if (!centralAirPoints.length || !mics.length) return;
+  const requiredClearance = getArrayMicCentralAirRequiredClearance(profile);
+  const minimumClearance = Math.min(
+    ...mics.flatMap((mic) => centralAirPoints.map((air) => getArrayMicClearanceToCentralAir(mic.position, air)))
+  );
+  if (minimumClearance < requiredClearance) {
+    findings.push({
+      code: "site.central-air-clearance",
+      severity: "error",
+      title: "中央空调硬避让",
+      actual: `${minimumClearance.toFixed(1)}m`,
+      limit: `${requiredClearance.toFixed(1)}m`,
+      internalMessage: `阵麦距中央空调本体小于当前混响联动安全距离 ${requiredClearance.toFixed(1)}m。`,
+      sourceRefs: ["用户确认的0.5/0.8/1.0m混响联动规则"]
+    });
+  } else if (minimumClearance < ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M) {
+    findings.push({
+      code: "site.central-air-quality-zone",
+      severity: "warning",
+      title: "中央空调还原度风险区",
+      actual: `${minimumClearance.toFixed(1)}m`,
+      limit: `${ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M}m`,
+      internalMessage: "已满足动态硬避让，但仍位于1m语音还原度风险区。",
+      sourceRefs: ["现有中央空调质量风险规则"]
+    });
+  }
+  const lateralPriorityIssue = getCentralAirLateralPriorityIssue(profile, brandId, mics);
+  if (lateralPriorityIssue) {
+    findings.push({
+      code: "site.central-air-direction-priority",
+      severity: "error",
+      title: "中央空调避让方向",
+      internalMessage: lateralPriorityIssue,
+      sourceRefs: ["现有5175中央空调避让方向规则"]
+    });
+  }
+}
+
+function addExistingCalibrationFindings(
+  findings: PointValidationFinding[],
+  profile: ClassroomProfile,
+  _brandId: AppBrandId,
+  mics: GeneratedPoint[]
+) {
+  const scope = getEffectiveAmplificationScope(profile);
+  const hasOnline = hasOnlinePickupNeed(profile);
+  const length = profile.roomGeometry.length;
+  const lastMicBackWallIssue = getLastMicBackWallIssue(profile, mics);
+  if (lastMicBackWallIssue) {
+    findings.push({
+      code: "array.back-wall-distance",
+      severity: "error",
+      title: "从麦后墙距离",
+      internalMessage: lastMicBackWallIssue,
+      sourceRefs: ["现有5175从麦后墙校准规则"]
+    });
+  }
+  if (scope === "podium" && !hasOnline && mics.length > 1) {
+    findings.push({
+      code: "array.podium-multi-mic",
+      severity: "error",
+      title: "区域扩声多麦",
+      internalMessage: `${profile.scenario === "auditorium" ? "舞台" : "讲台"}区域扩声且无线上拾音需求，却生成多只阵麦。`,
+      sourceRefs: ["现有5175区域扩声校准规则"]
+    });
+  } else if (length <= 9 && !hasOnline && mics.length > 1) {
+    findings.push({
+      code: "array.short-room-multi-mic",
+      severity: "error",
+      title: "短房间多麦",
+      internalMessage: "长度 <= 9m 且无线上拾音需求，当前生成多只阵麦。",
+      sourceRefs: ["现有5175短房间校准规则"]
+    });
+  }
+  if (profile.scenario !== "combinedClassroom" && length > 9 && length <= 16 && scope === "full") {
+    findings.push({
+      code: "array.mid-depth-review",
+      severity: "warning",
+      title: "中等纵深全场扩声",
+      internalMessage: "9-16m全场扩声需重点检查后排发言和听感。",
+      sourceRefs: ["现有5175中等纵深校准规则"]
+    });
+  }
+  if (length > 16 && scope === "full" && mics.length < 3) {
+    findings.push({
+      code: "array.long-room-review",
+      severity: "warning",
+      title: "长房间阵麦数量",
+      internalMessage: "长度 > 16m全场扩声但少于3只阵麦，需要人工复核。",
+      sourceRefs: ["现有5175长房间校准规则"]
+    });
+  }
+}
+
+function summarizeFindings(findings: PointValidationFinding[]): PointValidationResult {
+  const count = (severity: PointValidationSeverity) => findings.filter((finding) => finding.severity === severity).length;
+  const hardCount = count("hard");
+  const errorCount = count("error");
+  const warningCount = count("warning");
+  const infoCount = count("info");
+  const customerMessages = Array.from(new Set(findings.map((finding) => finding.customerMessage).filter((message): message is string => Boolean(message))));
+  return {
+    status: hardCount > 0 ? "hard" : errorCount > 0 || warningCount > 0 ? "review" : "pass",
+    findings,
+    hardCount,
+    errorCount,
+    warningCount,
+    infoCount,
+    customerMessage: customerMessages.length ? customerMessages.join(" ") : undefined
+  };
+}
+
+function getCentralAirLateralPriorityIssue(profile: ClassroomProfile, brandId: AppBrandId, mics: GeneratedPoint[]) {
+  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
+  if (!centralAirPoints.length) return "";
+  const baseProfile: ClassroomProfile = {
+    ...profile,
+    engineeringConstraints: {
+      ...profile.engineeringConstraints,
+      hasCentralAirConditioner: false,
+      centralAirConditionerCount: 0,
+      centralAirConditionerPoints: []
+    }
+  };
+  const baseMics = generateBrandEngineeringPoints(baseProfile, {}, brandId).filter((point) => point.type === "arrayMic");
+  for (const mic of mics) {
+    const baseMic = baseMics.find((item) => item.id === mic.id);
+    if (!baseMic) continue;
+    const lateralMove = Math.abs(mic.position.x - baseMic.position.x);
+    const depthMove = Math.abs(mic.position.y - baseMic.position.y);
+    const prefersDepthMove = profile.roomGeometry.length >= profile.roomGeometry.width;
+    if (prefersDepthMove && lateralMove > 0.05 && depthMove <= 0.05 && canMoveForwardOrBackwardClearOfCentralAir(profile, baseMic.position)) {
+      return `${mic.label}因中央空调发生左右偏移，但当前房间前后方向存在可用点，应优先前后避让。`;
+    }
+    if (!prefersDepthMove && depthMove > 0.05 && lateralMove <= 0.05 && canMoveLeftOrRightClearOfCentralAir(profile, baseMic.position)) {
+      return `${mic.label}因中央空调发生前后偏移，但当前房间左右方向存在可用点，应优先左右避让。`;
+    }
+  }
+  return "";
+}
+
+function canMoveForwardOrBackwardClearOfCentralAir(profile: ClassroomProfile, position: Point) {
+  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
+  return centralAirPoints.some((air) => {
+    const requiredClearance = getArrayMicCentralAirRequiredClearance(profile);
+    const halfDepth = (air.size?.depth ?? 0.8) / 2 + requiredClearance + ARRAY_MIC_BODY_HALF_SIZE_M;
+    const frontY = roundOne(air.position.y - halfDepth);
+    const backY = roundOne(air.position.y + halfDepth);
+    return [frontY, backY].some(
+      (y) => y >= 1.2 && y <= profile.roomGeometry.length - 0.8 && centralAirPoints.every((item) => getArrayMicClearanceToCentralAir({ x: position.x, y }, item) >= requiredClearance)
+    );
+  });
+}
+
+function canMoveLeftOrRightClearOfCentralAir(profile: ClassroomProfile, position: Point) {
+  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
+  return centralAirPoints.some((air) => {
+    const requiredClearance = getArrayMicCentralAirRequiredClearance(profile);
+    const halfWidth = (air.size?.width ?? 0.8) / 2 + requiredClearance + ARRAY_MIC_BODY_HALF_SIZE_M;
+    const leftX = roundOne(air.position.x - halfWidth);
+    const rightX = roundOne(air.position.x + halfWidth);
+    return [leftX, rightX].some(
+      (x) => x >= 0.8 && x <= profile.roomGeometry.width - 0.8 && centralAirPoints.every((item) => getArrayMicClearanceToCentralAir({ x, y: position.y }, item) >= requiredClearance)
+    );
+  });
+}
+
+function getArrayMicClearanceToCentralAir(
+  mic: Point,
+  air: ClassroomProfile["engineeringConstraints"]["centralAirConditionerPoints"][number]
+) {
+  const halfWidth = (air.size?.width ?? 0.8) / 2 + ARRAY_MIC_BODY_HALF_SIZE_M;
+  const halfDepth = (air.size?.depth ?? 0.8) / 2 + ARRAY_MIC_BODY_HALF_SIZE_M;
+  const dx = Math.max(Math.abs(mic.x - air.position.x) - halfWidth, 0);
+  const dy = Math.max(Math.abs(mic.y - air.position.y) - halfDepth, 0);
+  return Math.hypot(dx, dy);
+}
+
+function getLastMicBackWallIssue(profile: ClassroomProfile, mics: GeneratedPoint[]) {
+  const sorted = [...mics].sort((a, b) => a.position.y - b.position.y);
+  if (sorted.length <= 1) return "";
+  const lastMic = sorted[sorted.length - 1];
+  const backWallDistance = profile.roomGeometry.length - lastMic.position.y;
+  const minimumBackWallDistance = sorted.length === 2 && profile.roomGeometry.length <= 16 ? (profile.roomGeometry.length > 12 ? 5 : 4) : 3;
+  if (backWallDistance >= minimumBackWallDistance) return "";
+  return `${lastMic.label}距后墙仅${backWallDistance.toFixed(1)}m，应至少保留${minimumBackWallDistance}m。`;
+}
+
+function isApprovedCenterBackfill(profile: ClassroomProfile, speaker: GeneratedPoint, mics: GeneratedPoint[]) {
+  const sameAxisMics = mics.filter((mic) => Math.abs(mic.position.x - speaker.position.x) <= 0.15).sort((a, b) => a.position.y - b.position.y);
+  if (!sameAxisMics.length) return false;
+  for (let index = 1; index < sameAxisMics.length; index += 1) {
+    const front = sameAxisMics[index - 1].position.y;
+    const rear = sameAxisMics[index].position.y;
+    if (rear - front >= 3.5 && Math.abs(speaker.position.y - (front + rear) / 2) <= 0.15) return true;
+  }
+  const firstY = sameAxisMics[0].position.y;
+  if (firstY >= 4 && Math.abs(speaker.position.y - firstY / 2) <= 0.15) return true;
+  const lastY = sameAxisMics[sameAxisMics.length - 1].position.y;
+  const rearGap = profile.roomGeometry.length - lastY;
+  return rearGap >= 4 && Math.abs(speaker.position.y - (lastY + profile.roomGeometry.length) / 2) <= 0.15;
+}
+
+function hasOnlinePickupNeed(profile: ClassroomProfile) {
+  const siteText = `${profile.customNeed} ${profile.customScenario} ${profile.engineeringConstraints.notes}`;
+  return (
+    profile.needs.some((need) => ["recording", "videoConference", "interactiveClass"].includes(need)) ||
+    (profile.needs.includes("other") && /互动课堂|学生区.*线上拾音|线上拾音|学生.*拾音/.test(siteText))
+  );
+}
+
+function getDistance(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function roundOne(value: number) {
+  return Math.round(value * 10) / 10;
+}

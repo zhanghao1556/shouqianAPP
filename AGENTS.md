@@ -194,3 +194,15 @@ Daily closing backups must keep only the newest one valid `.codex-backups` snaps
 - 不在客户可见内容中显示具体型号或系列型号，例如 `DT1`、`DT2`、`DT2 Pro`、`AWM301`、`WP1`、`AP150`、`YY-URO1` 等。
 - 具体型号只允许保留在内部代码 ID、内部资料来源、日志、校准台内部备注、发布验证黑名单和产品审计文件中，不得直接渲染给客户。
 - 新增产品资料或替换实物图时，先校准设备身份，再把对外名称降级为通用名；不得因为资料里出现型号就把型号写进售前软件前台。
+
+## 产品资料增量读取规则
+
+以后调用或分析 `docx_2` 产品资料时，不得默认重新全文读取全部文件。
+
+1. 先读取 `docs/product-knowledge/README.md`、`confirmed-facts.md`、`conflicts.md`、`decisions.md` 和 `source-manifest.json`。
+2. 运行 `npm.cmd run audit:product-docs` 比对每个源文件的 SHA-256。
+3. 只处理 `work/product-doc-audit/incremental/changed-files.json` 中新增、哈希变化或仍待提取的文件；忽略 Word `~$` 锁文件。
+4. 全文、图片、转换文件和增量提取缓存继续放在 Git 忽略的 `work/product-doc-audit`，Git 内只保存精简事实、冲突、用户决策、来源优先级和源文件哈希。
+5. 来源冲突按 `用户确认口径 > 正式规格书与安装手册 > 产品白皮书 > 解决方案 > 营销文案` 处理，并把冲突和最终决策写回知识库。
+
+当前 RING08 资料存在 `5m` 与 `5-8m` 表述冲突；最终业务口径按用户确认执行：线上拾音半径 `8m`，本地扩声和互动课堂半径 `5m`。

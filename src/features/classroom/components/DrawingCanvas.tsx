@@ -1438,10 +1438,21 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
     if (!nodes.has(node.key)) nodes.set(node.key, node);
   };
 
-  ensureNode({ key: "mainMic", label: arrayMicCount > 1 ? "主麦" : "阵麦", kind: "mainMic" });
-  if (arrayMicCount > 1) {
-    ensureNode({ key: "slaveMic", label: "从麦", kind: "slaveMic", quantity: arrayMicCount - 1 });
-    edges.push({ id: "main-slave-mic", from: "mainMic", to: "slaveMic", label: formatTopologyCableLabel("网线", arrayMicCount - 1) });
+  const processorDirect = getAppBrand().id === "yinman";
+  const topologyRootKey = processorDirect ? "processorHost" : "mainMic";
+  if (processorDirect) {
+    ensureNode({ key: topologyRootKey, label: "智能音频处理主机", kind: "processor" });
+    Array.from({ length: arrayMicCount }, (_, index) => index + 1).forEach((index) => {
+      const key = `arrayMic-${index}`;
+      ensureNode({ key, label: arrayMicCount > 1 ? `阵麦 ${index}` : "阵麦", kind: "mainMic" });
+      edges.push({ id: `array-mic-processor-${index}`, from: key, to: topologyRootKey, label: formatTopologyCableLabel("网线", 1) });
+    });
+  } else {
+    ensureNode({ key: "mainMic", label: arrayMicCount > 1 ? "主麦" : "阵麦", kind: "mainMic" });
+    if (arrayMicCount > 1) {
+      ensureNode({ key: "slaveMic", label: "从麦", kind: "slaveMic", quantity: arrayMicCount - 1 });
+      edges.push({ id: "main-slave-mic", from: "mainMic", to: "slaveMic", label: formatTopologyCableLabel("网线", arrayMicCount - 1) });
+    }
   }
 
   connections.forEach((connection) => {
@@ -1467,11 +1478,11 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
 
   getSelectedTopologyDevices(profile).forEach((device, index) => {
     const key = getTopologyNodeKey(device);
-    if (isUnknownTopologyNodeKey(key) || key === "mainMic") return;
+    if (isUnknownTopologyNodeKey(key) || key === topologyRootKey || key.startsWith("arrayMic-")) return;
     ensureNode(getTopologyNode(device, "", key, speakerCount, topologySpeakerType));
     if (edges.some((edge) => edge.from === key || edge.to === key)) return;
     if (isLegacyFeedbackSuppressorWithoutChain(device)) return;
-    edges.push({ id: `pending-external-${index + 1}-${key}`, from: "mainMic", to: key, label: getPendingTopologyCableLabel(device) });
+    edges.push({ id: `pending-external-${index + 1}-${key}`, from: topologyRootKey, to: key, label: getPendingTopologyCableLabel(device) });
   });
 
   return { nodes: Array.from(nodes.values()), edges };
@@ -1582,7 +1593,9 @@ function getTopologyCableQuantity(connection: ConnectionLine, fromKey: string, t
   if (connection.cableType.includes("无线信号")) return getTopologyQuantityFromText(connection.fromDevice) ?? 1;
   if (isTopologySpeakerKey(fromKey) || isTopologySpeakerKey(toKey)) {
     if (fromKey === "speaker-amplifier" || toKey === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
-    if (fromKey === "mainMic" || toKey === "mainMic") return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));
+    if (fromKey === "mainMic" || toKey === "mainMic" || fromKey === "processorHost" || toKey === "processorHost") {
+      return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));
+    }
     return Math.max(1, speakerCount);
   }
   if (connection.id === "dt-lineout-amplifier") return Math.max(1, getExternalAmplifierLineOutCountForSpeakers(speakerCount));
@@ -1641,6 +1654,11 @@ function formatTopologyCableLabel(label: string, quantity: number) {
 }
 
 function getTopologyNodeKey(device: string, port = "") {
+  if (device.includes("智能音频处理主机")) return "processorHost";
+  if (getAppBrand().id === "yinman" && device.includes("智能语音阵列麦克风")) {
+    const match = device.match(/(\d+)\s*$/);
+    return `arrayMic-${match?.[1] ?? "1"}`;
+  }
   if (device.includes("DT2") || device.includes("阵列麦")) return "mainMic";
   if (device.includes("原有音频") || device.includes("原有扩声") || device.includes("原系统")) return "legacySound";
   if (device === "调音台") return "legacy-mixer";
@@ -1666,6 +1684,11 @@ function getTopologyNodeKey(device: string, port = "") {
 
 function getTopologyNode(device: string, port: string, key: string, speakerCount: number, speakerType: "吸顶" | "壁挂"): TopologyNode {
   if (key === "mainMic") return { key, label: "阵麦", kind: "mainMic" };
+  if (key.startsWith("arrayMic-")) {
+    const index = Number(key.slice("arrayMic-".length));
+    return { key, label: Number.isFinite(index) ? `阵麦 ${index}` : "阵麦", kind: "mainMic" };
+  }
+  if (key === "processorHost") return { key, label: "智能音频处理主机", kind: "processor" };
   if (isTopologySpeakerKey(key)) return { key, label: getTopologySpeakerLabel(speakerType), kind: "speaker", quantity: getTopologySpeakerQuantity(key, speakerCount) };
   if (key === "amplifier") return { key, label: "功放", kind: "amplifier", quantity: getTopologyQuantityFromText(device) };
   if (key === "mixer") return { key, label: "调音台", kind: "mixer", quantity: getTopologyQuantityFromText(device) };
@@ -2030,6 +2053,7 @@ function getTopologyContentBounds(
 }
 
 function getTopologyMainDevice(devices: string[]) {
+  if (devices.includes("processorHost")) return "processorHost";
   return devices.includes("mainMic") ? "mainMic" : devices[0] ?? "mainMic";
 }
 
@@ -2273,7 +2297,7 @@ function getTopologySidePenalty(position: { x: number; y: number }, side: "left"
 }
 
 function isTopologySatelliteNode(key: string) {
-  return key === "speaker-amplifier" || isTopologyWirelessMicKey(key);
+  return key === "speaker-amplifier" || key.startsWith("arrayMic-") || isTopologyWirelessMicKey(key);
 }
 
 function isPotentialTopologySatelliteNode(key: string) {
@@ -2306,7 +2330,7 @@ function getTopologySatelliteAnchorKey(key: string, positions: Map<string, { x: 
   if (key === "speaker-amplifier" && positions.has("amplifier")) return "amplifier";
   const receiverKey = getTopologyWirelessReceiverKey(key);
   if (receiverKey && positions.has(receiverKey)) return receiverKey;
-  return "mainMic";
+  return positions.has("processorHost") ? "processorHost" : "mainMic";
 }
 
 function getTopologyRequiredSatelliteAnchorKey(key: string, satelliteAnchors: Map<string, string>) {
@@ -2453,6 +2477,7 @@ function isTopologyFirstLevelDevice(device: string, firstLevelDevices?: Set<stri
 function isTopologySecondLevelDevice(device: string) {
   return (
     device === "slaveMic" ||
+    device.startsWith("arrayMic-") ||
     device === "amplifier" ||
     device === "legacy-amplifier" ||
     device === "legacy-feedback" ||

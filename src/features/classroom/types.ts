@@ -23,7 +23,7 @@ export type ReverberationRisk = "low" | "medium" | "high";
 export type AcousticAssessmentSource = "measured" | "estimated";
 export type AcousticAssessmentConfidence = "high" | "medium" | "low";
 export type GeneratedPointType = "arrayMic" | "speaker";
-export type ProductCategory = "pickup" | "speaker" | "wireless" | "amplifier";
+export type ProductCategory = "pickup" | "speaker" | "wireless" | "processor" | "amplifier";
 export type ReportSectionType = "cover" | "summary" | "table" | "drawing" | "list";
 export type DrawingType = "installation" | "wiring" | "topology" | "system";
 export type LegacySpeakerType = "ceiling" | "wall";
@@ -235,6 +235,29 @@ export interface PdfReportModel {
   sections: ReportSection[];
 }
 
+export type PointValidationSeverity = "info" | "warning" | "error" | "hard";
+
+export interface PointValidationFinding {
+  code: string;
+  severity: PointValidationSeverity;
+  title: string;
+  actual?: string | number;
+  limit?: string | number;
+  internalMessage: string;
+  customerMessage?: string;
+  sourceRefs: string[];
+}
+
+export interface PointValidationResult {
+  status: "pass" | "review" | "hard";
+  findings: PointValidationFinding[];
+  hardCount: number;
+  errorCount: number;
+  warningCount: number;
+  infoCount: number;
+  customerMessage?: string;
+}
+
 export interface GeneratedOutputs {
   isFinalReady: boolean;
   completeness: CompletenessItem[];
@@ -250,4 +273,5 @@ export interface GeneratedOutputs {
   drawings: DrawingModel[];
   pdfReportModel: PdfReportModel;
   reportText: string;
+  pointValidation: PointValidationResult;
 }

@@ -3,6 +3,7 @@ import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType
 import { downloadSvgAsPng } from "../lib/imageExporter";
 import { formatBrandText, getAppBrand } from "../brand";
 import { DrawingCanvas } from "./DrawingCanvas";
+import { PointValidationSummary } from "./PointValidationSummary";
 
 interface EngineeringOutputsProps {
   profile: ClassroomProfile;
@@ -50,6 +51,11 @@ export function EngineeringOutputs({
           <p>{outputs.isFinalReady ? "已生成设备清单、点位图和拓扑图。" : "补齐关键信息后生成方案输出。"}</p>
         </div>
       </div>
+
+      <PointValidationSummary
+        result={outputs.pointValidation}
+        customerOnly={Boolean(window.__YIOU_RELEASE_BUILD__)}
+      />
 
       <div className="stackedOutputs">
         <OutputSection title="设备清单">
@@ -188,13 +194,16 @@ function QuantityStepper({
   onChange: (quantity: number) => void;
 }) {
   const min = 0;
-  const max = item.category === "speaker" ? 16 : item.category === "pickup" ? 5 : item.category === "amplifier" ? 1 : 4;
-  const decrement = () => onChange(Math.max(min, item.quantity - 1));
+  const brand = getAppBrand();
+  const lockedProcessor = item.category === "processor";
+  const effectiveMin = lockedProcessor ? 1 : min;
+  const max = item.category === "speaker" ? 16 : item.category === "pickup" ? (brand.id === "yinman" ? 2 : 5) : item.category === "amplifier" || lockedProcessor ? 1 : 4;
+  const decrement = () => onChange(Math.max(effectiveMin, item.quantity - 1));
   const increment = () => onChange(Math.min(max, item.quantity + 1));
 
   return (
     <div className="quantityStepper">
-      <button type="button" onClick={decrement} disabled={item.quantity <= min} aria-label={`${formatBrandText(item.name)} 减少数量`}>
+      <button type="button" onClick={decrement} disabled={item.quantity <= effectiveMin} aria-label={`${formatBrandText(item.name)} 减少数量`}>
         -
       </button>
       <strong>{item.quantity}</strong>

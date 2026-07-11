@@ -1461,3 +1461,27 @@ PowerShell reminder:
 
 - Even with the real PowerShell 7 executable, variables such as `$lines` inside a nested double-quoted `-Command` string can be consumed by the outer PowerShell layer.
 - Keep nested read commands variable-free, or move nontrivial logic into a standalone UTF-8 script. A parser error from this wrapper is not evidence of damaged source files.
+
+### 2026-07-11 Point validation integration reminder
+
+- Do not describe a capacity-limited point plan as “generated at the limit” unless the actual generated point count equals that limit. Existing row/column placement can produce fewer points than the maximum even when the uncapped theoretical requirement is higher.
+- Capacity findings should distinguish `theoretical requirement`, `actual generated count`, and `system limit`; correcting this wording must not alter existing point formulas.
+- Vite can log transient reference errors when a helper rename is hot-reloaded between partial edits. Final browser QA must use a fresh tab or clean reload and evaluate current console entries before classifying the app as broken.
+- When a warning is explicitly classified as internal-only, audit older customer risk lists as well as the new validator UI. Adding an internal finding is insufficient if a legacy customer-visible reminder still exposes the same condition.
+
+### 2026-07-11 Brand capability and point-validation guardrail
+
+- Yinyi and Yinman may share point-placement geometry, but hardware capability, product selection, connection generation and topology identity must be brand-aware.
+- Never derive Yinman array-mic quantity from Yinyi's full-room five-mic overflow helper. Yinman must first use the existing main-axis result, then clamp that result to two.
+- Keep `theoretical requirement`, `actual generated points` and `hardware limit` as separate values. A hard capacity finding must not silently change coordinates or claim the actual count equals the limit.
+- Yinyi parity tests should compare all generated point IDs, labels, coordinates and wall-speaker angles against the unchanged drawing-engine output.
+- Customer status is one generic value derived from `PointValidationResult`: only hard findings produce `需专项复核`. Internal messages, numeric limits and source references remain in development / calibration surfaces.
+- Do not place validation UI inside point-map or topology SVGs; exported PNG / PDF drawing pages must remain clean.
+- Product model strings for RING08 and AJ350 are internal knowledge only. Runtime source, built assets, customer lists, drawings and reports use generic names.
+- Before rereading `docx_2`, consult `docs/product-knowledge` and run the SHA-256 audit. Only files in the pending queue should be re-extracted; Word `~$` files are always ignored.
+
+### 2026-07-11 Point validation release-order reminder
+
+- Finish and verify the confirmed point capability / unified validation implementation before generating any package; a later release request does not permit packaging a partially completed worktree.
+- Run the daily checkpoint first, then rebuild both Yinyi and Yinman from current source, verify brand isolation and customer-model hiding, and only then create the release checkpoint.
+- Release checkpoints remain local by default. GitHub synchronization waits for the user's desktop upload script or a separate explicit push request.

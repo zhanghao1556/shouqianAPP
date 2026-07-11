@@ -1,4 +1,5 @@
 import { classroomProductRules } from "../data/productCatalog";
+import { getAppBrand, type AppBrandId } from "../brand";
 import {
   ceilingAcousticTreatmentLabels,
   echoObservationLabels,
@@ -30,6 +31,7 @@ import {
   getArrayMicInstallLabel,
   getEffectiveAmplificationScope,
   getMeetingWallSpeakerCenterFillPairCount,
+  getRequiredSpeakerCount,
   getRequiredArrayMicCountForFullRoomAmplification,
   getRoomArea,
   hasValidGeometry,
@@ -46,6 +48,16 @@ import {
   hasRecommendedSpeakerSystemOverflow,
   hasSpeakerCapacityOverflow
 } from "./speakerRules";
+import {
+  AUDIO_PROCESSOR_HOST_PRODUCT_ID,
+  clampArrayMicCountForBrand,
+  generateBrandEngineeringPoints,
+  getBrandExternalAmplifierCount,
+  getBrandSystemCapability,
+  getRequiredArrayMicCount,
+  PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
+} from "./systemCapabilities";
+import { validatePointPlan } from "./pointValidation";
 
 export { getAcousticAssessment } from "./reverberationRules";
 
@@ -110,33 +122,60 @@ export const getAiPrompt = (_profile: ClassroomProfile, completeness: Completene
   return "音翼阵麦、音箱和接口级图纸已具备生成条件。下方可查看选型、点位图、接线图、拓扑图和报告。";
 };
 
-export const generateEngineeringOutputs = (profile: ClassroomProfile, quantityOverrides: QuantityOverrides = {}): GeneratedOutputs => {
+export const generateEngineeringOutputs = (
+  profile: ClassroomProfile,
+  quantityOverrides: QuantityOverrides = {},
+  brandId: AppBrandId = getAppBrand().id
+): GeneratedOutputs => {
   const completeness = getCompleteness(profile);
   const acousticAssessment = getAcousticAssessment(profile);
   const canGenerateCore = hasValidGeometry(profile);
-  const defaultPoints = canGenerateCore ? generateEngineeringPoints(profile) : [];
-  const defaultProductSelection = canGenerateCore ? ensureMinimumProductSelection(profile, defaultPoints, acousticAssessment, getProductSelection(profile, defaultPoints, acousticAssessment)) : [];
-  const productSelection = syncExternalAmplifierSelection(
+  const requiredArrayMicCount = canGenerateCore ? getRequiredArrayMicCount(profile, brandId) : 0;
+  const defaultPoints = canGenerateCore ? generateBrandEngineeringPoints(profile, {}, brandId) : [];
+  const defaultProductSelection = canGenerateCore
+    ? ensureMinimumProductSelection(
+        profile,
+        defaultPoints,
+        acousticAssessment,
+        getProductSelection(profile, defaultPoints, acousticAssessment, brandId),
+        brandId
+      )
+    : [];
+  const productSelection = syncBrandSystemSelection(
     profile,
     acousticAssessment,
-    applyQuantityOverrides(defaultProductSelection, quantityOverrides)
+    applyQuantityOverrides(defaultProductSelection, quantityOverrides, brandId),
+    brandId
   );
   const selectedSpeakerProduct = productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
   const selectedSpeakerCount = selectedSpeakerProduct && quantityOverrides[selectedSpeakerProduct.productId] !== undefined ? selectedSpeakerProduct.quantity : undefined;
   const hasManualSpeakerCount = selectedSpeakerCount !== undefined;
   const points = canGenerateCore
-    ? generateEngineeringPoints(profile, {
+    ? generateBrandEngineeringPoints(profile, {
         arrayMicCount: getSelectedArrayMicQuantity(productSelection),
         speakerCount: selectedSpeakerCount,
         speakerProductId: selectedSpeakerProduct && quantityOverrides[selectedSpeakerProduct.productId] !== undefined ? (selectedSpeakerProduct.productId as "CEILING-SPEAKER" | "COLUMN-SPEAKER") : undefined,
         preserveSpeakerCount: hasManualSpeakerCount
-      })
+      }, brandId)
     : [];
+  const validationSpeakerProductId = selectedSpeakerProduct?.productId === "CEILING-SPEAKER" || selectedSpeakerProduct?.productId === "COLUMN-SPEAKER"
+    ? selectedSpeakerProduct.productId
+    : getSpeakerProductId(profile);
+  const requiredSpeakerCount = canGenerateCore && shouldGenerateNewSpeakers(profile)
+    ? getRequiredSpeakerCount(profile, validationSpeakerProductId === "COLUMN-SPEAKER")
+    : 0;
+  const pointValidation = validatePointPlan({
+    profile,
+    brandId,
+    generatedPoints: points,
+    requiredArrayMicCount,
+    requiredSpeakerCount
+  });
   const riskItems = getRiskItems(profile, acousticAssessment, points);
-  const connectionLines = canGenerateCore ? generateConnectionLines(profile, productSelection) : [];
+  const connectionLines = canGenerateCore ? generateConnectionLines(profile, productSelection, brandId) : [];
   const engineeringBasis: EngineeringBasis[] = [];
   const installationGuide: InstallationGuideItem[] = [];
-  const audioPlan = getAudioPlan(profile, points, acousticAssessment);
+  const audioPlan = getAudioPlan(profile, points, acousticAssessment, brandId, requiredArrayMicCount);
   const reviewItems: string[] = [];
   const drawings = [
     {
@@ -174,22 +213,31 @@ export const generateEngineeringOutputs = (profile: ClassroomProfile, quantityOv
     reviewItems,
     drawings,
     pdfReportModel: report.pdfReportModel,
-    reportText: report.reportText
+    reportText: report.reportText,
+    pointValidation
   };
 };
 
-const getAudioPlan = (profile: ClassroomProfile, points: GeneratedPoint[], acousticAssessment: AcousticAssessment): AudioPlan => {
+const getAudioPlan = (
+  profile: ClassroomProfile,
+  points: GeneratedPoint[],
+  acousticAssessment: AcousticAssessment,
+  brandId: AppBrandId,
+  requiredArrayMicCount: number
+): AudioPlan => {
   const area = getRoomArea(profile);
   const arrayCount = points.filter((point) => point.type === "arrayMic").length;
   const hasOnline = profile.needs.some((need) => ["videoConference", "interactiveClass", "recording", "remoteTeaching"].includes(need));
   const hasLocalAmp = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
-  const oversizedForFullRoomAmp = isOversizedForFullRoomAmplification(profile);
-  const mode = getAudioMode(profile, area, arrayCount);
+  const capability = getBrandSystemCapability(brandId);
+  const oversizedForFullRoomAmp = requiredArrayMicCount > capability.maxArrayMicCount;
+  const mode = getAudioMode(profile, area, arrayCount, capability.maxArrayMicCount, oversizedForFullRoomAmp);
 
   return {
     mode,
-    summary:
-      "本方案以智能语音阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
+    summary: brandId === "yinman"
+      ? "本方案由智能语音阵列麦克风配合智能音频处理主机完成拾音、音频处理和无源音箱驱动，结合波束成形、反馈抑制、噪声抑制、回声消除和自动增益，形成完整课堂音频链路。"
+      : "本方案以智能语音阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
     pickupGoal: hasOnline
       ? oversizedForFullRoomAmp
         ? `面向远程互动、录播或会议平台，后场以线上拾音为主；线上拾音半径按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 作为点位复核依据，优先保证教师区和后场发言清晰。`
@@ -197,14 +245,16 @@ const getAudioPlan = (profile: ClassroomProfile, points: GeneratedPoint[], acous
       : "当前未选择线上采集类需求，拾音主要作为扩声和后续平台接入预留。若后续增加录播或远程互动，需要补充平台接口确认。",
     amplificationGoal: hasLocalAmp
       ? oversizedForFullRoomAmp
-        ? `按当前房间尺寸和一主四从上限评估，已超出 5 只阵麦可承担的全场本地扩声范围；本方案优先做${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"}，后排以线上拾音和平台收声为主，避免全场扩声造成声压不均、啸叫余量不足和调试复杂度过高。`
+        ? brandId === "yinyi"
+          ? `按当前房间尺寸和一主四从上限评估，已超出 5 只阵麦可承担的全场本地扩声范围；本方案优先做${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"}，后排以线上拾音和平台收声为主，避免全场扩声造成声压不均、啸叫余量不足和调试复杂度过高。`
+          : `按当前房间尺寸和 ${capability.maxArrayMicCount} 只阵麦能力上限评估，已超出可承担的全场本地扩声范围；本方案优先做${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"}，后排以线上拾音和平台收声为主。`
         : getEffectiveAmplificationScope(profile) === "full"
         ? "扩声目标为全教室均匀覆盖，后场补声音箱会影响前后排声压差。"
         : profile.scenario === "auditorium"
           ? "扩声目标以居中舞台区域为主，保证舞台发言和表演声音自然覆盖主要听音区。"
           : "扩声目标以讲台 / 教师活动区为主，保证教师声音自然覆盖主要听音区。"
       : "当前未选择本地扩声需求，音箱输出仅作为可选配置或后续扩展项。",
-    areaBoundary: getAreaBoundary(profile, area, arrayCount),
+    areaBoundary: getAreaBoundary(profile, area, arrayCount, brandId, requiredArrayMicCount),
     environmentBoundary: `建议背景噪声不高于 45dBSPL，混响时间控制在 800ms 以内；若采用精品分区均衡扩音模式，建议混响时间控制在 600ms 以内。当前声学评估为：${acousticAssessment.label}。`,
     tuning: [
       "调试前确认阵列麦主机固件和调试软件版本，完成设备联网、供电、USB / 模拟音频链路检查。",
@@ -216,15 +266,15 @@ const getAudioPlan = (profile: ClassroomProfile, points: GeneratedPoint[], acous
   };
 };
 
-const getAudioMode = (profile: ClassroomProfile, area: number, arrayCount: number) => {
+const getAudioMode = (profile: ClassroomProfile, area: number, arrayCount: number, maxArrayMicCount: number, oversized: boolean) => {
   if (!profile.needs.includes("localAmplification") && profile.needs.some((need) => ["videoConference", "recording", "remoteTeaching"].includes(need))) {
     return "标准教室单收音方案";
   }
   if (profile.needs.includes("localAmplification") && !profile.needs.some((need) => ["videoConference", "recording", "remoteTeaching"].includes(need))) {
-    if (isOversizedForFullRoomAmplification(profile)) return "超出 5 麦上限的讲台扩声方案";
+    if (oversized) return `超出 ${maxArrayMicCount} 麦上限的讲台扩声方案`;
     return area <= 120 && getEffectiveAmplificationScope(profile) === "podium" ? "标准教室单扩音方案" : "标准教室扩音方案";
   }
-  if (isOversizedForFullRoomAmplification(profile)) return `超大空间${profile.scenario === "auditorium" ? "舞台" : "讲台"}扩声 + 后场线上拾音方案`;
+  if (oversized) return `超大空间${profile.scenario === "auditorium" ? "舞台" : "讲台"}扩声 + 后场线上拾音方案`;
   if (arrayCount >= 2 || getEffectiveAmplificationScope(profile) === "full") return "精品教室分区均衡扩音方案";
   return "标准教室扩音和收音兼容方案";
 };
@@ -235,12 +285,22 @@ const getEffectiveAmplificationScopeText = (profile: ClassroomProfile) => {
   return `${collected}（按 5 麦上限评估，提示无法做全场扩声，建议改为${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"} + 全场线上拾音）`;
 };
 
-const getAreaBoundary = (profile: ClassroomProfile, area: number, arrayCount: number) => {
+const getAreaBoundary = (
+  profile: ClassroomProfile,
+  area: number,
+  arrayCount: number,
+  brandId: AppBrandId,
+  requiredArrayMicCount: number
+) => {
+  const capability = getBrandSystemCapability(brandId);
   if (area <= 0) return "待补充房间尺寸后判断声场适用边界。";
   if (area < 60) return "面积小于 60 平方米，智能语音阵列麦克风可用但产品价值不易完全发挥，仍需结合客户预算判断扩声收益。";
   if (area <= 80) return "面积处于 60-80 平方米，适合单麦方案；后排听感和拾音清晰度需在复勘或调试时确认。";
-  if (isOversizedForFullRoomAmplification(profile)) {
-    return `按房间长宽估算，若坚持全场本地扩声约需 ${getRequiredArrayMicCountForFullRoomAmplification(profile)} 只阵麦，已超过一主四从 5 只上限；提示无法做全场扩声，建议改为${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"} + 全场线上拾音，并按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 线上拾音半径复核。`;
+  if (requiredArrayMicCount > capability.maxArrayMicCount) {
+    if (brandId === "yinyi") {
+      return `按房间长宽估算，若坚持全场本地扩声约需 ${getRequiredArrayMicCountForFullRoomAmplification(profile)} 只阵麦，已超过一主四从 5 只上限；提示无法做全场扩声，建议改为${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"} + 全场线上拾音，并按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 线上拾音半径复核。`;
+    }
+    return `按房间长宽估算，当前约需 ${requiredArrayMicCount} 只阵麦，已超过 ${capability.maxArrayMicCount} 只能力上限；建议改为${profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声"} + 全场线上拾音，并按 ${capability.onlinePickupRadiusM}m 线上拾音半径复核。`;
   }
   if (getEffectiveAmplificationScope(profile) === "podium" && !profile.needs.some((need) => ["recording", "videoConference", "interactiveClass"].includes(need))) {
     return profile.scenario === "auditorium"
@@ -304,7 +364,8 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
 const getProductSelection = (
   profile: ClassroomProfile,
   points: ReturnType<typeof generateEngineeringPoints>,
-  acousticAssessment: AcousticAssessment
+  acousticAssessment: AcousticAssessment,
+  brandId: AppBrandId
 ): ProductRecommendation[] => {
   const hasLegacySound = Boolean(profile.existingDevices.legacySoundSystem.trim());
   const needsAuditoriumRearFill = needsAuditoriumRearFillSpeakers(profile);
@@ -332,7 +393,7 @@ const getProductSelection = (
       }
 
       return {
-        productId: rule.productId,
+        productId: brandId === "yinman" && rule.productId === "DT2-Pro" ? PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID : rule.productId,
         name: rule.name,
         category: rule.category,
         quantity,
@@ -349,7 +410,8 @@ const ensureMinimumProductSelection = (
   profile: ClassroomProfile,
   points: ReturnType<typeof generateEngineeringPoints>,
   _acousticAssessment: AcousticAssessment,
-  selection: ProductRecommendation[]
+  selection: ProductRecommendation[],
+  brandId: AppBrandId
 ): ProductRecommendation[] => {
   if (selection.length > 0) return selection;
   if (!hasValidGeometry(profile)) return selection;
@@ -361,7 +423,7 @@ const ensureMinimumProductSelection = (
 
   return [
     {
-      productId: rule.productId,
+      productId: brandId === "yinman" ? PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID : rule.productId,
       name: rule.name,
       category: rule.category,
       quantity: arrayCount,
@@ -374,41 +436,67 @@ const ensureMinimumProductSelection = (
   ];
 };
 
-const applyQuantityOverrides = (selection: ProductRecommendation[], overrides: QuantityOverrides): ProductRecommendation[] =>
+const applyQuantityOverrides = (
+  selection: ProductRecommendation[],
+  overrides: QuantityOverrides,
+  brandId: AppBrandId
+): ProductRecommendation[] =>
   selection.map((item) => {
     const override = overrides[item.productId];
     if (override === undefined) return item;
-    const quantity = item.category === "speaker" ? clampSpeakerQuantity(override) : Math.max(0, Math.round(override));
+    const quantity = item.category === "speaker"
+      ? clampSpeakerQuantity(override)
+      : item.category === "pickup"
+        ? clampArrayMicCountForBrand(override, brandId)
+        : Math.max(0, Math.round(override));
     return {
       ...item,
       quantity
     };
   });
 
-const syncExternalAmplifierSelection = (
+const syncBrandSystemSelection = (
   profile: ClassroomProfile,
   _acousticAssessment: AcousticAssessment,
-  selection: ProductRecommendation[]
+  selection: ProductRecommendation[],
+  brandId: AppBrandId
 ): ProductRecommendation[] => {
   const speakerCount = selection.find((item) => item.category === "speaker")?.quantity ?? 0;
-  const amplifierCount = shouldGenerateNewSpeakers(profile) ? getExternalAmplifierCountForSpeakers(speakerCount) : 0;
-  const selectionWithoutAmplifier = selection.filter((item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID);
+  const amplifierCount = shouldGenerateNewSpeakers(profile) ? getBrandExternalAmplifierCount(speakerCount, brandId) : 0;
+  const selectionWithoutSystemDevices = selection.filter(
+    (item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID && item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID
+  );
 
   const rule = classroomProductRules.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
-  if (!rule) return selectionWithoutAmplifier;
+  const amplifierSelection = rule
+    ? [{
+        productId: rule.productId,
+        name: rule.name,
+        category: rule.category,
+        quantity: amplifierCount,
+        why: "",
+        where: getWhereText(profile, rule.installation),
+        wiring: rule.wiring,
+        basis: ""
+      } satisfies ProductRecommendation]
+    : [];
+  const processorSelection = brandId === "yinman" && getSelectedArrayMicQuantity(selectionWithoutSystemDevices)
+    ? [{
+        productId: AUDIO_PROCESSOR_HOST_PRODUCT_ID,
+        name: "智能音频处理主机",
+        category: "processor" as const,
+        quantity: 1,
+        why: "",
+        where: "安装在讲台设备区或弱电机柜，集中完成阵麦接入、音频处理和无源音箱驱动。",
+        wiring: "每只阵麦使用独立网线直连主机；主机直接驱动前 8 只无源音箱，9-16 只时通过教学模拟功放主机扩展。",
+        basis: ""
+      } satisfies ProductRecommendation]
+    : [];
 
   return [
-    ...selectionWithoutAmplifier,
-    {
-      productId: rule.productId,
-      name: rule.name,
-      category: rule.category,
-      quantity: amplifierCount,
-      why: "",
-      where: getWhereText(profile, rule.installation),
-      wiring: rule.wiring,
-      basis: ""
-    }
+    ...selectionWithoutSystemDevices,
+    ...processorSelection,
+    ...amplifierSelection
   ];
 };
 
@@ -443,9 +531,6 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
     getMeetingWallSpeakerCenterFillPairCount(profile) > 0
   ) {
     risks.push(`房间跨距约 ${Math.max(profile.roomGeometry.length, profile.roomGeometry.width).toFixed(1)}m，会影响壁挂中区听感。`);
-  }
-  if (profile.engineeringConstraints.ceiling === "suspended" && profile.roomGeometry.height > 3.6) {
-    risks.push("吊顶高度会影响阵麦和吸顶音箱安装高度。");
   }
   if (profile.engineeringConstraints.ceiling === "exposed" && profile.needs.includes("localAmplification")) {
     risks.push("无吊顶条件会影响阵麦安装高度。");

@@ -13,13 +13,12 @@ import {
 } from "../data/initialProfile";
 import { getAmplificationScopeText, getLegacySoundSystemText, getNeedText } from "../lib/profileText";
 import { generateEngineeringOutputs } from "../lib/engineeringRules";
-import { generateEngineeringPoints, getArrayMicCentralAirRequiredClearance, getDefaultSpeakerCount, getEffectiveAmplificationScope, shouldGenerateNewSpeakers } from "../lib/drawingEngine";
+import { generateEngineeringPoints, getDefaultSpeakerCount, getEffectiveAmplificationScope, shouldGenerateNewSpeakers } from "../lib/drawingEngine";
 import { isAuditoriumScenario } from "../lib/scenarioRules";
 import { getSpeakerSelectionReason, getSpeakerSelectionResult } from "../lib/speakerRules";
 import { ruleChangePolicy } from "../data/ruleGovernance";
 import type { ClassroomProfile, GeneratedPoint, LegacySpeakerPoint, Point } from "../types";
-
-const ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M = 1;
+import type { AppBrandId } from "../brand";
 
 export type CalibrationStatus = "untested" | "pass" | "fail";
 
@@ -44,6 +43,7 @@ export interface CalibrationCase {
 }
 
 interface TestConsoleProps {
+  brandId: AppBrandId;
   cases: CalibrationCase[];
   activeCaseId: string | null;
   onGenerateOne: () => void;
@@ -59,6 +59,7 @@ interface TestConsoleProps {
 }
 
 export function TestConsole({
+  brandId,
   cases,
   activeCaseId,
   onGenerateOne,
@@ -122,8 +123,8 @@ export function TestConsole({
         </div>
         {cases.length ? (
           cases.map((item, index) => {
-            const audit = getCaseAudit(item.profile);
-            const ruleTrace = getRuleTrace(item.profile, speakerCalibrationMode);
+            const audit = getCaseAudit(item.profile, brandId);
+            const ruleTrace = getRuleTrace(item.profile, speakerCalibrationMode, brandId);
             return (
               <article className={activeCaseId === item.id ? "testRow active" : "testRow"} key={item.id}>
                 <strong>{index + 1}</strong>
@@ -168,51 +169,43 @@ export function TestConsole({
   );
 }
 
-function getCaseAudit(profile: ClassroomProfile) {
-  const outputs = generateEngineeringOutputs(profile);
+function getCaseAudit(profile: ClassroomProfile, brandId: AppBrandId) {
+  const outputs = generateEngineeringOutputs(profile, {}, brandId);
   const mics = outputs.generatedPoints.filter((point) => point.type === "arrayMic");
-  const scope = getEffectiveAmplificationScope(profile);
-  const length = profile.roomGeometry.length;
-  const hasOnline = hasOnlinePickupNeed(profile);
-  const isCombinedClassroom = profile.scenario === "combinedClassroom";
-  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
   const micSummary = mics.length
     ? `${mics.length} 只；${mics.map((mic) => `${mic.label}@前墙${mic.position.y.toFixed(1)}m`).join("、")}`
     : "0 只";
-
-  if (mics.length > 5) return { verdict: "可疑", reason: "超过一主四从 5 只上限", micSummary };
-  if (profile.engineeringConstraints.hasCentralAirConditioner && centralAirPoints.length === 0) {
-    return { verdict: "待判断", reason: "现场有中央空调，需先在点位图手动标注位置，再校准阵麦避让", micSummary };
+  const existingAuditOrder = [
+    "array.capacity",
+    "site.central-air-position",
+    "site.central-air-clearance",
+    "site.central-air-quality-zone",
+    "site.central-air-direction-priority",
+    "array.back-wall-distance",
+    "array.podium-multi-mic",
+    "array.short-room-multi-mic",
+    "array.mid-depth-review",
+    "array.long-room-review"
+  ];
+  const finding = existingAuditOrder
+    .map((code) => outputs.pointValidation.findings.find((item) => item.code === code && item.severity !== "info"))
+    .find(Boolean);
+  if (finding) {
+    return {
+      verdict: finding.severity === "warning" ? "待判断" : "可疑",
+      reason: finding.internalMessage,
+      micSummary
+    };
   }
-  const requiredCentralAirClearance = getArrayMicCentralAirRequiredClearance(profile);
-  const centralAirViolation = mics.find((mic) => centralAirPoints.some((air) => getArrayMicClearanceToCentralAir(mic.position, air) < requiredCentralAirClearance));
-  if (centralAirViolation) {
-    return { verdict: "可疑", reason: `${centralAirViolation.label} 距中央空调本体小于 ${requiredCentralAirClearance.toFixed(1)}m，当前 AFC / 混响风险下需要继续避让`, micSummary };
-  }
-  const centralAirRisk = mics.find((mic) => centralAirPoints.some((air) => getArrayMicClearanceToCentralAir(mic.position, air) < ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M));
-  if (centralAirRisk) {
-    return { verdict: "待判断", reason: `${centralAirRisk.label} 距中央空调本体小于 1m，降噪算法会更多介入，扩声和线上拾音还原度会降低`, micSummary };
-  }
-  const lateralPriorityIssue = getCentralAirLateralPriorityIssue(profile);
-  if (lateralPriorityIssue) {
-    return { verdict: "可疑", reason: lateralPriorityIssue, micSummary };
-  }
-  const lastMicBackWallIssue = getLastMicBackWallIssue(profile);
-  if (lastMicBackWallIssue) {
-    return { verdict: "可疑", reason: lastMicBackWallIssue, micSummary };
-  }
-  if (scope === "podium" && !hasOnline && mics.length > 1) {
-    const localArea = profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声";
-    return { verdict: "可疑", reason: `${localArea}且无线上拾音需求，却推荐多麦`, micSummary };
-  }
-  if (length <= 9 && !hasOnline && mics.length > 1) return { verdict: "可疑", reason: "长度 <=9m 且无线上拾音需求，通常应单麦优先", micSummary };
-  if (!isCombinedClassroom && length > 9 && length <= 16 && scope === "full") return { verdict: "待判断", reason: "9-16m 全场扩声需重点看后排发言和听感，适合人工校准", micSummary };
-  if (length > 16 && scope === "full" && mics.length < 3) return { verdict: "待判断", reason: "长度 >16m 全场扩声但少于三麦，需要确认是否接受", micSummary };
   return { verdict: "初判通过", reason: "未触发当前已知矛盾规则", micSummary };
 }
 
-function getRuleTrace(profile: ClassroomProfile, speakerCalibrationMode: "default" | "ceilingOnly" = "default") {
-  const outputs = generateEngineeringOutputs(profile);
+function getRuleTrace(
+  profile: ClassroomProfile,
+  speakerCalibrationMode: "default" | "ceilingOnly" = "default",
+  brandId: AppBrandId = "yinyi"
+) {
+  const outputs = generateEngineeringOutputs(profile, {}, brandId);
   const mics = outputs.generatedPoints.filter((point) => point.type === "arrayMic").sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
   if (speakerCalibrationMode === "ceilingOnly") {
     const points = generateEngineeringPoints(profile, {
@@ -280,90 +273,6 @@ function getSpeakerPointTrace(speakers: GeneratedPoint[]) {
 function getPointYTrace(points: GeneratedPoint[]) {
   if (!points.length) return "";
   return `；距前墙 ${points.map((point) => `${point.position.y.toFixed(1)}m`).join(" / ")}`;
-}
-
-function getLastMicBackWallIssue(profile: ClassroomProfile) {
-  const outputs = generateEngineeringOutputs(profile);
-  const mics = outputs.generatedPoints.filter((point) => point.type === "arrayMic").sort((a, b) => a.position.y - b.position.y);
-  if (mics.length <= 1) return "";
-  const lastMic = mics[mics.length - 1];
-  const backWallDistance = profile.roomGeometry.length - lastMic.position.y;
-  const minimumBackWallDistance = mics.length === 2 && profile.roomGeometry.length <= 16 ? (profile.roomGeometry.length > 12 ? 5 : 4) : 3;
-  if (backWallDistance >= minimumBackWallDistance) return "";
-  return `${lastMic.label} 距后墙仅 ${backWallDistance.toFixed(1)}m，应把最后一支往前移到距后墙至少 ${minimumBackWallDistance}m，减少中前区学生背向从麦说话的情况`;
-}
-
-function getCentralAirLateralPriorityIssue(profile: ClassroomProfile) {
-  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
-  if (!centralAirPoints.length) return "";
-
-  const outputs = generateEngineeringOutputs(profile);
-  const mics = outputs.generatedPoints.filter((point) => point.type === "arrayMic");
-  const baseProfile: ClassroomProfile = {
-    ...profile,
-    engineeringConstraints: {
-      ...profile.engineeringConstraints,
-      hasCentralAirConditioner: false,
-      centralAirConditionerCount: 0,
-      centralAirConditionerPoints: []
-    }
-  };
-  const baseMics = generateEngineeringOutputs(baseProfile).generatedPoints.filter((point) => point.type === "arrayMic");
-
-  for (const mic of mics) {
-    const baseMic = baseMics.find((item) => item.id === mic.id);
-    if (!baseMic) continue;
-    const lateralMove = Math.abs(mic.position.x - baseMic.position.x);
-    const depthMove = Math.abs(mic.position.y - baseMic.position.y);
-    const prefersDepthMove = profile.roomGeometry.length >= profile.roomGeometry.width;
-    if (prefersDepthMove && lateralMove > 0.05 && depthMove <= 0.05 && canMoveForwardOrBackwardClearOfCentralAir(profile, baseMic.position)) {
-      return `${mic.label} 因中央空调避让发生左右偏移，但当前房间长大于等于宽，前后方向存在可用点；应优先前后避让`;
-    }
-    if (!prefersDepthMove && depthMove > 0.05 && lateralMove <= 0.05 && canMoveLeftOrRightClearOfCentralAir(profile, baseMic.position)) {
-      return `${mic.label} 因中央空调避让发生前后偏移，但当前房间长小于宽，左右方向存在可用点；应优先左右避让`;
-    }
-  }
-  return "";
-}
-
-function canMoveForwardOrBackwardClearOfCentralAir(profile: ClassroomProfile, position: { x: number; y: number }) {
-  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
-  const roomLength = profile.roomGeometry.length;
-  return centralAirPoints.some((air) => {
-    const requiredClearance = getArrayMicCentralAirRequiredClearance(profile);
-    const halfDepth = (air.size?.depth ?? 0.8) / 2 + requiredClearance + 0.3;
-    const frontY = roundOne(air.position.y - halfDepth);
-    const backY = roundOne(air.position.y + halfDepth);
-    return [frontY, backY].some((y) => y >= 1.2 && y <= roomLength - 0.8 && centralAirPoints.every((item) => getArrayMicClearanceToCentralAir({ x: position.x, y }, item) >= requiredClearance));
-  });
-}
-
-function canMoveLeftOrRightClearOfCentralAir(profile: ClassroomProfile, position: { x: number; y: number }) {
-  const centralAirPoints = profile.engineeringConstraints.centralAirConditionerPoints ?? [];
-  const roomWidth = profile.roomGeometry.width;
-  return centralAirPoints.some((air) => {
-    const requiredClearance = getArrayMicCentralAirRequiredClearance(profile);
-    const halfWidth = (air.size?.width ?? 0.8) / 2 + requiredClearance + 0.3;
-    const leftX = roundOne(air.position.x - halfWidth);
-    const rightX = roundOne(air.position.x + halfWidth);
-    return [leftX, rightX].some((x) => x >= 0.8 && x <= roomWidth - 0.8 && centralAirPoints.every((item) => getArrayMicClearanceToCentralAir({ x, y: position.y }, item) >= requiredClearance));
-  });
-}
-
-function getArrayMicClearanceToCentralAir(
-  mic: { x: number; y: number },
-  air: ClassroomProfile["engineeringConstraints"]["centralAirConditionerPoints"][number]
-) {
-  const micHalfSize = 0.3;
-  const halfWidth = (air.size?.width ?? 0.8) / 2 + micHalfSize;
-  const halfDepth = (air.size?.depth ?? 0.8) / 2 + micHalfSize;
-  const dx = Math.max(Math.abs(mic.x - air.position.x) - halfWidth, 0);
-  const dy = Math.max(Math.abs(mic.y - air.position.y) - halfDepth, 0);
-  return Math.hypot(dx, dy);
-}
-
-function roundOne(value: number) {
-  return Math.round(value * 10) / 10;
 }
 
 function siteConditionText(profile: ClassroomProfile) {

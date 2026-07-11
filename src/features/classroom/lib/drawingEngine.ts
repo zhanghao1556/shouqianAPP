@@ -2019,13 +2019,17 @@ const getWallSpeakerHorizontalAngleFromTarget = (
 };
 
 export const getDefaultSpeakerCount = (profile: ClassroomProfile, usesWallSpeaker: boolean) => {
+  return Math.min(RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER, getRequiredSpeakerCount(profile, usesWallSpeaker));
+};
+
+export const getRequiredSpeakerCount = (profile: ClassroomProfile, usesWallSpeaker: boolean) => {
   const { length, width } = profile.roomGeometry;
   if (length <= 0 || width <= 0) return 0;
 
   if (!usesWallSpeaker) {
     const columns = getCeilingSpeakerColumnCount(profile);
     const firstRowReduction = getClassroomFirstCeilingSpeakerRowReduction(profile, columns);
-    return Math.min(RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER, getCeilingSpeakerRowCount(profile) * columns - firstRowReduction);
+    return getCeilingSpeakerRowCount(profile) * columns - firstRowReduction;
   }
   if (shouldUseMeetingStyleFullRoomWallSpeakerRules(profile)) return getFullRoomWallSpeakerCountByRoomSpan(profile);
   if (profile.scenario === "auditorium") return getRearFillRowCountByPrimaryMicRearDepth(profile) * 2;

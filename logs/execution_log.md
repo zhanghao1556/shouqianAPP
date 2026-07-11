@@ -5559,6 +5559,50 @@ Boundary:
 - Product name, product-source copy, wireless-handheld installation / wiring copy, verified topology asset identity, and audit recommendation documentation only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.
 
+### Point validation browser QA issues recorded
+
+- During a mid-edit Vite hot reload, the page briefly logged `syncBrandSystemSelection is not defined` while the call site had reloaded before the renamed helper declaration. A complete reload after the edit rendered normally; clean-tab console verification is still required before completion.
+- The Yinman 20m browser case produced a theoretical requirement of 17 speakers while the retained layout engine generated 14 points. The hard-risk internal copy incorrectly said the points were generated exactly at the system limit. This wording must be corrected to say automatic generation stays within the limit, without changing the point count or layout formula.
+- The old customer-visible risk list still emitted a suspended-ceiling height warning above 3.6m. The confirmed plan says height above 3.5m is an internal point-validation reminder only, so the duplicate customer-facing risk item was removed without changing the existing speaker selector or any coordinates.
+
+### Point-map product capability and unified validation implementation completed
+
+Confirmed scope:
+
+- Both brands use an 8m online-pickup radius and 5m local-amplification / interactive-classroom radius.
+- Existing Yinyi point count, coordinates, spacing, central-air avoidance, ceiling-speaker layout and 85-degree wall-speaker coverage remain unchanged.
+- Yinyi supports at most five array microphones and uses the shortest serial Manhattan construction route; over 40m is a hard review finding without point relocation.
+- Yinman supports at most two independent array microphones. Each uses a separate network cable to one generic customer-visible intelligent audio processor host.
+- The Yinman processor directly drives the first eight passive speakers; 9-16 speakers add one teaching analog amplifier host; over 16 produces a hard review finding without adding more amplifiers.
+
+Implementation:
+
+- Added brand capability definitions and brand-aware point generation while keeping the shared layout engine intact.
+- Added one `PointValidationResult` to `GeneratedOutputs`, covering capability limits, cascade route, speaker capacity, high suspended ceiling, microphone/speaker distance exceptions, central-air checks and the existing 5175 back-wall / quantity checks.
+- Migrated the 5175 automatic verdict to the unified findings while preserving the existing check priority and verdict mapping.
+- Added compact internal validation summaries to 5174 / 5180 and a full source-aware validation table plus Yinyi / Yinman segmented control to 5175.
+- Customer release UI and PDF derive the same generic `需专项复核` status only from hard findings. Internal values and sources are not drawn into exported point-map or topology SVGs.
+- Added Yinman processor-direct connection generation and topology nodes. Yinman no longer renders a main/slave chain; two-mic cases show two separate `网线 ×1` links.
+- Added a tracked product knowledge base under `docs/product-knowledge`, a 66-source SHA-256 manifest, conflict / decision records and an incremental audit script. Full text and images remain in ignored `work/product-doc-audit`.
+- Added the `docx_2` knowledge-first / hash-change-only workflow to `AGENTS.md` and recorded the RING08 5m versus 5-8m source conflict with the confirmed 8m / 5m business decision.
+
+Verification:
+
+- Strict TypeScript unused checks passed.
+- `npm.cmd run test:point-system` passed Yinyi coordinate parity, 40m / 40.1m cascade boundaries, Yinman 1/2/3 theoretical mic demand, independent direct links, 8/9/16/17 speaker capacity, high-ceiling no-relocation behavior and both approved mic/speaker distance exceptions.
+- `npm.cmd run test:reverberation` passed all existing reverberation checks.
+- `npm.cmd run test:product-doc-audit` passed unchanged-file, one-changed-file and Word-lock-file behavior.
+- `npm.cmd run audit:product-docs` reported 66 sources, 0 pending and 0 removed.
+- `npm.cmd run build` passed.
+- Runtime and `dist` scans found no customer-runtime `RING08` or `AJ350` text.
+- Fresh browser QA passed on 5174, 5175, 5177 and 5180: meaningful content, no Vite overlay, no page-level overflow, correct green / blue brand classes and colors, and zero current console warnings or errors.
+- 5175 brand switching changed URL, theme and validation limits correctly; 5180 two-mic test showed two independent network links and was restored to its prior 8m room length after verification.
+
+Boundary:
+
+- No package or release artifact was generated.
+- No GitHub push was performed.
+
 ### Legacy wireless handheld identity and recommendation bug
 
 Finding:
@@ -5655,3 +5699,14 @@ Boundary:
 
 - Customer-visible naming and process-rule documentation only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.
+
+### Point validation work completion before release
+
+- User confirmed that the point-map product capability and unified validation work must be completed and archived before packaging starts.
+- The implementation, focused rule tests, strict TypeScript checks, production build, product-document hash audit and fresh browser QA for 5174 / 5175 / 5177 / 5180 have all completed successfully.
+- The release request supersedes the earlier no-package boundary only after the daily closing workflow is complete.
+- Release scope is both customer packages: Yinyi and Yinman must be rebuilt independently from the current source and pass the current release verifier before delivery.
+- GitHub remains manual: this closing and release flow creates local Git checkpoints only and does not push.
+- Daily closing backup completed at `.codex-backups/stable-20260711-211816.zip`: the archive opened successfully with 1204 entries and the older snapshot was removed only after verification.
+- Final closing checks passed again: strict TypeScript unused checks, point-system rules, reverberation rules, product-document incremental audit tests, 66-source product audit and production build.
+- Cleanup scans found no `debugger` / `console.log` residue, no scanned mojibake markers, and no `RING08` / `AJ350` text in `src` or `dist`.
