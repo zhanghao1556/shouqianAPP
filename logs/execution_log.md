@@ -5559,6 +5559,61 @@ Boundary:
 - Product name, product-source copy, wireless-handheld installation / wiring copy, verified topology asset identity, and audit recommendation documentation only.
 - No speaker selection, speaker quantity, speaker coordinates, speaker coverage, array-mic count, array-mic coordinates, topology routing rules, cable length rules, wiring generation rules, device quantity formulas, release behavior, or brand separation behavior was changed.
 
+### Legacy wireless handheld identity and recommendation bug
+
+Finding:
+
+- Selecting the existing-device option `无线手持麦` already reduced the newly supplied `无线手持麦克风系统` recommendation to `0`.
+- The topology still converted both existing and newly supplied wireless handheld systems into the same `手持麦` / `无线接收机` nodes and reused the newly supplied product visuals, so the existing chain could not be identified as reused equipment.
+- The suppression condition was broader than the confirmed rule: any text in the microphone existing-device field, including only `有线麦克风`, suppressed the newly supplied wireless handheld recommendation.
+
+Confirmed rule:
+
+- Existing wireless handheld equipment and the newly supplied wireless handheld system are different equipment identities.
+- When existing wireless handheld equipment is selected, topology must show a distinct `利旧手持麦 -> 利旧无线接收机` chain.
+- When existing wireless handheld equipment is selected, the newly supplied wireless handheld recommendation is `0`.
+- Existing wired microphones alone must not be mistaken for an existing wireless handheld system.
+
+Implementation boundary:
+
+- Change only wireless-handheld identity, recommendation suppression, and topology rendering / layout classification.
+- Do not change speaker selection, speaker quantity, speaker point placement, array-mic quantity, array-mic point placement, cable-length constants, or unrelated connection rules.
+
+Tooling incident:
+
+- A nested PowerShell 7 read command used `$lines` inside the outer command string; the outer PowerShell layer consumed the variable and produced an empty pipe parser error.
+- No files were changed by the failed command. The read was rerun with a variable-free `Get-Content | Select-Object` command.
+
+User correction:
+
+- The first implementation distinguished existing wireless equipment with labels, grayscale, and a `利旧` badge but still reused the newly supplied product photos.
+- User clarified that existing equipment must use the original generic handheld microphone and receiver images, not Yinyi product images.
+- The pre-product-audit images were recovered from Git history as dedicated legacy assets; newly supplied and existing wireless equipment must now use separate image files.
+
+Actions:
+
+- Added dedicated legacy assets:
+  - `src/assets/topology-legacy-handheld-mic.png`;
+  - `src/assets/topology-legacy-wireless-receiver.png`.
+- Generated existing wireless topology as `利旧手持麦 -> 利旧无线接收机`, while newly supplied topology remains `手持麦 -> 无线接收机`.
+- Kept the existing and newly supplied nodes on separate topology keys and separate image references.
+- Added a compact `利旧` badge to existing wireless nodes without altering the original legacy images.
+- Narrowed recommendation suppression to an existing wireless handheld only; selecting only `有线麦克风` no longer suppresses a newly supplied wireless handheld recommendation.
+
+Verification:
+
+- TypeScript strict unused checks passed.
+- `npm.cmd run build` passed.
+- Browser interaction on `http://127.0.0.1:5174/` passed:
+  - existing wireless selected -> newly supplied wireless quantity `0`;
+  - existing wireless selected -> topology shows `利旧手持麦` and `利旧无线接收机`;
+  - existing wireless cleared -> newly supplied wireless quantity `1` in the current high-reverberation profile;
+  - wired microphone only -> newly supplied wireless quantity remains `1`;
+  - wired plus existing wireless -> newly supplied wireless quantity `0`;
+  - final browser state restored to existing wireless selected and wired microphone unselected.
+- SVG asset inspection confirmed the existing nodes reference only the two dedicated `topology-legacy-*` images.
+- Browser console had no warnings or errors.
+
 ### OEM-facing presales model-name hiding rule
 
 Goal:

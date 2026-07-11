@@ -33,7 +33,7 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
   const recordingDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.recordingHost));
   const computerDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.computer));
   const mediaDevices = uniqueDeviceList([...recordingDevices, ...computerDevices]);
-  const microphoneDevices = splitDeviceText(profile.existingDevices.legacyWirelessMic);
+  const existingMicrophoneDevices = splitDeviceText(profile.existingDevices.legacyWirelessMic);
   const legacyAudioInputDevice = getLegacyAudioInputDevice(profile);
   const shouldRouteExternalToLegacyAudio = Boolean(legacySound && legacyAudioInputDevice);
 
@@ -89,19 +89,19 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
       });
   }
 
-  if (hasWireless && microphoneDevices.length === 0) {
-    microphoneDevices.push("无线手持麦");
-  }
-
-  const wirelessMicrophones = microphoneDevices.filter(isWirelessMicrophoneDevice);
-  const wiredMicrophones = microphoneDevices.filter((device) => !isWirelessMicrophoneDevice(device));
+  const legacyWirelessMicrophones = existingMicrophoneDevices
+    .filter(isWirelessMicrophoneDevice)
+    .map(getLegacyWirelessMicrophoneLabel);
+  const wirelessMicrophones = legacyWirelessMicrophones.length > 0 ? legacyWirelessMicrophones : hasWireless ? ["无线手持麦"] : [];
+  const wiredMicrophones = existingMicrophoneDevices.filter((device) => !isWirelessMicrophoneDevice(device));
+  const wirelessReceiverName = `${legacyWirelessMicrophones.length > 0 ? "利旧无线接收机" : "无线接收机"} × ${wirelessMicrophones.length}`;
 
   wirelessMicrophones.forEach((device, index) => {
     lines.push({
       id: `wireless-mic-signal-${index + 1}`,
       fromDevice: device,
       fromPort: "无线发射",
-      toDevice: `无线接收机 × ${wirelessMicrophones.length}`,
+      toDevice: wirelessReceiverName,
       toPort: "无线接收",
       cableType: "无线信号",
       note: "无线话筒先到无线接收机，接收机再输出音频到阵列麦主机模拟输入。"
@@ -111,10 +111,10 @@ export const generateConnectionLines = (profile: ClassroomProfile, selection: Pr
   if (wirelessMicrophones.length > 0) {
     lines.push(
       shouldRouteExternalToLegacyAudio
-        ? buildExternalToLegacyAudioLine(`无线接收机 × ${wirelessMicrophones.length}`, legacyAudioInputDevice, "wireless-receiver-line-legacy")
+        ? buildExternalToLegacyAudioLine(wirelessReceiverName, legacyAudioInputDevice, "wireless-receiver-line-legacy")
         : {
             id: "wireless-receiver-line-dt",
-            fromDevice: `无线接收机 × ${wirelessMicrophones.length}`,
+            fromDevice: wirelessReceiverName,
             fromPort: "LINE OUT RCA / BAL OUT",
             toDevice: dtName,
             toPort: "模拟输入 L/R/G",
@@ -395,6 +395,13 @@ function isWirelessMicrophoneDevice(device: string) {
   if (device.includes("接收机")) return false;
   return device.includes("无线手持") || device.includes("手持");
 }
+
+function getLegacyWirelessMicrophoneLabel(device: string) {
+  return device.startsWith("利旧") ? device : `利旧${device}`;
+}
+
+export const hasExistingWirelessHandheld = (profile: ClassroomProfile) =>
+  splitDeviceText(profile.existingDevices.legacyWirelessMic).some(isWirelessMicrophoneDevice);
 
 function getExternalMicrophoneConnectionNote(device: string) {
   if (device.includes("无线接收机")) return "无线接收机信号输出优先使用 LINE OUT RCA；阵列麦主机模拟输入为 L/R/G。";

@@ -1444,3 +1444,20 @@ Guardrail:
 - Concrete model names such as `DT1`, `DT2`, `DT2 Pro`, `AWM301`, `WP1`, `AP150`, and `YY-URO1` are allowed only in internal product IDs, internal source references, logs, product audit files, calibration notes, and verification blacklists.
 - Do not turn internal model-positioning differences, wireless operating-distance promises, or USB extender auto-inclusion into production rules until the user confirms the intended sales / delivery口径.
 - Do not use this audit to change speaker selection, speaker quantity, speaker coordinates, array-mic count, array-mic coordinates, topology routing, wiring generation, or cable quantity rules.
+
+### 2026-07-11 Existing wireless handheld separation reminder
+
+- `无线手持麦` in `existingDevices.legacyWirelessMic` means customer-owned / reused equipment, not the newly supplied `无线手持麦克风系统` product.
+- Preserve two identities in topology:
+  - newly supplied: `手持麦 -> 无线接收机`;
+  - existing: `利旧手持麦 -> 利旧无线接收机`.
+- Existing wireless handheld equipment suppresses the automatic newly supplied wireless handheld recommendation.
+- Existing wired microphones alone do not satisfy that suppression condition.
+- Do not render an existing handheld chain with an unmarked newly supplied product identity; use explicit reused-equipment labeling and visual treatment.
+- Do not reuse newly supplied product photos for existing equipment, even with grayscale or a `利旧` badge. Existing handheld and receiver nodes use the original generic legacy images; newly supplied nodes use the verified Yinyi product-family images.
+- Keep both chains on the same proven signal rule: handheld transmitter to receiver is `无线信号`; receiver to the selected audio input is `音频线`.
+
+PowerShell reminder:
+
+- Even with the real PowerShell 7 executable, variables such as `$lines` inside a nested double-quoted `-Command` string can be consumed by the outer PowerShell layer.
+- Keep nested read commands variable-free, or move nontrivial logic into a standalone UTF-8 script. A parser error from this wrapper is not evidence of damaged source files.

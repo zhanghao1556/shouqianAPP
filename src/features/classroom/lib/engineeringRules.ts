@@ -21,7 +21,7 @@ import type {
   QuantityOverrides
 } from "../types";
 import { needsAuditoriumRearFillSpeakers } from "./auditoriumRules";
-import { generateConnectionLines } from "./connectionRules";
+import { generateConnectionLines, hasExistingWirelessHandheld } from "./connectionRules";
 import {
   ARRAY_MIC_ONLINE_PICKUP_RADIUS_M,
   generateEngineeringPoints,
@@ -326,7 +326,7 @@ const getProductSelection = (
       if (rule.productId === "CEILING-SPEAKER" || rule.productId === "COLUMN-SPEAKER") {
         quantity = (hasLegacySound && profile.scenario === "auditorium" && !needsAuditoriumRearFill) || rule.productId !== speakerProductId ? 0 : clampSpeakerQuantity(speakerCount);
       }
-      if (rule.productId === "WIRELESS-HANDHELD") quantity = profile.existingDevices.legacyWirelessMic.trim() ? 0 : acousticAssessment.risk === "high" ? 1 : 0;
+      if (rule.productId === "WIRELESS-HANDHELD") quantity = hasExistingWirelessHandheld(profile) ? 0 : acousticAssessment.risk === "high" ? 1 : 0;
       if (rule.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID) {
         quantity = hasLegacySound && profile.scenario === "auditorium" && !needsAuditoriumRearFill ? 0 : getExternalAmplifierCountForSpeakers(speakerCount);
       }

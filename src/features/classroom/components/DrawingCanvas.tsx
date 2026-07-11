@@ -19,6 +19,8 @@ import topologyCeilingSpeakerImage from "../../../assets/topology-ceiling-speake
 import topologyControlHostImage from "../../../assets/topology-control-host.png";
 import topologyFeedbackSuppressorImage from "../../../assets/topology-feedback-suppressor.png";
 import topologyHandheldMicImage from "../../../assets/topology-handheld-mic.png";
+import topologyLegacyHandheldMicImage from "../../../assets/topology-legacy-handheld-mic.png";
+import topologyLegacyWirelessReceiverImage from "../../../assets/topology-legacy-wireless-receiver.png";
 import topologyLaptopImage from "../../../assets/topology-laptop.png";
 import topologyMixerImage from "../../../assets/topology-mixer.png";
 import topologyPodiumComputerImage from "../../../assets/topology-podium-computer.png";
@@ -1420,7 +1422,7 @@ type TopologyNodeKind =
   | "computer"
   | "legacy"
   | "device";
-type TopologyNode = { key: string; label: string; kind: TopologyNodeKind; quantity?: number };
+type TopologyNode = { key: string; label: string; kind: TopologyNodeKind; quantity?: number; isLegacy?: boolean };
 type TopologyEdge = { id: string; from: string; to: string; label: string; laneOffset?: number };
 const LEGACY_AUDIO_ROOT_LABELS = ["原有音频系统", "原有扩声系统"];
 const LEGACY_AUDIO_CENTER_PRIORITY = ["legacy-mixer", "legacy-processor", "legacy-amplifier"];
@@ -1503,7 +1505,7 @@ function getSelectedTopologyDevices(profile: ClassroomProfile) {
   return uniqueTopologyDeviceList([
     ...splitTopologyDeviceText(profile.existingDevices.recordingHost),
     ...splitTopologyDeviceText(profile.existingDevices.computer),
-    ...splitTopologyDeviceText(profile.existingDevices.legacyWirelessMic),
+    ...splitTopologyDeviceText(profile.existingDevices.legacyWirelessMic).map(getLegacyTopologyMicrophoneDevice),
     ...legacySoundDevices
   ]);
 }
@@ -1542,6 +1544,11 @@ function splitTopologyDeviceText(value: string) {
 
 function uniqueTopologyDeviceList(devices: string[]) {
   return Array.from(new Set(devices));
+}
+
+function getLegacyTopologyMicrophoneDevice(device: string) {
+  if (!device.includes("无线手持") && !device.includes("手持麦")) return device;
+  return device.startsWith("利旧") ? device : `利旧${device}`;
 }
 
 function getPendingTopologyCableLabel(device: string) {
@@ -1646,6 +1653,10 @@ function getTopologyNodeKey(device: string, port = "") {
   if (device.includes("功放主机")) return "amplifier";
   if (device.includes("调音台")) return "mixer";
   if (device.includes("处理器") || device.includes("DSP") || device.includes("反馈抑制")) return "processor";
+  if (device.includes("利旧") && device.includes("接收机")) return "legacyWirelessReceiver";
+  if (device.includes("利旧") && (device.includes("无线手持") || device.includes("手持麦"))) {
+    return getStableTopologyDeviceKey("legacyWirelessMic", device);
+  }
   if (device.includes("接收机")) return "wirelessReceiver";
   if (device.includes("有线麦")) return getStableTopologyDeviceKey("wiredMic", device);
   if (device.includes("无线手持") || device.includes("手持麦")) return getStableTopologyDeviceKey("wirelessMic", device);
@@ -1666,6 +1677,12 @@ function getTopologyNode(device: string, port: string, key: string, speakerCount
   if (key === "legacy-amplifier") return { key, label: "利旧功放", kind: "amplifier", quantity: getTopologyQuantityFromText(device) };
   if (key === "legacy-active-speaker") return { key, label: "利旧有源音箱", kind: "legacy", quantity: getTopologyQuantityFromText(device) };
   if (key === "legacy-passive-speaker") return { key, label: "利旧无源音箱", kind: "legacy", quantity: getTopologyQuantityFromText(device) };
+  if (key === "legacyWirelessReceiver") {
+    return { key, label: "利旧无线接收机", kind: "wirelessReceiver", quantity: getTopologyQuantityFromText(device), isLegacy: true };
+  }
+  if (key.startsWith("legacyWirelessMic")) {
+    return { key, label: "利旧手持麦", kind: "wireless", quantity: getTopologyQuantityFromText(device), isLegacy: true };
+  }
   if (key === "wirelessReceiver") return { key, label: "无线接收机", kind: "wirelessReceiver", quantity: getTopologyQuantityFromText(device) };
   if (key === "wireless") return { key, label: getTopologyWirelessLabel(device), kind: "wireless", quantity: getTopologyQuantityFromText(device) };
   if (key.startsWith("wiredMic")) return { key, label: "有线麦", kind: "wireless", quantity: getTopologyQuantityFromText(device) };
@@ -2256,7 +2273,7 @@ function getTopologySidePenalty(position: { x: number; y: number }, side: "left"
 }
 
 function isTopologySatelliteNode(key: string) {
-  return key === "speaker-amplifier" || key.startsWith("wirelessMic");
+  return key === "speaker-amplifier" || isTopologyWirelessMicKey(key);
 }
 
 function isPotentialTopologySatelliteNode(key: string) {
@@ -2266,7 +2283,7 @@ function isPotentialTopologySatelliteNode(key: string) {
 function getTopologySatelliteAnchorMap(edges: TopologyEdge[], mainDevice: string, legacyCenterDevices: Set<string>) {
   const anchors = new Map<string, string>();
   edges.forEach((edge) => {
-    if (edge.from.startsWith("wirelessMic") && edge.to === "wirelessReceiver") {
+    if (isTopologyWirelessMicKey(edge.from) && isTopologyWirelessReceiverKey(edge.to)) {
       anchors.set(edge.from, edge.to);
       return;
     }
@@ -2287,12 +2304,27 @@ function getTopologySatelliteAnchorKey(key: string, positions: Map<string, { x: 
   const anchorKey = satelliteAnchors.get(key);
   if (anchorKey && positions.has(anchorKey)) return anchorKey;
   if (key === "speaker-amplifier" && positions.has("amplifier")) return "amplifier";
-  if (key.startsWith("wirelessMic") && positions.has("wirelessReceiver")) return "wirelessReceiver";
+  const receiverKey = getTopologyWirelessReceiverKey(key);
+  if (receiverKey && positions.has(receiverKey)) return receiverKey;
   return "mainMic";
 }
 
 function getTopologyRequiredSatelliteAnchorKey(key: string, satelliteAnchors: Map<string, string>) {
-  return satelliteAnchors.get(key) ?? (key === "speaker-amplifier" ? "amplifier" : key.startsWith("wirelessMic") ? "wirelessReceiver" : "");
+  return satelliteAnchors.get(key) ?? (key === "speaker-amplifier" ? "amplifier" : getTopologyWirelessReceiverKey(key));
+}
+
+function isTopologyWirelessMicKey(key: string) {
+  return key.startsWith("wirelessMic") || key.startsWith("legacyWirelessMic");
+}
+
+function isTopologyWirelessReceiverKey(key: string) {
+  return key === "wirelessReceiver" || key === "legacyWirelessReceiver";
+}
+
+function getTopologyWirelessReceiverKey(key: string) {
+  if (key.startsWith("legacyWirelessMic")) return "legacyWirelessReceiver";
+  if (key.startsWith("wirelessMic")) return "wirelessReceiver";
+  return "";
 }
 
 function placeTopologySatelliteDevices(
@@ -2409,7 +2441,7 @@ function getTopologySatelliteOffset(
 }
 
 function isTopologyThirdLevelDevice(device: string) {
-  if (device.startsWith("wirelessMic")) return true;
+  if (isTopologyWirelessMicKey(device)) return true;
   return device === "speaker-amplifier" || device === "legacy-passive-speaker" || device === "legacy-active-speaker";
 }
 
@@ -2424,7 +2456,7 @@ function isTopologySecondLevelDevice(device: string) {
     device === "amplifier" ||
     device === "legacy-amplifier" ||
     device === "legacy-feedback" ||
-    device === "wirelessReceiver" ||
+    isTopologyWirelessReceiverKey(device) ||
     device === "speaker-dt" ||
     device.startsWith("wiredMic")
   );
@@ -2718,7 +2750,24 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
         {label}
       </text>
       {image ? (
-        <image href={image} x={imageX} y={imageY} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid meet" />
+        <>
+          <image
+            href={image}
+            x={imageX}
+            y={imageY}
+            width={imageSize.width}
+            height={imageSize.height}
+            preserveAspectRatio="xMidYMid meet"
+          />
+          {node.isLegacy ? (
+            <g>
+              <rect x={imageX + 2} y={imageY + 2} width="34" height="16" rx="3" fill="#475569" opacity="0.94" />
+              <text x={imageX + 19} y={imageY + 13} textAnchor="middle" className="cadTiny" fill="#ffffff">
+                利旧
+              </text>
+            </g>
+          ) : null}
+        </>
       ) : (
         <text x={x + w / 2} y={imageY + imageSize.height / 2 + 4} textAnchor="middle" className="cadSmall" fill="#64748b">
           待确认
@@ -2740,7 +2789,7 @@ function getTopologyImageSize(node: TopologyNode) {
   if (node.kind === "processor") return { width: 136, height: 26 };
   if (node.kind === "mixer") return { width: 72, height: 78 };
   if (node.kind === "wirelessReceiver") return { width: 116, height: 66 };
-  if (node.kind === "wireless" && node.label === "手持麦") return { width: 26, height: 88 };
+  if (node.kind === "wireless" && node.label.includes("手持麦")) return { width: 26, height: 88 };
   if (node.kind === "wireless" && node.label === "有线麦") return { width: 70, height: 88 };
   if (node.kind === "wireless") return { width: 42, height: 70 };
   if (node.kind === "computer" && node.label === "笔记本") return { width: 96, height: 54 };
@@ -2761,8 +2810,8 @@ function getTopologyDeviceImage(node: TopologyNode) {
   if (node.kind === "processor" && node.label.includes("反馈抑制")) return topologyFeedbackSuppressorImage;
   if (node.kind === "processor") return topologyAudioProcessorImage;
   if (node.kind === "mixer") return topologyMixerImage;
-  if (node.kind === "wirelessReceiver") return topologyWirelessReceiverImage;
-  if (node.kind === "wireless" && node.label === "手持麦") return topologyHandheldMicImage;
+  if (node.kind === "wirelessReceiver") return node.isLegacy ? topologyLegacyWirelessReceiverImage : topologyWirelessReceiverImage;
+  if (node.kind === "wireless" && node.label.includes("手持麦")) return node.isLegacy ? topologyLegacyHandheldMicImage : topologyHandheldMicImage;
   if (node.kind === "wireless" && node.label === "有线麦") return topologyWiredMicImage;
   if (node.kind === "computer" && node.label === "笔记本") return topologyLaptopImage;
   if (node.kind === "computer" && node.label === "讲台电脑") return topologyPodiumComputerImage;
