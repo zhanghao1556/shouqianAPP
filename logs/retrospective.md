@@ -1454,7 +1454,7 @@ Guardrail:
 - Existing wireless handheld equipment suppresses the automatic newly supplied wireless handheld recommendation.
 - Existing wired microphones alone do not satisfy that suppression condition.
 - Do not render an existing handheld chain with an unmarked newly supplied product identity; use explicit reused-equipment labeling and visual treatment.
-- Do not reuse newly supplied product photos for existing equipment, even with grayscale or a `利旧` badge. Existing handheld and receiver nodes use the original generic legacy images; newly supplied nodes use the verified Yinyi product-family images.
+- Do not reuse newly supplied product photos for existing equipment, even with grayscale or a badge. Existing handheld and receiver nodes use the original generic legacy images; newly supplied nodes use the verified Yinyi product-family images. Keep `利旧` in the device name and do not overlay a second `利旧` badge on the image.
 - Keep both chains on the same proven signal rule: handheld transmitter to receiver is `无线信号`; receiver to the selected audio input is `音频线`.
 
 PowerShell reminder:

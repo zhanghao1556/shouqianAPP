@@ -2750,24 +2750,7 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
         {label}
       </text>
       {image ? (
-        <>
-          <image
-            href={image}
-            x={imageX}
-            y={imageY}
-            width={imageSize.width}
-            height={imageSize.height}
-            preserveAspectRatio="xMidYMid meet"
-          />
-          {node.isLegacy ? (
-            <g>
-              <rect x={imageX + 2} y={imageY + 2} width="34" height="16" rx="3" fill="#475569" opacity="0.94" />
-              <text x={imageX + 19} y={imageY + 13} textAnchor="middle" className="cadTiny" fill="#ffffff">
-                利旧
-              </text>
-            </g>
-          ) : null}
-        </>
+        <image href={image} x={imageX} y={imageY} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid meet" />
       ) : (
         <text x={x + w / 2} y={imageY + imageSize.height / 2 + 4} textAnchor="middle" className="cadSmall" fill="#64748b">
           待确认

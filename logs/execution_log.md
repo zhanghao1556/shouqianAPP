@@ -5597,7 +5597,7 @@ Actions:
   - `src/assets/topology-legacy-wireless-receiver.png`.
 - Generated existing wireless topology as `利旧手持麦 -> 利旧无线接收机`, while newly supplied topology remains `手持麦 -> 无线接收机`.
 - Kept the existing and newly supplied nodes on separate topology keys and separate image references.
-- Added a compact `利旧` badge to existing wireless nodes without altering the original legacy images.
+- Kept `利旧` only in the device names; no additional badge is overlaid on the legacy images.
 - Narrowed recommendation suppression to an existing wireless handheld only; selecting only `有线麦克风` no longer suppresses a newly supplied wireless handheld recommendation.
 
 Verification:
