@@ -1,5 +1,13 @@
 ﻿# Retrospective
 
+## 2026-07-13 Wall-speaker preview contract correction
+
+- User was right that the confirmed preview is a visual contract. After a preview is confirmed, the production rule must reproduce the same geometry unless a new preview is shown and reconfirmed.
+- The mistake was letting a later formal implementation reinterpret the preview as a dense optimization problem. The preview showed responsibility-boundary aiming with engineering-angle quantization; the formal code used sample-center targets plus coverage scoring, which pulled speakers back toward perpendicular.
+- For wall-speaker auto aiming, keep the shared rule simple: calculate the real responsibility bounds, target the far boundary midpoint, quantize to a 5-degree mounting-angle step, then render that target. Do not add a second optimizer that can change the approved visual direction.
+- Dense edge sampling is useful as an internal warning, but 100% sample coverage is stricter than the confirmed 85-degree product fan can reasonably guarantee. Warn only for clear responsibility-edge insufficiency, not for every uncovered sample in an otherwise approved fan.
+- When a generated preview and implementation disagree, treat the preview as the source of truth and investigate rounding, sampling, render-label conversion and hidden scoring before changing the business rule again.
+
 ## 2026-07-13 Wall-speaker responsibility aiming
 
 - The root problem was target selection, not the confirmed `85°` product coverage angle: center-biased targets rewarded overlap in the middle while no speaker owned the outer audience boundary.

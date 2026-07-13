@@ -105,7 +105,7 @@ assert.deepEqual(
   [{ x: 1.2, y: 0 }, { x: 7, y: 0 }, { x: 1.2, y: 6 }, { x: 7, y: 6 }],
   "responsibility aiming must not move the approved wall-speaker points"
 );
-assert.deepEqual(edgeCoverageSpeakers.map((speaker) => getMountingAngle(edgeCoverageProfile, speaker)), [86, 94, 94, 86]);
+assert.deepEqual(edgeCoverageSpeakers.map((speaker) => getMountingAngle(edgeCoverageProfile, speaker)), [75, 105, 105, 75]);
 for (const [speakerIndex, edgePoint] of [
   [0, { x: 0.5, y: 1.5 }],
   [1, { x: 7.7, y: 1.5 }],

@@ -82,7 +82,11 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
 function addWallSpeakerCoverageFinding(findings: PointValidationFinding[], speakers: GeneratedPoint[]) {
   const reviewed = speakers.filter((speaker) => speaker.responsibilityEdgeCoverage && speaker.responsibilityEdgeCoverage.total > 0);
   const insufficient = reviewed.filter(
-    (speaker) => (speaker.responsibilityEdgeCoverage?.covered ?? 0) < (speaker.responsibilityEdgeCoverage?.total ?? 0)
+    (speaker) => {
+      const coverage = speaker.responsibilityEdgeCoverage;
+      if (!coverage || coverage.total <= 0) return false;
+      return coverage.covered / coverage.total <= 0.6;
+    }
   );
   if (!insufficient.length) return;
   const covered = insufficient.reduce((sum, speaker) => sum + (speaker.responsibilityEdgeCoverage?.covered ?? 0), 0);
