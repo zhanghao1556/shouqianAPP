@@ -112,6 +112,11 @@ assert.equal(longPodiumSideSpeakers.length, 2);
 assert.deepEqual(longPodiumSideSpeakers.map((speaker) => speaker.horizontalAngle), [51, -51]);
 assert.ok(longPodiumSideSpeakers.every((speaker) => speaker.target && speaker.target.y > speaker.position.y));
 
+const commentedFullRoomProfile = makeProfile({ length: 8.2, width: 6.9, scope: "full" });
+const commentedFullRoomSpeakers = getWallSpeakers(commentedFullRoomProfile);
+assert.deepEqual(commentedFullRoomSpeakers.map((speaker) => speaker.horizontalAngle), [28, -28, 66, -66]);
+assert.ok(commentedFullRoomSpeakers.every((speaker) => speaker.responsibilityEdgeCoverage === undefined));
+
 const insufficientWallCoverage = validatePointPlan({
   profile: edgeCoverageProfile,
   brandId: "yinyi",
@@ -137,12 +142,15 @@ for (const profile of [
   const speakers = getWallSpeakers(profile);
   assert.equal(speakers.length, 4);
   for (const speaker of speakers) {
-    const mountingAngle = getMountingAngle(profile, speaker);
-    assert.ok(mountingAngle >= 36 && mountingAngle <= 144, "wall-speaker mounting angle escaped the supported range");
-    assert.ok(speaker.responsibilityEdgeCoverage, "full-room wall speaker is missing responsibility coverage data");
+    assert.ok(Number.isFinite(speaker.horizontalAngle), "wall-speaker horizontal angle is missing");
+    if (speaker.target) {
+      const mountingAngle = getMountingAngle(profile, speaker);
+      assert.ok(mountingAngle >= 36 && mountingAngle <= 144, "wall-speaker mounting angle escaped the supported range");
+    }
+    assert.equal(speaker.responsibilityEdgeCoverage, undefined);
   }
 }
-console.log("PASS original podium aiming and full-room responsibility aiming remain isolated");
+console.log("PASS original wall-speaker aiming is restored across podium and full-room scopes");
 
 const exactRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }]);
 const overRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20.1, y: 0 }, { x: 20.1, y: 20 }]);
