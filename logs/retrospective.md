@@ -1,5 +1,12 @@
 ﻿# Retrospective
 
+## 2026-07-13 General-rule calibration guardrail
+
+- A reported room is a failing example, not a new production condition. Do not encode its dimensions or scenario as a one-off branch.
+- Trace the shared engineering decision that produced the failure and calibrate that rule across every applicable layout.
+- Scenario-specific behavior is justified only by a real acoustic, hardware or installation difference. Otherwise use one common coverage, spacing, avoidance or connection rule and verify representative boundary cases.
+- The previous short-wide-classroom wording was too narrow. The wall-speaker proposal must instead define a general coverage-zone assignment rule and use the current room only as its visual proof case.
+
 ## 2026-07-13 Rule proposal preview guardrail
 
 - A business-rule recommendation is not ready for confirmation when it is only described in text. Generate the affected drawing first so coverage, spacing, routing or overlap can be judged visually.
