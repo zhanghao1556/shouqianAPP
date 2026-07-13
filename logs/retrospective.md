@@ -1,5 +1,12 @@
 ﻿# Retrospective
 
+## 2026-07-13 Rule proposal preview guardrail
+
+- A business-rule recommendation is not ready for confirmation when it is only described in text. Generate the affected drawing first so coverage, spacing, routing or overlap can be judged visually.
+- Keep preview generation separate from production rules: use the current case as the baseline, label the result as unconfirmed, and only implement the rule after explicit user approval.
+- Match preview type to rule type. Point changes need a point-map preview, topology changes need a topology preview, wiring changes need a wiring preview, and cross-drawing changes need every affected preview.
+- For the `6m × 8.2m` short-wide classroom case, the observed edge gap comes from center-biased front/back-wall aiming, not from changing the confirmed `85°` speaker coverage angle. The smallest candidate rule is to keep all four positions and assign each speaker to its own left/right half-zone; do not rewrite speaker count or placement before confirmation.
+
 ## What Worked
 
 - Existing app project was found and preserved.
