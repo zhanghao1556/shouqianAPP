@@ -80,6 +80,7 @@ function getReplacementAsset(_assetName, sourceAssetName) {
     if (sourceAssetName === "yinman-logo.png") return assetReplacement("yinyi-tech-logo.svg");
     if (sourceAssetName === "yinman-array-mic-pointmap.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-array-mic-topology.png") return assetReplacement("topology-array-mic.png");
+    if (sourceAssetName === "yinman-audio-processor.png") return assetReplacement("topology-audio-processor.png");
     return undefined;
   }
 
@@ -115,6 +116,7 @@ function isolateInlineBrandAssets(value) {
     next = replaceInlineAsset(next, "yinman-logo.png", "yinyi-tech-logo.svg");
     next = replaceInlineAsset(next, "yinman-array-mic-pointmap.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-array-mic-topology.png", "topology-array-mic.png");
+    next = replaceInlineAsset(next, "yinman-audio-processor.png", "topology-audio-processor.png");
     return next;
   }
 

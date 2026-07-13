@@ -5721,3 +5721,29 @@ Boundary:
 - Both zip archives reopened successfully and contain exactly the expected HTML, README and software outline files with brand-correct Unicode names.
 - `tar.exe -tf` displayed the Chinese zip entry names as mojibake in the terminal. A .NET `ZipArchive` read returned the correct Unicode names, confirming this was terminal display encoding rather than package corruption; no package content was rewritten.
 - No GitHub push was performed. Final synchronization remains the user's manual desktop upload step.
+
+### 2026-07-13 Handheld asset QA tooling findings
+
+- `playwright-cli` could not start because its default Chrome channel looked for `C:\Users\73921\AppData\Local\Google\Chrome\Application\chrome.exe`, which is not installed on this machine. The same QA flow was rerun with the repository Playwright dependency and the available Microsoft Edge channel.
+- Desktop QA on 5174 and 5180 logged one `404` each for `/favicon.ico`. The new handheld and wireless-receiver image requests both returned `200`; the favicon request is unrelated to the product assets and did not affect rendering.
+- The missing development favicon is recorded as a non-blocking page issue and is not being fixed during the current product-asset / document-summary task.
+- A MarkText Markdown-link check embedded a regular expression inside an inline `node -e` PowerShell command and was misparsed before Node ran. The failed command did not modify the Markdown file; verification was moved to a standalone UTF-8 Node helper under ignored `work/yinkman-audit`.
+- The standalone Markdown validator then found that two relative DOCX links containing ASCII `(1)` were truncated at the first closing parenthesis. The summary links were corrected with URL-encoded parentheses and the validator now decodes link targets before checking the filesystem.
+
+### 2026-07-13 Yinkman product document summary and asset refresh
+
+- Audited the new `output/yinkman` product materials: 8 DOCX files and 28 standalone images.
+- Extracted document text and tables to ignored audit output under `work/yinkman-audit`, then generated the MarkText-readable summary `output/yinkman/音曼最新产品资料总结.md`.
+- LibreOffice / `soffice` is not installed on this machine, so DOCX visual rendering was skipped; text, tables and image inventory were still inspected and summarized.
+- Recorded important source conflicts in the summary, including Ring08 `10m` versus `8m`, AJ350 power-output conflicts, AJ350 port/cascade ambiguity, AJ200/AJ600 amplifier-output inconsistencies and wireless-mic spec conflicts.
+- Updated the shared newly supplied wireless handheld and wireless receiver topology assets. User confirmed Yinyi and Yinman share these handheld assets.
+- Compressed/downscaled topology assets to keep future single-file packages under 5 MB. Current generated internal single files are about 2.35 MB for Yinyi and 2.12 MB for Yinman.
+- Added `src/assets/yinman-audio-processor.png` and changed the Yinman topology `智能音频处理主机` node to use the AJ350 product image while keeping customer-visible naming generic and keeping Yinyi on the generic processor image.
+- Updated release packaging / verification scripts so Yinyi packages replace or forbid the Yinman-only AJ350 processor asset.
+- Browser QA passed on 5174 and 5180 using Microsoft Edge: desktop topology rendered, handheld / receiver / Yinman processor image requests returned `200`, mobile width had no horizontal overflow, and there were no console warnings or errors.
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run build` passed.
+- `node work/yinkman-audit/verify_current_brand_assets.mjs` passed: Yinyi does not contain the Yinman processor asset, Yinman contains it, and both brands contain the shared handheld / receiver assets.
+- `git diff --check` reported only Git CRLF normalization warnings for existing text files; no whitespace errors were found.
+- `npm.cmd run verify:release-current` was intentionally not treated as a release verifier for this non-release task because the universal release directories still point to the older `260711-1` packages. The script correctly reported current single-file HTML as fresh but release package HTML as stale. Regenerate packages only when the user asks for release.
+- No speaker selection, speaker quantity, speaker coordinates, array-mic quantity, array-mic coordinates, topology routing, cable quantity or point-map business rule was changed.

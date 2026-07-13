@@ -1490,3 +1490,18 @@ PowerShell reminder:
 
 - `tar.exe -tf` may render valid UTF-8 Chinese zip entry names as mojibake in the current terminal even when the archive is correct.
 - Verify Unicode package names with .NET `System.IO.Compression.ZipFile` / `ZipArchive` before classifying a release zip as damaged. Do not rebuild or rename customer files based only on the terminal listing.
+
+### 2026-07-13 Browser QA environment reminder
+
+- The Playwright CLI may default to a Chrome path that is absent on this machine. When that specific launch fails, use the repository Playwright package with the installed Microsoft Edge channel and record the fallback.
+- A development-only `/favicon.ico` 404 is separate from application asset failures. Capture console message locations before classifying a generic resource 404; do not change product rules or image assets because of a favicon request.
+- The nested PowerShell parsing issue recurred when a Markdown-link regex was placed inside `node -e`. Treat any regex containing brackets, quotes or pipes as nontrivial on this machine and move it directly to a standalone helper instead of attempting another inline quoting variant.
+- MarkText relative links whose filenames contain ASCII parentheses should URL-encode them as `%28` and `%29`; otherwise a basic Markdown parser can terminate the destination at the first `)`. Link validators must decode the URL before testing the local path.
+
+### 2026-07-13 Yinkman product material and asset refresh reminder
+
+- `output/yinkman` is a material-drop folder, not a source-rule folder. Summaries and extraction caches can live under ignored `output` / `work`; committed app changes should stay limited to reusable assets, release safeguards and logs unless the user confirms a rule change.
+- Yinyi and Yinman can share the newly supplied handheld microphone / receiver assets because the user confirmed they are identical. This exception does not weaken the broader brand-isolation rule for brand logos, array-mic images or Yinman-only processor assets.
+- Yinman AJ350 remains an internal source identity. Customer-facing drawings and reports still say `智能音频处理主机`; do not expose `AJ350` in runtime UI, PDF, release copy, README or software outline.
+- `verify:release-current` checks the latest universal release directory as well as current single-file HTML. After source changes without a release rebuild, a stale release-dir failure is expected and should be logged, not bypassed or mistaken for a broken development build.
+- Keep topology asset compression conservative: inspect contact sheets or browser screenshots after shrinking product photos, especially white devices on light backgrounds.

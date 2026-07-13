@@ -30,6 +30,7 @@ import topologyVideoConferenceTerminalImage from "../../../assets/topology-video
 import topologyWallSpeakerImage from "../../../assets/topology-wall-speaker.png";
 import topologyWiredMicImage from "../../../assets/topology-wired-mic.png";
 import topologyWirelessReceiverImage from "../../../assets/topology-wireless-receiver.png";
+import yinmanAudioProcessorImage from "../../../assets/yinman-audio-processor.png";
 import yinmanArrayMicPointMapImage from "../../../assets/yinman-array-mic-pointmap.png";
 import yinmanArrayMicTopologyImage from "../../../assets/yinman-array-mic-topology.png";
 
@@ -2816,6 +2817,7 @@ function getTopologyDeviceImage(node: TopologyNode) {
   if (node.kind === "speaker" && node.label.includes("壁挂")) return topologyWallSpeakerImage;
   if (node.kind === "legacy") return topologyWallSpeakerImage;
   if (node.kind === "processor" && node.label.includes("反馈抑制")) return topologyFeedbackSuppressorImage;
+  if (node.kind === "processor" && getAppBrand().id === "yinman" && node.label.includes("智能音频处理主机")) return yinmanAudioProcessorImage;
   if (node.kind === "processor") return topologyAudioProcessorImage;
   if (node.kind === "mixer") return topologyMixerImage;
   if (node.kind === "wirelessReceiver") return node.isLegacy ? topologyLegacyWirelessReceiverImage : topologyWirelessReceiverImage;
