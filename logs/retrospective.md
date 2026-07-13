@@ -1,5 +1,13 @@
 ﻿# Retrospective
 
+## 2026-07-13 Wall-speaker responsibility aiming
+
+- The root problem was target selection, not the confirmed `85°` product coverage angle: center-biased targets rewarded overlap in the middle while no speaker owned the outer audience boundary.
+- Use one geometry rule for generated wall speakers: nearest-speaker responsibility zones, far-boundary targets, supported mounting-angle limits, and explicit edge-coverage validation.
+- Coverage scoring must rank responsibility edges before total covered samples. The first implementation ranked total samples first and produced `63° / 117°`; it improved the picture but still underweighted the outer boundary. Edge-first ranking produced `86° / 94°` and covered the representative side points while preserving the center seam.
+- Store incomplete responsibility coverage as structured generated-point data and let the unified validator emit an internal warning. Do not infer failure from labels or expose the calculation in customer releases.
+- Browser console HMR WebSocket failures can coexist with a healthy Vite HTTP page. Log the development issue separately and do not alter business rules or server configuration during point-rule calibration.
+
 ## 2026-07-13 General-rule calibration guardrail
 
 - A reported room is a failing example, not a new production condition. Do not encode its dimensions or scenario as a one-off branch.

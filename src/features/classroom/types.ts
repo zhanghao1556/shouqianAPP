@@ -117,6 +117,10 @@ export interface GeneratedPoint {
   coverageRadius?: number;
   afcSendLevelOffset?: number;
   target?: Point;
+  responsibilityEdgeCoverage?: {
+    covered: number;
+    total: number;
+  };
   reason: string;
 }
 

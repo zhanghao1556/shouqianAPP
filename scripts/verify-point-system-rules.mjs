@@ -62,6 +62,98 @@ yinyiRegressionProfiles.forEach((profile, index) => {
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
 
+function getWallSpeakers(profile, count = 4) {
+  return generateEngineeringPoints(profile, { speakerProductId: "COLUMN-SPEAKER", speakerCount: count }).filter(
+    (point) => point.type === "speaker" && point.label.includes("壁挂音柱")
+  );
+}
+
+function getMountingAngle(profile, speaker) {
+  assert.ok(speaker.target, speaker.id + " is missing its responsibility target");
+  const vector = { x: speaker.target.x - speaker.position.x, y: speaker.target.y - speaker.position.y };
+  const { width, length } = profile.roomGeometry;
+  const distances = [
+    ["left", Math.abs(speaker.position.x)],
+    ["right", Math.abs(speaker.position.x - width)],
+    ["front", Math.abs(speaker.position.y)],
+    ["back", Math.abs(speaker.position.y - length)]
+  ].sort((left, right) => left[1] - right[1]);
+  const side = distances[0][0];
+  if (side === "left") return Math.round(90 + Math.atan2(vector.y, vector.x) * 180 / Math.PI);
+  if (side === "right") return Math.round(90 - Math.atan2(vector.y, -vector.x) * 180 / Math.PI);
+  if (side === "front") return Math.round(90 - Math.atan2(vector.x, vector.y) * 180 / Math.PI);
+  return Math.round(90 + Math.atan2(vector.x, -vector.y) * 180 / Math.PI);
+}
+
+function isCoveredByWallSpeaker(speaker, point) {
+  const target = speaker.target;
+  if (!target) return false;
+  const axis = { x: target.x - speaker.position.x, y: target.y - speaker.position.y };
+  const vector = { x: point.x - speaker.position.x, y: point.y - speaker.position.y };
+  const axisLength = Math.hypot(axis.x, axis.y);
+  const distance = Math.hypot(vector.x, vector.y);
+  if (axisLength <= 0 || distance <= 0 || distance > (speaker.coverageRadius ?? 3.5)) return false;
+  const dot = (axis.x * vector.x + axis.y * vector.y) / (axisLength * distance);
+  return Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI <= 42.5;
+}
+
+const edgeCoverageProfile = makeProfile({ length: 6, width: 8.2, scope: "podium" });
+const edgeCoveragePoints = generateEngineeringPoints(edgeCoverageProfile, { speakerProductId: "COLUMN-SPEAKER", speakerCount: 4 });
+const edgeCoverageSpeakers = edgeCoveragePoints.filter((point) => point.type === "speaker" && point.label.includes("壁挂音柱"));
+assert.deepEqual(
+  edgeCoverageSpeakers.map((speaker) => speaker.position),
+  [{ x: 1.2, y: 0 }, { x: 7, y: 0 }, { x: 1.2, y: 6 }, { x: 7, y: 6 }],
+  "responsibility aiming must not move the approved wall-speaker points"
+);
+assert.deepEqual(edgeCoverageSpeakers.map((speaker) => getMountingAngle(edgeCoverageProfile, speaker)), [86, 94, 94, 86]);
+for (const [speakerIndex, edgePoint] of [
+  [0, { x: 0.5, y: 1.5 }],
+  [1, { x: 7.7, y: 1.5 }],
+  [2, { x: 0.5, y: 4.5 }],
+  [3, { x: 7.7, y: 4.5 }]
+]) {
+  assert.ok(isCoveredByWallSpeaker(edgeCoverageSpeakers[speakerIndex], edgePoint), "responsibility edge is not covered by speaker " + (speakerIndex + 1));
+}
+const edgeCoverageValidation = validatePointPlan({
+  profile: edgeCoverageProfile,
+  brandId: "yinyi",
+  generatedPoints: edgeCoveragePoints,
+  requiredArrayMicCount: edgeCoveragePoints.filter((point) => point.type === "arrayMic").length,
+  requiredSpeakerCount: 4
+});
+assert.equal(edgeCoverageValidation.findings.find((finding) => finding.code === "speaker.wall-responsibility-edge"), undefined);
+
+const insufficientWallCoverage = validatePointPlan({
+  profile: edgeCoverageProfile,
+  brandId: "yinyi",
+  generatedPoints: [{
+    id: "wall-edge-warning",
+    type: "speaker",
+    label: "壁挂音箱",
+    position: { x: 0, y: 0 },
+    responsibilityEdgeCoverage: { covered: 3, total: 5 },
+    reason: "测试"
+  }],
+  requiredArrayMicCount: 0,
+  requiredSpeakerCount: 1
+});
+assert.equal(insufficientWallCoverage.findings.find((finding) => finding.code === "speaker.wall-responsibility-edge")?.severity, "warning");
+assert.equal(getCustomerPointValidationStatus(insufficientWallCoverage), undefined);
+
+for (const profile of [
+  makeProfile({ length: 6, width: 12, scope: "full" }),
+  makeProfile({ length: 12, width: 6, scope: "full" }),
+  makeProfile({ length: 10, width: 10, scope: "full" })
+]) {
+  const speakers = getWallSpeakers(profile);
+  assert.equal(speakers.length, 4);
+  for (const speaker of speakers) {
+    const mountingAngle = getMountingAngle(profile, speaker);
+    assert.ok(mountingAngle >= 36 && mountingAngle <= 144, "wall-speaker mounting angle escaped the supported range");
+  }
+}
+console.log("PASS general wall-speaker responsibility zones cover room edges without moving points");
+
 const exactRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }]);
 const overRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20.1, y: 0 }, { x: 20.1, y: 20 }]);
 assert.equal(exactRoute.lengthM, 40);

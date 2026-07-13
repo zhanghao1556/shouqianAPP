@@ -70,12 +70,32 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
 
   addCascadeRouteFinding(findings, brandId, mics);
   addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
+  addWallSpeakerCoverageFinding(findings, speakers);
   addInstallationHeightFinding(findings, profile, mics);
   addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
   addCentralAirFindings(findings, profile, brandId, mics);
   addExistingCalibrationFindings(findings, profile, brandId, mics);
 
   return summarizeFindings(findings);
+}
+
+function addWallSpeakerCoverageFinding(findings: PointValidationFinding[], speakers: GeneratedPoint[]) {
+  const reviewed = speakers.filter((speaker) => speaker.responsibilityEdgeCoverage && speaker.responsibilityEdgeCoverage.total > 0);
+  const insufficient = reviewed.filter(
+    (speaker) => (speaker.responsibilityEdgeCoverage?.covered ?? 0) < (speaker.responsibilityEdgeCoverage?.total ?? 0)
+  );
+  if (!insufficient.length) return;
+  const covered = insufficient.reduce((sum, speaker) => sum + (speaker.responsibilityEdgeCoverage?.covered ?? 0), 0);
+  const total = insufficient.reduce((sum, speaker) => sum + (speaker.responsibilityEdgeCoverage?.total ?? 0), 0);
+  findings.push({
+    code: "speaker.wall-responsibility-edge",
+    severity: "warning",
+    title: "壁挂音箱责任区边缘覆盖",
+    actual: `${covered}/${total}`,
+    limit: "责任区边缘全部覆盖",
+    internalMessage: `${insufficient.map((speaker) => speaker.label).join("、")} 在现有数量、覆盖半径、85°覆盖角和安装角范围内仍有责任区边缘采样点未覆盖，需要现场复核或调整音箱配置。`,
+    sourceRefs: ["用户确认的壁挂音箱覆盖责任区与自动指向规则"]
+  });
 }
 
 export function getCustomerPointValidationStatus(result: PointValidationResult): string | undefined {
