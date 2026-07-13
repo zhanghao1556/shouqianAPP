@@ -1,5 +1,13 @@
 ﻿# Retrospective
 
+## 2026-07-13 Podium side-wall rear-fill aiming reminder
+
+- The wall-speaker responsibility rule should not erase the older business distinction between full-room coverage and podium-area rear fill.
+- In podium-area amplification, side-wall speakers behind the main array mic are rear-field fill speakers. Their intuitive direction is toward the rear seats, not straight at the room centerline.
+- Keep this as a general rule by role and mounting side: `podium scope + side-wall wall speakers + behind primary mic` should use rear-fill aiming. Do not bind it to the current 9.1m x 18.2m room or to Yinman only.
+- Preview-first rule worked here: generate a visual proposal before changing production angles. The formal rule should be implemented only after user confirmation.
+- PowerShell reminder repeated: Bash here-doc syntax fails in PowerShell. Use bundled Python with stdin carefully, standalone helpers, or simple `-c` commands.
+
 ## 2026-07-13 Wall-speaker preview contract correction
 
 - User was right that the confirmed preview is a visual contract. After a preview is confirmed, the production rule must reproduce the same geometry unless a new preview is shown and reconfirmed.
