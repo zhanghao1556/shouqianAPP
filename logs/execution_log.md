@@ -21,6 +21,18 @@ Daily closing result:
 - 发布脚本语法检查通过；`src` 未发现 `debugger` / `console.log` 残留，也未发现 `翼欧`、`AP150`、`RING08`、`AJ350` 或损坏字符标记。
 - 清理检查没有修改已确认的音箱、阵麦、拓扑、接线或设备数量规则。
 
+Release result:
+
+- 运行 `npm.cmd run release:all`，从当前源码依次重建音翼和音曼，生成同日首个编号 `260713-1`。
+- 音翼发布包：`outputs/音翼AI售前工具-1.1-内部测试版-260713-1.zip`，`1,650,480` bytes，SHA-256 `43F340A3E0A44EA8608A367C25C9E4FDFF5616036E5DD31113920E695B0F735E`。
+- 音曼发布包：`outputs/音曼AI售前工具-1.1-内部测试版-260713-1.zip`，`1,463,580` bytes，SHA-256 `31A944B3BB4F18DF0F6807742E18453A493E1500DA57CDEBBE84461F3D81EC71`。
+- 最终单文件 HTML 分别为 `2,471,761` 和 `2,221,419` bytes，均低于 `5MB`。
+- `verify:release-current` 两品牌全部通过：源码新鲜度、标题、发布标记、品牌、header CSS、禁止文案和禁止图片资产列表均正常。
+- Pixel 7 Chromium 与 iPhone 14 WebKit 两品牌均通过：首次打开采集字段为空、无回退页、无控制台错误、无横向溢出。
+- 两个 zip 均可由 .NET `ZipArchive` 打开，各含 3 个预期文件，中文文件名正确。
+- zip 检查的第一次 PowerShell 命令把 `foreach` 语句块直接接到管道，产生 parser error；命令在打开任何包前即失败，未修改发布物，随后改为先收集 `$results` 再格式化并通过。
+- 未推送 GitHub。
+
 ## 2026-07-13 教室讲台前后墙壁挂随宽度从 7° 外偏至 40°
 
 Goal:
