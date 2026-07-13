@@ -21,6 +21,14 @@ Root cause and resolution:
 - 收工快照首次尝试将 PowerShell 字符串管道直接传给 `tar -T -`，`tar` 收到空路径并只生成 101 项的不完整压缩包；旧快照又被过低的条目阈值提前删除。该包立即判为无效，不用于回滚；改为先按 Git 文件清单复制到临时目录，再压缩并按源文件数严格核对条目。
 - 暂存目录方案首次读取 `git ls-files` 时又遇到中文路径被 `core.quotepath` 转义，严格的源文件存在检查阻止了继续压缩；后续固定使用 `git -c core.quotepath=false ls-files` 获取真实 UTF-8 路径。
 - 最终有效快照为 `.codex-backups/stable-20260713-212345.zip`，源清单与压缩包均为 156 个文件；验证成功后只保留该最新快照。
+- 发布 zip 核对命令首次把 `foreach { ... }` 语句块直接接到 `| Format-List`，PowerShell 解析为空管道元素并停止；该错误只影响检查命令、不影响发布包。修正为先收集 `$rows`，循环结束后再统一输出。
+
+Final release verification:
+
+- 重新生成双品牌 `260713-2`，没有覆盖 `260713-1`。静态验证确认最终 HTML 新鲜、标题与关键 CSS 匹配、release marker 正确、两品牌资产和禁止文案隔离通过。
+- 固定业务夹具验证确认音翼、音曼最终 HTML 的设备清单和点位图 SVG 均与当前 `dist` 完全一致。
+- 音翼 `260713-2` 在 1440px 桌面和 412px 手机全新浏览器上下文均输出 `69° / 111° / 124° / 56°`，无控制台错误，页面无横向溢出；Pixel 7 与 iPhone 14 发布兼容测试通过。
+- 音翼 zip：`1650481` bytes，SHA-256 `58ED021183A5A4C0C09C14A02081CC7684EE1AE72CEEFFC6926F5DB1FA3BF0CC`；音曼 zip：`1463580` bytes，SHA-256 `0BB3D8BE60F6AAF0A534F152D7EC60EDBAAE8C8062E26AF6F523A931623551AD`。两包均为 3 个条目并保留正确中文 HTML 文件名。
 
 ## 2026-07-13 双品牌 1.1 发布收工流程
 
