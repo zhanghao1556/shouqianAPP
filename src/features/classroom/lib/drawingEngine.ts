@@ -52,6 +52,8 @@ const ORIGINAL_WALL_SPEAKER_DEFAULT_TARGET_BEHIND_M = 4;
 const ORIGINAL_WALL_SPEAKER_MAX_SAFE_HORIZONTAL_ANGLE_DEG =
   90 - WALL_SPEAKER_COVERAGE_HALF_ANGLE_DEG - WALL_SPEAKER_MIC_EDGE_TOLERANCE_DEG;
 const ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG = 7;
+const CLASSROOM_FRONT_BACK_WALL_SPEAKER_MAX_OUTWARD_OFFSET_DEG = 40;
+const CLASSROOM_FRONT_BACK_WALL_SPEAKER_BASE_WIDTH_M = 6;
 const ORIGINAL_MEETING_SIDE_WALL_SPEAKER_OUTWARD_OFFSET_DEG = 7;
 const FRONT_BACK_WALL_SPEAKER_MAX_ROOM_LENGTH_M = 6.6;
 const WALL_SPEAKER_MIN_MOUNTING_ANGLE_DEG = 36;
@@ -1989,21 +1991,62 @@ const getOriginalFrontWallSpeakerHorizontalAngle = (profile: ClassroomProfile, p
   const targetX = profile.roomGeometry.width / 2;
   const targetY = Math.min(profile.roomGeometry.length - WALL_COLUMN_MIN_BACK_WALL_DISTANCE_M, WALL_SPEAKER_COVERAGE_AXIS_M);
   const angle = (Math.atan2(Math.abs(targetX - position.x), Math.max(1, targetY - position.y)) * 180) / Math.PI;
+  const outwardOffset = getFrontBackWallSpeakerOutwardOffset(profile);
   return Math.round(
     position.x <= profile.roomGeometry.width / 2
-      ? angle - ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG
-      : -angle + ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG
+      ? angle - outwardOffset
+      : -angle + outwardOffset
   );
 };
 
 const getOriginalBackWallSpeakerTarget = (profile: ClassroomProfile, position: Point, primaryArrayMicY: number) => {
   const distanceToArrayMic = Math.max(0.8, position.y - primaryArrayMicY);
-  const outwardOffset = Math.tan((ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG * Math.PI) / 180) * distanceToArrayMic;
+  const outwardAngle = getFrontBackWallSpeakerOutwardOffset(profile);
+  const outwardOffset = Math.tan((outwardAngle * Math.PI) / 180) * distanceToArrayMic;
   const isLeft = position.x <= profile.roomGeometry.width / 2;
   return {
     x: oneDecimal(clamp(profile.roomGeometry.width / 2 + (isLeft ? -outwardOffset : outwardOffset), 0.3, profile.roomGeometry.width - 0.3)),
     y: oneDecimal(primaryArrayMicY)
   };
+};
+
+const getFrontBackWallSpeakerOutwardOffset = (profile: ClassroomProfile) => {
+  if (
+    !isClassroomScenario(profile.scenario) ||
+    getEffectiveAmplificationScope(profile) !== "podium" ||
+    profile.roomGeometry.length > FRONT_BACK_WALL_SPEAKER_MAX_ROOM_LENGTH_M
+  ) {
+    return ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG;
+  }
+  const maxWallWidth = getAutomaticWallSpeakerMaxWidth(profile);
+  if (!maxWallWidth || maxWallWidth <= CLASSROOM_FRONT_BACK_WALL_SPEAKER_BASE_WIDTH_M) {
+    return ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG;
+  }
+  const widthProgress = clamp(
+    (profile.roomGeometry.width - CLASSROOM_FRONT_BACK_WALL_SPEAKER_BASE_WIDTH_M) /
+      (maxWallWidth - CLASSROOM_FRONT_BACK_WALL_SPEAKER_BASE_WIDTH_M),
+    0,
+    1
+  );
+  return (
+    ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG +
+    (CLASSROOM_FRONT_BACK_WALL_SPEAKER_MAX_OUTWARD_OFFSET_DEG - ORIGINAL_FRONT_WALL_SPEAKER_OUTWARD_OFFSET_DEG) * widthProgress
+  );
+};
+
+const getAutomaticWallSpeakerMaxWidth = (profile: ClassroomProfile) => {
+  let lastWallWidth: number | undefined;
+  for (let step = 0; step <= 140; step += 1) {
+    const width = oneDecimal(CLASSROOM_FRONT_BACK_WALL_SPEAKER_BASE_WIDTH_M + step * 0.1);
+    const candidate: ClassroomProfile = {
+      ...profile,
+      roomGeometry: { ...profile.roomGeometry, width },
+      engineeringConstraints: { ...profile.engineeringConstraints, speakerProductOverride: "auto" }
+    };
+    if (getSpeakerProductId(candidate) !== "COLUMN-SPEAKER") return lastWallWidth;
+    lastWallWidth = width;
+  }
+  return undefined;
 };
 
 const getOriginalWallSpeakerHorizontalAngleFromTarget = (profile: ClassroomProfile, position: Point, target: Point) => {

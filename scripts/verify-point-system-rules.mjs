@@ -7,6 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
+import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
@@ -14,7 +15,7 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", centralAir = [] } = {}) {
+function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [] } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -24,7 +25,7 @@ function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplif
     roomGeometry: { length, width, height },
     engineeringConstraints: {
       ...base.engineeringConstraints,
-      ceiling: "suspended",
+      ceiling,
       hasCentralAirConditioner: centralAir.length > 0,
       centralAirConditionerCount: centralAir.length,
       centralAirConditionerPoints: centralAir
@@ -91,9 +92,9 @@ const edgeCoverageSpeakers = edgeCoveragePoints.filter((point) => point.type ===
 assert.deepEqual(
   edgeCoverageSpeakers.map((speaker) => speaker.position),
   [{ x: 1.2, y: 0 }, { x: 7, y: 0 }, { x: 1.2, y: 6 }, { x: 7, y: 6 }],
-  "responsibility aiming must not move the approved wall-speaker points"
+  "wall-speaker angle calibration must not move the approved wall-speaker points"
 );
-assert.deepEqual(edgeCoverageSpeakers.map((speaker) => speaker.horizontalAngle), [42, -42, 73, -73]);
+assert.deepEqual(edgeCoverageSpeakers.map((speaker) => speaker.horizontalAngle), [24, -24, 63, -63]);
 assert.ok(edgeCoverageSpeakers.every((speaker) => speaker.responsibilityEdgeCoverage === undefined));
 const edgeCoverageValidation = validatePointPlan({
   profile: edgeCoverageProfile,
@@ -116,6 +117,22 @@ const commentedFullRoomProfile = makeProfile({ length: 8.2, width: 6.9, scope: "
 const commentedFullRoomSpeakers = getWallSpeakers(commentedFullRoomProfile);
 assert.deepEqual(commentedFullRoomSpeakers.map((speaker) => speaker.horizontalAngle), [28, -28, 66, -66]);
 assert.ok(commentedFullRoomSpeakers.every((speaker) => speaker.responsibilityEdgeCoverage === undefined));
+
+const wideFrontBackPodiumProfile = makeProfile({ length: 6, width: 9.6, scope: "podium", ceiling: "exposed" });
+const wideFrontBackPodiumSpeakers = getWallSpeakers(wideFrontBackPodiumProfile);
+assert.deepEqual(wideFrontBackPodiumSpeakers.map((speaker) => speaker.horizontalAngle), [27, -27, 68, -68]);
+assert.deepEqual(
+  [6, 9.6, 12].map((width) => getWallSpeakers(makeProfile({ length: 6, width, scope: "podium", ceiling: "exposed" }))[0].horizontalAngle),
+  [33, 27, 19]
+);
+assert.deepEqual(
+  [6, 8, 10].map((width) => getWallSpeakers(makeProfile({ length: 6, width, scope: "podium", ceiling: "suspended" }))[0].horizontalAngle),
+  [33, 25, 14]
+);
+assert.equal(getSpeakerProductId(makeProfile({ length: 6, width: 12, scope: "podium", ceiling: "exposed" })), "COLUMN-SPEAKER");
+assert.equal(getSpeakerProductId(makeProfile({ length: 6, width: 12.1, scope: "podium", ceiling: "exposed" })), "CEILING-SPEAKER");
+assert.equal(getSpeakerProductId(makeProfile({ length: 6, width: 10, scope: "podium", ceiling: "suspended" })), "COLUMN-SPEAKER");
+assert.equal(getSpeakerProductId(makeProfile({ length: 6, width: 10.1, scope: "podium", ceiling: "suspended" })), "CEILING-SPEAKER");
 
 const insufficientWallCoverage = validatePointPlan({
   profile: edgeCoverageProfile,
@@ -150,7 +167,7 @@ for (const profile of [
     assert.equal(speaker.responsibilityEdgeCoverage, undefined);
   }
 }
-console.log("PASS original wall-speaker aiming is restored across podium and full-room scopes");
+console.log("PASS scoped front/back-wall aiming preserves full-room and long-room boundaries");
 
 const exactRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }]);
 const overRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20.1, y: 0 }, { x: 20.1, y: 20 }]);
