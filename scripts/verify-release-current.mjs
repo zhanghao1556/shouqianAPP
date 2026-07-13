@@ -170,7 +170,9 @@ function checkReleaseScripts(scripts) {
       /build-universal-release\.mjs --brand yinman/.test(scripts["release:yinman"] ?? ""),
     allRunsBothBrands:
       /release:yinyi/.test(scripts["release:all"] ?? "") &&
-      /release:yinman/.test(scripts["release:all"] ?? "")
+      /release:yinman/.test(scripts["release:all"] ?? ""),
+    allRunsBehaviorParity:
+      /verify:release-behavior/.test(scripts["release:all"] ?? "")
   };
 }
 
