@@ -1,5 +1,12 @@
 ﻿# Retrospective
 
+## 2026-07-13 讲台区域扩声规则回退复盘
+
+- 用户说“讲台区域扩声退回原来的规则”时，应按有效扩声范围隔离旧、新算法：`podium` 恢复原指向，`full` 保留责任区指向，不能把整个壁挂算法提交整体回滚。
+- 图纸显示的安装角和数据层 `horizontalAngle` 不是同一字段。回归测试应固定对应层级的真实值，例如短房间原数据摆角为 `42/-42/73/-73`，不能直接拿截图中的 `48/132/133/47` 当数据断言。
+- PowerShell 调用 `.cmd` 再传多层 `-e` 脚本时会重新处理引号。以后不要用这种方式临时读取 TypeScript 结果；优先扩展现有规则测试，或使用独立辅助脚本并通过 `apply_patch` 管理。
+- Browser 插件若因 URL 安全策略拒绝本地页面，不得改用其他浏览器控制方式绕过。保留规则测试、类型检查和构建证据，并明确记录缺少截图验证。
+
 ## 2026-07-13 Podium side-wall rear-fill aiming reminder
 
 - The wall-speaker responsibility rule should not erase the older business distinction between full-room coverage and podium-area rear fill.
