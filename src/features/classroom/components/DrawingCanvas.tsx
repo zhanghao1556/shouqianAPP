@@ -1620,19 +1620,23 @@ function getTopologyBottomLeftNotes(connections: ConnectionLine[]) {
     .filter((connection) => getTopologyNodeKey(connection.fromDevice, connection.fromPort) === "mainMic" && isTopologyAudioOutputCable(connection.cableType))
     .reduce((sum, connection) => sum + getTopologyAudioConnectionCount(connection), 0);
   const notes: string[] = [];
-  if (hasDirectWiredMicToMainMic(connections)) notes.push("备注：有线麦直连主麦时，需自供电或前级供电，仅提供音频信号。");
+  if (hasDirectWiredMicToSystemAudioInput(connections)) notes.push("备注：有线麦直连系统音频输入时，需自供电或前级供电，仅提供音频信号。");
   if (inputCount > DT_AUDIO_LINE_IN_LIMIT) notes.push(`备注：Line In ${inputCount}路，超过${DT_AUDIO_LINE_IN_LIMIT}路无法接入。`);
   if (outputCount > DT_AUDIO_LINE_OUT_LIMIT) notes.push(`备注：Line Out ${outputCount}路，超过${DT_AUDIO_LINE_OUT_LIMIT}路可并联相同信号。`);
   return notes;
 }
 
-function hasDirectWiredMicToMainMic(connections: ConnectionLine[]) {
+function hasDirectWiredMicToSystemAudioInput(connections: ConnectionLine[]) {
   return connections.some(
-    (connection) =>
-      connection.fromDevice.includes("有线") &&
-      connection.fromDevice.includes("麦") &&
-      getTopologyNodeKey(connection.toDevice, connection.toPort) === "mainMic" &&
-      connection.cableType.includes("音频")
+    (connection) => {
+      const targetKey = getTopologyNodeKey(connection.toDevice, connection.toPort);
+      return (
+        connection.fromDevice.includes("有线") &&
+        connection.fromDevice.includes("麦") &&
+        (targetKey === "mainMic" || targetKey === "processorHost") &&
+        connection.cableType.includes("音频")
+      );
+    }
   );
 }
 
