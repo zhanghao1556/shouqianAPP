@@ -1607,3 +1607,4 @@ PowerShell reminder:
 - A development favicon 404 is safe to clear during daily cleanup with a small inline data-URI icon. Keep that cleanup separate from product image, microphone and topology assets.
 - Do not pipe a PowerShell object stream directly into `tar.exe -T -` for repository snapshots. Use .NET `ZipArchive` with an explicit Git file list so Unicode paths and entry names stay deterministic, then validate required entries before retention cleanup.
 - For final responsive QA, use independent fresh contexts at the exact desktop/mobile widths and assert both `body.scrollWidth <= viewport` and the expected root scope class. This catches mobile CSS leakage without relying on an already-open tab's current zoom or scroll state.
+- When the command is already running under PowerShell 7, invoke project `.ps1` scripts directly. Do not nest another hard-coded PowerShell executable unless `Test-Path` confirms that exact installation path in the current environment.
