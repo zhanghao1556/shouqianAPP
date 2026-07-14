@@ -54,7 +54,7 @@ async function renderFixture(url, brand, isRelease) {
   await dimensions.nth(0).fill("6");
   await dimensions.nth(1).fill("11.5");
   await dimensions.nth(2).fill("2.6");
-  await page.locator(".customSelectButton").first().click();
+  await page.getByRole("button", { name: "吊顶情况", exact: true }).click();
   await page.getByRole("option", { name: "无吊顶 / 裸顶", exact: true }).click();
 
   const pointMap = await page.locator("svg.engineeringCanvas").first().evaluate((svg) => {
