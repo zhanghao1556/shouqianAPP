@@ -32,7 +32,7 @@ export function EngineeringOutputs({
       const brand = getAppBrand();
       const selector =
         type === "installation"
-          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"]`
+          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"]`
           : `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
     const svg = document.querySelector<SVGSVGElement>(selector);
     if (!svg) {

@@ -19,7 +19,7 @@ import { getCustomerPointValidationStatus } from "./pointValidation";
 
 const getInstallationSelector = () => {
   const prefix = getAppBrand().id === "yinman" ? "音曼" : "音翼";
-  return `svg[aria-label="${prefix}阵列麦与音箱点位图"], svg[aria-label="${prefix}阵列麦点位图"]`;
+  return `svg[aria-label="${prefix}阵列麦与音箱点位图"], svg[aria-label="${prefix}阵列麦点位图"], svg[aria-label="${prefix}线阵麦与音箱点位图"], svg[aria-label="${prefix}线阵麦点位图"]`;
 };
 const getTopologySelector = () => `svg[aria-label="${getAppBrand().id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
 const pdfPageWidthPx = 1240;

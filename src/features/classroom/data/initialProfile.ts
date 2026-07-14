@@ -165,6 +165,11 @@ export const createInitialProfile = (): ClassroomProfile => ({
     centralAirConditionerPoints: [],
     auditoriumRearFillSpeakers: "unknown",
     speakerProductOverride: "auto",
+    microphoneSolution: "auto",
+    hasPodium: true,
+    lineArrayMode: "auto",
+    lineArrayInstallation: "auto",
+    processorTier: "auto",
     notes: ""
   },
   acousticEnvironment: {

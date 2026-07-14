@@ -6,6 +6,7 @@ import {
   getRequiredArrayMicCountForFullRoomAmplification,
   type PointQuantityTargets
 } from "./drawingEngine";
+import { getLineArrayDecision, getLineArrayFrontWidth, LINE_ARRAY_FULL_RADIUS_M } from "./lineArrayRules";
 
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
@@ -51,6 +52,8 @@ export function getBrandSystemCapability(brandId: AppBrandId): BrandSystemCapabi
 }
 
 export function getRequiredArrayMicCount(profile: ClassroomProfile, brandId: AppBrandId = "yinyi"): number {
+  const lineArray = getLineArrayDecision(profile);
+  if (lineArray.selected) return lineArray.count;
   const currentAlgorithmCount = getCurrentArrayMicCount(profile);
   if (brandId === "yinman") return currentAlgorithmCount;
   const needsLocalAmplification = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
@@ -67,11 +70,37 @@ export function generateBrandEngineeringPoints(
   targets: PointQuantityTargets = {},
   brandId: AppBrandId
 ): GeneratedPoint[] {
+  const lineArray = getLineArrayDecision(profile);
+  if (lineArray.selected) {
+    const generated = generateEngineeringPoints(profile, { ...targets, arrayMicCount: lineArray.count });
+    const baseMic = generated.find((point) => point.type === "arrayMic");
+    const width = getLineArrayFrontWidth(profile);
+    const left = Math.max(0, (profile.roomGeometry.width - width) / 2);
+    const y = lineArray.mode === "full" ? profile.roomGeometry.length / 2 : (baseMic?.position.y ?? Math.min(1.5, profile.roomGeometry.length / 3));
+    const lineMics = Array.from({ length: lineArray.count }, (_, index): GeneratedPoint => ({
+      ...(baseMic ?? { id: "line-array-mic", type: "arrayMic" as const, label: "智能线阵麦克风", position: { x: profile.roomGeometry.width / 2, y }, reason: "" }),
+      id: `line-array-mic-${index + 1}`,
+      label: lineArray.count > 1 ? `智能线阵麦克风 ${index + 1}` : "智能线阵麦克风",
+      position: {
+        x: lineArray.count === 1 ? profile.roomGeometry.width / 2 : left + width * (index === 0 ? 0.25 : 0.75),
+        y
+      },
+      coverageRadius: lineArray.mode === "full" ? LINE_ARRAY_FULL_RADIUS_M : width / lineArray.count,
+      pickupKind: "lineArray",
+      pickupPattern: lineArray.mode === "full" ? "full360" : "front180",
+      installationMode: lineArray.installation,
+      installHeight: lineArray.installation === "podium" ? 1.1 : baseMic?.installHeight,
+      reason: lineArray.mode === "full"
+        ? "单只线阵麦按5m半径覆盖全场区域。"
+        : "正面180度声幕覆盖教师活动区，屏蔽背向区域声音。"
+    }));
+    return [...lineMics, ...generated.filter((point) => point.type !== "arrayMic")];
+  }
   const requestedArrayMicCount = targets.arrayMicCount ?? getCurrentArrayMicCount(profile);
   return generateEngineeringPoints(profile, {
     ...targets,
     arrayMicCount: clampArrayMicCountForBrand(requestedArrayMicCount, brandId)
-  });
+  }).map((point) => point.type === "arrayMic" ? { ...point, pickupKind: "existingArray" as const } : point);
 }
 
 export function getBrandExternalAmplifierCount(speakerCount: number, brandId: AppBrandId): number {

@@ -1592,3 +1592,18 @@ PowerShell reminder:
 - Yinman AJ350 remains an internal source identity. Customer-facing drawings and reports still say `智能音频处理主机`; do not expose `AJ350` in runtime UI, PDF, release copy, README or software outline.
 - `verify:release-current` checks the latest universal release directory as well as current single-file HTML. After source changes without a release rebuild, a stale release-dir failure is expected and should be logged, not bypassed or mistaken for a broken development build.
 - Keep topology asset compression conservative: inspect contact sheets or browser screenshots after shrinking product photos, especially white devices on light backgrounds.
+
+### 2026-07-14 SA110 preview rendering reminder
+
+- The repository Playwright dependency does not guarantee that its bundled Chromium binary is installed. For local SVG or page screenshots, launch the installed Microsoft Edge executable when the default Chromium path is absent.
+- Treat this as a tooling fallback only; do not alter microphone selection, placement, quantity or topology rules to work around a missing browser binary.
+- For SA110 front amplification, do not reuse a directional wedge visual. The confirmed product behavior is a full 180-degree forward semicircle, and the preview must show that geometry before formal rule approval.
+- Product-selection regression fixtures must lock the product family they are intended to protect. Leaving a fixture on `auto` makes an approved new recommendation look like an unrelated coordinate regression.
+- Adding a new pickup product requires checking point-label helpers as well as the marker asset and coverage layer. Type-based generic labels can silently preserve an old product name or installation method.
+- A rule based on a responsibility-area dimension must expose that dimension in every applicable scenario. Do not silently reuse a stale default or substitute whole-room width when the confirmed rule says teacher activity area, stage or teaching zone.
+- A mathematically correct 180-degree semicircle can still be operationally reversed. Validate its facing direction against the podium marker and installation position, and do not infer a two-microphone threshold from the product radius when the user supplies a different width boundary.
+- Do not derive a two-device upper limit by multiplying the single-device trigger. The confirmed SA110 business range is explicit: one through 13m, two above 13m through 15m, existing array microphone above 15m.
+- When validating a responsibility-area threshold, keep the room width at least as large as the responsibility width; the form correctly clamps an impossible teacher-area width to the room width. Verify the persisted generated result after a fresh reload, not only the input event.
+- A development favicon 404 is safe to clear during daily cleanup with a small inline data-URI icon. Keep that cleanup separate from product image, microphone and topology assets.
+- Do not pipe a PowerShell object stream directly into `tar.exe -T -` for repository snapshots. Use .NET `ZipArchive` with an explicit Git file list so Unicode paths and entry names stay deterministic, then validate required entries before retention cleanup.
+- For final responsive QA, use independent fresh contexts at the exact desktop/mobile widths and assert both `body.scrollWidth <= viewport` and the expected root scope class. This catches mobile CSS leakage without relying on an already-open tab's current zoom or scroll state.

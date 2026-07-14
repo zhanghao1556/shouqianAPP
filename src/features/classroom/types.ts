@@ -29,6 +29,10 @@ export type DrawingType = "installation" | "wiring" | "topology" | "system";
 export type LegacySpeakerType = "ceiling" | "wall";
 export type LegacyWallAdjustability = "universal" | "fixed" | "unknown";
 export type SpeakerProductOverride = "auto" | "ceiling" | "wall";
+export type MicrophoneSolution = "auto" | "existingArray" | "lineArray";
+export type LineArrayMode = "auto" | "front" | "full";
+export type LineArrayInstallation = "auto" | "podium" | "hanging";
+export type ProcessorTier = "auto" | "twoMic" | "sixMic" | "highPerformance";
 
 export interface RoomGeometry {
   length: number;
@@ -67,6 +71,11 @@ export interface EngineeringConstraints {
   centralAirConditionerPoints: CentralAirConditionerPoint[];
   auditoriumRearFillSpeakers?: AuditoriumRearFillSpeakerStatus;
   speakerProductOverride?: SpeakerProductOverride;
+  microphoneSolution?: MicrophoneSolution;
+  hasPodium?: boolean;
+  lineArrayMode?: LineArrayMode;
+  lineArrayInstallation?: LineArrayInstallation;
+  processorTier?: ProcessorTier;
   notes: string;
 }
 
@@ -115,6 +124,9 @@ export interface GeneratedPoint {
   horizontalAngle?: number;
   downTiltAngle?: number;
   coverageRadius?: number;
+  pickupKind?: "existingArray" | "lineArray";
+  pickupPattern?: "front180" | "full360";
+  installationMode?: "podium" | "hanging";
   afcSendLevelOffset?: number;
   target?: Point;
   responsibilityEdgeCoverage?: {

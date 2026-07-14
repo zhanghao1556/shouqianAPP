@@ -15,7 +15,7 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [] } = {}) {
+function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -25,6 +25,8 @@ function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplif
     roomGeometry: { length, width, height },
     engineeringConstraints: {
       ...base.engineeringConstraints,
+      microphoneSolution,
+      teachingAreaSize: { ...base.engineeringConstraints.teachingAreaSize, width: teachingWidth },
       ceiling,
       hasCentralAirConditioner: centralAir.length > 0,
       centralAirConditionerCount: centralAir.length,
@@ -62,6 +64,32 @@ yinyiRegressionProfiles.forEach((profile, index) => {
   assert.deepEqual(pointSnapshot(wrapped), pointSnapshot(original), "Yinyi point output changed for regression profile " + (index + 1));
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
+
+for (const [teachingWidth, expectedCount] of [[13, 1], [13.1, 2], [15, 2]]) {
+  const profile = makeProfile({ length: 8, width: teachingWidth, scope: "podium", microphoneSolution: "lineArray", teachingWidth });
+  const outputs = generateEngineeringOutputs(profile, {}, "yinyi");
+  const mics = outputs.generatedPoints.filter((point) => point.pickupKind === "lineArray");
+  assert.equal(mics.length, expectedCount);
+  assert.ok(mics.every((point) => point.pickupPattern === "front180"));
+  assert.equal(outputs.productSelection.find((item) => item.category === "pickup")?.name, "智能线阵麦克风");
+}
+const overWidth = generateEngineeringOutputs(makeProfile({ length: 8, width: 15.1, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 15.1 }), {}, "yinyi");
+assert.equal(overWidth.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
+assert.ok(overWidth.riskItems.some((item) => item.includes("超过15m")));
+
+const fullRoomFit = generateEngineeringOutputs(makeProfile({ length: 7, width: 7, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(fullRoomFit.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 1);
+assert.equal(fullRoomFit.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 5);
+const fullRoomOverflow = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(fullRoomOverflow.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
+
+const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinman");
+assert.equal(yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
+const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14 }), {}, "yinman");
+assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
+assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
+assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
+console.log("PASS line-array 13m/15m/5m boundaries, processor selection and model hiding");
 
 function getWallSpeakers(profile, count = 4) {
   return generateEngineeringPoints(profile, { speakerProductId: "COLUMN-SPEAKER", speakerCount: count }).filter(

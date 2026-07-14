@@ -17,6 +17,7 @@ import {
   getBrandSystemCapability,
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
+import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
@@ -29,7 +30,9 @@ export const generateConnectionLines = (
   selection: ProductRecommendation[],
   brandId: AppBrandId = "yinyi"
 ): ConnectionLine[] => {
-  if (brandId === "yinman") return generateProcessorDirectConnectionLines(profile, selection);
+  if (brandId === "yinman" || selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0)) {
+    return generateProcessorDirectConnectionLines(profile, selection, brandId);
+  }
   const dt = getPrimaryDtProduct(selection);
   if (!dt) return [];
 
@@ -218,14 +221,15 @@ export const generateConnectionLines = (
   return applyAudioLineCapacityRules(lines, dtName);
 };
 
-function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selection: ProductRecommendation[]): ConnectionLine[] {
-  const arrayMic = selection.find((item) => item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID && item.quantity > 0);
+function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selection: ProductRecommendation[], brandId: AppBrandId): ConnectionLine[] {
+  const arrayMic = selection.find((item) => (item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID || item.productId === LINE_ARRAY_PRODUCT_ID) && item.quantity > 0);
   const processor = selection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID && item.quantity > 0);
   if (!arrayMic || !processor) return [];
 
   const lines: ConnectionLine[] = [];
   const coreName = processor.name;
-  const capability = getBrandSystemCapability("yinman");
+  const capability = getBrandSystemCapability(brandId);
+  const isLineArray = arrayMic.productId === LINE_ARRAY_PRODUCT_ID;
   const hasRemoteOrRecording =
     profile.needs.includes("videoConference") || profile.needs.includes("remoteTeaching") || profile.needs.includes("recording");
   const speakerProduct = selection.find((item) => item.category === "speaker" && item.quantity > 0);
@@ -242,12 +246,14 @@ function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selec
   Array.from({ length: arrayMic.quantity }, (_, index) => index + 1).forEach((index) => {
     lines.push({
       id: `array-mic-processor-network-${index}`,
-      fromDevice: `智能语音阵列麦克风 ${index}`,
-      fromPort: "网络音频接口",
+      fromDevice: `${isLineArray ? "智能线阵麦克风" : "智能语音阵列麦克风"} ${index}`,
+      fromPort: isLineArray ? "RJ45 模拟麦克风信号接口" : "网络音频接口",
       toDevice: coreName,
-      toPort: `阵麦网络输入 ${index}`,
+      toPort: `阵麦输入 ${index}`,
       cableType: "网线",
-      note: "每只阵列麦使用独立网线直连智能音频处理主机，不采用主从级联。"
+      note: isLineArray
+        ? "每只线阵麦使用独立网线传输模拟麦克风信号；8m内使用常规网线，8-20m使用超六类屏蔽线，禁止接PoE网口。"
+        : "每只阵列麦使用独立网线直连智能音频处理主机，不采用主从级联。"
     });
   });
 

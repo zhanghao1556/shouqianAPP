@@ -20,8 +20,12 @@ import type {
   FloorMaterial,
   FurnishingDensity,
   GlassCoverage,
+  LineArrayInstallation,
+  LineArrayMode,
+  MicrophoneSolution,
   Need,
   PodiumPosition,
+  ProcessorTier,
   Scenario,
   SoftTreatment,
   WallMaterial
@@ -157,6 +161,72 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
 
       <section className="formSection">
         <div className="sectionTitleRow">
+          <h3>麦克风方案</h3>
+          <span className="sectionBadge">选型</span>
+        </div>
+        <div className="doubleGrid">
+          <label>
+            麦克风方案
+            <CustomSelect
+              value={profile.engineeringConstraints.microphoneSolution ?? "auto"}
+              options={[
+                { value: "auto", label: "自动推荐" },
+                { value: "existingArray", label: "智能语音阵列麦克风" },
+                { value: "lineArray", label: "智能线阵麦克风" }
+              ]}
+              onChange={(value) => setConstraints({ microphoneSolution: value as MicrophoneSolution })}
+            />
+          </label>
+          <label>
+            现场讲台
+            <CustomSelect
+              value={profile.engineeringConstraints.hasPodium === false ? "no" : "yes"}
+              options={[{ value: "yes", label: "有讲台" }, { value: "no", label: "无讲台" }]}
+              onChange={(value) => setConstraints({ hasPodium: value === "yes" })}
+            />
+          </label>
+          <label>
+            线阵麦工作模式
+            <CustomSelect
+              value={profile.engineeringConstraints.lineArrayMode ?? "auto"}
+              options={[
+                { value: "auto", label: "跟随扩声范围" },
+                { value: "front", label: "正面180度扩声" },
+                { value: "full", label: "全场扩声" }
+              ]}
+              onChange={(value) => setConstraints({ lineArrayMode: value as LineArrayMode })}
+            />
+          </label>
+          <label>
+            安装方式
+            <CustomSelect
+              value={profile.engineeringConstraints.lineArrayInstallation ?? "auto"}
+              options={[
+                { value: "auto", label: "按讲台条件推荐" },
+                { value: "podium", label: "讲台摆放" },
+                { value: "hanging", label: "吊挂安装" }
+              ]}
+              onChange={(value) => setConstraints({ lineArrayInstallation: value as LineArrayInstallation })}
+            />
+          </label>
+          <label>
+            处理器档位
+            <CustomSelect
+              value={profile.engineeringConstraints.processorTier ?? "auto"}
+              options={[
+                { value: "auto", label: "自动推荐" },
+                { value: "twoMic", label: "两麦处理器" },
+                { value: "sixMic", label: "六麦处理器" },
+                { value: "highPerformance", label: "高性能处理器" }
+              ]}
+              onChange={(value) => setConstraints({ processorTier: value as ProcessorTier })}
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="formSection">
+        <div className="sectionTitleRow">
           <h3>第一步：使用场景？</h3>
           <span className="sectionBadge">单选</span>
         </div>
@@ -278,6 +348,16 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             </label>
             <NumberField label="上课区宽 m" value={profile.engineeringConstraints.teachingAreaSize?.width ?? 0} onChange={(value) => setTeachingAreaSize("width", value)} />
             <NumberField label="上课区纵深 m" value={profile.engineeringConstraints.teachingAreaSize?.depth ?? 0} onChange={(value) => setTeachingAreaSize("depth", value)} />
+          </div>
+        )}
+        {!isMeetingScenario(profile.scenario) && !isAuditoriumScenario(profile.scenario) && profile.scenario !== "combinedClassroom" && (
+          <div className="tripleGrid dimensionGrid">
+            <label>
+              前方区域
+              <input value="教师活动区（靠前）" readOnly />
+            </label>
+            <NumberField label="教师活动区宽 m" value={profile.engineeringConstraints.teachingAreaSize?.width ?? 0} onChange={(value) => setTeachingAreaSize("width", value)} />
+            <NumberField label="教师活动区纵深 m" value={profile.engineeringConstraints.teachingAreaSize?.depth ?? 0} onChange={(value) => setTeachingAreaSize("depth", value)} />
           </div>
         )}
       </section>
