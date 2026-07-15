@@ -128,7 +128,7 @@ export interface GeneratedPoint {
   coverageRadius?: number;
   pickupKind?: "existingArray" | "lineArray";
   pickupPattern?: "front180" | "full360";
-  installationMode?: "podium" | "hanging";
+  installationMode?: "podium" | "hanging" | "tabletop";
   afcSendLevelOffset?: number;
   target?: Point;
   responsibilityEdgeCoverage?: {
@@ -285,6 +285,8 @@ export interface CustomerSolutionChoice<T extends string> {
   recommendedLabel: string;
   advantages: string;
   cautions: string;
+  recommendationReason: string;
+  decisionFactors: string[];
 }
 
 export interface CustomerSolutionSelection {

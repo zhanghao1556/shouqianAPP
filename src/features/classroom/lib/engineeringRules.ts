@@ -328,8 +328,14 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
     const isCeilingSpeaker = point.type === "speaker" && point.label.includes("吸顶音箱");
     const isBack = point.id.includes("back");
     const height = isMic
-      ? point.pickupKind === "lineArray" && point.installationMode === "podium"
-        ? "讲台摆放，建议约1.1m"
+      ? point.pickupKind === "lineArray"
+          ? point.installationMode === "podium"
+          ? "讲台摆放，建议约1.1m"
+          : point.installationMode === "tabletop"
+            ? "会议桌摆放，建议约0.75m"
+            : point.installHeight
+              ? `吊挂安装，建议约${point.installHeight.toFixed(1)}m`
+              : "吊挂安装，按现场高度复核"
         : getArrayMicInstallLabel(profile)
       : isCeilingSpeaker && profile.engineeringConstraints.ceiling === "suspended"
         ? `嵌入吊顶 ${point.installHeight ? `${point.installHeight.toFixed(1)}m` : ""}`.trim()
@@ -347,7 +353,7 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
       installHeight: height,
       orientation: isMic
         ? point.pickupKind === "lineArray"
-          ? point.pickupPattern === "front180" ? "正面朝向教师活动区，形成完整180度正面声幕。" : "全场模式按5m半径覆盖。"
+          ? point.pickupPattern === "front180" ? "正面朝向责任活动区，形成完整180度正面声幕。" : "面向会议桌主要发言区，按5m半径覆盖。"
         : profile.amplificationScope === "podium"
           ? "阵列麦位于教师主要活动区前方约 0.5-1m，拾音面兼顾授课走动和黑板板书位置；如讲台在左右侧，可小幅偏移但不脱离主活动区。"
           : "阵列麦按主要拾音区域居中覆盖，兼顾讲台、教师走动区和学生发言方向。"
@@ -360,7 +366,7 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
           : "前场音箱朝向主要听音区，单声道分组保持对称覆盖。",
       avoidance: isMic
         ? point.pickupKind === "lineArray"
-          ? `${point.installationMode === "podium" ? "优先放在讲台上并靠近讲话位置。" : getArrayMicInstallAdvice(profile)}避开空调风口、强噪声设备，网线禁止接PoE。`
+          ? `${point.installationMode === "podium" ? "优先放在讲台上并靠近讲话位置。" : point.installationMode === "tabletop" ? "放在会议桌主要发言区并保持拾音面无遮挡。" : "吊挂点保持拾音正面朝向责任区。"}避开空调风口、强噪声设备，网线禁止接PoE。`
           : `${getArrayMicInstallAdvice(profile)}避开投影机、空调出风口、强噪声设备和灯具检修口；不要贴近墙角或门口。`
         : isWallSpeaker
           ? "避开门扇开启范围、窗帘盒、投影幕、玻璃反射面和阵列麦正前方；现场可微调水平摆角和下倾角。"
@@ -537,7 +543,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   const risks: string[] = [];
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.requested && !lineArray.selected) risks.push("该方案无法完整覆盖，建议改选阵麦");
-  else if (lineArray.fallbackReason) risks.push(lineArray.fallbackReason);
+  else if (lineArray.requested && !lineArray.recommended) risks.push("当前线阵麦为非推荐选择，建议阵麦。");
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = getProcessorTier(profile, brandId, lineArray.count, speakerCount);

@@ -1701,6 +1701,75 @@ textarea:focus {
   font-size: 12px;
 }
 
+.microphoneRecommendationCalibration {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.microphoneCalibrationHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.microphoneCalibrationHeader > div {
+  display: grid;
+  gap: 3px;
+}
+
+.microphoneCalibrationHeader span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.microphoneCalibrationHeader strong {
+  color: var(--color-ink);
+  font-size: 16px;
+}
+
+.microphoneCalibrationHeader > b {
+  font-size: 12px;
+}
+
+.lineArrayVerdict {
+  color: #087b76;
+}
+
+.arrayMicVerdict {
+  color: #a34b16;
+}
+
+.microphoneCalibrationFacts {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.microphoneCalibrationFacts dt {
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.microphoneCalibrationFacts dd {
+  margin: 0;
+  color: var(--color-ink);
+}
+
+.microphoneDecisionFactors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
 .brandSegmentedControl {
   display: grid;
   grid-template-columns: repeat(2, 72px);

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createInitialProfile } from "./data/initialProfile";
+import { createInitialProfile, needLabels, scenarioLabels } from "./data/initialProfile";
 import { mistakeCaseSeeds } from "./data/mistakeCases";
 import { createRuleChangeApproval, ruleChangePolicy } from "./data/ruleGovernance";
 import { DrawingCanvas } from "./components/DrawingCanvas";
@@ -8,6 +8,7 @@ import { TestConsole, type CalibrationCase, type CalibrationStatus } from "./com
 import { generateEngineeringOutputs } from "./lib/engineeringRules";
 import { createRandomProfile } from "./lib/randomProfile";
 import { normalizeProfile } from "./lib/profileNormalization";
+import { getLineArrayDecision } from "./lib/lineArrayRules";
 import type { ClassroomProfile, LegacySpeakerPoint, LegacySpeakerType, LegacyWallAdjustability, Point, QuantityOverrides } from "./types";
 import type { AppBrandId } from "./brand";
 
@@ -26,6 +27,7 @@ export function CalibrationWorkbench() {
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>({});
   const [exportStatus, setExportStatus] = useState("");
   const outputs = useMemo(() => generateEngineeringOutputs(profile, quantityOverrides, brandId), [profile, quantityOverrides, brandId]);
+  const microphoneDecision = useMemo(() => getLineArrayDecision(profile), [profile]);
   const arrayMicPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "arrayMic"), [outputs.generatedPoints]);
   const speakerPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "speaker"), [outputs.generatedPoints]);
 
@@ -304,6 +306,7 @@ export function CalibrationWorkbench() {
             <span>接线 {outputs.connectionLines.length} 条</span>
             <span>{outputs.audioPlan.mode}</span>
           </div>
+          <MicrophoneRecommendationCalibration profile={profile} decision={microphoneDecision} />
           <PointValidationSummary result={outputs.pointValidation} mode="full" />
           <CalibrationPointMap
             profile={profile}
@@ -332,6 +335,38 @@ export function CalibrationWorkbench() {
         </section>
       </section>
     </main>
+  );
+}
+
+function MicrophoneRecommendationCalibration({
+  profile,
+  decision
+}: {
+  profile: ClassroomProfile;
+  decision: ReturnType<typeof getLineArrayDecision>;
+}) {
+  const devices = [profile.existingDevices.computer, profile.existingDevices.recordingHost].filter(Boolean).join("；") || "无";
+  return (
+    <section className="microphoneRecommendationCalibration" aria-label="麦克风推荐校准">
+      <div className="microphoneCalibrationHeader">
+        <div>
+          <span>麦克风推荐校准</span>
+          <strong>{decision.recommended ? "推荐智能线阵麦克风" : "推荐智能语音阵列麦克风"}</strong>
+        </div>
+        <b className={decision.recommended ? "lineArrayVerdict" : "arrayMicVerdict"}>{decision.supported ? "能力可用" : "能力不满足"}</b>
+      </div>
+      <dl className="microphoneCalibrationFacts">
+        <dt>场景 / 需求</dt><dd>{scenarioLabels[profile.scenario]}；{profile.needs.map((need) => needLabels[need]).join("、") || "未选择"}</dd>
+        <dt>房间</dt><dd>{profile.roomGeometry.width}m × {profile.roomGeometry.length}m × {profile.roomGeometry.height}m</dd>
+        <dt>责任区</dt><dd>{decision.activityZone.label}；{decision.activityZone.width}m × {decision.activityZone.depth}m</dd>
+        <dt>设备推断</dt><dd>{devices}</dd>
+        <dt>摆位</dt><dd>{decision.installation === "podium" ? "讲台摆放" : decision.installation === "tabletop" ? "会议桌摆放" : "责任区中心吊挂"}；({decision.position.x}m, {decision.position.y}m)</dd>
+        <dt>推荐结论</dt><dd>{decision.recommendationReason}</dd>
+      </dl>
+      <div className="microphoneDecisionFactors">
+        {decision.decisionFactors.map((factor) => <span key={factor}>{factor}</span>)}
+      </div>
+    </section>
   );
 }
 

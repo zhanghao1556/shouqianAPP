@@ -68,10 +68,22 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
       </div>
 
       {selection.microphone.isNonRecommended ? (
-        <SelectionNote title={`麦克风：系统推荐 ${selection.microphone.recommendedLabel}`} advantages={selection.microphone.advantages} cautions={selection.microphone.cautions} />
+        <SelectionNote
+          title={`麦克风：系统推荐 ${selection.microphone.recommendedLabel}`}
+          advantages={selection.microphone.advantages}
+          cautions={selection.microphone.cautions}
+          recommendationReason={selection.microphone.recommendationReason}
+          decisionFactors={selection.microphone.decisionFactors}
+        />
       ) : null}
       {selection.speaker.isNonRecommended ? (
-        <SelectionNote title={`音箱：系统推荐 ${selection.speaker.recommendedLabel}`} advantages={selection.speaker.advantages} cautions={selection.speaker.cautions} />
+        <SelectionNote
+          title={`音箱：系统推荐 ${selection.speaker.recommendedLabel}`}
+          advantages={selection.speaker.advantages}
+          cautions={selection.speaker.cautions}
+          recommendationReason={selection.speaker.recommendationReason}
+          decisionFactors={selection.speaker.decisionFactors}
+        />
       ) : null}
 
       {selection.drawingBlocked ? (
@@ -137,10 +149,24 @@ function SolutionChoiceGroup({
   );
 }
 
-function SelectionNote({ title, advantages, cautions }: { title: string; advantages: string; cautions: string }) {
+function SelectionNote({
+  title,
+  advantages,
+  cautions,
+  recommendationReason,
+  decisionFactors
+}: {
+  title: string;
+  advantages: string;
+  cautions: string;
+  recommendationReason: string;
+  decisionFactors: string[];
+}) {
   return (
     <div className="selectionDecisionNote">
       <strong>{title}</strong>
+      <span><b>不推荐原因</b>{recommendationReason}</span>
+      {decisionFactors.map((factor) => <span key={factor}><b>判断维度</b>{factor}</span>)}
       <span><b>优势</b>{advantages}</span>
       <span><b>注意事项</b>{cautions}</span>
     </div>

@@ -3691,7 +3691,13 @@ function getPointLabelLines(
     groupLabel ? `${groupLabel} 分组` : "",
     profile && point.type === "arrayMic"
       ? point.pickupKind === "lineArray"
-        ? point.installationMode === "podium" ? "讲台摆放 约1.1m" : getArrayMicInstallLabel(profile)
+        ? point.installationMode === "podium"
+          ? "讲台摆放 约1.1m"
+          : point.installationMode === "tabletop"
+            ? "会议桌摆放 约0.75m"
+            : point.installHeight
+              ? `吊挂安装 约${point.installHeight.toFixed(1)}m`
+              : "吊挂安装"
         : getArrayMicInstallLabel(profile)
       : "",
     point.horizontalAngle !== undefined && point.downTiltAngle !== undefined

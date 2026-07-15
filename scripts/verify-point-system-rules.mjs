@@ -7,6 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
+import { getLineArrayDecision, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   getBrandExternalAmplifierCount,
@@ -15,20 +16,25 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown" } = {}) {
+function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown" } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
-    scenario: "standardClassroom",
+    scenario,
     needs,
     amplificationScope: scope,
     roomGeometry: { length, width, height },
+    existingDevices: { ...base.existingDevices, computer },
     engineeringConstraints: {
       ...base.engineeringConstraints,
       microphoneSolution,
       speakerProductOverride,
       overheadSpeakerMounting,
-      teachingAreaSize: { ...base.engineeringConstraints.teachingAreaSize, width: teachingWidth },
+      teachingAreaSize: { width: teachingWidth, depth: teachingDepth },
+      stageSize: { width: stageWidth, depth: stageDepth },
+      podiumPosition,
+      hasPodium,
+      notes,
       ceiling,
       hasCentralAirConditioner: centralAir.length > 0,
       centralAirConditionerCount: centralAir.length,
@@ -67,15 +73,32 @@ yinyiRegressionProfiles.forEach((profile, index) => {
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
 
-for (const [teachingWidth, expectedCount] of [[13, 1], [13.1, 2], [15, 2]]) {
-  const profile = makeProfile({ length: 8, width: teachingWidth, scope: "podium", microphoneSolution: "lineArray", teachingWidth });
-  const outputs = generateEngineeringOutputs(profile, {}, "yinyi");
-  const mics = outputs.generatedPoints.filter((point) => point.pickupKind === "lineArray");
-  assert.equal(mics.length, expectedCount);
-  assert.ok(mics.every((point) => point.pickupPattern === "front180"));
-  assert.equal(outputs.productSelection.find((item) => item.category === "pickup")?.name, "智能线阵麦克风");
-}
-const overWidth = generateEngineeringOutputs(makeProfile({ length: 8, width: 15.1, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 15.1 }), {}, "yinyi");
+assert.equal(getTeacherActivityZone(makeProfile({ width: 10 })).width, 5);
+assert.equal(getTeacherActivityZone(makeProfile({ width: 12 })).width, 6);
+assert.equal(getTeacherActivityZone(makeProfile({ width: 10, podiumPosition: "frontLeft" })).width, 7.5);
+
+const sidePodiumFit = getLineArrayDecision(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
+assert.equal(sidePodiumFit.installation, "podium");
+assert.equal(sidePodiumFit.position.x, 1);
+const sidePodiumTooFar = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
+assert.equal(sidePodiumTooFar.installation, "hanging");
+assert.equal(sidePodiumTooFar.position.x, 3.8);
+const centeredAllInOne = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", computer: "ClassIn 一体机", hasPodium: false }));
+assert.equal(centeredAllInOne.installation, "hanging");
+assert.equal(centeredAllInOne.position.x, 5);
+
+const oneLineBoundary = generateEngineeringOutputs(makeProfile({ length: 8, width: 14, scope: "podium", microphoneSolution: "auto", podiumPosition: "frontLeft" }), {}, "yinyi");
+assert.equal(oneLineBoundary.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(oneLineBoundary.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 1);
+const automaticTwoLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14.2, scope: "podium", microphoneSolution: "auto", podiumPosition: "frontLeft" }), {}, "yinyi");
+assert.equal(automaticTwoLine.solutionSelection.microphone.recommended, "existingArray");
+assert.equal(automaticTwoLine.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
+const forcedTwoLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14.2, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft" }), {}, "yinyi");
+assert.equal(forcedTwoLine.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2);
+assert.equal(forcedTwoLine.solutionSelection.microphone.isNonRecommended, true);
+assert.equal(forcedTwoLine.solutionSelection.drawingBlocked, false);
+assert.equal(forcedTwoLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended")?.severity, "warning");
+const overWidth = generateEngineeringOutputs(makeProfile({ length: 8, width: 24.2, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft" }), {}, "yinyi");
 assert.equal(overWidth.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
 assert.equal(overWidth.generatedPoints.length, 0);
 assert.equal(overWidth.connectionLines.length, 0);
@@ -84,12 +107,39 @@ assert.equal(overWidth.solutionSelection.blockingMessage, "该方案无法完整
 assert.ok(overWidth.riskItems.includes("该方案无法完整覆盖，建议改选阵麦"));
 assert.equal(overWidth.pointValidation.findings.find((item) => item.code === "selection.line-array-coverage")?.severity, "hard");
 
-const fullRoomFit = generateEngineeringOutputs(makeProfile({ length: 7, width: 7, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(fullRoomFit.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 1);
-assert.equal(fullRoomFit.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 5);
-const fullRoomOverflow = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(fullRoomOverflow.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
-assert.equal(fullRoomOverflow.solutionSelection.drawingBlocked, true);
+const smallClassroomFull = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", microphoneSolution: "auto" }), {}, "yinyi");
+const smallClassroomLine = smallClassroomFull.generatedPoints.find((point) => point.pickupKind === "lineArray");
+assert.equal(smallClassroomFull.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(smallClassroomLine?.pickupPattern, "front180");
+assert.notEqual(smallClassroomLine?.position.y, 4);
+const longClassroomFull = generateEngineeringOutputs(makeProfile({ length: 8.1, width: 8, scope: "full", microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(longClassroomFull.solutionSelection.microphone.recommended, "existingArray");
+const interactiveClassroom = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", needs: ["interactiveClass"], microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(interactiveClassroom.solutionSelection.microphone.recommended, "existingArray");
+
+const lectureFit = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(lectureFit.solutionSelection.microphone.recommended, "lineArray");
+const lectureTooDeep = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5.1, microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(lectureTooDeep.solutionSelection.drawingBlocked, true);
+const combinedFit = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(combinedFit.solutionSelection.microphone.recommended, "lineArray");
+const combinedTwo = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10.1, teachingDepth: 5, microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(combinedTwo.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2);
+assert.equal(combinedTwo.solutionSelection.microphone.recommended, "existingArray");
+
+const meetingFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 8, width: 6, microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(meetingFiveMeter.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(meetingFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
+const meetingOverFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 8.1, width: 6, microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(meetingOverFiveMeter.solutionSelection.drawingBlocked, true);
+const meetingLeader = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 20, width: 10, notes: "主位扩声", microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(meetingLeader.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(meetingLeader.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
+
+const auditoriumStage = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["recording"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(auditoriumStage.solutionSelection.microphone.recommended, "lineArray");
+const auditoriumConference = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["videoConference"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(auditoriumConference.solutionSelection.microphone.recommended, "existingArray");
 
 const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinman");
 const yinyiSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinyi");
@@ -97,11 +147,11 @@ assert.equal(
   yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name,
   yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name
 );
-const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14 }), {}, "yinman");
+const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14, teachingDepth: 5 }), {}, "yinman");
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
-console.log("PASS line-array 13m/15m/5m boundaries, hard blocking, shared processor selection and model hiding");
+console.log("PASS line-array recommendation, teacher-zone inference, 8m/10m/15m/5m boundaries, forced two-line handling and model hiding");
 
 const automaticChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(automaticChoice.solutionSelection.microphone.recommended, "lineArray");

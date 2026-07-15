@@ -19,7 +19,8 @@ const speakerLabels: Record<Exclude<SpeakerProductOverride, "auto">, string> = {
 
 export function getCustomerSolutionSelection(profile: ClassroomProfile): CustomerSolutionSelection {
   const automaticMicrophoneProfile = withMicrophoneSolution(profile, "auto");
-  const recommendedMicrophone = getLineArrayDecision(automaticMicrophoneProfile).selected ? "lineArray" : "existingArray";
+  const automaticLineArrayDecision = getLineArrayDecision(automaticMicrophoneProfile);
+  const recommendedMicrophone = automaticLineArrayDecision.recommended ? "lineArray" : "existingArray";
   const requestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
   const selectedMicrophone = requestedMicrophone === "auto" ? recommendedMicrophone : requestedMicrophone;
   const selectedLineArrayDecision = getLineArrayDecision(profile);
@@ -41,11 +42,13 @@ export function getCustomerSolutionSelection(profile: ClassroomProfile): Custome
       selectedLabel: microphoneLabels[selectedMicrophone],
       recommendedLabel: microphoneLabels[recommendedMicrophone],
       advantages: selectedMicrophone === "lineArray"
-        ? "教师活动区定向拾音更集中，背向声音抑制更明确。"
+        ? "含处理器的整套价格更低；短距摆放或定向声幕有利于抑制背向噪声。"
         : "覆盖范围和扩展能力更适合全场拾音及较大空间。",
       cautions: selectedMicrophone === "lineArray"
-        ? "覆盖范围、教师活动区宽度和处理器接口容量需要同时满足。"
+        ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
         : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
+      recommendationReason: automaticLineArrayDecision.recommendationReason,
+      decisionFactors: automaticLineArrayDecision.decisionFactors,
       lineArraySupported
     },
     speaker: {
@@ -61,6 +64,10 @@ export function getCustomerSolutionSelection(profile: ClassroomProfile): Custome
       cautions: selectedSpeaker === "ceiling"
         ? "顶面承重、开孔、走线、检修及灯具空调避让需要复核。"
         : "需要复核墙面条件、门窗遮挡、覆盖均匀性和啸叫余量。",
+      recommendationReason: selectedSpeaker === recommendedSpeaker
+        ? "当前选择与系统推荐一致。"
+        : `当前现场条件优先推荐${speakerLabels[recommendedSpeaker]}。`,
+      decisionFactors: [],
       requiresSpecialReview
     },
     drawingBlocked,

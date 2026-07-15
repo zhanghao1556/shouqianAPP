@@ -47,6 +47,20 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
+  if (
+    solutionSelection?.microphone.selected === "lineArray" &&
+    solutionSelection.microphone.isNonRecommended &&
+    !solutionSelection.drawingBlocked
+  ) {
+    findings.push({
+      code: "selection.line-array-non-recommended",
+      severity: "warning",
+      title: "线阵麦非推荐选择",
+      internalMessage: `${solutionSelection.microphone.recommendationReason} 客户仍可按当前选择继续生成图纸。`,
+      sourceRefs: ["用户确认的两线阵不自动推荐规则", "统一麦克风推荐判定"]
+    });
+  }
+
   if (solutionSelection?.speaker.requiresSpecialReview) {
     findings.push({
       code: "selection.ceiling-installation",
