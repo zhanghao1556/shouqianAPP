@@ -6336,6 +6336,16 @@ Boundary:
 - The in-app browser download listener did not capture the programmatic point-map PNG link and timed out. The export action left the shared SVG rendered and produced no console error; no export code was changed for this browser-tool limitation.
 - No package, release or GitHub push was performed.
 
+## 2026-07-16 end-of-day dual-brand release 260716-1
+
+- Completed the required daily closing sequence before packaging: logs updated, latest verified snapshot retained as the only backup, cleanup scans passed and daily checkpoint `e2ec722` was created.
+- Rebuilt from current source and generated both release deliverables:
+  - Yinyi: `音翼AI售前工具-1.1-内部测试版-260716-1` and matching ZIP (`1.89 MB`);
+  - Yinman: `音曼AI售前工具-1.1-内部测试版-260716-1` and matching ZIP (`1.71 MB`).
+- `verify:release-current` passed freshness, required markers, current CSS and cross-brand text/image isolation for both packages; `verify:release-behavior` passed fresh-context business-output parity against current `dist` for both brands.
+- Android Chrome / Pixel 7 and iOS Safari / iPhone 14 release checks passed for both brands, including clean release inputs, inline assets, correct titles, mobile width and no runtime/network errors.
+- No GitHub push was performed. The final release checkpoint remains local for the desktop `上传到GitHub.cmd` workflow.
+
 ## 2026-07-15 exported PDF final calibration
 
 - End-of-day report review exported and rendered a fresh Yinman three-page PDF. Equipment rows correctly excluded zero-quantity processor alternatives and retained only the selected processor.

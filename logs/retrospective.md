@@ -1800,3 +1800,8 @@ PowerShell reminder:
 - Do not pass long customer text to Canvas `fillText` with a small `maxWidth`; browsers horizontally compress the glyphs. Wrap bounded archive values into readable lines and truncate only after the line limit.
 - The PDF project archive must include the selected processor tier using its customer-visible generic name, while the equipment table continues to exclude all zero-quantity alternatives.
 - Report calibration does not authorize topology coordinate or label-position changes. Record topology overlaps separately and use the required preview/confirmation flow.
+
+### 2026-07-16 release completion reminder
+
+- A release is complete only after both brand packages pass source freshness, cross-brand text/image isolation, fresh-context business parity and Android/iOS mobile checks.
+- Keep universal release directories and ZIP files below the requested 5 MB ceiling and commit them with the release checkpoint; GitHub synchronization remains manual.
