@@ -1126,6 +1126,7 @@ function PodiumMarker({ profile, width, height }: { profile: ClassroomProfile; w
       </g>
     );
   }
+  if (profile.engineeringConstraints.hasPodium === false) return null;
   const podiumPosition = profile.engineeringConstraints.podiumPosition ?? "frontCenter";
   const podiumDepthM = PODIUM_DEPTH_M;
   const frontClearanceM = PODIUM_FRONT_CLEARANCE_M;
@@ -1154,7 +1155,7 @@ function getPodiumMarkerText(profile: ClassroomProfile, position: ClassroomProfi
   if (profile.scenario === "auditorium") return "居中舞台";
   if (position === "frontLeft") return "左侧讲台";
   if (position === "frontRight") return "右侧讲台";
-  if (position === "unknown") return "讲台待确认";
+  if (position === "unknown") return "无讲台";
   return "居中讲台";
 }
 

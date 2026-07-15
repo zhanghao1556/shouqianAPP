@@ -36,7 +36,7 @@ export function normalizeProfile(profile: ClassroomProfile): ClassroomProfile {
       speakerProductOverride: profile.engineeringConstraints.speakerProductOverride ?? "auto",
       microphoneSolution: profile.engineeringConstraints.microphoneSolution ?? "auto",
       overheadSpeakerMounting: profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown",
-      hasPodium: profile.engineeringConstraints.hasPodium ?? true,
+      hasPodium: profile.engineeringConstraints.podiumPosition === "unknown" ? false : profile.engineeringConstraints.hasPodium ?? true,
       lineArrayMode: profile.engineeringConstraints.lineArrayMode ?? "auto",
       lineArrayInstallation: profile.engineeringConstraints.lineArrayInstallation ?? "auto",
       processorTier: profile.engineeringConstraints.processorTier ?? "auto",

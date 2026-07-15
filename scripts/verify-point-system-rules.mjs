@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getProcessorCapacity, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   getBrandExternalAmplifierCount,
@@ -16,7 +16,7 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown" } = {}) {
+function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", measuredRt60 } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -24,6 +24,7 @@ function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, h
     needs,
     amplificationScope: scope,
     roomGeometry: { length, width, height },
+    acousticEnvironment: { ...base.acousticEnvironment, measuredRt60 },
     existingDevices: { ...base.existingDevices, computer },
     engineeringConstraints: {
       ...base.engineeringConstraints,
@@ -84,9 +85,19 @@ assert.equal(sidePodiumFit.position.y, 1.9);
 const centeredPodiumWithoutComputer = getLineArrayDecision(makeProfile({ length: 9.9, width: 10.4, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontCenter" }));
 assert.equal(centeredPodiumWithoutComputer.installation, "podium");
 assert.equal(centeredPodiumWithoutComputer.position.y, 1.9);
+const noPodiumProfile = makeProfile({ length: 9.9, width: 10.4, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "unknown", hasPodium: true, measuredRt60: 1.3 });
+assert.equal(noPodiumProfile.engineeringConstraints.hasPodium, false);
+const noPodiumLineArray = getLineArrayDecision(noPodiumProfile);
+assert.equal(noPodiumLineArray.installation, "hanging");
+assert.equal(noPodiumLineArray.position.y, 2.5);
 const sidePodiumTooFar = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
 assert.equal(sidePodiumTooFar.installation, "hanging");
 assert.equal(sidePodiumTooFar.position.x, 3.8);
+assert.equal(getLineArrayHangingFrontDistance(makeProfile({ width: 6, measuredRt60: 0.8 })), 2.5);
+assert.equal(getLineArrayHangingFrontDistance(makeProfile({ width: 8, measuredRt60: 0.8 })), 2.75);
+assert.equal(getLineArrayHangingFrontDistance(makeProfile({ width: 10, measuredRt60: 0.8 })), 3);
+assert.equal(getLineArrayHangingFrontDistance(makeProfile({ width: 10, measuredRt60: 1.1 })), 2.75);
+assert.equal(getLineArrayHangingFrontDistance(makeProfile({ width: 10, measuredRt60: 1.3 })), 2.5);
 const centeredAllInOne = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", computer: "ClassIn 一体机", hasPodium: false }));
 assert.equal(centeredAllInOne.installation, "hanging");
 assert.equal(centeredAllInOne.position.x, 5);
@@ -140,8 +151,9 @@ const meetingLeader = generateEngineeringOutputs(makeProfile({ scenario: "meetin
 assert.equal(meetingLeader.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(meetingLeader.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
 
-const auditoriumStage = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["recording"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
+const auditoriumStage = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["recording"], stageWidth: 10, stageDepth: 4, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(auditoriumStage.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(auditoriumStage.generatedPoints.find((point) => point.pickupKind === "lineArray")?.position.y, 2);
 const auditoriumConference = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["videoConference"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(auditoriumConference.solutionSelection.microphone.recommended, "existingArray");
 

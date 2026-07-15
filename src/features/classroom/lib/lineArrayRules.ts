@@ -2,6 +2,7 @@ import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, ProcessorTier } from "../types";
 import { getEffectiveAmplificationScope } from "./drawingEngine";
 import { getPodiumAudienceEdgeY } from "./podiumGeometry";
+import { getReverberationRisk } from "./reverberationRules";
 
 export const LINE_ARRAY_PRODUCT_ID = "LINE-ARRAY-MIC";
 export const LINE_ARRAY_SINGLE_MAX_WIDTH_M = 10;
@@ -10,6 +11,10 @@ export const LINE_ARRAY_MAX_COUNT = 2;
 export const LINE_ARRAY_FULL_RADIUS_M = 5;
 export const LINE_ARRAY_ACTIVITY_MAX_DEPTH_M = 5;
 export const STANDARD_CLASSROOM_LINE_ARRAY_MAX_SIZE_M = 8;
+export const LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M = 2.5;
+export const LINE_ARRAY_HANGING_MAX_FRONT_DISTANCE_M = 3;
+export const LINE_ARRAY_HANGING_MIN_WIDTH_M = 6;
+export const LINE_ARRAY_HANGING_MAX_WIDTH_M = 10;
 
 export interface LineArrayActivityZone {
   left: number;
@@ -91,6 +96,18 @@ export function getTeacherActivityZone(profile: ClassroomProfile): LineArrayActi
 
 export function getLineArrayFrontWidth(profile: ClassroomProfile) {
   return getLineArrayActivityZone(profile).width;
+}
+
+export function getLineArrayHangingFrontDistance(profile: ClassroomProfile) {
+  const widthProgress = clamp(
+    (profile.roomGeometry.width - LINE_ARRAY_HANGING_MIN_WIDTH_M) / (LINE_ARRAY_HANGING_MAX_WIDTH_M - LINE_ARRAY_HANGING_MIN_WIDTH_M),
+    0,
+    1
+  );
+  const widthDistance = LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M + widthProgress * (LINE_ARRAY_HANGING_MAX_FRONT_DISTANCE_M - LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M);
+  const reverberationRisk = getReverberationRisk(profile);
+  const reverberationOffset = reverberationRisk === "high" ? 0.5 : reverberationRisk === "medium" ? 0.25 : 0;
+  return twoDecimal(clamp(widthDistance - reverberationOffset, LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M, LINE_ARRAY_HANGING_MAX_FRONT_DISTANCE_M));
 }
 
 export function hasFullRoomPickupNeed(profile: ClassroomProfile) {
@@ -221,7 +238,13 @@ function getLineArrayPlacement(
     return { installation: "tabletop", position: { x: oneDecimal(profile.roomGeometry.width / 2), y: oneDecimal(profile.roomGeometry.length / 2) } };
   }
   if (mode === "full" || count > 1) {
-    return { installation: "hanging", position: { x: oneDecimal(zone.centerX), y: oneDecimal(Math.max(1.2, zone.centerY)) } };
+    return {
+      installation: "hanging",
+      position: {
+        x: oneDecimal(zone.centerX),
+        y: profile.scenario === "auditorium" ? oneDecimal(Math.max(1.2, zone.centerY)) : getLineArrayHangingFrontDistance(profile)
+      }
+    };
   }
 
   const requestedInstallation = profile.engineeringConstraints.lineArrayInstallation ?? "auto";
@@ -242,7 +265,10 @@ function getLineArrayPlacement(
     installation: "hanging",
     position: {
       x: oneDecimal(zone.centerX),
-      y: oneDecimal(clamp(zone.centerY, 1.2, Math.max(1.2, profile.roomGeometry.length - 1)))
+      y:
+        profile.scenario === "auditorium"
+          ? oneDecimal(clamp(zone.centerY, 1.2, Math.max(1.2, profile.roomGeometry.length - 1)))
+          : getLineArrayHangingFrontDistance(profile)
     }
   };
 }
@@ -285,6 +311,10 @@ function createZone(left: number, width: number, depth: number, label: string): 
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function twoDecimal(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function oneDecimal(value: number) {

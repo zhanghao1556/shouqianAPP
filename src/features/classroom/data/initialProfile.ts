@@ -111,7 +111,7 @@ export const podiumPositionLabels = {
   frontCenter: "前墙居中",
   frontLeft: "前墙左侧",
   frontRight: "前墙右侧",
-  unknown: "待确认"
+  unknown: "无讲台"
 } as const;
 
 export const auditoriumRearFillSpeakerLabels: Record<AuditoriumRearFillSpeakerStatus, string> = {

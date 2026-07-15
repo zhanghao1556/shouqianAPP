@@ -330,7 +330,10 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
               <CustomSelect
                 value={profile.engineeringConstraints.podiumPosition}
                 options={Object.entries(podiumPositionLabels).map(([value, label]) => ({ value, label }))}
-                onChange={(value) => setConstraints({ podiumPosition: value as PodiumPosition })}
+                onChange={(value) => {
+                  const podiumPosition = value as PodiumPosition;
+                  setConstraints({ podiumPosition, hasPodium: podiumPosition !== "unknown" });
+                }}
               />
             </label>
           )}
