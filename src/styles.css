@@ -1442,6 +1442,7 @@ textarea:focus {
 }
 
 .solutionSegmentedControl > button {
+  position: relative;
   min-width: 0;
   min-height: 54px;
   padding: 7px 9px;
@@ -1455,6 +1456,12 @@ textarea:focus {
   background: transparent;
   color: var(--color-muted);
   text-align: left;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .solutionSegmentedControl > button > img {
@@ -1462,6 +1469,7 @@ textarea:focus {
   width: 48px;
   height: 34px;
   object-fit: contain;
+  transition: transform 0.22s ease, filter 0.22s ease;
 }
 
 .solutionSegmentedControl > button > span {
@@ -1484,6 +1492,53 @@ textarea:focus {
   background: #ffffff;
   color: var(--color-brand-dark);
   box-shadow: 0 2px 8px rgba(15, 36, 30, 0.08);
+  animation: solutionChoiceSelected 0.24s ease-out;
+}
+
+.solutionSegmentedControl > button:hover {
+  z-index: 1;
+  border-color: color-mix(in srgb, var(--color-brand) 34%, white);
+  background: color-mix(in srgb, var(--color-brand-soft) 48%, white);
+  color: var(--color-brand-dark);
+  box-shadow: 0 5px 12px rgba(15, 36, 30, 0.1);
+  transform: translateY(-2px);
+}
+
+.solutionSegmentedControl > button:hover > img {
+  filter: saturate(1.08);
+  transform: scale(1.06);
+}
+
+.solutionSegmentedControl > button:active {
+  box-shadow: 0 2px 6px rgba(15, 36, 30, 0.08);
+  transform: translateY(0) scale(0.985);
+  transition-duration: 0.08s;
+}
+
+.solutionSegmentedControl > button:focus-visible {
+  z-index: 2;
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@keyframes solutionChoiceSelected {
+  0% { transform: scale(0.98); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solutionSegmentedControl > button,
+  .solutionSegmentedControl > button > img {
+    animation: none;
+    transition: none;
+  }
+
+  .solutionSegmentedControl > button:hover,
+  .solutionSegmentedControl > button:active,
+  .solutionSegmentedControl > button:hover > img {
+    transform: none;
+  }
 }
 
 .selectionDecisionNote {
