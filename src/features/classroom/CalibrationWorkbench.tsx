@@ -33,7 +33,7 @@ export function CalibrationWorkbench() {
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>({});
   const [exportStatus, setExportStatus] = useState("");
   const outputs = useMemo(() => generateEngineeringOutputs(profile, quantityOverrides, brandId), [profile, quantityOverrides, brandId]);
-  const microphoneDecision = useMemo(() => getLineArrayDecision(profile), [profile]);
+  const microphoneDecision = useMemo(() => getLineArrayDecision(profile, outputs.generatedPoints), [profile, outputs.generatedPoints]);
   const arrayMicPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "arrayMic"), [outputs.generatedPoints]);
   const speakerPoints = useMemo(() => outputs.generatedPoints.filter((point) => point.type === "speaker"), [outputs.generatedPoints]);
 

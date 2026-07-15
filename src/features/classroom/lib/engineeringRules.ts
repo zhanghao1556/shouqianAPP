@@ -132,8 +132,8 @@ export const generateEngineeringOutputs = (
   const completeness = getCompleteness(profile);
   const acousticAssessment = getAcousticAssessment(profile);
   const canGenerateCore = hasValidGeometry(profile);
-  const solutionSelection = getCustomerSolutionSelection(profile);
-  const canGenerateDrawings = canGenerateCore && !solutionSelection.drawingBlocked;
+  const initialSolutionSelection = getCustomerSolutionSelection(profile);
+  const canGenerateDrawings = canGenerateCore && !initialSolutionSelection.drawingBlocked;
   const requiredArrayMicCount = canGenerateDrawings ? getRequiredArrayMicCount(profile, brandId) : 0;
   const defaultPoints = canGenerateDrawings ? generateBrandEngineeringPoints(profile, {}, brandId) : [];
   const defaultProductSelection = canGenerateCore
@@ -162,6 +162,7 @@ export const generateEngineeringOutputs = (
         preserveSpeakerCount: hasManualSpeakerCount
       }, brandId)
     : [];
+  const solutionSelection = getCustomerSolutionSelection(profile, points);
   const validationSpeakerProductId = selectedSpeakerProduct?.productId === "CEILING-SPEAKER" || selectedSpeakerProduct?.productId === "COLUMN-SPEAKER"
     ? selectedSpeakerProduct.productId
     : getSpeakerProductId(profile);

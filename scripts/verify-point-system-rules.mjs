@@ -90,6 +90,8 @@ assert.equal(noPodiumProfile.engineeringConstraints.hasPodium, false);
 const noPodiumLineArray = getLineArrayDecision(noPodiumProfile);
 assert.equal(noPodiumLineArray.installation, "hanging");
 assert.equal(noPodiumLineArray.position.y, 2.5);
+const noPodiumOutputs = generateEngineeringOutputs(noPodiumProfile, {}, "yinyi");
+assert.equal(getTeacherActivityZone(noPodiumProfile, noPodiumOutputs.generatedPoints).depth, 2.4);
 const sidePodiumTooFar = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
 assert.equal(sidePodiumTooFar.installation, "hanging");
 assert.equal(sidePodiumTooFar.position.x, 3.8);
@@ -135,9 +137,22 @@ assert.equal(interactiveClassroom.solutionSelection.microphone.recommended, "exi
 const lectureFit = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(lectureFit.solutionSelection.microphone.recommended, "lineArray");
 const lectureTooDeep = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5.1, microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(lectureTooDeep.solutionSelection.drawingBlocked, true);
+assert.equal(lectureTooDeep.solutionSelection.drawingBlocked, false);
+assert.equal(lectureTooDeep.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(getTeacherActivityZone(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5.1 }), lectureTooDeep.generatedPoints).depth, 1.8);
+const airAdjustedArrayProfile = makeProfile({
+  scenario: "standardClassroom",
+  length: 13,
+  width: 9,
+  microphoneSolution: "existingArray",
+  centralAir: [{ id: "ac-teacher-depth", label: "中央空调1", position: { x: 4.5, y: 3.2 }, size: { width: 0.8, depth: 0.8 } }]
+});
+const airAdjustedArrayOutputs = generateEngineeringOutputs(airAdjustedArrayProfile, {}, "yinyi");
+const airAdjustedPrimaryMic = airAdjustedArrayOutputs.generatedPoints.filter((point) => point.type === "arrayMic").sort((a, b) => a.position.y - b.position.y)[0];
+assert.equal(getTeacherActivityZone(airAdjustedArrayProfile, airAdjustedArrayOutputs.generatedPoints).depth, Math.round((airAdjustedPrimaryMic.position.y - 0.3) * 10) / 10);
 const combinedFit = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(combinedFit.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(getTeacherActivityZone(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10, teachingDepth: 5 }), combinedFit.generatedPoints).depth, 5);
 const combinedTwo = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10.1, teachingDepth: 5, microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(combinedTwo.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2);
 assert.equal(combinedTwo.solutionSelection.microphone.recommended, "existingArray");
@@ -154,6 +169,7 @@ assert.equal(meetingLeader.generatedPoints.find((point) => point.pickupKind === 
 const auditoriumStage = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["recording"], stageWidth: 10, stageDepth: 4, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(auditoriumStage.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(auditoriumStage.generatedPoints.find((point) => point.pickupKind === "lineArray")?.position.y, 2);
+assert.equal(getTeacherActivityZone(makeProfile({ scenario: "auditorium", length: 20, width: 14, stageWidth: 10, stageDepth: 4 }), auditoriumStage.generatedPoints).depth, 4);
 const auditoriumConference = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["videoConference"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(auditoriumConference.solutionSelection.microphone.recommended, "existingArray");
 

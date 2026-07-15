@@ -1,5 +1,5 @@
 import type { AppBrandId } from "../brand";
-import type { ClassroomProfile, ProcessorTier } from "../types";
+import type { ClassroomProfile, GeneratedPoint, ProcessorTier } from "../types";
 import { getEffectiveAmplificationScope } from "./drawingEngine";
 import { getPodiumAudienceEdgeY } from "./podiumGeometry";
 import { getReverberationRisk } from "./reverberationRules";
@@ -44,15 +44,19 @@ export interface LineArrayDecision {
   fallbackReason?: string;
 }
 
-export function getLineArrayDecision(profile: ClassroomProfile): LineArrayDecision {
+export function getLineArrayDecision(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]): LineArrayDecision {
   const solution = profile.engineeringConstraints.microphoneSolution ?? "auto";
   const requested = solution === "lineArray";
-  const activityZone = getLineArrayActivityZone(profile);
+  const evaluationZone = getLineArrayActivityZone(profile);
   const mode = shouldCoverFullRoom(profile) ? "full" : "front";
-  const support = getLineArraySupport(profile, activityZone, mode);
-  const recommendation = getLineArrayRecommendation(profile, activityZone, mode, support);
+  const support = getLineArraySupport(profile, evaluationZone, mode);
+  const recommendation = getLineArrayRecommendation(profile, evaluationZone, mode, support);
   const selected = support.supported && (requested || (solution === "auto" && recommendation.recommended));
-  const placement = getLineArrayPlacement(profile, activityZone, mode, support.count);
+  const placement = getLineArrayPlacement(profile, evaluationZone, mode, support.count);
+  const activityZone = generatedPoints ? getLineArrayActivityZone(profile, generatedPoints) : evaluationZone;
+  const decisionFactors = generatedPoints
+    ? recommendation.factors.map((factor, index) => index === 0 ? `覆盖：${activityZone.label} ${oneDecimal(activityZone.width)}m × ${oneDecimal(activityZone.depth)}m` : factor)
+    : recommendation.factors;
 
   return {
     selected,
@@ -66,12 +70,12 @@ export function getLineArrayDecision(profile: ClassroomProfile): LineArrayDecisi
     position: placement.position,
     activityZone,
     recommendationReason: recommendation.reason,
-    decisionFactors: recommendation.factors,
+    decisionFactors,
     fallbackReason: support.reason
   };
 }
 
-export function getTeacherActivityZone(profile: ClassroomProfile): LineArrayActivityZone {
+export function getTeacherActivityZone(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]): LineArrayActivityZone {
   const { width: roomWidth, length: roomLength } = profile.roomGeometry;
   if (profile.scenario === "combinedClassroom") {
     const width = clamp(profile.engineeringConstraints.teachingAreaSize?.width || roomWidth, 0, roomWidth);
@@ -87,7 +91,10 @@ export function getTeacherActivityZone(profile: ClassroomProfile): LineArrayActi
   const boardWidth = Math.min(roomWidth / 2, 6);
   const boardLeft = (roomWidth - boardWidth) / 2;
   const boardRight = boardLeft + boardWidth;
-  const depth = clamp(profile.engineeringConstraints.teachingAreaSize?.depth || Math.min(5, roomLength), 0, roomLength);
+  const automaticDepth = getAutomaticTeacherActivityDepth(profile, generatedPoints);
+  const depth = profile.scenario === "standardClassroom" || profile.scenario === "lectureClassroom"
+    ? automaticDepth
+    : clamp(profile.engineeringConstraints.teachingAreaSize?.depth || Math.min(5, roomLength), 0, roomLength);
   const podiumPosition = profile.engineeringConstraints.podiumPosition ?? "frontCenter";
   if (podiumPosition === "frontLeft") return createZone(0, boardRight, depth, "左侧讲台至中间板书区");
   if (podiumPosition === "frontRight") return createZone(boardLeft, roomWidth - boardLeft, depth, "中间板书区至右侧讲台");
@@ -142,7 +149,7 @@ export function getProcessorCapacity(tier: Exclude<ProcessorTier, "auto">) {
   return tier === "twoMic" ? 2 : tier === "sixMic" ? 6 : 1;
 }
 
-function getLineArrayActivityZone(profile: ClassroomProfile): LineArrayActivityZone {
+function getLineArrayActivityZone(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]): LineArrayActivityZone {
   const { width, length } = profile.roomGeometry;
   if (profile.scenario === "meetingRoom") {
     if (hasMeetingLeaderPosition(profile) && !hasFullRoomPickupNeed(profile)) {
@@ -153,7 +160,16 @@ function getLineArrayActivityZone(profile: ClassroomProfile): LineArrayActivityZ
   if (profile.scenario === "auditorium" && hasFullRoomPickupNeed(profile)) {
     return createZone(0, width, length, "报告厅全场拾音区");
   }
-  return getTeacherActivityZone(profile);
+  return getTeacherActivityZone(profile, generatedPoints);
+}
+
+function getAutomaticTeacherActivityDepth(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]) {
+  const primaryMic = generatedPoints
+    ?.filter((point) => point.type === "arrayMic")
+    .sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x)[0];
+  if (!primaryMic) return Math.min(LINE_ARRAY_ACTIVITY_MAX_DEPTH_M, profile.roomGeometry.length);
+  const markerHalfDepth = primaryMic.pickupKind === "lineArray" ? 0.12 : 0.3;
+  return oneDecimal(clamp(primaryMic.position.y - markerHalfDepth, 0, profile.roomGeometry.length));
 }
 
 function getLineArraySupport(

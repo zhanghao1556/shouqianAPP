@@ -281,7 +281,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             <NumberField label="上课区纵深 m" value={profile.engineeringConstraints.teachingAreaSize?.depth ?? 0} onChange={(value) => setTeachingAreaSize("depth", value)} />
           </div>
         )}
-        {!isMeetingScenario(profile.scenario) && !isAuditoriumScenario(profile.scenario) && profile.scenario !== "combinedClassroom" && (
+        {profile.scenario === "other" && (
           <div className="tripleGrid dimensionGrid">
             <label>
               前方区域

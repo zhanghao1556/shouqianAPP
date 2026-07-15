@@ -1,6 +1,7 @@
 import type {
   ClassroomProfile,
   CustomerSolutionSelection,
+  GeneratedPoint,
   MicrophoneSolution,
   SpeakerProductOverride
 } from "../types";
@@ -17,13 +18,13 @@ const speakerLabels: Record<Exclude<SpeakerProductOverride, "auto">, string> = {
   wall: "壁挂音柱"
 };
 
-export function getCustomerSolutionSelection(profile: ClassroomProfile): CustomerSolutionSelection {
+export function getCustomerSolutionSelection(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]): CustomerSolutionSelection {
   const automaticMicrophoneProfile = withMicrophoneSolution(profile, "auto");
-  const automaticLineArrayDecision = getLineArrayDecision(automaticMicrophoneProfile);
+  const automaticLineArrayDecision = getLineArrayDecision(automaticMicrophoneProfile, generatedPoints);
   const recommendedMicrophone = automaticLineArrayDecision.recommended ? "lineArray" : "existingArray";
   const requestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
   const selectedMicrophone = requestedMicrophone === "auto" ? recommendedMicrophone : requestedMicrophone;
-  const selectedLineArrayDecision = getLineArrayDecision(profile);
+  const selectedLineArrayDecision = getLineArrayDecision(profile, generatedPoints);
   const lineArraySupported = selectedMicrophone !== "lineArray" || selectedLineArrayDecision.selected;
 
   const automaticSpeakerProfile = withSpeakerOverride(profile, "auto");
