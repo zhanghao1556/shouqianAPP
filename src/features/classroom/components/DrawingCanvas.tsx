@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ClassroomProfile, ConnectionLine, DrawingType, GeneratedPoint, LegacySpeakerPoint, LegacySpeakerType, LegacyWallAdjustability, Point } from "../types";
 import { DT_AUDIO_LINE_IN_LIMIT, DT_AUDIO_LINE_OUT_LIMIT } from "../lib/connectionRules";
 import { generateEngineeringPoints, getArrayMicCentralAirRequiredClearance, getArrayMicEffectiveAmplificationRadius, getArrayMicInstallLabel, getCanvasRoomLayout, toCanvasPoint } from "../lib/drawingEngine";
 import { isMeetingScenario } from "../lib/scenarioRules";
+import { PODIUM_DEPTH_M, PODIUM_FRONT_CLEARANCE_M } from "../lib/podiumGeometry";
 import {
   CEILING_SPEAKER_IDEAL_COVERAGE_RADIUS_M,
   MAX_SPEAKERS_PER_DT,
@@ -169,6 +170,7 @@ function InstallationDiagram({
   const [legacyWallAdjustability, setLegacyWallAdjustability] = useState<LegacyWallAdjustability>("universal");
   const [manualSpeakerType, setManualSpeakerType] = useState<LegacySpeakerType>(manualSpeakerFixedType ?? "ceiling");
   const [manualSpeakerWallAdjustability, setManualSpeakerWallAdjustability] = useState<LegacyWallAdjustability>("universal");
+  const roomClipId = useId().replace(/:/g, "");
   const width = 980;
   const height = getInstallationCanvasHeight(profile, width);
   const hasLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
@@ -566,6 +568,9 @@ function InstallationDiagram({
           <filter id="speakerCoverageBlur" x="-8%" y="-8%" width="116%" height="116%">
             <feGaussianBlur stdDeviation="3.2" />
           </filter>
+          <clipPath id={roomClipId}>
+            <rect x={room.x} y={room.y} width={room.width} height={room.height} />
+          </clipPath>
         </defs>
         <rect x={installationViewBox.x} y={installationViewBox.y} width={installationViewBox.width} height={installationViewBox.height} fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
         <rect x={room.x} y={room.y} width={room.width} height={room.height} fill="#ffffff" stroke="#111827" strokeWidth="0.9" />
@@ -596,6 +601,7 @@ function InstallationDiagram({
             hideLabel={visibleMergedSpeakerLabelIds.hiddenIds.has(point.id)}
             labelPlacement={visiblePointLabelLayouts.get(point.id)}
             muted={dimGeneratedSpeakers && point.type === "speaker"}
+            coverageClipId={point.pickupKind === "lineArray" ? roomClipId : undefined}
           />
         ))}
         {legacySpeakerPoints.map((point) => (
@@ -1119,8 +1125,8 @@ function PodiumMarker({ profile, width, height }: { profile: ClassroomProfile; w
     );
   }
   const podiumPosition = profile.engineeringConstraints.podiumPosition ?? "frontCenter";
-  const podiumDepthM = 0.7;
-  const frontClearanceM = 1.2;
+  const podiumDepthM = PODIUM_DEPTH_M;
+  const frontClearanceM = PODIUM_FRONT_CLEARANCE_M;
   const minSideAisleM = 0.9;
   const podiumWidthM = Math.min(1.8, Math.max(1.2, profile.roomGeometry.width - minSideAisleM * 2));
   const podiumWidth = Math.min(room.width * 0.28, podiumWidthM * room.meterPx);
@@ -3740,7 +3746,8 @@ function GeneratedPointMarker({
   extraLabelLine,
   hideLabel,
   labelPlacement,
-  muted = false
+  muted = false,
+  coverageClipId
 }: {
   point: GeneratedPoint;
   profile: ClassroomProfile;
@@ -3752,6 +3759,7 @@ function GeneratedPointMarker({
   hideLabel?: boolean;
   labelPlacement?: PointLabelLayout;
   muted?: boolean;
+  coverageClipId?: string;
 }) {
   const canvasPoint = toCanvasPoint(point.position, profile, width, height);
   const meterPx = getMeterPixels(profile, width, height);
@@ -3775,21 +3783,23 @@ function GeneratedPointMarker({
     <g opacity={muted ? 0.62 : 1}>
       {point.type === "arrayMic" ? (
         <>
-          {point.pickupPattern === "front180" ? (
-            <path
-              d={`M ${canvasPoint.x - arrayMicRadiusPx} ${canvasPoint.y} A ${arrayMicRadiusPx} ${arrayMicRadiusPx} 0 0 1 ${canvasPoint.x + arrayMicRadiusPx} ${canvasPoint.y} Z`}
-              fill="#00a6a6"
-              fillOpacity="0.13"
-              stroke="#00a6a6"
-              strokeWidth="0.8"
-              strokeDasharray="4 4"
-            />
-          ) : (
-            <>
-              <circle cx={canvasPoint.x} cy={canvasPoint.y} r={arrayMicRadiusPx} fill="url(#arrayMicCoverageGradient)" filter="url(#arrayMicCoverageBlur)" opacity="0.82" />
-              <circle cx={canvasPoint.x} cy={canvasPoint.y} r={arrayMicRadiusPx} fill="none" stroke="#00a6a6" strokeWidth="0.7" strokeDasharray="4 4" opacity="0.28" />
-            </>
-          )}
+          <g clipPath={coverageClipId ? `url(#${coverageClipId})` : undefined}>
+            {point.pickupPattern === "front180" ? (
+              <path
+                d={`M ${canvasPoint.x - arrayMicRadiusPx} ${canvasPoint.y} A ${arrayMicRadiusPx} ${arrayMicRadiusPx} 0 0 1 ${canvasPoint.x + arrayMicRadiusPx} ${canvasPoint.y} Z`}
+                fill="#00a6a6"
+                fillOpacity="0.13"
+                stroke="#00a6a6"
+                strokeWidth="0.8"
+                strokeDasharray="4 4"
+              />
+            ) : (
+              <>
+                <circle cx={canvasPoint.x} cy={canvasPoint.y} r={arrayMicRadiusPx} fill="url(#arrayMicCoverageGradient)" filter="url(#arrayMicCoverageBlur)" opacity="0.82" />
+                <circle cx={canvasPoint.x} cy={canvasPoint.y} r={arrayMicRadiusPx} fill="none" stroke="#00a6a6" strokeWidth="0.7" strokeDasharray="4 4" opacity="0.28" />
+              </>
+            )}
+          </g>
           {useLineArrayMicImage ? (
             <image href={lineArrayMicImage} x={canvasPoint.x - micSize} y={canvasPoint.y - micSize * 0.2} width={micSize * 2} height={micSize * 0.4} preserveAspectRatio="xMidYMid meet" />
           ) : useYinmanArrayMicImage ? (

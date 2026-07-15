@@ -1,6 +1,7 @@
 import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, ProcessorTier } from "../types";
 import { getEffectiveAmplificationScope } from "./drawingEngine";
+import { getPodiumAudienceEdgeY } from "./podiumGeometry";
 
 export const LINE_ARRAY_PRODUCT_ID = "LINE-ARRAY-MIC";
 export const LINE_ARRAY_SINGLE_MAX_WIDTH_M = 10;
@@ -223,17 +224,19 @@ function getLineArrayPlacement(
     return { installation: "hanging", position: { x: oneDecimal(zone.centerX), y: oneDecimal(Math.max(1.2, zone.centerY)) } };
   }
 
-  const computer = profile.existingDevices.computer;
-  const hasPodiumComputer = computer.includes("讲台电脑");
   const requestedInstallation = profile.engineeringConstraints.lineArrayInstallation ?? "auto";
   const podiumX = getPodiumX(profile);
   const podiumCoversZone = Math.max(Math.abs(podiumX - zone.left), Math.abs(zone.right - podiumX)) <= LINE_ARRAY_FULL_RADIUS_M;
   const canUsePodium = profile.engineeringConstraints.hasPodium !== false && podiumCoversZone;
+  const hasDrawnPodium = profile.scenario !== "auditorium" && profile.scenario !== "combinedClassroom";
   if (requestedInstallation === "podium" && canUsePodium) {
-    return { installation: "podium", position: { x: oneDecimal(podiumX), y: oneDecimal(Math.min(1.2, profile.roomGeometry.length / 3)) } };
+    return {
+      installation: "podium",
+      position: { x: oneDecimal(podiumX), y: oneDecimal(hasDrawnPodium ? getPodiumAudienceEdgeY() : Math.min(1.2, profile.roomGeometry.length / 3)) }
+    };
   }
-  if (requestedInstallation !== "hanging" && hasPodiumComputer && canUsePodium) {
-    return { installation: "podium", position: { x: oneDecimal(podiumX), y: oneDecimal(Math.min(1.2, profile.roomGeometry.length / 3)) } };
+  if (requestedInstallation !== "hanging" && hasDrawnPodium && canUsePodium) {
+    return { installation: "podium", position: { x: oneDecimal(podiumX), y: oneDecimal(getPodiumAudienceEdgeY()) } };
   }
   return {
     installation: "hanging",

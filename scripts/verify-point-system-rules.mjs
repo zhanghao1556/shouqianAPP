@@ -80,6 +80,10 @@ assert.equal(getTeacherActivityZone(makeProfile({ width: 10, podiumPosition: "fr
 const sidePodiumFit = getLineArrayDecision(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
 assert.equal(sidePodiumFit.installation, "podium");
 assert.equal(sidePodiumFit.position.x, 1);
+assert.equal(sidePodiumFit.position.y, 1.9);
+const centeredPodiumWithoutComputer = getLineArrayDecision(makeProfile({ length: 9.9, width: 10.4, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontCenter" }));
+assert.equal(centeredPodiumWithoutComputer.installation, "podium");
+assert.equal(centeredPodiumWithoutComputer.position.y, 1.9);
 const sidePodiumTooFar = getLineArrayDecision(makeProfile({ length: 8, width: 10, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft", computer: "讲台电脑" }));
 assert.equal(sidePodiumTooFar.installation, "hanging");
 assert.equal(sidePodiumTooFar.position.x, 3.8);
