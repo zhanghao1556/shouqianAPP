@@ -1,5 +1,11 @@
 ﻿# Retrospective
 
+## 2026-07-15 Customer-facing array microphone naming reminder
+
+- A customer-facing product rename must be traced through the shared catalog, selection labels, drawing legends, topology text, reports and release sanitizers; changing only the selected button leaves contradictory output.
+- Keep source-document filenames and internal product IDs unchanged when the request is only a generic customer name correction.
+- Add backward-compatible normalization for imported old reports and release sanitizers, then verify both the selection button and a downstream generated output such as the equipment list.
+
 ## 2026-07-15 Teacher-area depth-only scope reminder
 
 - “教师活动区纵深跟随主麦 / 线阵上边沿”只改变纵深；不得顺带改写现有教师活动区宽度推导。

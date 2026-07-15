@@ -63,11 +63,11 @@ export const productRules: ProductRule[] = [
   },
   {
     productId: "YM-DT2-Pro",
-    name: "智能语音阵列麦克风",
+    name: "智能天花阵列麦克风",
     category: "pickup",
     matchedScenarios: ["classroom", "lecture"],
     matchedNeeds: ["interactiveClass", "recording", "remoteTeaching"],
-    source: "智能语音阵列麦克风产品资料 / 互动课堂音频系统应用方案",
+    source: "智能天花阵列麦克风产品资料 / 互动课堂音频系统应用方案",
     quantityRule: (profile) => Math.max(1, Math.ceil(area(profile.space.length, profile.space.width) / 70)),
     reason: () => "适合教学空间的阵列拾音，兼顾教师活动区和学生互动声音采集。"
   },

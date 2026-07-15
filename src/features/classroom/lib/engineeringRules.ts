@@ -193,7 +193,7 @@ export const generateEngineeringOutputs = (
       ]
     },
     { title: "接口接线图", type: "wiring" as const, notes: ["按产品资料生成接口级连接关系，无需销售补充线路路径。"] },
-    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、智能语音阵列麦克风、电脑 / 录播平台和音箱之间的系统链路。"] }
+    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、智能天花阵列麦克风、电脑 / 录播平台和音箱之间的系统链路。"] }
   ];
   const report = {
     pdfReportModel: {
@@ -243,8 +243,8 @@ const getAudioPlan = (
   return {
     mode,
     summary: brandId === "yinman"
-      ? "本方案由智能语音阵列麦克风配合智能音频处理主机完成拾音、音频处理和无源音箱驱动，结合波束成形、反馈抑制、噪声抑制、回声消除和自动增益，形成完整课堂音频链路。"
-      : "本方案以智能语音阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
+      ? "本方案由智能天花阵列麦克风配合智能音频处理主机完成拾音、音频处理和无源音箱驱动，结合波束成形、反馈抑制、噪声抑制、回声消除和自动增益，形成完整课堂音频链路。"
+      : "本方案以智能天花阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
     pickupGoal: hasOnline
       ? oversizedForFullRoomAmp
         ? `面向远程互动、录播或会议平台，后场以线上拾音为主；线上拾音半径按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 作为点位复核依据，优先保证教师区和后场发言清晰。`
@@ -301,7 +301,7 @@ const getAreaBoundary = (
 ) => {
   const capability = getBrandSystemCapability(brandId);
   if (area <= 0) return "待补充房间尺寸后判断声场适用边界。";
-  if (area < 60) return "面积小于 60 平方米，智能语音阵列麦克风可用但产品价值不易完全发挥，仍需结合客户预算判断扩声收益。";
+  if (area < 60) return "面积小于 60 平方米，智能天花阵列麦克风可用但产品价值不易完全发挥，仍需结合客户预算判断扩声收益。";
   if (area <= 80) return "面积处于 60-80 平方米，适合单麦方案；后排听感和拾音清晰度需在复勘或调试时确认。";
   if (requiredArrayMicCount > capability.maxArrayMicCount) {
     if (brandId === "yinyi") {
@@ -317,7 +317,7 @@ const getAreaBoundary = (
   if (profile.roomGeometry.length <= 9) return arrayCount >= 2 ? "房间纵深小于等于约 9m，当前因互动、后排发言或特殊采集需求增加从麦；复勘时重点确认后排座位、两侧座位和啸叫余量。" : "房间纵深小于等于约 9m，主麦安装在前墙约 3m 后，按 5m 最佳理想扩声距离可优先单麦覆盖教师区与主要听音区。";
   if (profile.roomGeometry.length <= 16) return arrayCount >= 2 ? "房间纵深约 9-16m，已增加从麦用于补强中后区；5m 是最佳理想扩声距离而非硬边界，复勘时需重点试听中后区清晰度。" : "房间纵深约 9-16m，当前仍为单麦方案，需现场复核后排听感；若全场扩声、录播或学生发言要求较高，建议评估 2 麦。";
   if (area <= 150) return arrayCount >= 3 ? "房间纵深超过 16m，已按 3 麦级联覆盖前场、中区和后场；需复核中后区发言和两侧座位覆盖。" : "房间纵深超过 16m，中后区与后场座位会影响阵麦数量。";
-  return "面积超过 150 平方米，单套智能语音阵列麦克风和吸顶音箱难以完全覆盖，建议拆分声区或转为专项声场设计。";
+  return "面积超过 150 平方米，单套智能天花阵列麦克风和吸顶音箱难以完全覆盖，建议拆分声区或转为专项声场设计。";
 };
 
 export const getInstallationGuide = (profile: ClassroomProfile, points: GeneratedPoint[]): InstallationGuideItem[] =>
@@ -686,7 +686,7 @@ export const getEngineeringBasis = (
     result: acousticAssessment.label
   },
   {
-    item: "智能语音阵列麦克风点位",
+    item: "智能天花阵列麦克风点位",
     basis: "教师活动区、录播 / 互动需求、教室面积、混响风险",
     result: points.filter((item) => item.type === "arrayMic").map((item) => item.label).join("、") || "未选择阵列麦需求"
   },
@@ -699,7 +699,7 @@ export const getEngineeringBasis = (
   },
   {
     item: "接口连接",
-    basis: "智能语音阵列麦克风产品资料、无线手持麦接口说明、功放输出端子定义",
+    basis: "智能天花阵列麦克风产品资料、无线手持麦接口说明、功放输出端子定义",
     result: `${connectionCount} 条接口级连接`
   },
   ...selection.map((item) => ({

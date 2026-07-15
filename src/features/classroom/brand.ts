@@ -35,9 +35,10 @@ export function getAppBrand(): AppBrandConfig {
 export function formatBrandText(value: string): string {
   if (getAppBrand().id !== "yinman") return value;
   return value
-    .replace(/DT2 Pro 智能语音阵列麦克风/g, "智能语音阵列麦克风")
-    .replace(/DT2 pro 智能语音阵列麦克风/gi, "智能语音阵列麦克风")
-    .replace(/DT2 Pro/g, "智能语音阵列麦克风")
+    .replace(/DT2 Pro 智能语音阵列麦克风/g, "智能天花阵列麦克风")
+    .replace(/DT2 pro 智能语音阵列麦克风/gi, "智能天花阵列麦克风")
+    .replace(/DT2 Pro/g, "智能天花阵列麦克风")
+    .replace(/智能语音阵列麦克风/g, "智能天花阵列麦克风")
     .replace(/音翼科技/g, "音曼")
     .replace(/音翼/g, "音曼")
     .replace(/Yinyi AI Presales Tool/g, "Yinman AI Presales Tool");

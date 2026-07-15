@@ -1682,7 +1682,7 @@ function getTopologyNodeKey(device: string, port = "") {
     const match = device.match(/(\d+)\s*$/);
     return `arrayMic-${match?.[1] ?? "1"}`;
   }
-  if (getAppBrand().id === "yinman" && device.includes("智能语音阵列麦克风")) {
+  if (getAppBrand().id === "yinman" && device.includes("智能天花阵列麦克风")) {
     const match = device.match(/(\d+)\s*$/);
     return `arrayMic-${match?.[1] ?? "1"}`;
   }
@@ -4374,7 +4374,7 @@ function Legend({ micOnly = false, hasManualArrayMic = false, hasLineArray = fal
   return (
     <div className="canvasLegend">
       <span>
-        <i style={{ background: "#00a6a6" }} /> {hasLineArray ? "智能线阵麦克风" : "智能语音阵列麦克风"}
+        <i style={{ background: "#00a6a6" }} /> {hasLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"}
       </span>
       {hasManualArrayMic && (
         <span>

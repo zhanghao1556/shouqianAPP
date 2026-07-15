@@ -246,7 +246,7 @@ function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selec
   Array.from({ length: arrayMic.quantity }, (_, index) => index + 1).forEach((index) => {
     lines.push({
       id: `array-mic-processor-network-${index}`,
-      fromDevice: `${isLineArray ? "智能线阵麦克风" : "智能语音阵列麦克风"} ${index}`,
+      fromDevice: `${isLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"} ${index}`,
       fromPort: isLineArray ? "RJ45 模拟麦克风信号接口" : "网络音频接口",
       toDevice: coreName,
       toPort: `阵麦输入 ${index}`,

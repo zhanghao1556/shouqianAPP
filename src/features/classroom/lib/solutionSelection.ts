@@ -9,7 +9,7 @@ import { getLineArrayDecision } from "./lineArrayRules";
 import { getSpeakerProductId } from "./speakerRules";
 
 const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
-  existingArray: "智能语音阵列麦克风",
+  existingArray: "智能天花阵列麦克风",
   lineArray: "智能线阵麦克风"
 };
 

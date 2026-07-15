@@ -383,7 +383,7 @@ function MicrophoneRecommendationCalibration({
       <div className="microphoneCalibrationHeader">
         <div>
           <span>麦克风推荐校准</span>
-          <strong>{decision.recommended ? "推荐智能线阵麦克风" : "推荐智能语音阵列麦克风"}</strong>
+          <strong>{decision.recommended ? "推荐智能线阵麦克风" : "推荐智能天花阵列麦克风"}</strong>
         </div>
         <b className={decision.recommended ? "lineArrayVerdict" : "arrayMicVerdict"}>{decision.supported ? "能力可用" : "能力不满足"}</b>
       </div>

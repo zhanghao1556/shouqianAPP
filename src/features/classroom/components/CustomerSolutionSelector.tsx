@@ -43,7 +43,7 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
         <SolutionChoiceGroup
           title="麦克风"
           options={[
-            { value: "existingArray", label: "智能语音阵列麦克风", imageSrc: arrayMicImage },
+            { value: "existingArray", label: "智能天花阵列麦克风", imageSrc: arrayMicImage },
             { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage }
           ]}
           selected={selection.microphone.selected}

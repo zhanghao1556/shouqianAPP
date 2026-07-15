@@ -13,10 +13,10 @@ export interface ClassroomProductRule {
 export const classroomProductRules: ClassroomProductRule[] = [
   {
     productId: "DT2-Pro",
-    name: "智能语音阵列麦克风",
+    name: "智能天花阵列麦克风",
     category: "pickup",
     applyWhen: ["videoConference", "interactiveClass", "localAmplification", "recording", "remoteTeaching"],
-    source: "智能语音阵列麦克风产品资料、互动课堂音频系统应用方案",
+    source: "智能天花阵列麦克风产品资料、互动课堂音频系统应用方案",
     installation: "适合录播、远程互动和较大教室，优先用于对拾音清晰度要求更高的项目。",
     wiring: "USB Type-B 接电脑 / 一体机；Line Out 接录播主机音频输入；模拟输入 L/R/G 可接无线接收机；功放输出 L+/L-/R+/R- 接无源音箱。"
   },
