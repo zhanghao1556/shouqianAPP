@@ -86,6 +86,13 @@ yinyiRegressionProfiles.forEach((profile, index) => {
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
 
+const invalidYinmanRoom = generateEngineeringOutputs(makeProfile({ length: 0, width: 12, height: 2.6 }), {}, "yinman");
+assert.equal(invalidYinmanRoom.isFinalReady, false);
+assert.deepEqual(invalidYinmanRoom.productSelection, []);
+assert.deepEqual(invalidYinmanRoom.generatedPoints, []);
+assert.deepEqual(invalidYinmanRoom.connectionLines, []);
+console.log("PASS invalid Yinman room returns no equipment or drawings");
+
 assert.equal(getMeetingFurnitureEndClearance(6), 1.2);
 assert.equal(getMeetingFurnitureEndClearance(11), 1.6);
 assert.equal(getMeetingFurnitureEndClearance(16), 2);

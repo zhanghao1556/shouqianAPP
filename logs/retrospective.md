@@ -1763,3 +1763,9 @@ PowerShell reminder:
 - For the current minimal implementation, Yinman `高性能处理器` and `智能音频处理主机` both map to `yinman-audio-processor.png`; `双麦处理器` and `六麦处理器` map to their shared no-Logo processor assets. `利旧处理器` must remain on the generic legacy processor image.
 - A successful equipment-list assertion is insufficient for product-photo changes. Browser QA must inspect both the selected customer card image and the topology SVG image `href`, then switch one processor tier and restore automatic selection.
 - Preserve the untouched source photo under `output/yinkman/AJ350.png`; if a rendered image looks wrong, first distinguish source-asset loss from label-dispatch fallback before reprocessing the bitmap.
+
+### 2026-07-15 invalid-geometry output gate reminder
+
+- When core room geometry is invalid, equipment selection, brand system-device synchronization, generated points, topology connections and report-facing outputs must all remain empty from the shared engineering engine.
+- Do not hide zero-quantity residue only in a React table. Gate the shared output before synchronization so every consumer receives the same empty solution.
+- Keep valid-room amplifier capacity rules covered by their existing 8/9/16/17-speaker boundary regressions.

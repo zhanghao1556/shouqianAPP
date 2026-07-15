@@ -6310,6 +6310,14 @@ Boundary:
 - The in-app browser download listener did not capture the programmatic point-map PNG link and timed out. The export action left the shared SVG rendered and produced no console error; no export code was changed for this browser-tool limitation.
 - No package, release or GitHub push was performed.
 
+## 2026-07-15 invalid-room equipment-list residue
+
+- User reported that Yinman 5180 still showed `教学模拟功放主机` with quantity `0` when room length was `0` and no solution could be generated.
+- Root cause: `generateEngineeringOutputs` correctly cleared the default product selection for invalid geometry, but still passed the empty selection through `syncBrandSystemSelection`; that helper always appended an amplifier row, including a zero-quantity row.
+- Fix scope is the shared output gate only: invalid core geometry must return an empty product selection before brand system-device synchronization. Valid-room amplifier capacity, microphone/speaker quantity, points, angles and connections remain unchanged.
+- Added a focused Yinman `0m x 12m x 2.6m` regression asserting not-ready status plus empty product selection, points and connections. Point-system rules (including Yinman 8/9/16/17 speaker capacity), strict TypeScript and production build all passed.
+- Fresh 5180 browser QA set room length to `0`: the equipment table was absent, the missing-dimensions empty state appeared once, `教学模拟功放主机` appeared zero times and the console had no warnings or errors.
+
 ## 2026-07-15 Yinman single-line processor recommendation and AJ350 image correction
 
 - User confirmed the Yinman 5180 processor rule for a single line-array microphone:

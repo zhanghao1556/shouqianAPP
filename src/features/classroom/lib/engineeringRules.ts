@@ -145,12 +145,14 @@ export const generateEngineeringOutputs = (
         brandId
       )
     : [];
-  const productSelection = syncBrandSystemSelection(
-    profile,
-    acousticAssessment,
-    applyQuantityOverrides(defaultProductSelection, quantityOverrides, brandId),
-    brandId
-  );
+  const productSelection = canGenerateCore
+    ? syncBrandSystemSelection(
+        profile,
+        acousticAssessment,
+        applyQuantityOverrides(defaultProductSelection, quantityOverrides, brandId),
+        brandId
+      )
+    : [];
   const selectedSpeakerProduct = productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
   const selectedSpeakerCount = selectedSpeakerProduct && quantityOverrides[selectedSpeakerProduct.productId] !== undefined ? selectedSpeakerProduct.quantity : undefined;
   const hasManualSpeakerCount = selectedSpeakerCount !== undefined;
