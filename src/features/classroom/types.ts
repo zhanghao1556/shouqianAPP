@@ -296,6 +296,11 @@ export interface CustomerSolutionSelection {
   speaker: CustomerSolutionChoice<Exclude<SpeakerProductOverride, "auto">> & {
     requiresSpecialReview: boolean;
   };
+  processor?: CustomerSolutionChoice<Exclude<ProcessorTier, "auto">> & {
+    alternative: "twoMic" | "sixMic";
+    alternativeLabel: string;
+    interfaceDemand: number;
+  };
   drawingBlocked: boolean;
   blockingMessage?: string;
 }

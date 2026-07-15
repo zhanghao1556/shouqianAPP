@@ -17,7 +17,7 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", measuredRt60 } = {}) {
+function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", legacyWirelessMic = "", recordingHost = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", processorTier = "auto", measuredRt60 } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -26,10 +26,11 @@ function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, h
     amplificationScope: scope,
     roomGeometry: { length, width, height },
     acousticEnvironment: { ...base.acousticEnvironment, measuredRt60 },
-    existingDevices: { ...base.existingDevices, computer },
+    existingDevices: { ...base.existingDevices, computer, legacyWirelessMic, recordingHost },
     engineeringConstraints: {
       ...base.engineeringConstraints,
       microphoneSolution,
+      processorTier,
       speakerProductOverride,
       overheadSpeakerMounting,
       teachingAreaSize: { width: teachingWidth, depth: teachingDepth },
@@ -251,20 +252,27 @@ assert.equal(getTeacherActivityZone(makeProfile({ scenario: "auditorium", length
 const auditoriumConference = generateEngineeringOutputs(makeProfile({ scenario: "auditorium", length: 20, width: 14, needs: ["videoConference"], stageWidth: 10, stageDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(auditoriumConference.solutionSelection.microphone.recommended, "existingArray");
 
-const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinman");
+const twoSpeakerOverrides = { "CEILING-SPEAKER": 2, "COLUMN-SPEAKER": 2 };
+const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), twoSpeakerOverrides, "yinman");
 const yinyiSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(
-  yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name,
-  yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name
-);
+assert.equal(yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
 assert.equal(yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.equal(yinmanSingleLine.solutionSelection.processor?.recommended, "highPerformance");
+assert.equal(yinmanSingleLine.solutionSelection.processor?.selected, "highPerformance");
+assert.equal(yinmanSingleLine.solutionSelection.processor?.alternative, "twoMic");
+const yinmanEconomyLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", processorTier: "twoMic" }), twoSpeakerOverrides, "yinman");
+assert.equal(yinmanEconomyLine.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.equal(yinmanEconomyLine.solutionSelection.processor?.isNonRecommended, true);
+const yinmanInterfaceRichLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", legacyWirelessMic: "无线手持麦、无线手持麦、无线手持麦" }), twoSpeakerOverrides, "yinman");
+assert.equal(yinmanInterfaceRichLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
+assert.equal(yinmanInterfaceRichLine.solutionSelection.processor?.alternative, "sixMic");
 assert.equal(getProcessorCapacity("twoMic"), 2);
 assert.equal(getProcessorCapacity("sixMic"), 6);
 const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14, teachingDepth: 5 }), {}, "yinman");
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
-assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
-console.log("PASS line-array recommendation, teacher-zone inference, 8m/10m/15m/5m boundaries, forced two-line handling and model hiding");
+assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanEconomyLine, yinmanInterfaceRichLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
+console.log("PASS line-array recommendation, Yinman processor defaults and alternatives, teacher-zone inference, 8m/10m/15m/5m boundaries, forced two-line handling and model hiding");
 
 const automaticChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(automaticChoice.solutionSelection.microphone.recommended, "lineArray");

@@ -6309,3 +6309,23 @@ Boundary:
 - One stale Vite HMR error reported `getVerticalWallLabels is not defined` while the browser had loaded a partial edit state. Source inspection confirmed the helper was module-scoped; a completely fresh tab had no error. No code change was made for this transient development state.
 - The in-app browser download listener did not capture the programmatic point-map PNG link and timed out. The export action left the shared SVG rendered and produced no console error; no export code was changed for this browser-tool limitation.
 - No package, release or GitHub push was performed.
+
+## 2026-07-15 Yinman single-line processor recommendation and AJ350 image correction
+
+- User confirmed the Yinman 5180 processor rule for a single line-array microphone:
+  - automatic selection defaults to the internal AJ350 tier because its processing effect is preferred even though its price is higher;
+  - customer-facing output remains model-free and displays `高性能处理器`;
+  - `双麦处理器` is the lower-cost alternative when interface demand is no more than 2 routes;
+  - `六麦处理器` is the interface-rich alternative when current input/output or speaker demand exceeds 2 routes;
+  - two line-array microphones continue to force the six-microphone processor tier.
+- Added a Yinman-only processor choice group for a generated single-line solution. It uses the three confirmed product photos, identifies the automatic recommendation and current economic/interface alternative, persists `processorTier`, and updates the equipment list and topology from the same profile value.
+- Yinyi behavior remains unchanged: its single-line automatic selection still uses `双麦处理器`. No microphone or speaker quantity, coordinate, angle, coverage or connection rule changed.
+- The first 5180 browser check exposed an asset mapping bug introduced by the new customer label: the topology renderer recognized the old `智能音频处理主机` label but not `高性能处理器`, so it fell back to `topology-audio-processor.png`, the same generic black image used by a legacy processor node.
+- User reported the mismatch immediately. The original AJ350 source remained intact at `output/yinkman/AJ350.png`, and the compressed runtime asset remained intact at `src/assets/yinman-audio-processor.png`; only the label-to-image mapping was wrong.
+- Fixed the topology mapping so Yinman `高性能处理器` and `智能音频处理主机` both use the AJ350 runtime asset. Legacy processor nodes continue to use the generic legacy processor image.
+- Verification completed:
+  - strict TypeScript unused checks passed;
+  - production build passed;
+  - point-system regression covers Yinman default high-performance selection, economic/interface alternatives, forced two-line six-microphone selection, unchanged Yinyi default and model-name hiding;
+  - 5180 browser QA confirmed the default selector and topology both reference `yinman-audio-processor.png`, switching to `双麦处理器` updates the list and topology image, restoring the recommendation returns to the AJ350 image, no AJ model string is visible, and the console has no warnings or errors.
+- No package, release or GitHub push was performed.

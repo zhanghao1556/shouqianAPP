@@ -3,9 +3,17 @@ import type {
   CustomerSolutionSelection,
   GeneratedPoint,
   MicrophoneSolution,
+  ProcessorTier,
   SpeakerProductOverride
 } from "../types";
-import { getLineArrayDecision } from "./lineArrayRules";
+import type { AppBrandId } from "../brand";
+import {
+  getLineArrayDecision,
+  getProcessorAlternativeTier,
+  getProcessorInterfaceDemand,
+  getProcessorTier,
+  getProcessorTierName
+} from "./lineArrayRules";
 import { getSpeakerProductId } from "./speakerRules";
 
 const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
@@ -18,7 +26,11 @@ const speakerLabels: Record<Exclude<SpeakerProductOverride, "auto">, string> = {
   wall: "壁挂音柱"
 };
 
-export function getCustomerSolutionSelection(profile: ClassroomProfile, generatedPoints?: GeneratedPoint[]): CustomerSolutionSelection {
+export function getCustomerSolutionSelection(
+  profile: ClassroomProfile,
+  generatedPoints: GeneratedPoint[] = [],
+  brandId: AppBrandId = "yinyi"
+): CustomerSolutionSelection {
   const automaticMicrophoneProfile = withMicrophoneSolution(profile, "auto");
   const automaticLineArrayDecision = getLineArrayDecision(automaticMicrophoneProfile, generatedPoints);
   const recommendedMicrophone = automaticLineArrayDecision.recommended ? "lineArray" : "existingArray";
@@ -33,6 +45,11 @@ export function getCustomerSolutionSelection(profile: ClassroomProfile, generate
   const selectedSpeaker = requestedSpeaker === "auto" ? recommendedSpeaker : requestedSpeaker;
   const requiresSpecialReview = selectedSpeaker === "ceiling" && profile.engineeringConstraints.overheadSpeakerMounting === "unavailable";
   const drawingBlocked = requestedMicrophone === "lineArray" && !lineArraySupported;
+  const lineArrayCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
+  const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
+  const processor = brandId === "yinman" && lineArrayCount === 1
+    ? getYinmanSingleLineProcessorSelection(profile, speakerCount)
+    : undefined;
 
   return {
     microphone: {
@@ -71,8 +88,61 @@ export function getCustomerSolutionSelection(profile: ClassroomProfile, generate
       decisionFactors: [],
       requiresSpecialReview
     },
+    processor,
     drawingBlocked,
     blockingMessage: drawingBlocked ? "该方案无法完整覆盖，建议改选阵麦" : undefined
+  };
+}
+
+function getYinmanSingleLineProcessorSelection(
+  profile: ClassroomProfile,
+  speakerCount: number
+): NonNullable<CustomerSolutionSelection["processor"]> {
+  const recommended = "highPerformance" as const;
+  const selected = getProcessorTier(profile, "yinman", 1, speakerCount);
+  const alternative = getProcessorAlternativeTier(profile, speakerCount);
+  const interfaceDemand = getProcessorInterfaceDemand(profile, speakerCount);
+  const selectedLabel = getProcessorTierName(selected);
+  const alternativeLabel = getProcessorTierName(alternative);
+  const copy = getProcessorChoiceCopy(selected, interfaceDemand);
+
+  return {
+    recommended,
+    selected,
+    userSelected: (profile.engineeringConstraints.processorTier ?? "auto") !== "auto",
+    isNonRecommended: selected !== recommended,
+    selectedLabel,
+    recommendedLabel: getProcessorTierName(recommended),
+    advantages: copy.advantages,
+    cautions: copy.cautions,
+    recommendationReason: `单只线阵麦默认优先高性能处理器，处理效果更好；当前约需${interfaceDemand}路接口，${alternativeLabel}作为${alternative === "twoMic" ? "经济" : "多接口"}备选。`,
+    decisionFactors: [
+      "效果：高性能处理器成本较高，默认优先保障声音处理效果",
+      `接口：当前约需${interfaceDemand}路，${alternativeLabel}${alternative === "twoMic" ? "成本更低但接口较少" : "接口更充足"}`,
+      "成本：双麦处理器价格更低；六麦处理器适合接口需求较多的系统"
+    ],
+    alternative,
+    alternativeLabel,
+    interfaceDemand
+  };
+}
+
+function getProcessorChoiceCopy(selected: Exclude<ProcessorTier, "auto">, interfaceDemand: number) {
+  if (selected === "twoMic") {
+    return {
+      advantages: "整套成本更低，适合接口需求不超过2路的单麦方案。",
+      cautions: interfaceDemand > 2 ? `当前约需${interfaceDemand}路接口，双麦处理器接口不足，建议改选六麦处理器。` : "接口余量较少，增加外接设备时需要重新复核。"
+    };
+  }
+  if (selected === "sixMic") {
+    return {
+      advantages: "接口更充足，适合外接设备较多或需要较多输入输出的系统。",
+      cautions: "单麦且接口需求较少时成本高于双麦处理器。"
+    };
+  }
+  return {
+    advantages: "单只线阵麦优先保障声音处理效果，系统链路更匹配。",
+    cautions: "价格高于双麦处理器；接口需求较多时需改选六麦处理器。"
   };
 }
 

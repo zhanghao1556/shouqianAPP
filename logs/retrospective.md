@@ -1756,3 +1756,10 @@ PowerShell reminder:
 - Preview generation must use the live device rules and the same confirmed furniture formulas. A hand-drawn approximation with different table width, end clearance or seat count is not valid evidence.
 - Vite HMR can expose a helper-call/helper-definition mismatch during consecutive edits even when final source scope is correct. Confirm with a fresh tab before rewriting a correctly scoped helper.
 - Programmatic anchor downloads may not surface through the browser download-event listener. Treat a listener timeout separately from application export failure; inspect console state and the export implementation before changing working download code.
+
+### 2026-07-15 processor-tier image mapping guardrail
+
+- Customer-visible generic processor names can change while the internal product tier stays the same. Any topology image dispatch that matches visible label text must be updated in the same change and verified in the real topology, or it can silently fall back to the legacy generic processor image.
+- For the current minimal implementation, Yinman `高性能处理器` and `智能音频处理主机` both map to `yinman-audio-processor.png`; `双麦处理器` and `六麦处理器` map to their shared no-Logo processor assets. `利旧处理器` must remain on the generic legacy processor image.
+- A successful equipment-list assertion is insufficient for product-photo changes. Browser QA must inspect both the selected customer card image and the topology SVG image `href`, then switch one processor tier and restore automatic selection.
+- Preserve the untouched source photo under `output/yinkman/AJ350.png`; if a rendered image looks wrong, first distinguish source-asset loss from label-dispatch fallback before reprocessing the bitmap.

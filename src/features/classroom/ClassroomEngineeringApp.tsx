@@ -20,6 +20,7 @@ const oldDefaultProjectName = `${legacyBrandText}大客户普通教室音频方�
 const oldDefaultCustomerName = `${legacyBrandText}大客户`;
 const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCESSOR-DEPENDENT", "LINE-ARRAY-MIC", "AUDIO-PROCESSOR-HOST"]);
 const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
+const processorOverrideIds = new Set(["AUDIO-PROCESSOR-HOST"]);
 
 export function ClassroomEngineeringApp() {
   const brand = getAppBrand();
@@ -43,7 +44,7 @@ export function ClassroomEngineeringApp() {
     setProfile(sanitizeHiddenProfileState(normalizeProfile(nextProfile)));
     setQuantityOverrides((current) => {
       const next = { ...current };
-      const affectedIds = kind === "microphone" ? microphoneOverrideIds : speakerOverrideIds;
+      const affectedIds = kind === "microphone" ? microphoneOverrideIds : kind === "speaker" ? speakerOverrideIds : processorOverrideIds;
       Object.keys(next).forEach((productId) => {
         if (affectedIds.has(productId)) delete next[productId];
       });

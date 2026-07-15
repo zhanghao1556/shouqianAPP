@@ -3,6 +3,7 @@ import type {
   ClassroomProfile,
   CustomerSolutionSelection,
   MicrophoneSolution,
+  ProcessorTier,
   SpeakerProductOverride
 } from "../types";
 import { getAppBrand } from "../brand";
@@ -11,8 +12,11 @@ import yinmanArrayMicImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
 import ceilingSpeakerImage from "../../../assets/topology-ceiling-speaker.png";
 import wallSpeakerImage from "../../../assets/topology-wall-speaker.png";
+import highPerformanceProcessorImage from "../../../assets/yinman-audio-processor.png";
+import dualMicProcessorImage from "../../../assets/topology-dual-mic-processor.png";
+import sixMicProcessorImage from "../../../assets/topology-six-mic-processor.png";
 
-export type SolutionChangeKind = "microphone" | "speaker";
+export type SolutionChangeKind = "microphone" | "speaker" | "processor";
 
 interface CustomerSolutionSelectorProps {
   profile: ClassroomProfile;
@@ -21,7 +25,8 @@ interface CustomerSolutionSelectorProps {
 }
 
 export function CustomerSolutionSelector({ profile, selection, onChange }: CustomerSolutionSelectorProps) {
-  const arrayMicImage = getAppBrand().id === "yinman" ? yinmanArrayMicImage : topologyArrayMicImage;
+  const brand = getAppBrand();
+  const arrayMicImage = brand.id === "yinman" ? yinmanArrayMicImage : topologyArrayMicImage;
   const setConstraints = (patch: Partial<ClassroomProfile["engineeringConstraints"]>, kind: SolutionChangeKind) => {
     onChange({
       ...profile,
@@ -65,6 +70,23 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           onSelect={(value) => setConstraints({ speakerProductOverride: value as SpeakerProductOverride }, "speaker")}
           onRestore={() => setConstraints({ speakerProductOverride: "auto" }, "speaker")}
         />
+
+        {selection.processor ? (
+          <SolutionChoiceGroup
+            className="processorChoiceGroup"
+            title="处理器"
+            options={[
+              { value: "highPerformance", label: "高性能处理器", imageSrc: highPerformanceProcessorImage },
+              { value: "twoMic", label: "双麦处理器", imageSrc: dualMicProcessorImage, badge: selection.processor.alternative === "twoMic" ? "经济备选" : undefined },
+              { value: "sixMic", label: "六麦处理器", imageSrc: sixMicProcessorImage, badge: selection.processor.alternative === "sixMic" ? "接口备选" : undefined }
+            ]}
+            selected={selection.processor.selected}
+            recommended={selection.processor.recommended}
+            userSelected={selection.processor.userSelected}
+            onSelect={(value) => setConstraints({ processorTier: value as ProcessorTier }, "processor")}
+            onRestore={() => setConstraints({ processorTier: "auto" }, "processor")}
+          />
+        ) : null}
       </div>
 
       {selection.microphone.isNonRecommended ? (
@@ -83,6 +105,15 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           cautions={selection.speaker.cautions}
           recommendationReason={selection.speaker.recommendationReason}
           decisionFactors={selection.speaker.decisionFactors}
+        />
+      ) : null}
+      {selection.processor?.isNonRecommended ? (
+        <SelectionNote
+          title={`处理器：系统推荐 ${selection.processor.recommendedLabel}`}
+          advantages={selection.processor.advantages}
+          cautions={selection.processor.cautions}
+          recommendationReason={selection.processor.recommendationReason}
+          decisionFactors={selection.processor.decisionFactors}
         />
       ) : null}
 
@@ -104,6 +135,7 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
 }
 
 function SolutionChoiceGroup({
+  className,
   title,
   options,
   selected,
@@ -112,8 +144,9 @@ function SolutionChoiceGroup({
   onSelect,
   onRestore
 }: {
+  className?: string;
   title: string;
-  options: Array<{ value: string; label: string; imageSrc: string }>;
+  options: Array<{ value: string; label: string; imageSrc: string; badge?: string }>;
   selected: string;
   recommended: string;
   userSelected: boolean;
@@ -121,7 +154,7 @@ function SolutionChoiceGroup({
   onRestore: () => void;
 }) {
   return (
-    <div className="solutionChoiceGroup">
+    <div className={`solutionChoiceGroup${className ? ` ${className}` : ""}`}>
       <div className="solutionChoiceTitle">
         <strong>{title}</strong>
         {userSelected ? (
@@ -141,7 +174,7 @@ function SolutionChoiceGroup({
           >
             <img src={option.imageSrc} alt="" />
             <span>{option.label}</span>
-            {option.value === recommended ? <small>系统推荐</small> : null}
+            {option.value === recommended || option.badge ? <small>{option.value === recommended ? "系统推荐" : option.badge}</small> : null}
           </button>
         ))}
       </div>

@@ -130,13 +130,22 @@ export function hasMeetingLeaderPosition(profile: ClassroomProfile) {
   return profile.scenario === "meetingRoom" && /领导位|主位/.test(profile.engineeringConstraints.notes);
 }
 
-export function getProcessorTier(profile: ClassroomProfile, _brandId: AppBrandId, lineArrayCount: number, speakerCount: number): Exclude<ProcessorTier, "auto"> {
+export function getProcessorTier(profile: ClassroomProfile, brandId: AppBrandId, lineArrayCount: number, speakerCount: number): Exclude<ProcessorTier, "auto"> {
   if (lineArrayCount > 1) return "sixMic";
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
   if (requested !== "auto") return requested;
+  if (brandId === "yinman" && lineArrayCount === 1) return "highPerformance";
+  return getProcessorAlternativeTier(profile, speakerCount);
+}
+
+export function getProcessorAlternativeTier(profile: ClassroomProfile, speakerCount: number): "twoMic" | "sixMic" {
+  return getProcessorInterfaceDemand(profile, speakerCount) > 2 ? "sixMic" : "twoMic";
+}
+
+export function getProcessorInterfaceDemand(profile: ClassroomProfile, speakerCount: number) {
   const inputCount = splitDevices(profile.existingDevices.legacyWirelessMic).length;
   const outputCount = splitDevices(profile.existingDevices.recordingHost).length;
-  return Math.max(inputCount, outputCount, speakerCount) > 2 ? "sixMic" : "twoMic";
+  return Math.max(inputCount, outputCount, speakerCount);
 }
 
 export function getProcessorTierName(tier: Exclude<ProcessorTier, "auto">) {

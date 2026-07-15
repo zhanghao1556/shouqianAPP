@@ -58,7 +58,7 @@ import {
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
 import { validatePointPlan } from "./pointValidation";
-import { getLineArrayDecision, getProcessorCapacity, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
+import { getLineArrayDecision, getProcessorCapacity, getProcessorInterfaceDemand, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { getCustomerSolutionSelection } from "./solutionSelection";
 
 export { getAcousticAssessment } from "./reverberationRules";
@@ -162,7 +162,7 @@ export const generateEngineeringOutputs = (
         preserveSpeakerCount: hasManualSpeakerCount
       }, brandId)
     : [];
-  const solutionSelection = getCustomerSolutionSelection(profile, points);
+  const solutionSelection = getCustomerSolutionSelection(profile, points, brandId);
   const validationSpeakerProductId = selectedSpeakerProduct?.productId === "CEILING-SPEAKER" || selectedSpeakerProduct?.productId === "COLUMN-SPEAKER"
     ? selectedSpeakerProduct.productId
     : getSpeakerProductId(profile);
@@ -549,11 +549,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = getProcessorTier(profile, brandId, lineArray.count, speakerCount);
     const capacity = getProcessorCapacity(tier);
-    const demand = Math.max(
-      profile.existingDevices.legacyWirelessMic.split(/[、,，;；]/).filter(Boolean).length,
-      profile.existingDevices.recordingHost.split(/[、,，;；]/).filter(Boolean).length,
-      speakerCount
-    );
+    const demand = getProcessorInterfaceDemand(profile, speakerCount);
     if (tier !== "highPerformance" && demand > capacity) {
       risks.push(`处理器接口需求超过${capacity}路，需外扩或现场复勘。`);
     }
