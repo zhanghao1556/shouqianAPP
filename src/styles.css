@@ -1770,6 +1770,196 @@ textarea:focus {
   font-size: 11px;
 }
 
+.outputCalibrationPanel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.outputCalibrationHeader,
+.outputCalibrationRowHeader,
+.outputCalibrationActions,
+.outputCalibrationStats {
+  display: flex;
+  align-items: center;
+}
+
+.outputCalibrationHeader {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.outputCalibrationHeader > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.outputCalibrationHeader span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.outputCalibrationHeader h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 17px;
+}
+
+.outputCalibrationStats {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+}
+
+.outputCalibrationDisabled {
+  padding: 9px 12px;
+  border-left: 3px solid #d97706;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+}
+
+.outputCalibrationList {
+  border-top: 1px solid var(--color-line);
+}
+
+.outputCalibrationRow {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.outputCalibrationRow.pass {
+  box-shadow: inset 3px 0 0 #16a34a;
+}
+
+.outputCalibrationRow.fail {
+  box-shadow: inset 3px 0 0 #dc2626;
+}
+
+.outputCalibrationRowHeader {
+  display: grid;
+  grid-template-columns: 34px minmax(220px, 1fr) auto;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.outputCalibrationIndex {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.outputCalibrationTitle {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.outputCalibrationTitle strong {
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.outputCalibrationTitle span {
+  overflow-wrap: anywhere;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.outputCalibrationActions {
+  gap: 6px;
+}
+
+.outputCalibrationActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.outputCalibrationActions .pass.active {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #047857;
+}
+
+.outputCalibrationActions .fail.active {
+  border-color: #ef4444;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.outputCalibrationActions .reset {
+  width: 32px;
+  padding: 0;
+}
+
+.outputCalibrationActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.outputCalibrationDetails {
+  margin: 8px 0 0 44px;
+}
+
+.outputCalibrationDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--color-brand-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.outputCalibrationDetails ul,
+.outputCalibrationDetails p {
+  margin: 9px 0;
+  padding-left: 18px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.outputCalibrationDetails textarea {
+  width: 100%;
+  min-height: 62px;
+  resize: vertical;
+}
+
+@media (max-width: 760px) {
+  .outputCalibrationHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .outputCalibrationStats {
+    justify-content: flex-start;
+  }
+
+  .outputCalibrationRowHeader {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .outputCalibrationActions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .outputCalibrationDetails {
+    margin-left: 40px;
+  }
+}
+
 .brandSegmentedControl {
   display: grid;
   grid-template-columns: repeat(2, 72px);
@@ -2870,6 +3060,12 @@ th {
   border-radius: 8px;
   padding: 18px;
   color: var(--color-muted);
+}
+
+@media (max-width: 1180px) {
+  .calibrationWorkbenchGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 960px) {

@@ -4,6 +4,12 @@ import { mistakeCaseSeeds } from "./data/mistakeCases";
 import { createRuleChangeApproval, ruleChangePolicy } from "./data/ruleGovernance";
 import { DrawingCanvas } from "./components/DrawingCanvas";
 import { PointValidationSummary } from "./components/PointValidationSummary";
+import {
+  getOutputCalibrationCaseStatus,
+  OutputCalibrationPanel,
+  type OutputCalibrationKey,
+  type OutputCalibrationMark
+} from "./components/OutputCalibrationPanel";
 import { TestConsole, type CalibrationCase, type CalibrationStatus } from "./components/TestConsole";
 import { generateEngineeringOutputs } from "./lib/engineeringRules";
 import { createRandomProfile } from "./lib/randomProfile";
@@ -50,6 +56,7 @@ export function CalibrationWorkbench() {
           createdAt: new Date().toISOString(),
           status: "untested" as const,
           note: "",
+          outputChecks: {},
           ruleChangeApproval: createRuleChangeApproval()
         };
       })
@@ -70,6 +77,7 @@ export function CalibrationWorkbench() {
       createdAt,
       status: "untested" as const,
       note: seed.note,
+      outputChecks: {},
       ruleChangeApproval: createRuleChangeApproval()
     }));
     updateCalibrationCases(() => mistakeCases);
@@ -211,6 +219,23 @@ export function CalibrationWorkbench() {
 
   const activeCase = calibrationCases.find((item) => item.id === activeCaseId);
 
+  const updateOutputCheck = (key: OutputCalibrationKey, patch: Partial<OutputCalibrationMark>) => {
+    if (!activeCaseId) return;
+    updateCalibrationCases((current) => current.map((item) => {
+      if (item.id !== activeCaseId) return item;
+      const currentMark = item.outputChecks?.[key] ?? { status: "untested" as const, note: "" };
+      const outputChecks = {
+        ...(item.outputChecks ?? {}),
+        [key]: { ...currentMark, ...patch }
+      };
+      return {
+        ...item,
+        outputChecks,
+        status: patch.status ? getOutputCalibrationCaseStatus(outputChecks) : item.status
+      };
+    }));
+  };
+
   const markCase = (id: string, status: CalibrationStatus) => {
     updateCalibrationCases((current) =>
       current.map((item) =>
@@ -307,6 +332,13 @@ export function CalibrationWorkbench() {
             <span>{outputs.audioPlan.mode}</span>
           </div>
           <MicrophoneRecommendationCalibration profile={profile} decision={microphoneDecision} />
+          <OutputCalibrationPanel
+            profile={profile}
+            outputs={outputs}
+            checks={activeCase?.outputChecks}
+            enabled={Boolean(activeCaseId)}
+            onChange={updateOutputCheck}
+          />
           <PointValidationSummary result={outputs.pointValidation} mode="full" />
           <CalibrationPointMap
             profile={profile}
@@ -380,12 +412,17 @@ function loadCalibrationCases(): CalibrationCase[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CalibrationCase[] | { cases?: CalibrationCase[] };
     const items = Array.isArray(parsed) ? parsed : Array.isArray(parsed.cases) ? parsed.cases : [];
-    return items.map((item) => ({
-          ...item,
-          profile: normalizeProfile(item.profile),
-          manualSpeakerPoints: item.manualSpeakerPoints ?? item.manualSpeakerVariants?.ceiling ?? item.manualSpeakerVariants?.wall ?? [],
-          ruleChangeApproval: item.ruleChangeApproval ?? createRuleChangeApproval()
-        }));
+    return items.map((item) => {
+      const outputChecks = item.outputChecks ?? {};
+      return {
+        ...item,
+        profile: normalizeProfile(item.profile),
+        manualSpeakerPoints: item.manualSpeakerPoints ?? item.manualSpeakerVariants?.ceiling ?? item.manualSpeakerVariants?.wall ?? [],
+        outputChecks,
+        status: item.status === "fail" ? "fail" : getOutputCalibrationCaseStatus(outputChecks),
+        ruleChangeApproval: item.ruleChangeApproval ?? createRuleChangeApproval()
+      };
+    });
   } catch {
     return [];
   }

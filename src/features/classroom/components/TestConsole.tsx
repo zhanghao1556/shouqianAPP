@@ -17,6 +17,7 @@ import { generateEngineeringPoints, getDefaultSpeakerCount, getEffectiveAmplific
 import { isAuditoriumScenario } from "../lib/scenarioRules";
 import { getSpeakerSelectionReason, getSpeakerSelectionResult } from "../lib/speakerRules";
 import { ruleChangePolicy } from "../data/ruleGovernance";
+import { getOutputCalibrationProgress, type OutputCalibrationChecks } from "./OutputCalibrationPanel";
 import type { ClassroomProfile, GeneratedPoint, LegacySpeakerPoint, Point } from "../types";
 import type { AppBrandId } from "../brand";
 
@@ -34,6 +35,7 @@ export interface CalibrationCase {
     ceiling?: LegacySpeakerPoint[];
     wall?: LegacySpeakerPoint[];
   };
+  outputChecks?: OutputCalibrationChecks;
   ruleChangeApproval?: {
     required: boolean;
     policyVersion: string;
@@ -125,6 +127,7 @@ export function TestConsole({
           cases.map((item, index) => {
             const audit = getCaseAudit(item.profile, brandId);
             const ruleTrace = getRuleTrace(item.profile, speakerCalibrationMode, brandId);
+            const outputProgress = getOutputCalibrationProgress(item.outputChecks);
             return (
               <article className={activeCaseId === item.id ? "testRow active" : "testRow"} key={item.id}>
                 <strong>{index + 1}</strong>
@@ -145,12 +148,19 @@ export function TestConsole({
                   <span className="ruleTraceLine">人工音箱：{item.manualSpeakerPoints?.length ?? 0} 个</span>
                   <span className="ruleTraceLine">阵麦规则：{ruleTrace.arrayMic}</span>
                   <span className="ruleTraceLine">音箱规则：{ruleTrace.speaker}</span>
+                  <span className="ruleTraceLine">输出校准：通过 {outputProgress.passed}/{outputProgress.total}{outputProgress.failed ? `；不通过 ${outputProgress.failed}` : ""}</span>
                   <span className={audit.verdict === "待判断" ? "micAuditLine uncertain" : audit.verdict === "可疑" ? "micAuditLine fail" : "micAuditLine pass"}>
                     自检：{audit.verdict}；{audit.reason}
                   </span>
                 </button>
                 <div className="markButtons">
-                  <button className={item.status === "pass" ? "mark pass active" : "mark pass"} type="button" onClick={() => onMarkCase(item.id, "pass")}>
+                  <button
+                    className={item.status === "pass" ? "mark pass active" : "mark pass"}
+                    type="button"
+                    disabled={outputProgress.passed !== outputProgress.total}
+                    title={outputProgress.passed === outputProgress.total ? "全部输出项已通过" : "全部输出项通过后才能标记整案通过"}
+                    onClick={() => onMarkCase(item.id, "pass")}
+                  >
                     通过
                   </button>
                   <button className={item.status === "fail" ? "mark fail active" : "mark fail"} type="button" onClick={() => onMarkCase(item.id, "fail")}>
