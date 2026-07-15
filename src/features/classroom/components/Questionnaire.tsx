@@ -21,6 +21,7 @@ import type {
   FurnishingDensity,
   GlassCoverage,
   Need,
+  OverheadSpeakerMounting,
   PodiumPosition,
   Scenario,
   SoftTreatment,
@@ -309,6 +310,18 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
                 { value: "unknown", label: "待确认" }
               ]}
               onChange={(value) => setConstraints({ ceiling: value as ClassroomProfile["engineeringConstraints"]["ceiling"] })}
+            />
+          </label>
+          <label>
+            顶面音箱安装条件
+            <CustomSelect
+              value={profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"}
+              options={[
+                { value: "available", label: "可安装" },
+                { value: "unavailable", label: "不可安装" },
+                { value: "unknown", label: "待确认" }
+              ]}
+              onChange={(value) => setConstraints({ overheadSpeakerMounting: value as OverheadSpeakerMounting })}
             />
           </label>
           {!isMeetingScenario(profile.scenario) && !isAuditoriumScenario(profile.scenario) && (

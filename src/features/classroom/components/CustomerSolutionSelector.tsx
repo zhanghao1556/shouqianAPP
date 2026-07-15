@@ -1,15 +1,16 @@
-import { CircleDot, Mic, Radio, RotateCcw, TriangleAlert, Volume2 } from "lucide-react";
+import { RotateCcw, TriangleAlert } from "lucide-react";
 import type {
   ClassroomProfile,
   CustomerSolutionSelection,
-  LineArrayInstallation,
-  LineArrayMode,
   MicrophoneSolution,
-  OverheadSpeakerMounting,
-  ProcessorTier,
   SpeakerProductOverride
 } from "../types";
-import { CustomSelect } from "./Questionnaire";
+import { getAppBrand } from "../brand";
+import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
+import yinmanArrayMicImage from "../../../assets/yinman-array-mic-topology.png";
+import lineArrayMicImage from "../../../assets/line-array-mic.png";
+import ceilingSpeakerImage from "../../../assets/topology-ceiling-speaker.png";
+import wallSpeakerImage from "../../../assets/topology-wall-speaker.png";
 
 export type SolutionChangeKind = "microphone" | "speaker";
 
@@ -20,6 +21,7 @@ interface CustomerSolutionSelectorProps {
 }
 
 export function CustomerSolutionSelector({ profile, selection, onChange }: CustomerSolutionSelectorProps) {
+  const arrayMicImage = getAppBrand().id === "yinman" ? yinmanArrayMicImage : topologyArrayMicImage;
   const setConstraints = (patch: Partial<ClassroomProfile["engineeringConstraints"]>, kind: SolutionChangeKind) => {
     onChange({
       ...profile,
@@ -41,8 +43,8 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
         <SolutionChoiceGroup
           title="麦克风"
           options={[
-            { value: "existingArray", label: "智能语音阵列麦克风", icon: <Mic size={18} /> },
-            { value: "lineArray", label: "智能线阵麦克风", icon: <Radio size={18} /> }
+            { value: "existingArray", label: "智能语音阵列麦克风", imageSrc: arrayMicImage },
+            { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage }
           ]}
           selected={selection.microphone.selected}
           recommended={selection.microphone.recommended}
@@ -54,8 +56,8 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
         <SolutionChoiceGroup
           title="音箱"
           options={[
-            { value: "wall", label: "壁挂音柱", icon: <Volume2 size={18} /> },
-            { value: "ceiling", label: "吸顶音箱", icon: <CircleDot size={18} /> }
+            { value: "wall", label: "壁挂音柱", imageSrc: wallSpeakerImage },
+            { value: "ceiling", label: "吸顶音箱", imageSrc: ceilingSpeakerImage }
           ]}
           selected={selection.speaker.selected}
           recommended={selection.speaker.recommended}
@@ -64,71 +66,6 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           onRestore={() => setConstraints({ speakerProductOverride: "auto" }, "speaker")}
         />
       </div>
-
-      <div className="solutionConditionGrid">
-        <label>
-          顶面音箱安装条件
-          <CustomSelect
-            value={profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"}
-            options={[
-              { value: "available", label: "可安装" },
-              { value: "unavailable", label: "不可安装" },
-              { value: "unknown", label: "待确认" }
-            ]}
-            onChange={(value) => setConstraints({ overheadSpeakerMounting: value as OverheadSpeakerMounting }, "speaker")}
-          />
-        </label>
-      </div>
-
-      {selection.microphone.selected === "lineArray" ? (
-        <div className="lineArrayOptions" aria-label="线阵麦配置">
-          <label>
-            现场讲台
-            <CustomSelect
-              value={profile.engineeringConstraints.hasPodium === false ? "no" : "yes"}
-              options={[{ value: "yes", label: "有讲台" }, { value: "no", label: "无讲台" }]}
-              onChange={(value) => setConstraints({ hasPodium: value === "yes" }, "microphone")}
-            />
-          </label>
-          <label>
-            工作模式
-            <CustomSelect
-              value={profile.engineeringConstraints.lineArrayMode ?? "auto"}
-              options={[
-                { value: "auto", label: "跟随扩声范围" },
-                { value: "front", label: "正面180度扩声" },
-                { value: "full", label: "全场扩声" }
-              ]}
-              onChange={(value) => setConstraints({ lineArrayMode: value as LineArrayMode }, "microphone")}
-            />
-          </label>
-          <label>
-            安装方式
-            <CustomSelect
-              value={profile.engineeringConstraints.lineArrayInstallation ?? "auto"}
-              options={[
-                { value: "auto", label: "按讲台条件推荐" },
-                { value: "podium", label: "讲台摆放" },
-                { value: "hanging", label: "吊挂安装" }
-              ]}
-              onChange={(value) => setConstraints({ lineArrayInstallation: value as LineArrayInstallation }, "microphone")}
-            />
-          </label>
-          <label>
-            处理器档位
-            <CustomSelect
-              value={profile.engineeringConstraints.processorTier ?? "auto"}
-              options={[
-                { value: "auto", label: "自动推荐" },
-                { value: "twoMic", label: "两麦处理器" },
-                { value: "sixMic", label: "六麦处理器" },
-                { value: "highPerformance", label: "高性能处理器" }
-              ]}
-              onChange={(value) => setConstraints({ processorTier: value as ProcessorTier }, "microphone")}
-            />
-          </label>
-        </div>
-      ) : null}
 
       {selection.microphone.isNonRecommended ? (
         <SelectionNote title={`麦克风：系统推荐 ${selection.microphone.recommendedLabel}`} advantages={selection.microphone.advantages} cautions={selection.microphone.cautions} />
@@ -164,7 +101,7 @@ function SolutionChoiceGroup({
   onRestore
 }: {
   title: string;
-  options: Array<{ value: string; label: string; icon: React.ReactNode }>;
+  options: Array<{ value: string; label: string; imageSrc: string }>;
   selected: string;
   recommended: string;
   userSelected: boolean;
@@ -190,7 +127,7 @@ function SolutionChoiceGroup({
             aria-pressed={option.value === selected}
             onClick={() => onSelect(option.value)}
           >
-            {option.icon}
+            <img src={option.imageSrc} alt="" />
             <span>{option.label}</span>
             {option.value === recommended ? <small>系统推荐</small> : null}
           </button>
