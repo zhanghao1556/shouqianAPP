@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getProcessorCapacity, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   getBrandExternalAmplifierCount,
@@ -151,6 +151,9 @@ assert.equal(
   yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name,
   yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name
 );
+assert.equal(yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.equal(getProcessorCapacity("twoMic"), 2);
+assert.equal(getProcessorCapacity("sixMic"), 6);
 const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14, teachingDepth: 5 }), {}, "yinman");
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);

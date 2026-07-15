@@ -1,11 +1,96 @@
 ﻿# Execution Log
 
+## 2026-07-15 “待确认”改“无讲台”方案待确认
+
+- 用户要求把讲台位置选项“待确认”改为“无讲台”。当前实际状态证明只改文案会产生矛盾：页面选中“待确认”时点位图仍显示“讲台待确认”，线阵麦仍按讲台摆放，距前墙 `1.9m`。
+- 拟按真实语义联动：选择“无讲台”时写入 `hasPodium=false`，点位图不画讲台，单只线阵麦改走现有吊挂规则；重新选择前墙居中/左侧/右侧时恢复 `hasPodium=true`。
+- 当前 `9.9m x 10.4m` 案例的拟调整预览为 `outputs/rule-previews/260715-no-podium-line-array-preview.svg`：不画讲台，线阵麦约距前墙 `1.2m` 吊挂，覆盖继续裁在房间内；壁挂数量、点位及 `52° / 128° / 121° / 59°` 不变。
+- 正式规则尚未修改，等待用户查看预览后确认。
+- 5174 应用控制台无错误或警告。独立 SVG 预览再次出现已记录的 Browser `animation` 检查异常，图片仍正确渲染；继续归类为非阻塞工具问题，不改业务代码。
+
+## 2026-07-15 客户选型四按钮动画
+
+- 用户指出客户选型区的智能语音阵列麦克风、智能线阵麦克风、壁挂音柱、吸顶音箱四个按钮没有动画反馈。
+- 仅在 `.solutionSegmentedControl` 范围内新增统一动效：悬停抬升与产品图放大、按下回落缩放、选中时 `0.24s` 短促弹入、键盘焦点描边，并为 `prefers-reduced-motion` 关闭动画；未修改选型状态、设备规则或移动端布局。
+- `npm.cmd run build` 与 `git diff --check` 通过。
+- 5174 定点交互确认切换选项后实际运行 `solutionChoiceSelected 0.24s`，随后恢复系统推荐，原壁挂选中状态保持，控制台无错误或警告。
+- in-app Browser 的指针移动接口未触发 CSS `:hover`，因此没有把该接口结果当作动画失败；浏览器计算样式确认按钮 `0.18s`、图片 `0.22s` 过渡已经加载。
+
+## 2026-07-15 线阵麦 / 阵麦推荐规则校准实施
+
+- 用户确认：自动推荐最多只使用一只线阵麦；需要两只线阵麦时自动推荐阵麦。客户强制选择两只线阵仍可生成图纸并标记“非推荐，建议阵麦”；超过两只线阵的已确认支持上限才阻断图纸。
+- 老师活动区统一为：居中板书区宽度 `min(房间宽度 / 2, 6m)`；偏侧讲台从讲台侧墙延伸到居中板书区远端。单线阵按 `10m` 宽度，强选双线阵按 `15m` 上限校核。
+- 普通教室全场扩声仅在房间长、宽均 `<=8m` 且无互动 / 全场拾音时推荐线阵，麦克风仍服务老师活动区，不放房间中心。阶梯 / 合班教室上课区纵深边界为 `5m`。
+- 会议室全场桌面拾音按最远发言点 `<=5m`；备注含“领导位 / 主位”且仅做该位置扩声时可按桌面单线阵推荐。报告厅录播默认舞台拾音；视频会议、全场拾音或观众发言推荐阵麦。
+- 讲台电脑优先讲台摆放；偏侧讲台无法在 `5m` 内同时覆盖讲台与板书区时改为责任区中心吊挂。无讲台电脑时按居中板书 / 完整老师活动区推断吊挂位置。
+- 5175 新增麦克风推荐校准摘要，显示场景、需求、房间、责任区、设备推断、摆位、结论和判断维度；继续复用现有案例的通过 / 不通过和备注记录。
+- 自动检查已通过：严格 TypeScript、点位规则、混响规则和生产构建。5175 轻量浏览器核对显示新校准区且无控制台错误。
+- 浏览器核对发现当前线阵麦吊挂点位继承了阵麦“嵌入吊顶”标注。该错误直接影响本轮线阵摆位校准，按规则先记录后立即改为线阵麦专用“吊挂安装”文案，不改变点位或数量。
+- 修正后重新加载 5175：校准摘要正常，SVG 已显示“吊挂安装”，未再出现线阵麦“嵌入吊顶”，页面无横向溢出且控制台无警告 / 错误。
+
+## 2026-07-15 5175 本轮校准范围
+
+- 用户明确本轮先只校准阵麦、壁挂音柱和吸顶音箱。
+- 暂不校准接线、拓扑、处理器、线材、报告绘图或其他设备。
+- 若校准结论涉及上述三类设备的选型、数量或点位规则，继续遵守规则确认边界：先说明当前触发规则、问题、拟修改规则及影响场景，并生成拟调整图纸预览；用户明确确认后才修改正式规则。
+
+## 2026-07-15 线阵麦讲台下沿与覆盖裁剪待确认
+
+- 当前 5174 案例为普通教室、讲台区域扩声、`9.9m x 10.4m x 3m`、1 只线阵麦和 4 只壁挂音柱。
+- 当前单只前向线阵麦因未选中讲台电脑而走吊挂分支，纵坐标为距前墙 `1.2m`；绘图中的讲台上沿同为 `1.2m`，因此线阵麦锚点落在讲台上沿。
+- 当前前向 180 度覆盖路径没有房间裁剪，半圆会越过前墙和两侧墙显示到房间外。
+- 按用户意见生成拟调整预览 `outputs/rule-previews/260715-line-array-podium-edge-clipped-preview.svg`：线阵麦移到讲台靠学生侧下沿（当前案例约距前墙 `1.9m`），覆盖层只保留房间矩形内部分；4 只壁挂点位和 `52° / 128° / 121° / 59°` 保持不变。
+- 预览尚未写入正式规则。待用户确认后，拟将点位规则限定为“单只、前向、现场有讲台”的线阵麦优先讲台下沿；绘图裁剪应用于所有线阵麦覆盖层，不改变线阵麦硬覆盖半径或数量判断。
+- 当前 5174 应用页控制台无错误或警告。独立 SVG 预览页在 in-app Browser 中记录一条 `Cannot use 'in' operator to search for 'animation' in undefined`；页面仍正确渲染，判断为独立 SVG / 浏览器工具链非阻塞问题，当前只记录，不改业务代码。
+
+### Confirmed implementation
+
+- 用户查看拟调整预览后明确确认写入正式规则。
+- 新增共享讲台几何：前墙净距 `1.2m`、讲台深度 `0.7m`；普通/阶梯等实际绘制讲台的场景中，单只前向线阵麦在讲台可覆盖责任区时自动放到靠学生侧下沿，即当前案例距前墙 `1.9m`。
+- 会议桌模式、多只线阵麦、全向模式、责任区超出讲台 5m 覆盖能力的侧讲台案例继续沿用原桌面/吊挂结果；报告厅舞台和合班教室上课区不套用普通讲台自动摆放。
+- 点位图为每张 SVG 创建唯一房间裁剪区域，只裁剪线阵麦覆盖层；设备图标、标签、5m 工程覆盖半径、数量和壁挂/吸顶规则均未改变。
+- `npm.cmd run test:point-system`、严格 TypeScript 检查、`npm.cmd run build` 和 `git diff --check` 通过。
+- 5174 刷新后当前案例显示 `前墙-阵麦 1.9m`、`讲台摆放 约1.1m`；线阵覆盖路径引用的裁剪矩形与房间矩形坐标完全一致，控制台无错误或警告。
+- 为避免提交同文件中的其他任务改动，已用独立索引补丁只暂存本轮 `DrawingCanvas.tsx` hunk。随后构造的日志索引补丁因 hunk 行数声明不准确被 Git 判为 `corrupt patch`；日志未进入索引，既有代码索引未受影响，两份日志继续保留在工作区等待后续统一存档。
+
 ## 2026-07-15 向明中学现场校准待续
 
 - 昨日已从 `向明中学-内部测试报告.pdf` 恢复完整参数：普通教室、全场扩声、`18m x 8.4m x 2.74m`、无吊顶、硬质顶面、木地板、普通粉刷墙、窗帘、正常桌椅、少量玻璃、拍手无明显回声、无实测 RT60。
 - 未推荐吸顶的直接原因是当前共用规则“无吊顶且房间宽度不超过 `12m` 时优先壁挂”；当前宽 `8.4m`，因此先于长房间覆盖判断返回壁挂音柱。
 - 报告估算 RT60 `1.22s`，普通教室目标 `1.0s`、大风险线 `1.2s`，仅高出 `0.02s` 就判为“大”；用户现场人工期望已修正确认为“混响中”。
 - 昨日尝试补写该记录时因日志 UTF-8 BOM 首行匹配失败而未落盘；今天恢复后补写。当前只完成原因分析，尚未生成规则调整预览，也未获准修改音箱选型或混响分类。
+- 生成拟调整预览时发现浏览器虽保留 5174 标签，但 Vite 服务已退出，Edge 自动检查返回 `ERR_CONNECTION_REFUSED`；按“页面打不开时”流程恢复服务后继续，不将其误判为应用回归。
+- 查找混响联动调用点时再次使用了带引号的组合 `rg` 正则，PowerShell 包装层将其截断为未闭合分组；这是重复工具错误。后续停止使用此类内联组合表达式，改为多个 `rg -F` 固定字符串命令。
+- 首次拟调整预览在临时导入参数中设置 `speakerProductOverride=ceiling`，但页面仍生成 3 只壁挂音箱；预览自检未通过，该图不得交给用户确认。需先查明导入 / 归一化链路为何重置内部覆盖值，再重新生成真实吸顶预览。
+- 独立模拟器正确生成 13 只吸顶音箱和 3 只阵麦后，首次图例仍写固定“阵麦高度 2.9m”，而引擎因房高 `2.74m` 将实际安装高度限制为 `2.6m`；该预览继续作废，图例改为读取实际点位高度并注明房高限制。
+
+## 2026-07-15 客户强制选型功能确认
+
+- 在“方案输出”和“设备清单”之间新增客户选型区：麦克风可选智能语音阵列麦克风 / 智能线阵麦克风，音箱可选壁挂音柱 / 吸顶音箱。
+- 默认高亮系统推荐，客户可强制切换；客户选择优先于推荐，并同步设备清单、点位图、拓扑图、刷新草稿、报告回导和 PDF 首页。
+- 非推荐选择显示简短优势与注意事项；PDF 首页记录客户选型及是否偏离推荐。
+- 线阵麦超过硬覆盖能力时保留客户选择，但不生成误导性点位和拓扑，显示“该方案无法完整覆盖，建议改选阵麦”。
+- “无吊顶”与“顶面音箱不可安装”拆分。顶面不可安装但客户仍强选吸顶时继续生成吸顶方案，并以硬风险标记“需专项复核”。
+- 音翼与音曼均提供线阵麦和处理器，使用同一款无 Logo 资产；客户可见内容继续隐藏具体型号。
+- 售前采集区删除重复的麦克风方案选择；线阵麦模式、安装方式、讲台条件和处理器档位移入客户选型区并仅在线阵麦选中时展开。
+
+### 客户选型功能实施完成
+
+- 新增统一客户选型摘要，系统推荐与客户最终选择分别计算，页面、设备清单、点位、拓扑、统一校核和 PDF 共用同一结果。
+- 线阵麦硬覆盖不满足时保留客户选择，设备数量不伪造，点位图与拓扑图停止生成，并显示“该方案无法完整覆盖，建议改选阵麦”。
+- 新增独立“顶面音箱安装条件”：不可安装时自动推荐壁挂；客户强制吸顶时仍生成吸顶点位和拓扑，并写入硬风险“需专项复核”。
+- 音翼与音曼线阵麦使用同一张已去除中心标记的透明产品图；线阵麦处理器自动档位不再按品牌分叉。
+- 客户选型、顶面安装条件和线阵麦高级参数保留在刷新草稿及报告导入 / 导出 profile 中；切换麦克风或音箱只清除对应类别的手动数量。
+- PDF 首页新增麦克风选型、音箱选型、推荐差异、简短优劣提示和顶面安装条件。
+- 自动检查通过：严格 TypeScript、点位规则、混响规则和生产构建。浏览器已抽查线阵麦硬阻断与强制吸顶继续出图；按用户最新要求停止继续代做逐项页面验收，后续由用户直接体验反馈。
+- 未打包、未发布、未推送 GitHub。
+
+### 实现与验收节奏调整
+
+- 用户反馈逐项浏览器代验耗时过长。以后方案已确认后先完成可运行实现，类型检查、目标规则测试和生产构建通过后交给用户做业务 / 视觉验收。
+- 普通开发不再默认做多轮页面逐项点击；仅在用户明确要求代验、问题必须浏览器复现或正式发版时执行完整浏览器验证。
+- 最终读取 Git ahead 数量时，未加引号的 `@{upstream}..HEAD` 被 PowerShell 解析成哈希表并报语法错；命令未修改文件，改为单引号包裹 revision range 后成功。
+- 客户验收后要求选型按钮改为产品实物图，并删除选型区内重复的顶面安装、讲台、工作模式、安装方式和处理器档位控件。实物图直接复用现有压缩资产；顶面音箱安装条件移回售前采集，其他参数继续由既有采集信息自动判断。
 
 ## 2026-07-14 PDF 拓扑图左下角供电备注缺失
 
@@ -6081,3 +6166,46 @@ Boundary:
 - The first daily-checkpoint invocation tried to start a nested `C:\Program Files\PowerShell\7\pwsh.exe`, but this machine currently exposes PowerShell 7 through a different installation path. The nested process did not start and created no commit; the checkpoint is rerun directly in the already active PowerShell 7 session.
 - The first dual-brand release attempt generated `260714-1` and passed build plus static brand/freshness checks, but the final behavior-parity verifier timed out. Adding the microphone-solution select changed the first `.customSelectButton`; the verifier still opened the first select and then waited for the ceiling option. The script now targets the `吊顶情况` button by accessible name. `260714-1` is a failed intermediate package and will be removed after the rerun passes.
 - User stopped release work because SA110 calibration is not finished. No rerun or release checkpoint was created. Both failed `260714-1` directories and zip files were removed immediately; existing older releases remain unchanged. Continue from the live 5174/5177/5180 calibration pages and only restart release after a new explicit user request.
+
+## 2026-07-15 repeated-work automation audit
+
+- Reviewed the available 2026-06-24 through 2026-07-15 project history, recent Codex task summaries and Git history. Only three untoolized fixed workflows met all four gates: repeated at least twice, fixed procedure, measurable efficiency/reliability gain and no existing executable standard.
+- Added `scripts/new-daily-snapshot.ps1`: collects current non-ignored repository files, creates a .NET ZipArchive, verifies exact source/archive entry parity and required files, then retains only the newest verified snapshot. The live validation archived 170 files and kept one valid snapshot.
+- Added `scripts/smoke-test-local-entries.mjs` plus `test:local-entries` / `test:local-entries:all`: each entry uses a fresh browser context and checks HTTP/rendering, desktop/mobile scope, brand scope, horizontal overflow, console/page errors and failed requests. Fresh 5174/5177/5180 checks passed with Edge fallback.
+- Created the personal `powershell-utf8-guard` skill with a reusable PowerShell 7 resolver. The resolver returned the Store PowerShell 7 executable and the official skill validator passed after loading its missing PyYAML dependency in a temporary directory.
+- One first validation-server launch nested `pwsh -Command` inside the current shell; outer interpolation removed PowerShell variables and caused a parser error. No server or source state changed. The rerun used PowerShell 7 as the direct execution shell and succeeded, confirming the new skill's single-shell rule.
+- No selection, quantity, point, microphone, speaker, wiring, topology or release rule changed.
+
+## 2026-07-15 solution-output calibration workbench
+
+- Added 12 independent output-calibration rows to port 5175. Each row stores `untested` / `pass` / `fail` and a note in the existing calibration case record, including backward-compatible normalization for older local records.
+- Overall case status now follows the output rows: any failed row marks the case failed, and the case can only pass after all 12 rows pass. The case list also shows output-calibration progress.
+- Reverberation remains exclusively on port 5176. Browser QA found one residual microphone caution containing `混响` in the new 5175 detail panel; this directly violated the current task boundary, so it was logged and fixed immediately by filtering every final detail list through one shared non-reverberation gate.
+- Final migration review found that a legacy case marked pass could retain that status without any of the new 12 checks, and editing only a per-output note could unnecessarily recalculate the overall status. Legacy pass now migrates to untested until all 12 checks pass, legacy fail remains available for review, and note-only edits preserve the current overall status.
+- Final browser reload at a 1073px content viewport exposed an existing 5175 grid minimum of `360px + 760px + 16px`, producing a 1156px document width. Because this directly obstructed the new calibration surface, a 5175-only `1180px` breakpoint now stacks the console and detail panel; other workbench and brand layouts are unchanged.
+- No microphone recommendation, speaker recommendation, device quantity, point placement, wiring, topology, report generation or reverberation-classification rule changed.
+
+## 2026-07-15 AJ200 / AJ600 product image mapping
+
+- User supplied and identified the AJ200 and AJ600 product photos. Added compressed shared PNG assets and mapped both brands' topology `双麦处理器` to AJ200 and `六麦处理器` to AJ600; the high-performance processor continues using the existing AJ350 asset.
+- User corrected the terminology and capability口径: AJ200 is the `双麦处理器` and AJ600 is the `六麦处理器`. The final customer-visible labels remain model-free; internal capacity values are 2 and 6 respectively.
+- A PowerShell metadata command used a parenthesized `foreach` statement followed by a pipeline and failed with `An empty pipe element is not allowed`. No file changed. Image metadata was reread with Node; future compound collection formatting stays in Node or a standalone script.
+- Kept customer-facing processor labels generic. No processor tier selection, microphone count, microphone point, speaker rule, connection or cable rule changed.
+- The processor photos are confirmed shared, no-Logo assets and therefore use brand-neutral filenames; no cross-brand replacement is required.
+- Focused 5180 browser QA confirmed AJ200 for the one-line-microphone state and AJ600 for the manually increased two-microphone state, with no console warnings or errors.
+- Existing non-blocking issue recorded only: after manually increasing the selected line-array microphone quantity from 1 to 2, the second topology microphone is rendered as generic `阵麦 2` with the array-microphone asset instead of a second line-array microphone. This was not fixed during the product-image calibration because it changes microphone/topology behavior and requires separate rule confirmation and preview.
+
+### Processor background cutout correction
+
+- User requested removing the visible image border from both the dual-microphone and six-microphone processor topology photos.
+- The first cutout incorrectly treated the processor's white rounded physical shell as removable background and retained only the central black ring / disc. User immediately corrected that the shell must remain.
+- Restored both assets from the original product files under `output/yinkman`, then regenerated them with the correct boundary:
+  - AJ200 source: remove only the uniform gray canvas outside the physical shell;
+  - AJ600 source: preserve its existing transparency and crop only the transparent outside canvas;
+  - both outputs keep the complete white rounded shell, edge profile, black face and screen / center details.
+- A standalone PowerShell 7 helper initially failed before image output because `Add-Type` did not automatically reference `System.Drawing.Common`, `System.Private.Windows.GdiPlus` and `System.Private.Windows.Core`. After explicit runtime assembly references were added, regeneration succeeded. The failed compile attempts did not write either target image.
+- Browser QA used fresh in-app-browser tabs:
+  - 5174 rendered `双麦处理器` from `topology-dual-mic-processor.png`, with the complete shell visible and outside canvas transparent;
+  - 5180 rendered `六麦处理器` from `topology-six-mic-processor.png`, with the complete shell and screen visible and outside canvas transparent;
+  - both fresh tabs had no console warning / error or framework overlay; 5174 had no horizontal overflow.
+- Scope remained image-only. No microphone recommendation, quantity, point, processor-capacity, topology-routing or speaker rule changed.

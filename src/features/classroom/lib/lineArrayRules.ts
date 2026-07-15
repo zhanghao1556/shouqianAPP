@@ -118,11 +118,11 @@ export function getProcessorTier(profile: ClassroomProfile, _brandId: AppBrandId
 export function getProcessorTierName(tier: Exclude<ProcessorTier, "auto">) {
   if (tier === "sixMic") return "六麦处理器";
   if (tier === "highPerformance") return "高性能处理器";
-  return "两麦处理器";
+  return "双麦处理器";
 }
 
 export function getProcessorCapacity(tier: Exclude<ProcessorTier, "auto">) {
-  return tier === "twoMic" ? 2 : tier === "sixMic" ? 4 : 1;
+  return tier === "twoMic" ? 2 : tier === "sixMic" ? 6 : 1;
 }
 
 function getLineArrayActivityZone(profile: ClassroomProfile): LineArrayActivityZone {

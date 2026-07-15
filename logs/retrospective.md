@@ -1,10 +1,72 @@
 ﻿# Retrospective
 
+## 2026-07-15 No-podium semantic guardrail
+
+- Do not relabel `podiumPosition: unknown` as “no podium” while leaving `hasPodium=true`; that creates contradictory questionnaire, drawing and line-array placement outputs.
+- A real no-podium option must update the existing `hasPodium` fact, suppress the podium marker and let the shared line-array placement rule fall back to hanging. Selecting any concrete podium position must restore `hasPodium=true`.
+- This is a general input semantic, not a case-size exception. Wall/ceiling speaker placement remains outside the change.
+- The standalone SVG Browser animation-inspection error recurred while the live app remained clean. Keep it classified as a preview-tool issue.
+
+## 2026-07-15 Customer solution animation reminder
+
+- Interaction feedback for the four customer solution buttons belongs in the shared segmented-control CSS, not four React event handlers or per-product state.
+- Keep motion limited to transform, color and shadow, preserve a visible keyboard focus state, and disable nonessential motion through `prefers-reduced-motion`.
+- A browser pointer-control API that does not activate `:hover` is not evidence that CSS hover rules failed. Verify loaded transition styles separately and use a reversible selection change to prove the active animation.
+
+## 2026-07-15 麦克风推荐与摆位单一判定源
+
+- “自动推荐”与“客户强选后硬件是否支持”必须分开：两只线阵可以作为客户强选方案继续出图，但不能因此进入自动推荐；超过能力上限才阻断。
+- 普通教室选择“全场扩声”描述的是音箱责任区，不等于把老师用线阵麦放到房间中心。麦克风责任区应独立由老师活动位置和全场拾音需求判断。
+- 老师活动区、报告厅舞台区、合班教室上课区和会议桌发言区都应先形成统一责任区数据，再供推荐、摆位、客户解释、校核台和测试读取，不能各自重复推断。
+- 售前已有的讲台位置、讲台电脑、一体机和备注足够完成当前推断；不新增未来扩容、老师位置、会议用途或报告厅活动范围字段。
+- 产品图标正确不代表点位文字正确。新增拾音产品或安装方式后，必须回归点位标签、安装指导和报告文案；本轮浏览器抽查发现“吊挂线阵麦”错误显示为“嵌入吊顶”，因此在当前功能范围内立即修正并保留日志。
+
+## 2026-07-15 5175 focused calibration scope
+
+- The current 5175 pass is limited to array microphones, wall column speakers and ceiling speakers.
+- Do not expand this pass into wiring, topology, processors, cables, report drawing or unrelated devices.
+- Speaker / array-mic selection, quantity and placement changes still require an affected-case preview and explicit user confirmation before production rules are edited.
+
+## 2026-07-15 Line-array podium-edge preview guardrail
+
+- Line-array placement and podium drawing geometry currently use separate constants. A production change must derive the podium-side placement from shared room/podium geometry or an equivalent shared constant, not copy a case-specific `1.9m` value.
+- Clip only the rendered line-array coverage layer to the room rectangle. Do not shrink the engineering pickup radius or reinterpret clipped artwork as reduced capability.
+- Keep the proposed placement trigger general: one forward-facing line array with a confirmed podium. Meeting-table placement, hanging full-coverage mode and multi-line-array layouts must remain unchanged unless separately confirmed.
+- The standalone SVG preview rendered correctly, while the in-app Browser logged an animation-inspection exception that was absent from the live 5174 app. Treat it as non-blocking preview-tool evidence, not an application regression.
+
+### Confirmed implementation reminder
+
+- The user approved the preview. The shared podium geometry now owns the `1.2m + 0.7m` audience-edge position used by both placement and drawing.
+- Automatic podium placement applies only to a single forward-facing line array when a real drawn podium exists and the podium still covers the activity zone. It must not expand into meeting-table, multi-mic, full-pattern, auditorium-stage or combined-classroom layouts.
+- SVG clipping is a presentation boundary only. Keep device markers and labels visible and keep capability radius/count calculations independent from the clipped artwork.
+- The focused regression fixture must keep the current `9.9m x 10.4m` centered-podium case at `1.9m`, while the side-podium overreach fixture remains hanging.
+- Manual cached patches are only safe after their hunk counts are mechanically verified. The failed log-only patch changed neither the index nor working files; keep overlapping logs unstaged instead of broadening the commit scope.
+
 ## 2026-07-15 向明中学临界混响与无吊顶选型提醒
 
 - 估算 RT60 `1.22s` 只比 `1.20s` 大风险线高 `0.02s`，而拍手无明显回声、现场人工判断为中；估算模型不应把百分秒级临界差异当作高置信度硬结论，后续方案需评估估算容差或现场观察对临界等级的约束。
 - “无吊顶”不必然等于“顶面不可吊装音箱”。若要改善同类长教室选型，应增加或复用安装可行性条件，而不是针对向明中学尺寸写补丁。
 - 涉及吸顶选型和混响生产规则，必须先生成拟调整点位图 / 规则结果预览并取得用户确认。
+- 浏览器保留 localhost 标签不代表开发服务仍在运行；自动预览前先做 HTTP 存活检查，连接拒绝时恢复 Vite，再判断页面问题。
+- 已知 PowerShell 包装层会破坏带引号/括号的组合正则时，不能靠“下次小心”继续重试同一模式；应直接采用多个固定字符串搜索或独立脚本。
+- 规则预览必须校验生成设备类型，不能只看脚本成功或文件存在；临时覆盖未生效时应立即作废预览，不能靠水印把壁挂图描述成吸顶方案。
+- 预览图例不得写理论常量；安装高度、数量和类型必须直接读取引擎输出。尤其低层高房间会把混响对应的偏好高度压到可安装上限，图例必须显示最终值。
+
+## 2026-07-15 客户选型状态边界
+
+- 客户选型不是新的数量覆盖表；必须复用 profile 中的麦克风 / 音箱选择字段，推荐值与最终采用值分别计算，避免 UI、清单、图纸和 PDF 各存一份状态。
+- 自动推荐值不能被客户覆盖污染：比较推荐时必须使用强制字段为 `auto` 的 profile 副本。
+- 客户强制选择仍不能伪造硬件能力。线阵麦硬覆盖失败时阻断图纸；顶面不可安装但强选吸顶按用户确认继续出图并生成统一硬风险。
+- 双品牌共用无 Logo 产品资产是本次用户明确确认的例外，不得扩展为 logo、阵麦或其他品牌资产可随意混用。
+- 线阵麦与处理器为两品牌同款时，自动处理器档位也不能再按品牌写隐式分支；相同采集条件应得到相同处理器能力结果。
+- 顶面安装条件与有无吊顶是两个独立事实：不可安装影响推荐和专项复核，但客户强制吸顶后不得再由吊顶字段把点位切回壁挂。
+
+## 2026-07-15 先实现后由用户验收
+
+- 用户已确认规则后，长时间代替用户逐项点击页面会推迟可运行版本交付。普通开发以严格类型检查、目标规则测试和生产构建作为交付前基础门槛，业务体验和视觉判断由用户直接验收更高效。
+- 浏览器抽查应聚焦本次最危险的两条路径，不重复证明自动化测试已覆盖的事实。完整桌面 / 移动 / 双品牌业务一致性验收保留到用户明确要求代验或正式发版阶段。
+- PowerShell 会把裸写的 `@{upstream}` 识别为哈希表起始符；Git revision range 在 PowerShell 命令中应写成 `'@{upstream}..HEAD'`，避免再次出现纯命令层解析失败。
+- 客户选型区只负责最终二选一，不应重复展示售前参数和内部处理器档位。能由扩声范围、讲台位置和安装条件推导的字段留在算法中，现场安装可行性回到售前采集区。
 
 ## 2026-07-14 拓扑备注触发条件必须跟随系统根节点
 
@@ -1616,3 +1678,34 @@ PowerShell reminder:
 - When the command is already running under PowerShell 7, invoke project `.ps1` scripts directly. Do not nest another hard-coded PowerShell executable unless `Test-Path` confirms that exact installation path in the current environment.
 - Release behavior tests must locate questionnaire selects by their accessible label, never by ordinal position. Adding a new earlier field is a valid UI change and must not redirect an unrelated fixture action.
 - A prior release plan does not override a newer calibration pause. When the user says calibration is unfinished, stop packaging, remove only the uncommitted failed artifacts created in the current attempt, keep existing releases untouched and do not create a release checkpoint.
+
+### 2026-07-15 repeated-work automation reminder
+
+- Repetition alone is not enough to create a new asset. Require two occurrences, a stable procedure, clear time/error savings and absence of an existing executable standard.
+- Daily repository snapshots must create and verify the new ZipArchive before deleting any older snapshot. Compare the complete source and archive entry sets and require the project rules, package manifest and both work logs.
+- Local entry smoke tests must use independent fresh browser contexts for 5174 desktop, 5177 mobile and 5180 desktop; assert root scope, brand scope, overflow and runtime/network errors rather than trusting an old open tab.
+- Do not wrap a complex PowerShell command inside another PowerShell `-Command`. Use the resolved PowerShell 7 executable as the direct shell or move complex content to a standalone script.
+
+### 2026-07-15 calibration-workbench isolation reminder
+
+- Port 5175 calibrates generated solution outputs, while port 5176 exclusively calibrates reverberation. Do not expose reverberation, RT60, acoustic-condition or echo-tail details in the 5175 output-calibration panel.
+- Filtering only selected source arrays is fragile because recommendation cautions and future output fields can reintroduce excluded content. Apply the isolation filter once to the final detail collection for every 5175 calibration row, then assert the complete panel has no excluded terms in browser QA.
+- Per-output status is authoritative for the overall calibration case: any failed row means failure; all rows must pass before the case can pass. Preserve old JSON/localStorage cases by treating missing output checks as an empty record.
+- Legacy overall pass cannot be trusted as 12-item evidence and must migrate to untested; retain a legacy overall fail so earlier problem records are not silently erased. Recalculate overall status only when an output status changes, not when the user edits a note.
+- The 5175 two-column minimum is wider than a roughly 1084px browser window. Keep its responsive fix scoped to `.calibrationWorkbenchGrid`; stack at `1180px` instead of lowering global desktop or mobile breakpoints and accidentally changing 5174/5176/5177/5180.
+
+### 2026-07-15 AJ processor image calibration note
+
+- A product-photo refresh must preserve the internal processor-tier identity through topology rendering: AJ200 is the dual-microphone processor image, AJ600 is the six-microphone processor image, and AJ350 remains the high-performance processor image.
+- The confirmed Chinese product-tier labels are `双麦处理器` and `六麦处理器`; do not reintroduce `两麦处理器`. Their internal capacities are 2 and 6, while AJ model strings remain hidden from customer output.
+- A PowerShell `foreach` statement followed by a pipeline can be parsed as an empty pipe element in this command wrapper. Use Node for grouped file metadata instead of retrying the same inline PowerShell form.
+- AJ200/AJ600 photos are the user-confirmed no-Logo shared assets for both brands, so they must use brand-neutral source filenames. Brand-exclusive processor assets still require replacement and forbidden-asset verification when imported by shared React code.
+- Manual quantity changes can expose a separate topology-type mismatch: increasing a line-array selection from one to two currently renders the second microphone as generic `阵麦 2`. Record and isolate this issue; do not repair microphone semantics during an image-only task without the required rule preview and confirmation.
+
+### 2026-07-15 product-photo cutout boundary reminder
+
+- In product-photo feedback, `边框` can mean the outside canvas, an image frame, a printed outline or the product's physical shell. Do not infer that a visible white chassis should be removed merely because the user asks to cut out a border.
+- Default cutout boundary is the complete physical product silhouette. Preserve the chassis, protruding ports, shadows that define the silhouette, screen and face details; remove only contiguous canvas outside that silhouette unless the user explicitly identifies a physical part to delete.
+- Always regenerate from the untouched source asset after a cutout interpretation is corrected. Do not apply a second mask to an already destructively cropped output.
+- Check the source alpha channel before writing custom masking logic. AJ600 already contains transparent outside pixels and only needs alpha-preserving crop / resize; AJ200 has an opaque gray canvas and requires background removal.
+- Verify product cutouts in their real topology node, not only as standalone PNGs. A transparent background and a preserved shell must both be visible in representative Yinyi and Yinman states.

@@ -32,6 +32,8 @@ import topologyWallSpeakerImage from "../../../assets/topology-wall-speaker.png"
 import topologyWiredMicImage from "../../../assets/topology-wired-mic.png";
 import topologyWirelessReceiverImage from "../../../assets/topology-wireless-receiver.png";
 import yinmanAudioProcessorImage from "../../../assets/yinman-audio-processor.png";
+import topologyDualMicProcessorImage from "../../../assets/topology-dual-mic-processor.png";
+import topologySixMicProcessorImage from "../../../assets/topology-six-mic-processor.png";
 import yinmanArrayMicPointMapImage from "../../../assets/yinman-array-mic-pointmap.png";
 import yinmanArrayMicTopologyImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
@@ -1674,7 +1676,7 @@ function formatTopologyCableLabel(label: string, quantity: number) {
 }
 
 function getTopologyNodeKey(device: string, port = "") {
-  if (device.includes("智能音频处理主机") || device.includes("两麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
+  if (device.includes("智能音频处理主机") || device.includes("双麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
   if (device.includes("智能线阵麦克风")) {
     const match = device.match(/(\d+)\s*$/);
     return `arrayMic-${match?.[1] ?? "1"}`;
@@ -2819,6 +2821,9 @@ function getTopologyImageSize(node: TopologyNode) {
   if (node.kind === "speaker") return { width: 76, height: 70 };
   if (node.kind === "amplifier") return { width: 136, height: 24 };
   if (node.kind === "processor" && node.label.includes("反馈抑制")) return { width: 136, height: 22 };
+  if (node.kind === "processor" && (node.label.includes("双麦处理器") || node.label.includes("六麦处理器"))) {
+    return { width: 68, height: 68 };
+  }
   if (node.kind === "processor") return { width: 136, height: 26 };
   if (node.kind === "mixer") return { width: 72, height: 78 };
   if (node.kind === "wirelessReceiver") return { width: 116, height: 66 };
@@ -2842,6 +2847,8 @@ function getTopologyDeviceImage(node: TopologyNode) {
   if (node.kind === "speaker" && node.label.includes("壁挂")) return topologyWallSpeakerImage;
   if (node.kind === "legacy") return topologyWallSpeakerImage;
   if (node.kind === "processor" && node.label.includes("反馈抑制")) return topologyFeedbackSuppressorImage;
+  if (node.kind === "processor" && node.label.includes("双麦处理器")) return topologyDualMicProcessorImage;
+  if (node.kind === "processor" && node.label.includes("六麦处理器")) return topologySixMicProcessorImage;
   if (node.kind === "processor" && getAppBrand().id === "yinman" && node.label.includes("智能音频处理主机")) return yinmanAudioProcessorImage;
   if (node.kind === "processor") return topologyAudioProcessorImage;
   if (node.kind === "mixer") return topologyMixerImage;

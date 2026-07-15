@@ -547,13 +547,14 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = getProcessorTier(profile, brandId, lineArray.count, speakerCount);
+    const capacity = getProcessorCapacity(tier);
     const demand = Math.max(
       profile.existingDevices.legacyWirelessMic.split(/[、,，;；]/).filter(Boolean).length,
       profile.existingDevices.recordingHost.split(/[、,，;；]/).filter(Boolean).length,
       speakerCount
     );
-    if (tier !== "highPerformance" && demand > getProcessorCapacity(tier)) {
-      risks.push(demand > 4 ? "处理器接口需求超过4路，需外扩或现场复勘。" : "当前处理器接口容量会影响外接设备和音箱接入。" );
+    if (tier !== "highPerformance" && demand > capacity) {
+      risks.push(`处理器接口需求超过${capacity}路，需外扩或现场复勘。`);
     }
   }
   const speakerOverride = profile.engineeringConstraints.speakerProductOverride ?? "auto";
