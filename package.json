@@ -24,6 +24,8 @@
         "verify:release-current": "node scripts/verify-release-current.mjs",
         "verify:release-behavior": "node scripts/verify-release-behavior-parity.mjs",
         "test:release-mobile": "node scripts/test-release-mobile-compat.mjs",
+        "test:local-entries": "node scripts/smoke-test-local-entries.mjs",
+        "test:local-entries:all": "node scripts/smoke-test-local-entries.mjs --all",
         "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1"
     },
     "dependencies": {

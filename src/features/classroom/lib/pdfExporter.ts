@@ -39,6 +39,48 @@ type CanvasPage = {
   y: number;
 };
 
+type ReportTheme = {
+  background: string;
+  heading: string;
+  muted: string;
+  ink: string;
+  accent: string;
+  border: string;
+  surface: string;
+  tableHeader: string;
+  topGradient: string;
+  topGradientSoft: string;
+  sideGradient: string;
+};
+
+const getReportTheme = (): ReportTheme => getAppBrand().id === "yinman"
+  ? {
+      background: "#f3f7ff",
+      heading: "#123a72",
+      muted: "#536987",
+      ink: "#17243a",
+      accent: "#245fc9",
+      border: "rgba(171, 193, 232, 0.92)",
+      surface: "rgba(250, 252, 255, 0.9)",
+      tableHeader: "rgba(233, 241, 255, 0.96)",
+      topGradient: "rgba(79, 125, 255, 0.18)",
+      topGradientSoft: "rgba(79, 125, 255, 0.04)",
+      sideGradient: "rgba(20, 164, 184, 0.1)"
+    }
+  : {
+      background: "#f3faf6",
+      heading: "#063f31",
+      muted: "#526b62",
+      ink: "#0f241e",
+      accent: "#087455",
+      border: "rgba(185, 216, 200, 0.9)",
+      surface: "rgba(248, 253, 250, 0.88)",
+      tableHeader: "rgba(232, 248, 240, 0.96)",
+      topGradient: "rgba(0, 168, 112, 0.16)",
+      topGradientSoft: "rgba(0, 168, 112, 0.04)",
+      sideGradient: "rgba(18, 168, 160, 0.13)"
+    };
+
 export const exportPdfReport = async (profile: ClassroomProfile, outputs: GeneratedOutputs, quantityOverrides: QuantityOverrides = {}) => {
   const pointMapSvg = document.querySelector<SVGSVGElement>(getInstallationSelector());
   const topologySvg = document.querySelector<SVGSVGElement>(getTopologySelector());
@@ -76,45 +118,53 @@ async function renderReportPages(profile: ClassroomProfile, outputs: GeneratedOu
 }
 
 function createCanvasPage(): CanvasPage {
+  const theme = getReportTheme();
   const canvas = document.createElement("canvas");
   canvas.width = pdfPageWidthPx;
   canvas.height = pdfPageHeightPx;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("无法创建 PDF 画布。");
-  ctx.fillStyle = "#f3faf6";
+  ctx.fillStyle = theme.background;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawSoftBackground(ctx);
+  drawSoftBackground(ctx, theme);
   return { canvas, ctx, y: 0 };
 }
 
-function drawSoftBackground(ctx: CanvasRenderingContext2D) {
+function drawSoftBackground(ctx: CanvasRenderingContext2D, theme: ReportTheme) {
   const topGradient = ctx.createLinearGradient(0, 0, 0, 620);
-  topGradient.addColorStop(0, "rgba(0, 168, 112, 0.16)");
-  topGradient.addColorStop(0.58, "rgba(0, 168, 112, 0.04)");
-  topGradient.addColorStop(1, "rgba(0, 168, 112, 0)");
+  topGradient.addColorStop(0, theme.topGradient);
+  topGradient.addColorStop(0.58, theme.topGradientSoft);
+  topGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
   ctx.fillStyle = topGradient;
   ctx.fillRect(0, 0, pdfPageWidthPx, 740);
 
   const sideGradient = ctx.createLinearGradient(0, 0, pdfPageWidthPx, 420);
-  sideGradient.addColorStop(0, "rgba(18, 168, 160, 0.13)");
+  sideGradient.addColorStop(0, theme.sideGradient);
   sideGradient.addColorStop(0.38, "rgba(255, 255, 255, 0)");
   ctx.fillStyle = sideGradient;
   ctx.fillRect(0, 0, pdfPageWidthPx, 520);
 }
 
 function drawReportHeader(page: CanvasPage, profile: ClassroomProfile) {
+  const theme = getReportTheme();
   const generatedAt = new Date().toLocaleString("zh-CN", { hour12: false });
   drawCard(page.ctx, 70, 64, 1100, 170);
-  drawText(page.ctx, profile.projectName || getAppBrand().defaultPlanName, 100, 136, {
-    size: 42,
+  drawText(page.ctx, `${getAppBrand().appName} · 售前工程方案`, 100, 104, {
+    size: 18,
     weight: 800,
-    color: "#063f31",
+    color: theme.accent,
     maxWidth: 920
   });
-  drawText(page.ctx, generatedAt, 100, 190, {
-    size: 22,
+  drawText(page.ctx, profile.projectName || getAppBrand().defaultPlanName, 100, 157, {
+    size: 40,
+    weight: 800,
+    color: theme.heading,
+    maxWidth: 920
+  });
+  drawText(page.ctx, generatedAt, 100, 205, {
+    size: 20,
     weight: 700,
-    color: "#526b62",
+    color: theme.muted,
     maxWidth: 920
   });
   page.y = 280;
@@ -166,8 +216,9 @@ function drawEquipmentTable(page: CanvasPage, outputs: GeneratedOutputs, pages: 
 }
 
 function drawSectionTitle(ctx: CanvasRenderingContext2D, title: string, x: number, y: number) {
-  drawText(ctx, title, x, y, { size: 28, weight: 800, color: "#063f31", maxWidth: 900 });
-  ctx.strokeStyle = "rgba(185, 216, 200, 0.95)";
+  const theme = getReportTheme();
+  drawText(ctx, title, x, y, { size: 28, weight: 800, color: theme.heading, maxWidth: 900 });
+  ctx.strokeStyle = theme.border;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(x, y + 24);
@@ -176,40 +227,44 @@ function drawSectionTitle(ctx: CanvasRenderingContext2D, title: string, x: numbe
 }
 
 function drawArchiveBox(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, label: string, value: string) {
+  const theme = getReportTheme();
   roundedRect(ctx, x, y, width, height, 12);
-  ctx.fillStyle = "rgba(248, 253, 250, 0.88)";
+  ctx.fillStyle = theme.surface;
   ctx.fill();
-  ctx.strokeStyle = "rgba(185, 216, 200, 0.9)";
+  ctx.strokeStyle = theme.border;
   ctx.stroke();
   const textBaseline = y + height / 2 + 6;
-  drawText(ctx, label, x + 18, textBaseline, { size: 15, weight: 800, color: "#526b62", maxWidth: 112 });
-  drawText(ctx, value, x + 132, textBaseline, { size: 17, weight: 760, color: "#0f241e", maxWidth: width - 150 });
+  drawText(ctx, label, x + 18, textBaseline, { size: 15, weight: 800, color: theme.muted, maxWidth: 112 });
+  drawWrappedText(ctx, value, x + 132, y, width - 150, height, { size: 17, weight: 760, color: theme.ink });
 }
 
 function drawTableHeader(ctx: CanvasRenderingContext2D, y: number) {
+  const theme = getReportTheme();
   roundedRect(ctx, 70, y, 1100, 52, 8);
-  ctx.fillStyle = "rgba(232, 248, 240, 0.96)";
+  ctx.fillStyle = theme.tableHeader;
   ctx.fill();
-  drawText(ctx, "序号", 96, y + 34, { size: 20, weight: 800, color: "#087455", maxWidth: 90 });
-  drawText(ctx, "设备", 245, y + 34, { size: 20, weight: 800, color: "#087455", maxWidth: 650 });
-  drawText(ctx, "数量", 1030, y + 34, { size: 20, weight: 800, color: "#087455", maxWidth: 100 });
+  drawText(ctx, "序号", 96, y + 34, { size: 20, weight: 800, color: theme.accent, maxWidth: 90 });
+  drawText(ctx, "设备", 245, y + 34, { size: 20, weight: 800, color: theme.accent, maxWidth: 650 });
+  drawText(ctx, "数量", 1030, y + 34, { size: 20, weight: 800, color: theme.accent, maxWidth: 100 });
 }
 
 function drawTableRow(ctx: CanvasRenderingContext2D, y: number, index: string, name: string, quantity: string) {
+  const theme = getReportTheme();
   ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
   ctx.fillRect(70, y, 1100, 58);
-  ctx.strokeStyle = "rgba(185, 216, 200, 0.86)";
+  ctx.strokeStyle = theme.border;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(70, y + 58);
   ctx.lineTo(1170, y + 58);
   ctx.stroke();
-  drawText(ctx, index, 96, y + 37, { size: 20, weight: 500, color: "#0f241e", maxWidth: 90 });
-  drawText(ctx, name, 245, y + 37, { size: 20, weight: 500, color: "#0f241e", maxWidth: 700 });
-  drawText(ctx, quantity, 1048, y + 37, { size: 20, weight: 700, color: "#0f241e", maxWidth: 80 });
+  drawText(ctx, index, 96, y + 37, { size: 20, weight: 500, color: theme.ink, maxWidth: 90 });
+  drawText(ctx, name, 245, y + 37, { size: 20, weight: 500, color: theme.ink, maxWidth: 700 });
+  drawText(ctx, quantity, 1048, y + 37, { size: 20, weight: 700, color: theme.ink, maxWidth: 80 });
 }
 
 function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutputs): Array<[string, string]> {
+  const selectedProcessor = outputs.productSelection.find((item) => item.category === "processor" && item.quantity > 0);
   const rows: Array<[string, string]> = [
     ["项目名称", profile.projectName || "待补充"],
     ["客户名称", profile.customerName || "待补充"],
@@ -223,6 +278,7 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ["麦克风提示", getSelectionArchiveNote(outputs.solutionSelection.microphone)],
     ["音箱选型", getSelectionArchiveValue(outputs.solutionSelection.speaker)],
     ["音箱提示", getSelectionArchiveNote(outputs.solutionSelection.speaker, outputs.solutionSelection.speaker.requiresSpecialReview)],
+    ["处理器选型", selectedProcessor ? formatPublicDeviceName(selectedProcessor.name) : "待确认"],
     ["顶面音箱安装", overheadSpeakerMountingLabels[profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"]],
     ["吊顶条件", ceilingLabels[profile.engineeringConstraints.ceiling]],
     ["讲台位置", podiumPositionLabels[profile.engineeringConstraints.podiumPosition]],
@@ -330,6 +386,7 @@ const ceilingLabels = {
 } as const;
 
 async function renderImagePage(title: string, dataUrl: string) {
+  const theme = getReportTheme();
   const page = createCanvasPage();
   drawSectionTitle(page.ctx, title, 70, 92);
   const image = await loadImage(dataUrl);
@@ -344,7 +401,7 @@ async function renderImagePage(title: string, dataUrl: string) {
   roundedRect(page.ctx, boxX, boxY, boxW, boxH, 12);
   page.ctx.fillStyle = "#ffffff";
   page.ctx.fill();
-  page.ctx.strokeStyle = "rgba(185, 216, 200, 0.9)";
+  page.ctx.strokeStyle = theme.border;
   page.ctx.stroke();
   page.ctx.drawImage(image, boxX + (boxW - drawW) / 2, boxY + (boxH - drawH) / 2, drawW, drawH);
   drawFooter(page);
@@ -352,10 +409,11 @@ async function renderImagePage(title: string, dataUrl: string) {
 }
 
 function drawFooter(page: CanvasPage) {
+  const theme = getReportTheme();
   drawText(page.ctx, "本报告仅用于内部售前方案沟通，方案仅供参考，不包含报价信息；如有疑问，请联系张灏。", 70, pdfPageHeightPx - 58, {
     size: 17,
     weight: 700,
-    color: "#526b62",
+    color: theme.muted,
     maxWidth: 1080
   });
 }
@@ -393,6 +451,55 @@ function drawText(
   ctx.font = `${options.weight} ${options.size}px "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif`;
   ctx.textBaseline = "alphabetic";
   ctx.fillText(text, x, y, options.maxWidth);
+}
+
+function drawWrappedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  height: number,
+  options: { size: number; weight: number; color: string }
+) {
+  let size = options.size;
+  let lines = getWrappedLines(ctx, text, maxWidth, size, options.weight);
+  while (lines.length > 2 && size > 14) {
+    size -= 1;
+    lines = getWrappedLines(ctx, text, maxWidth, size, options.weight);
+  }
+  if (lines.length > 2) {
+    lines = [lines[0], fitTextWithEllipsis(ctx, lines.slice(1).join(""), maxWidth)];
+  }
+  const lineHeight = size + 4;
+  const firstBaseline = y + (height - lines.length * lineHeight) / 2 + size;
+  ctx.fillStyle = options.color;
+  ctx.font = `${options.weight} ${size}px "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif`;
+  ctx.textBaseline = "alphabetic";
+  lines.forEach((line, index) => ctx.fillText(line, x, firstBaseline + index * lineHeight));
+}
+
+function getWrappedLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, size: number, weight: number) {
+  ctx.font = `${weight} ${size}px "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif`;
+  const lines: string[] = [];
+  let line = "";
+  Array.from(text).forEach((character) => {
+    const candidate = line + character;
+    if (line && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = character;
+    } else {
+      line = candidate;
+    }
+  });
+  if (line || !lines.length) lines.push(line);
+  return lines;
+}
+
+function fitTextWithEllipsis(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  let value = text;
+  while (value && ctx.measureText(`${value}…`).width > maxWidth) value = value.slice(0, -1);
+  return `${value}…`;
 }
 
 function loadImage(dataUrl: string) {

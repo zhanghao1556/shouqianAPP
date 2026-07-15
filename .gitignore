@@ -9,6 +9,7 @@ vite-dev.err.log
 .codex-backups/
 .git-invalid-*/
 work/
+tmp/
 output/
 outputs/*
 !outputs/音翼AI售前工具-*.zip

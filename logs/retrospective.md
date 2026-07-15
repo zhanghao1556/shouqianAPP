@@ -26,12 +26,27 @@
 - 自动纵深需要稳定的物理设备尺寸，而不是被画布最小 / 最大像素夹紧后的屏幕尺寸；线阵和阵麦分别使用与现有图标比例一致的 `0.12m`、`0.3m` 半深。用户要求教师活动区隐藏后，不再把该内部尺寸渲染到点位图。
 - 直接调用 Edge 的 headless 截图参数在本机未生成目标文件时，不要反复尝试或改业务代码；使用可用的 in-app Browser 完成页面截图与 DOM / 控制台验证。
 
+## 2026-07-15 Teacher-area input consistency reminder
+
+- Do not show a manually editable ordinary-classroom teacher-area width when the line-array rule ignores it and derives board-zone width from room width.
+- Ordinary-classroom teacher-area depth is currently different: it is persisted and directly affects line-array responsibility depth. Removing the UI without replacing or defining that value would silently change microphone selection and placement behavior.
+- Treat “make the teacher area automatic” as a microphone-rule change, not a cosmetic field deletion. Define the shared automatic depth, preview the affected point map and obtain confirmation first.
+
 ## 2026-07-15 No-podium semantic guardrail
 
 - Do not relabel `podiumPosition: unknown` as “no podium” while leaving `hasPodium=true`; that creates contradictory questionnaire, drawing and line-array placement outputs.
 - A real no-podium option must update the existing `hasPodium` fact, suppress the podium marker and let the shared line-array placement rule fall back to hanging. Selecting any concrete podium position must restore `hasPodium=true`.
+- For non-auditorium hanging line arrays, the proposed width curve is `2.5m` at room width `<=6m`, linear to `3.0m` at `10m`, then capped. Auditorium placement remains owned by the existing stage responsibility zone.
+- Reuse the shared reverberation risk instead of adding another RT60 classifier: low/medium/high subtract `0 / 0.25 / 0.5m` from the width baseline, clamped to the confirmed `2.5–3.0m` range.
 - This is a general input semantic, not a case-size exception. Wall/ceiling speaker placement remains outside the change.
 - The standalone SVG Browser animation-inspection error recurred while the live app remained clean. Keep it classified as a preview-tool issue.
+
+### Confirmed implementation reminder
+
+- `podiumPosition: unknown` now means a real absence of a podium and must normalize `hasPodium` to false. Concrete podium positions restore it to true through the questionnaire.
+- Non-auditorium hanging distance has one shared formula: width baseline `2.5–3.0m`, minus the shared low/medium/high reverberation offset `0 / 0.25 / 0.5m`, clamped to the same range.
+- Auditorium exclusion tests must use a stage-center coordinate outside `2.5–3.0m`; otherwise an accidental formula application can pass by coincidence.
+- Do not overwrite a live calibration draft merely to visually recheck a fixture already covered by focused rule tests.
 
 ## 2026-07-15 Customer solution animation reminder
 
@@ -1711,6 +1726,8 @@ PowerShell reminder:
 - Daily repository snapshots must create and verify the new ZipArchive before deleting any older snapshot. Compare the complete source and archive entry sets and require the project rules, package manifest and both work logs.
 - Local entry smoke tests must use independent fresh browser contexts for 5174 desktop, 5177 mobile and 5180 desktop; assert root scope, brand scope, overflow and runtime/network errors rather than trusting an old open tab.
 - Do not wrap a complex PowerShell command inside another PowerShell `-Command`. Use the resolved PowerShell 7 executable as the direct shell or move complex content to a standalone script.
+- A shared entry smoke test must verify meaningful root content, not require every tool surface to use the same heading tag. 5175's compact calibration bar is valid without an `h1`.
+- Keep `tmp/` ignored before using an `add -A` checkpoint script; PDF renders and local QA artifacts are not source or release deliverables.
 
 ### 2026-07-15 calibration-workbench isolation reminder
 
@@ -1769,3 +1786,17 @@ PowerShell reminder:
 - When core room geometry is invalid, equipment selection, brand system-device synchronization, generated points, topology connections and report-facing outputs must all remain empty from the shared engineering engine.
 - Do not hide zero-quantity residue only in a React table. Gate the shared output before synchronization so every consumer receives the same empty solution.
 - Keep valid-room amplifier capacity rules covered by their existing 8/9/16/17-speaker boundary regressions.
+
+### 2026-07-15 processor replacement-window guardrail
+
+- Processor alternatives are an equipment-list replacement window: render every brand-allowed tier as a 0/1 row, but keep only one selected processor in the shared engineering output, topology and reports.
+- Yinyi owns exactly the dual- and six-microphone tiers. Yinman additionally owns the high-performance tier. Validate persisted tier values against the active brand so a draft created under one brand cannot expose a forbidden candidate in the other.
+- Candidate-row `+` means replace the current processor, not increment total processor count. The active row stays at one and cannot be decremented to an invalid processor-less system.
+- Keep microphone and speaker customer cards separate from processor replacement. Do not restore a duplicate processor card group unless the user explicitly changes the interaction location.
+
+### 2026-07-15 PDF report calibration reminder
+
+- PDF report colors are brand output, not generic decoration: Yinyi exports green/white and Yinman exports blue/white from the same renderer.
+- Do not pass long customer text to Canvas `fillText` with a small `maxWidth`; browsers horizontally compress the glyphs. Wrap bounded archive values into readable lines and truncate only after the line limit.
+- The PDF project archive must include the selected processor tier using its customer-visible generic name, while the equipment table continues to exclude all zero-quantity alternatives.
+- Report calibration does not authorize topology coordinate or label-position changes. Record topology overlaps separately and use the required preview/confirmation flow.

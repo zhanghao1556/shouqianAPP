@@ -51,13 +51,32 @@
 - 严格 TypeScript、点位规则测试、生产构建和 `git diff --check` 通过；5174 普通 / 阶梯场景切换验证均无三项采集字段，教师活动区图层已隐藏，控制台无警告或错误，并已恢复用户原普通教室场景。
 - 独立 SVG PNG 校验时直接调用 Edge `--headless --screenshot` 未产出文件，未影响 SVG XML 校验、应用内 Browser 截图或正式页面验证；未为该工具问题修改业务代码。
 
+## 2026-07-15 普通教室教师活动区字段不一致
+
+- 用户指出普通教室也显示“前方区域 / 教师活动区宽 / 教师活动区纵深”，质疑教师活动区是否应由系统自动计算。
+- 原因是 `Questionnaire.tsx` 当前对所有“非会议室、非报告厅、非合班教室”场景显示该编辑组，因此普通教室和阶梯教室都进入。
+- 当前底层存在不一致：普通/阶梯教室线阵责任区宽度由房间宽度自动推导为居中板书区 `min(房间宽 / 2, 6m)`，页面中的 `teachingAreaSize.width` 不参与该宽度结果；但 `teachingAreaSize.depth` 会直接参与线阵责任区纵深判断并持久化。截图中的宽 `9.6m` 与实际线阵责任区宽 `4.8m` 不是同一值。
+- 这是明显的 UI / 规则输入边界问题，已先记录。当前只分析原因，不删除字段、不改线阵责任区或点位规则；后续若改为普通教室全自动，需要先说明新自动纵深规则、影响场景并生成点位预览取得确认。
+
 ## 2026-07-15 “待确认”改“无讲台”方案待确认
 
 - 用户要求把讲台位置选项“待确认”改为“无讲台”。当前实际状态证明只改文案会产生矛盾：页面选中“待确认”时点位图仍显示“讲台待确认”，线阵麦仍按讲台摆放，距前墙 `1.9m`。
 - 拟按真实语义联动：选择“无讲台”时写入 `hasPodium=false`，点位图不画讲台，单只线阵麦改走现有吊挂规则；重新选择前墙居中/左侧/右侧时恢复 `hasPodium=true`。
-- 当前 `9.9m x 10.4m` 案例的拟调整预览为 `outputs/rule-previews/260715-no-podium-line-array-preview.svg`：不画讲台，线阵麦约距前墙 `1.2m` 吊挂，覆盖继续裁在房间内；壁挂数量、点位及 `52° / 128° / 121° / 59°` 不变。
+- 用户进一步指定吊挂纵坐标为距前墙 `2.5–3.0m`，房间越宽越靠后。拟采用连续曲线：宽 `<=6m` 为 `2.5m`，`6–10m` 线性增加，宽 `>=10m` 封顶 `3.0m`；`8m` 对应 `2.75m`。
+- 用户明确排除报告厅：报告厅继续按现有舞台责任区吊挂坐标，不套用宽度曲线。其他非报告厅吊挂线阵场景适用；会议桌和讲台摆放不受影响。
+- 用户进一步要求混响越大越靠近前墙。拟直接复用唯一共享 `getReverberationRisk(profile)`，不复制 RT60 算法：混响小/中/大分别从宽度基础距离回退 `0 / 0.25 / 0.5m`，最终限制在 `2.5–3.0m`。
+- 当前 `9.9m x 10.4m` 案例的拟调整预览为 `outputs/rule-previews/260715-no-podium-line-array-preview.svg`：不画讲台；宽度基础值 `3.0m`，当前混响大回退 `0.5m`，线阵麦最终距前墙 `2.5m` 吊挂；覆盖继续裁在房间内，壁挂数量、点位及 `52° / 128° / 121° / 59°` 不变。
 - 正式规则尚未修改，等待用户查看预览后确认。
 - 5174 应用控制台无错误或警告。独立 SVG 预览再次出现已记录的 Browser `animation` 检查异常，图片仍正确渲染；继续归类为非阻塞工具问题，不改业务代码。
+
+### Confirmed implementation
+
+- 用户确认宽度与混响联合公式，并明确报告厅排除。
+- 讲台位置 `unknown` 的客户文案改为“无讲台”；选择该项写入 `hasPodium=false`，旧草稿 / 导入资料中 `unknown + hasPodium=true` 也会归一化为无讲台。选择具体讲台位置恢复 `hasPodium=true`。
+- 普通讲台图在无讲台时不再绘制；合班教室上课区和报告厅舞台继续按各自区域绘制，不被无讲台标记误删。
+- 非报告厅吊挂线阵先按房间宽度计算 `2.5–3.0m` 基础距离，再复用共享混响风险回退：小/中/大为 `0 / 0.25 / 0.5m`，最终限制在 `2.5–3.0m`。会议桌和讲台摆放不使用该公式。
+- 报告厅继续按舞台责任区中心计算纵坐标。回归夹具使用舞台纵深 `4m`，固定输出 `2.0m`，可明确防止误套最低 `2.5m` 的新公式。
+- 严格 TypeScript、点位规则测试、生产构建和 `git diff --check` 通过。当前 5174 草稿已切换为会议室，未为视觉验证覆盖用户状态；页面正常渲染且控制台无错误或警告。
 
 ## 2026-07-15 客户选型四按钮动画
 
@@ -6227,6 +6246,13 @@ Boundary:
 - One first validation-server launch nested `pwsh -Command` inside the current shell; outer interpolation removed PowerShell variables and caused a parser error. No server or source state changed. The rerun used PowerShell 7 as the direct execution shell and succeeded, confirming the new skill's single-shell rule.
 - No selection, quantity, point, microphone, speaker, wiring, topology or release rule changed.
 
+### Closing smoke-test correction
+
+- `test:local-entries:all` initially marked 5175 as not rendered even though HTTP, root content, runtime errors, brand scope and overflow checks all passed.
+- Root cause was the new smoke script treating a non-empty `h1` as mandatory; 5175 intentionally uses a compact calibration brand bar with `strong` rather than a page `h1`.
+- The rendered check is corrected to use the already-awaited `#root > *` plus meaningful body content. No application component or page heading is changed to satisfy the test.
+- Daily checkpoint review found that `tmp/` was not ignored, so `git add -A` could include local PDF render caches. Added `tmp/` to `.gitignore`; no source or generated customer deliverable is removed.
+
 ## 2026-07-15 solution-output calibration workbench
 
 - Added 12 independent output-calibration rows to port 5175. Each row stores `untested` / `pass` / `fail` and a note in the existing calibration case record, including backward-compatible normalization for older local records.
@@ -6308,6 +6334,27 @@ Boundary:
   - 5180 loaded the Yinman brand shell with no manual furniture UI, warning/error or horizontal overflow. The furniture renderer is the same brand-neutral component used by both brands.
 - One stale Vite HMR error reported `getVerticalWallLabels is not defined` while the browser had loaded a partial edit state. Source inspection confirmed the helper was module-scoped; a completely fresh tab had no error. No code change was made for this transient development state.
 - The in-app browser download listener did not capture the programmatic point-map PNG link and timed out. The export action left the shared SVG rendered and produced no console error; no export code was changed for this browser-tool limitation.
+- No package, release or GitHub push was performed.
+
+## 2026-07-15 exported PDF final calibration
+
+- End-of-day report review exported and rendered a fresh Yinman three-page PDF. Equipment rows correctly excluded zero-quantity processor alternatives and retained only the selected processor.
+- Found two report-layer defects before release: Yinman PDF pages still used the Yinyi green theme, and long archive values such as `声学环境` were horizontally compressed by Canvas `fillText(..., maxWidth)` until unreadable.
+- The first-page archive also lacked an explicit `处理器选型` field even though processor replacement is now a formal customer decision reflected in the equipment list and topology.
+- Planned report-only correction: brand-aware Yinyi green / Yinman blue themes, visible brand heading, selected processor archive row and bounded two-line archive value wrapping. Product selection, quantities, points, angles, connections and topology routing remain unchanged.
+- Visual review also found a slight overlap between the center cable label and processor label in the current topology drawing. It is recorded but not changed during report calibration because topology drawing changes require their own preview and confirmation.
+- Completed the report correction and exported fresh three-page Yinyi and Yinman PDFs. Poppler page renders confirmed Yinyi green/white, Yinman blue/white, visible brand heading, readable two-line archive values, selected processor archive rows, nonzero-only equipment tables and unchanged point/topology drawing content.
+- Both browser exports completed with no console warnings or errors. Strict TypeScript, production build, point-system rules, reverberation rules, product-document audit and the 66-source/0-pending live audit passed.
+- The first full local-entry smoke run exposed the 5175 false negative described above; after correcting the script, 5174/5175/5176/5177/5180 all passed HTTP, rendering, brand/mobile scope, overflow and runtime-error checks.
+
+## 2026-07-15 processor alternatives moved to equipment list
+
+- User clarified that processor replacement belongs directly in the `03 方案输出 > 设备清单`, not as a third card group in `客户选型`.
+- Confirmed brand availability: Yinyi displays exactly `双麦处理器` and `六麦处理器`; Yinman displays those two plus `高性能处理器`. A stale Yinman-only high-performance draft value is rejected when the Yinyi brand is active.
+- The selected processor is the only candidate with quantity `1`; alternatives remain visible with quantity `0`. Clicking an alternative `+` switches the single selected processor, persists `processorTier` through the existing presales draft, and regenerates the formal equipment selection and topology. The selected processor cannot be decremented to zero.
+- All valid array-microphone solutions now expose the brand's processor alternatives. Reports and topology still consume only the formal selected processor, so zero-quantity candidates remain an on-screen replacement window rather than duplicate system processors.
+- Removed the duplicate processor choice group from `客户选型`. Microphone and speaker selection behavior, quantities, points, angles and coverage rules were not changed.
+- Verification passed: strict TypeScript, point-system regression and production build. Fresh 5174/5180 browser tabs had no console warning/error or framework overlay; 5174 showed two processor rows and excluded high-performance, while 5180 showed all three. A 5174 switch from dual to six updated both list quantities and topology label, then the original dual selection was restored.
 - No package, release or GitHub push was performed.
 
 ## 2026-07-15 invalid-room equipment-list residue

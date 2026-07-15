@@ -13,7 +13,12 @@ const brands = [
     appName: "音翼AI售前工具",
     slug: "yinyi-ai-presales-tool",
     forbidden: ["音曼", "Yinman AI Presales Tool", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "\uFFFD"],
-    forbiddenAssets: ["yinman-logo.png", "yinman-array-mic-pointmap.png", "yinman-array-mic-topology.png", "yinman-audio-processor.png"]
+    forbiddenAssets: [
+      "yinman-logo.png",
+      "yinman-array-mic-pointmap.png",
+      "yinman-array-mic-topology.png",
+      "yinman-audio-processor.png"
+    ]
   },
   {
     id: "yinman",
