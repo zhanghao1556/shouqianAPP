@@ -1404,14 +1404,6 @@ textarea:focus {
   min-width: 0;
 }
 
-.processorChoiceGroup {
-  grid-column: 1 / -1;
-}
-
-.processorChoiceGroup .solutionSegmentedControl {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .solutionChoiceTitle {
   justify-content: space-between;
   min-height: 28px;
@@ -3229,10 +3221,6 @@ th {
   grid-template-columns: 1fr;
 }
 
-.mobilePreviewMode .processorChoiceGroup .solutionSegmentedControl {
-  grid-template-columns: 1fr;
-}
-
 .mobilePreviewMode .doubleGrid,
 .mobilePreviewMode .siteFactorEditor,
 .mobilePreviewMode .audioPlanGrid,
@@ -3406,10 +3394,6 @@ th {
   .checkList,
   .customerSolutionGrid,
   .selectionDecisionNote {
-    grid-template-columns: 1fr;
-  }
-
-  .processorChoiceGroup .solutionSegmentedControl {
     grid-template-columns: 1fr;
   }
 

@@ -506,10 +506,10 @@ const syncBrandSystemSelection = (
         basis: ""
       } satisfies ProductRecommendation]
     : [];
-  const processorSelection = (brandId === "yinman" || lineArrayCount > 0) && getSelectedArrayMicQuantity(selectionWithoutSystemDevices)
+  const processorSelection = getSelectedArrayMicQuantity(selectionWithoutSystemDevices)
     ? [{
         productId: AUDIO_PROCESSOR_HOST_PRODUCT_ID,
-        name: lineArrayCount > 0 ? getProcessorTierName(processorTier) : "智能音频处理主机",
+        name: getProcessorTierName(processorTier),
         category: "processor" as const,
         quantity: 1,
         why: "",

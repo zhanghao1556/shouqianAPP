@@ -1,7 +1,8 @@
 ﻿import { Download } from "lucide-react";
-import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProductRecommendation, QuantityOverrides } from "../types";
+import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProcessorTier, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
-import { LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
+import { getProcessorTierName, getProcessorTiersForBrand, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
+import { AUDIO_PROCESSOR_HOST_PRODUCT_ID } from "../lib/systemCapabilities";
 import { formatBrandText, getAppBrand } from "../brand";
 import { CustomerSolutionSelector, type SolutionChangeKind } from "./CustomerSolutionSelector";
 import { DrawingCanvas } from "./DrawingCanvas";
@@ -32,8 +33,9 @@ export function EngineeringOutputs({
   onLegacySpeakerPointRemoveLast,
   onLegacySpeakerPointTargetChange
 }: EngineeringOutputsProps) {
+  const brand = getAppBrand();
+  const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id);
   const exportDrawingImage = (type: "installation" | "topology") => {
-      const brand = getAppBrand();
       const selector =
         type === "installation"
           ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"]`
@@ -76,15 +78,28 @@ export function EngineeringOutputs({
                 </tr>
               </thead>
               <tbody>
-                {outputs.productSelection.map((item, index) => (
+                {equipmentRows.map(({ item, processorTier }, index) => (
                   <tr key={item.productId}>
                     <td>{index + 1}</td>
                     <td>{formatBrandText(item.name)}</td>
                     <td>
                       <QuantityStepper
                         item={item}
-                        isOverridden={quantityOverrides[item.productId] !== undefined}
-                        onChange={(quantity) => onQuantityOverride((current) => ({ ...current, [item.productId]: quantity }))}
+                        isOverridden={processorTier
+                          ? item.quantity === 1 && (profile.engineeringConstraints.processorTier ?? "auto") !== "auto"
+                          : quantityOverrides[item.productId] !== undefined}
+                        onChange={(quantity) => {
+                          if (processorTier) {
+                            if (quantity > 0 && item.quantity === 0) {
+                              onSolutionChange({
+                                ...profile,
+                                engineeringConstraints: { ...profile.engineeringConstraints, processorTier }
+                              }, "processor");
+                            }
+                            return;
+                          }
+                          onQuantityOverride((current) => ({ ...current, [item.productId]: quantity }));
+                        }}
                       />
                     </td>
                   </tr>
@@ -126,6 +141,24 @@ export function EngineeringOutputs({
       </div>
     </section>
   );
+}
+
+function getEquipmentRows(
+  selection: ProductRecommendation[],
+  brandId: "yinyi" | "yinman"
+): Array<{ item: ProductRecommendation; processorTier?: Exclude<ProcessorTier, "auto"> }> {
+  return selection.flatMap((item) => {
+    if (item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID) return [{ item }];
+    return getProcessorTiersForBrand(brandId).map((processorTier) => ({
+      processorTier,
+      item: {
+        ...item,
+        productId: `${AUDIO_PROCESSOR_HOST_PRODUCT_ID}-${processorTier}`,
+        name: getProcessorTierName(processorTier),
+        quantity: item.name === getProcessorTierName(processorTier) ? 1 : 0
+      }
+    }));
+  });
 }
 
 function DrawingBlock({

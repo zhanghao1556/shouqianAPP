@@ -133,9 +133,13 @@ export function hasMeetingLeaderPosition(profile: ClassroomProfile) {
 export function getProcessorTier(profile: ClassroomProfile, brandId: AppBrandId, lineArrayCount: number, speakerCount: number): Exclude<ProcessorTier, "auto"> {
   if (lineArrayCount > 1) return "sixMic";
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
-  if (requested !== "auto") return requested;
+  if (requested !== "auto" && getProcessorTiersForBrand(brandId).includes(requested)) return requested;
   if (brandId === "yinman" && lineArrayCount === 1) return "highPerformance";
   return getProcessorAlternativeTier(profile, speakerCount);
+}
+
+export function getProcessorTiersForBrand(brandId: AppBrandId): Array<Exclude<ProcessorTier, "auto">> {
+  return brandId === "yinman" ? ["twoMic", "sixMic", "highPerformance"] : ["twoMic", "sixMic"];
 }
 
 export function getProcessorAlternativeTier(profile: ClassroomProfile, speakerCount: number): "twoMic" | "sixMic" {

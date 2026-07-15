@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
@@ -257,6 +257,10 @@ const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, wid
 const yinyiSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
 assert.equal(yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.deepEqual(getProcessorTiersForBrand("yinyi"), ["twoMic", "sixMic"]);
+assert.deepEqual(getProcessorTiersForBrand("yinman"), ["twoMic", "sixMic", "highPerformance"]);
+const yinyiRejectsYinmanProcessor = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", processorTier: "highPerformance" }), twoSpeakerOverrides, "yinyi");
+assert.equal(yinyiRejectsYinmanProcessor.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
 assert.equal(yinmanSingleLine.solutionSelection.processor?.recommended, "highPerformance");
 assert.equal(yinmanSingleLine.solutionSelection.processor?.selected, "highPerformance");
 assert.equal(yinmanSingleLine.solutionSelection.processor?.alternative, "twoMic");
@@ -466,7 +470,7 @@ for (const [expectedRequired, profile] of [[1, oneMicProfile], [2, twoMicProfile
   const generatedMicCount = outputs.generatedPoints.filter((point) => point.type === "arrayMic").length;
   assert.equal(generatedMicCount, Math.min(required, 2));
   const processor = outputs.productSelection.find((item) => item.category === "processor");
-  assert.equal(processor?.name, "智能音频处理主机");
+  assert.equal(processor?.name, "六麦处理器");
   assert.equal(processor?.quantity, 1);
   const directNetworkLines = outputs.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-"));
   assert.equal(directNetworkLines.length, generatedMicCount);
