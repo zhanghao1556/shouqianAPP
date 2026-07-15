@@ -1,7 +1,9 @@
 ﻿import { Download } from "lucide-react";
 import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
+import { LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
 import { formatBrandText, getAppBrand } from "../brand";
+import { CustomerSolutionSelector, type SolutionChangeKind } from "./CustomerSolutionSelector";
 import { DrawingCanvas } from "./DrawingCanvas";
 import { PointValidationSummary } from "./PointValidationSummary";
 
@@ -10,6 +12,7 @@ interface EngineeringOutputsProps {
   outputs: GeneratedOutputs;
   quantityOverrides: QuantityOverrides;
   onQuantityOverride: React.Dispatch<React.SetStateAction<QuantityOverrides>>;
+  onSolutionChange: (profile: ClassroomProfile, kind: SolutionChangeKind) => void;
   onCentralAirConditionerPointChange?: (position: Point, index: number) => void;
   onCentralAirConditionerCountChange?: (count: number) => void;
   onLegacySpeakerPointAdd?: (input: { position: Point; type: LegacySpeakerType; wallAdjustability: LegacyWallAdjustability }) => void;
@@ -22,6 +25,7 @@ export function EngineeringOutputs({
   outputs,
   quantityOverrides,
   onQuantityOverride,
+  onSolutionChange,
   onCentralAirConditionerPointChange,
   onCentralAirConditionerCountChange,
   onLegacySpeakerPointAdd,
@@ -48,7 +52,7 @@ export function EngineeringOutputs({
         <div>
           <span className="panelStep">03</span>
           <h2>方案输出</h2>
-          <p>{outputs.isFinalReady ? "已生成设备清单、点位图和拓扑图。" : "补齐关键信息后生成方案输出。"}</p>
+          <p>{outputs.solutionSelection.drawingBlocked ? "已保留客户选型，点位图与拓扑待改选后生成。" : outputs.isFinalReady ? "已生成设备清单、点位图和拓扑图。" : "补齐关键信息后生成方案输出。"}</p>
         </div>
       </div>
 
@@ -56,6 +60,8 @@ export function EngineeringOutputs({
         result={outputs.pointValidation}
         customerOnly={Boolean(window.__YIOU_RELEASE_BUILD__)}
       />
+
+      <CustomerSolutionSelector profile={profile} selection={outputs.solutionSelection} onChange={onSolutionChange} />
 
       <div className="stackedOutputs">
         <OutputSection title="设备清单">
@@ -102,12 +108,20 @@ export function EngineeringOutputs({
             onLegacySpeakerPointAdd={onLegacySpeakerPointAdd}
             onLegacySpeakerPointRemoveLast={onLegacySpeakerPointRemoveLast}
             onLegacySpeakerPointTargetChange={onLegacySpeakerPointTargetChange}
+            blockedMessage={outputs.solutionSelection.blockingMessage}
             onExport={() => exportDrawingImage("installation")}
           />
         </OutputSection>
 
         <OutputSection title="系统拓扑图">
-          <DrawingBlock title="系统拓扑图" profile={profile} outputs={outputs} type="topology" onExport={() => exportDrawingImage("topology")} />
+          <DrawingBlock
+            title="系统拓扑图"
+            profile={profile}
+            outputs={outputs}
+            type="topology"
+            blockedMessage={outputs.solutionSelection.blockingMessage}
+            onExport={() => exportDrawingImage("topology")}
+          />
         </OutputSection>
       </div>
     </section>
@@ -124,6 +138,7 @@ function DrawingBlock({
   onLegacySpeakerPointAdd,
   onLegacySpeakerPointRemoveLast,
   onLegacySpeakerPointTargetChange,
+  blockedMessage,
   onExport
 }: {
   title: string;
@@ -136,28 +151,36 @@ function DrawingBlock({
   onLegacySpeakerPointAdd?: (input: { position: Point; type: LegacySpeakerType; wallAdjustability: LegacyWallAdjustability }) => void;
   onLegacySpeakerPointRemoveLast?: () => void;
   onLegacySpeakerPointTargetChange?: (index: number, target: Point) => void;
+  blockedMessage?: string;
 }) {
   return (
     <div className="drawingBlock">
       <div className="drawingBlockHeader">
         <h4>{title}</h4>
-        {onExport && (
+        {onExport && !blockedMessage && (
           <button className="drawingExportButton" type="button" onClick={onExport}>
             <Download size={16} /> 导出{title}
           </button>
         )}
       </div>
-      <DrawingCanvas
-        profile={profile}
-        generatedPoints={outputs.generatedPoints}
-        connectionLines={outputs.connectionLines}
-        activeDrawing={type}
-        onCentralAirConditionerPointChange={type === "installation" ? onCentralAirConditionerPointChange : undefined}
-        onCentralAirConditionerCountChange={type === "installation" ? onCentralAirConditionerCountChange : undefined}
-        onLegacySpeakerPointAdd={type === "installation" ? onLegacySpeakerPointAdd : undefined}
-        onLegacySpeakerPointRemoveLast={type === "installation" ? onLegacySpeakerPointRemoveLast : undefined}
-        onLegacySpeakerPointTargetChange={type === "installation" ? onLegacySpeakerPointTargetChange : undefined}
-      />
+      {blockedMessage ? (
+        <div className="drawingBlockedState">
+          <strong>{blockedMessage}</strong>
+          <span>当前未生成点位和连接关系。</span>
+        </div>
+      ) : (
+        <DrawingCanvas
+          profile={profile}
+          generatedPoints={outputs.generatedPoints}
+          connectionLines={outputs.connectionLines}
+          activeDrawing={type}
+          onCentralAirConditionerPointChange={type === "installation" ? onCentralAirConditionerPointChange : undefined}
+          onCentralAirConditionerCountChange={type === "installation" ? onCentralAirConditionerCountChange : undefined}
+          onLegacySpeakerPointAdd={type === "installation" ? onLegacySpeakerPointAdd : undefined}
+          onLegacySpeakerPointRemoveLast={type === "installation" ? onLegacySpeakerPointRemoveLast : undefined}
+          onLegacySpeakerPointTargetChange={type === "installation" ? onLegacySpeakerPointTargetChange : undefined}
+        />
+      )}
       {type === "system" && (
         <div className="connectionList">
           {outputs.connectionLines.map((line) => (
@@ -197,7 +220,7 @@ function QuantityStepper({
   const brand = getAppBrand();
   const lockedProcessor = item.category === "processor";
   const effectiveMin = lockedProcessor ? 1 : min;
-  const max = item.category === "speaker" ? 16 : item.category === "pickup" ? (brand.id === "yinman" ? 2 : 5) : item.category === "amplifier" || lockedProcessor ? 1 : 4;
+  const max = item.category === "speaker" ? 16 : item.category === "pickup" ? (item.productId === LINE_ARRAY_PRODUCT_ID || brand.id === "yinman" ? 2 : 5) : item.category === "amplifier" || lockedProcessor ? 1 : 4;
   const decrement = () => onChange(Math.max(effectiveMin, item.quantity - 1));
   const increment = () => onChange(Math.min(max, item.quantity + 1));
 

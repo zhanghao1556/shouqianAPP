@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, Upload } from "lucide-react";
 import { createInitialProfile } from "./data/initialProfile";
 import { EngineeringOutputs } from "./components/EngineeringOutputs";
+import type { SolutionChangeKind } from "./components/CustomerSolutionSelector";
 import { ProfilePanel } from "./components/ProfilePanel";
 import { Questionnaire } from "./components/Questionnaire";
 import { exportPdfReport } from "./lib/pdfExporter";
@@ -17,6 +18,8 @@ const presalesDraftStorageKey = "yiou-presales-draft-v1";
 const legacyBrandText = JSON.parse('"\\u7ffc\\u6b27"') as string;
 const oldDefaultProjectName = `${legacyBrandText}大客户普通教室音频方案`;
 const oldDefaultCustomerName = `${legacyBrandText}大客户`;
+const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCESSOR-DEPENDENT", "LINE-ARRAY-MIC", "AUDIO-PROCESSOR-HOST"]);
+const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
 
 export function ClassroomEngineeringApp() {
   const brand = getAppBrand();
@@ -34,6 +37,18 @@ export function ClassroomEngineeringApp() {
   const updateProfile = (nextProfile: ClassroomProfile) => {
     setProfile(sanitizeHiddenProfileState(normalizeProfile(nextProfile)));
     setQuantityOverrides({});
+  };
+
+  const updateSolution = (nextProfile: ClassroomProfile, kind: SolutionChangeKind) => {
+    setProfile(sanitizeHiddenProfileState(normalizeProfile(nextProfile)));
+    setQuantityOverrides((current) => {
+      const next = { ...current };
+      const affectedIds = kind === "microphone" ? microphoneOverrideIds : speakerOverrideIds;
+      Object.keys(next).forEach((productId) => {
+        if (affectedIds.has(productId)) delete next[productId];
+      });
+      return next;
+    });
   };
 
   const markCentralAirConditionerPoint = (position: Point, index = 0) => {
@@ -164,6 +179,7 @@ export function ClassroomEngineeringApp() {
             outputs={outputs}
             quantityOverrides={quantityOverrides}
             onQuantityOverride={setQuantityOverrides}
+            onSolutionChange={updateSolution}
             onCentralAirConditionerPointChange={markCentralAirConditionerPoint}
             onCentralAirConditionerCountChange={updateCentralAirConditionerCount}
             onLegacySpeakerPointAdd={addLegacySpeakerPoint}
@@ -263,6 +279,8 @@ function createCleanReleasePresalesDraft(): { profile: ClassroomProfile; quantit
         centralAirConditionerPoints: [],
         auditoriumRearFillSpeakers: "unknown",
         speakerProductOverride: "auto",
+        microphoneSolution: "auto",
+        overheadSpeakerMounting: "unknown",
         notes: ""
       }
     },
@@ -291,7 +309,6 @@ function sanitizeHiddenProfileState(profile: ClassroomProfile): ClassroomProfile
     customerName: profile.customerName === oldDefaultCustomerName ? "" : profile.customerName,
     engineeringConstraints: {
       ...profile.engineeringConstraints,
-      speakerProductOverride: "auto",
       centralAirConditionerCount: hasCentralAirConditioner ? profile.engineeringConstraints.centralAirConditionerCount : 0,
       centralAirConditionerPoints: hasCentralAirConditioner ? profile.engineeringConstraints.centralAirConditionerPoints : []
     },

@@ -30,6 +30,7 @@ export type LegacySpeakerType = "ceiling" | "wall";
 export type LegacyWallAdjustability = "universal" | "fixed" | "unknown";
 export type SpeakerProductOverride = "auto" | "ceiling" | "wall";
 export type MicrophoneSolution = "auto" | "existingArray" | "lineArray";
+export type OverheadSpeakerMounting = "available" | "unavailable" | "unknown";
 export type LineArrayMode = "auto" | "front" | "full";
 export type LineArrayInstallation = "auto" | "podium" | "hanging";
 export type ProcessorTier = "auto" | "twoMic" | "sixMic" | "highPerformance";
@@ -72,6 +73,7 @@ export interface EngineeringConstraints {
   auditoriumRearFillSpeakers?: AuditoriumRearFillSpeakerStatus;
   speakerProductOverride?: SpeakerProductOverride;
   microphoneSolution?: MicrophoneSolution;
+  overheadSpeakerMounting?: OverheadSpeakerMounting;
   hasPodium?: boolean;
   lineArrayMode?: LineArrayMode;
   lineArrayInstallation?: LineArrayInstallation;
@@ -274,6 +276,28 @@ export interface PointValidationResult {
   customerMessage?: string;
 }
 
+export interface CustomerSolutionChoice<T extends string> {
+  recommended: T;
+  selected: T;
+  userSelected: boolean;
+  isNonRecommended: boolean;
+  selectedLabel: string;
+  recommendedLabel: string;
+  advantages: string;
+  cautions: string;
+}
+
+export interface CustomerSolutionSelection {
+  microphone: CustomerSolutionChoice<Exclude<MicrophoneSolution, "auto">> & {
+    lineArraySupported: boolean;
+  };
+  speaker: CustomerSolutionChoice<Exclude<SpeakerProductOverride, "auto">> & {
+    requiresSpecialReview: boolean;
+  };
+  drawingBlocked: boolean;
+  blockingMessage?: string;
+}
+
 export interface GeneratedOutputs {
   isFinalReady: boolean;
   completeness: CompletenessItem[];
@@ -290,4 +314,5 @@ export interface GeneratedOutputs {
   pdfReportModel: PdfReportModel;
   reportText: string;
   pointValidation: PointValidationResult;
+  solutionSelection: CustomerSolutionSelection;
 }

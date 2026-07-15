@@ -1,6 +1,7 @@
 import type { AppBrandId } from "../brand";
 import type {
   ClassroomProfile,
+  CustomerSolutionSelection,
   GeneratedPoint,
   Point,
   PointValidationFinding,
@@ -25,14 +26,39 @@ export interface PointValidationInput {
   generatedPoints: GeneratedPoint[];
   requiredArrayMicCount: number;
   requiredSpeakerCount: number;
+  solutionSelection?: CustomerSolutionSelection;
 }
 
 export function validatePointPlan(input: PointValidationInput): PointValidationResult {
-  const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount } = input;
+  const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount, solutionSelection } = input;
   const capability = getBrandSystemCapability(brandId);
   const mics = generatedPoints.filter((point) => point.type === "arrayMic");
   const speakers = generatedPoints.filter((point) => point.type === "speaker");
   const findings: PointValidationFinding[] = [];
+
+  if (solutionSelection?.drawingBlocked) {
+    findings.push({
+      code: "selection.line-array-coverage",
+      severity: "hard",
+      title: "线阵麦覆盖能力",
+      internalMessage: solutionSelection.blockingMessage ?? "客户选择的线阵麦方案无法完整覆盖当前责任区，点位和拓扑已停止生成。",
+      customerMessage: "该方案无法完整覆盖，建议改选阵麦。",
+      sourceRefs: ["用户确认的线阵麦硬能力阻断规则"]
+    });
+  }
+
+  if (solutionSelection?.speaker.requiresSpecialReview) {
+    findings.push({
+      code: "selection.ceiling-installation",
+      severity: "hard",
+      title: "吸顶音箱安装条件",
+      actual: "顶面不可安装",
+      limit: "需具备顶面安装条件",
+      internalMessage: "客户强制选择吸顶音箱，按确认规则继续生成吸顶方案，并标记专项复核。",
+      customerMessage: "顶面安装条件与吸顶音箱方案需要专项复核。",
+      sourceRefs: ["用户确认的强制吸顶继续出图规则"]
+    });
+  }
 
   if (profile.roomGeometry.length > 0 && profile.roomGeometry.width > 0) {
     findings.push({

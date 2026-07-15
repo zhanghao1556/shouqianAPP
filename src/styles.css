@@ -1352,6 +1352,217 @@ textarea:focus {
   gap: 16px;
 }
 
+.customerSolutionPanel {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.customerSolutionHeader,
+.solutionChoiceTitle,
+.solutionReviewMessage,
+.solutionBlockingMessage {
+  display: flex;
+  align-items: center;
+}
+
+.customerSolutionHeader {
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.customerSolutionHeader > div {
+  display: grid;
+  gap: 2px;
+}
+
+.customerSolutionHeader span,
+.customerSolutionHeader p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.customerSolutionHeader h3 {
+  margin: 0;
+  color: var(--color-brand-dark);
+  font-size: 18px;
+}
+
+.customerSolutionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.solutionChoiceGroup {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.solutionChoiceTitle {
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.solutionChoiceTitle > strong {
+  color: var(--color-ink);
+  font-size: 13px;
+}
+
+.restoreRecommendationButton {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.restoreRecommendationButton:hover {
+  border-color: var(--color-brand);
+  color: var(--color-brand-dark);
+}
+
+.solutionSegmentedControl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+}
+
+.solutionSegmentedControl > button {
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 7px;
+  background: transparent;
+  color: var(--color-muted);
+  text-align: left;
+}
+
+.solutionSegmentedControl > button > svg {
+  grid-row: 1 / 3;
+}
+
+.solutionSegmentedControl > button > span {
+  min-width: 0;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.solutionSegmentedControl > button > small {
+  color: var(--color-subtle);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.solutionSegmentedControl > button.active {
+  border-color: color-mix(in srgb, var(--color-brand) 52%, white);
+  background: #ffffff;
+  color: var(--color-brand-dark);
+  box-shadow: 0 2px 8px rgba(15, 36, 30, 0.08);
+}
+
+.solutionConditionGrid,
+.lineArrayOptions {
+  display: grid;
+  gap: 10px;
+}
+
+.solutionConditionGrid {
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr);
+}
+
+.lineArrayOptions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line);
+}
+
+.solutionConditionGrid label,
+.lineArrayOptions label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.selectionDecisionNote {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px 18px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.selectionDecisionNote > strong {
+  color: var(--color-ink);
+}
+
+.selectionDecisionNote b {
+  margin-right: 6px;
+  color: var(--color-brand-dark);
+}
+
+.solutionReviewMessage,
+.solutionBlockingMessage {
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 6px;
+  background: rgba(254, 242, 242, 0.82);
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.solutionReviewMessage span {
+  color: #7f1d1d;
+}
+
+.drawingBlockedState {
+  min-height: 260px;
+  border: 1px dashed rgba(220, 38, 38, 0.42);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  background: rgba(254, 242, 242, 0.58);
+  color: #7f1d1d;
+  text-align: center;
+}
+
+.drawingBlockedState span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
 .pointValidationSummary,
 .pointValidationFull,
 .pointValidationCustomerRisk {
@@ -2707,7 +2918,11 @@ th {
 .mobilePreviewMode .profileFacts,
 .mobilePreviewMode .checkList,
 .mobilePreviewMode .needGrid,
-.mobilePreviewMode .choiceGrid {
+.mobilePreviewMode .choiceGrid,
+.mobilePreviewMode .customerSolutionGrid,
+.mobilePreviewMode .lineArrayOptions,
+.mobilePreviewMode .solutionConditionGrid,
+.mobilePreviewMode .selectionDecisionNote {
   grid-template-columns: 1fr;
 }
 
@@ -2817,6 +3032,14 @@ th {
     grid-template-columns: 1fr;
   }
 
+  .lineArrayOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .selectionDecisionNote {
+    grid-template-columns: 1fr;
+  }
+
   .outputTabs {
     display: flex;
   }
@@ -2877,8 +3100,18 @@ th {
   .needGrid,
   .choiceGrid,
   .profileFacts,
-  .checkList {
+  .checkList,
+  .customerSolutionGrid,
+  .lineArrayOptions,
+  .solutionConditionGrid,
+  .selectionDecisionNote {
     grid-template-columns: 1fr;
+  }
+
+  .customerSolutionHeader,
+  .solutionReviewMessage {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .dimensionGrid {

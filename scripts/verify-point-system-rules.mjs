@@ -15,7 +15,7 @@ import {
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width } = {}) {
+function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown" } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -26,6 +26,8 @@ function makeProfile({ length = 10, width = 8, height = 3, needs = ["localAmplif
     engineeringConstraints: {
       ...base.engineeringConstraints,
       microphoneSolution,
+      speakerProductOverride,
+      overheadSpeakerMounting,
       teachingAreaSize: { ...base.engineeringConstraints.teachingAreaSize, width: teachingWidth },
       ceiling,
       hasCentralAirConditioner: centralAir.length > 0,
@@ -75,21 +77,78 @@ for (const [teachingWidth, expectedCount] of [[13, 1], [13.1, 2], [15, 2]]) {
 }
 const overWidth = generateEngineeringOutputs(makeProfile({ length: 8, width: 15.1, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 15.1 }), {}, "yinyi");
 assert.equal(overWidth.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
-assert.ok(overWidth.riskItems.some((item) => item.includes("超过15m")));
+assert.equal(overWidth.generatedPoints.length, 0);
+assert.equal(overWidth.connectionLines.length, 0);
+assert.equal(overWidth.solutionSelection.drawingBlocked, true);
+assert.equal(overWidth.solutionSelection.blockingMessage, "该方案无法完整覆盖，建议改选阵麦");
+assert.ok(overWidth.riskItems.includes("该方案无法完整覆盖，建议改选阵麦"));
+assert.equal(overWidth.pointValidation.findings.find((item) => item.code === "selection.line-array-coverage")?.severity, "hard");
 
 const fullRoomFit = generateEngineeringOutputs(makeProfile({ length: 7, width: 7, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(fullRoomFit.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 1);
 assert.equal(fullRoomFit.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 5);
 const fullRoomOverflow = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(fullRoomOverflow.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
+assert.equal(fullRoomOverflow.solutionSelection.drawingBlocked, true);
 
 const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinman");
-assert.equal(yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
+const yinyiSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(
+  yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name,
+  yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name
+);
 const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14, scope: "podium", microphoneSolution: "lineArray", teachingWidth: 14 }), {}, "yinman");
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
-console.log("PASS line-array 13m/15m/5m boundaries, processor selection and model hiding");
+console.log("PASS line-array 13m/15m/5m boundaries, hard blocking, shared processor selection and model hiding");
+
+const automaticChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "auto" }), {}, "yinyi");
+assert.equal(automaticChoice.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(automaticChoice.solutionSelection.microphone.selected, "lineArray");
+assert.equal(automaticChoice.solutionSelection.microphone.userSelected, false);
+const forcedArrayChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "existingArray" }), {}, "yinyi");
+assert.equal(forcedArrayChoice.solutionSelection.microphone.recommended, "lineArray");
+assert.equal(forcedArrayChoice.solutionSelection.microphone.selected, "existingArray");
+assert.equal(forcedArrayChoice.solutionSelection.microphone.isNonRecommended, true);
+
+const overheadUnavailableAuto = generateEngineeringOutputs(makeProfile({
+  length: 12,
+  width: 8,
+  scope: "full",
+  ceiling: "exposed",
+  overheadSpeakerMounting: "unavailable"
+}), {}, "yinyi");
+assert.equal(overheadUnavailableAuto.solutionSelection.speaker.recommended, "wall");
+assert.ok(overheadUnavailableAuto.generatedPoints.filter((point) => point.type === "speaker").every((point) => point.label.includes("壁挂")));
+const forcedCeilingUnavailableProfile = makeProfile({
+  length: 12,
+  width: 8,
+  scope: "full",
+  ceiling: "exposed",
+  speakerProductOverride: "ceiling",
+  overheadSpeakerMounting: "unavailable"
+});
+const forcedCeilingUnavailable = generateEngineeringOutputs(forcedCeilingUnavailableProfile, {}, "yinyi");
+assert.equal(forcedCeilingUnavailable.solutionSelection.speaker.selected, "ceiling");
+assert.equal(forcedCeilingUnavailable.solutionSelection.speaker.requiresSpecialReview, true);
+assert.ok(forcedCeilingUnavailable.generatedPoints.some((point) => point.type === "speaker" && point.label.includes("吸顶")));
+assert.equal(forcedCeilingUnavailable.pointValidation.findings.find((item) => item.code === "selection.ceiling-installation")?.severity, "hard");
+assert.equal(getCustomerPointValidationStatus(forcedCeilingUnavailable.pointValidation), "需专项复核");
+const overheadAvailableExposed = generateEngineeringOutputs(makeProfile({
+  length: 12,
+  width: 8,
+  scope: "full",
+  ceiling: "exposed",
+  overheadSpeakerMounting: "available"
+}), {}, "yinyi");
+assert.equal(overheadAvailableExposed.solutionSelection.speaker.recommended, "ceiling");
+assert.ok(overheadAvailableExposed.generatedPoints.some((point) => point.type === "speaker" && point.label.includes("吸顶")));
+const persistedSelectionProfile = normalizeProfile(JSON.parse(JSON.stringify(forcedCeilingUnavailableProfile)));
+assert.equal(persistedSelectionProfile.engineeringConstraints.speakerProductOverride, "ceiling");
+assert.equal(persistedSelectionProfile.engineeringConstraints.overheadSpeakerMounting, "unavailable");
+assert.equal(persistedSelectionProfile.engineeringConstraints.microphoneSolution, "existingArray");
+console.log("PASS automatic and forced choices, ceiling special review, generated ceiling points and selection persistence");
 
 function getWallSpeakers(profile, count = 4) {
   return generateEngineeringPoints(profile, { speakerProductId: "COLUMN-SPEAKER", speakerCount: count }).filter(

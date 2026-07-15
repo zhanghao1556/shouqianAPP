@@ -20,12 +20,8 @@ import type {
   FloorMaterial,
   FurnishingDensity,
   GlassCoverage,
-  LineArrayInstallation,
-  LineArrayMode,
-  MicrophoneSolution,
   Need,
   PodiumPosition,
-  ProcessorTier,
   Scenario,
   SoftTreatment,
   WallMaterial
@@ -155,72 +151,6 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
           <label>
             客户名称
             <input value={profile.customerName} onChange={(event) => setProfile({ customerName: event.target.value })} />
-          </label>
-        </div>
-      </section>
-
-      <section className="formSection">
-        <div className="sectionTitleRow">
-          <h3>麦克风方案</h3>
-          <span className="sectionBadge">选型</span>
-        </div>
-        <div className="doubleGrid">
-          <label>
-            麦克风方案
-            <CustomSelect
-              value={profile.engineeringConstraints.microphoneSolution ?? "auto"}
-              options={[
-                { value: "auto", label: "自动推荐" },
-                { value: "existingArray", label: "智能语音阵列麦克风" },
-                { value: "lineArray", label: "智能线阵麦克风" }
-              ]}
-              onChange={(value) => setConstraints({ microphoneSolution: value as MicrophoneSolution })}
-            />
-          </label>
-          <label>
-            现场讲台
-            <CustomSelect
-              value={profile.engineeringConstraints.hasPodium === false ? "no" : "yes"}
-              options={[{ value: "yes", label: "有讲台" }, { value: "no", label: "无讲台" }]}
-              onChange={(value) => setConstraints({ hasPodium: value === "yes" })}
-            />
-          </label>
-          <label>
-            线阵麦工作模式
-            <CustomSelect
-              value={profile.engineeringConstraints.lineArrayMode ?? "auto"}
-              options={[
-                { value: "auto", label: "跟随扩声范围" },
-                { value: "front", label: "正面180度扩声" },
-                { value: "full", label: "全场扩声" }
-              ]}
-              onChange={(value) => setConstraints({ lineArrayMode: value as LineArrayMode })}
-            />
-          </label>
-          <label>
-            安装方式
-            <CustomSelect
-              value={profile.engineeringConstraints.lineArrayInstallation ?? "auto"}
-              options={[
-                { value: "auto", label: "按讲台条件推荐" },
-                { value: "podium", label: "讲台摆放" },
-                { value: "hanging", label: "吊挂安装" }
-              ]}
-              onChange={(value) => setConstraints({ lineArrayInstallation: value as LineArrayInstallation })}
-            />
-          </label>
-          <label>
-            处理器档位
-            <CustomSelect
-              value={profile.engineeringConstraints.processorTier ?? "auto"}
-              options={[
-                { value: "auto", label: "自动推荐" },
-                { value: "twoMic", label: "两麦处理器" },
-                { value: "sixMic", label: "六麦处理器" },
-                { value: "highPerformance", label: "高性能处理器" }
-              ]}
-              onChange={(value) => setConstraints({ processorTier: value as ProcessorTier })}
-            />
           </label>
         </div>
       </section>
@@ -650,7 +580,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
   );
 }
 
-function CustomSelect({
+export function CustomSelect({
   value,
   options,
   onChange

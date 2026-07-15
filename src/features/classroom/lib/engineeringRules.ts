@@ -59,6 +59,7 @@ import {
 } from "./systemCapabilities";
 import { validatePointPlan } from "./pointValidation";
 import { getLineArrayDecision, getProcessorCapacity, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
+import { getCustomerSolutionSelection } from "./solutionSelection";
 
 export { getAcousticAssessment } from "./reverberationRules";
 
@@ -131,8 +132,10 @@ export const generateEngineeringOutputs = (
   const completeness = getCompleteness(profile);
   const acousticAssessment = getAcousticAssessment(profile);
   const canGenerateCore = hasValidGeometry(profile);
-  const requiredArrayMicCount = canGenerateCore ? getRequiredArrayMicCount(profile, brandId) : 0;
-  const defaultPoints = canGenerateCore ? generateBrandEngineeringPoints(profile, {}, brandId) : [];
+  const solutionSelection = getCustomerSolutionSelection(profile);
+  const canGenerateDrawings = canGenerateCore && !solutionSelection.drawingBlocked;
+  const requiredArrayMicCount = canGenerateDrawings ? getRequiredArrayMicCount(profile, brandId) : 0;
+  const defaultPoints = canGenerateDrawings ? generateBrandEngineeringPoints(profile, {}, brandId) : [];
   const defaultProductSelection = canGenerateCore
     ? ensureMinimumProductSelection(
         profile,
@@ -151,7 +154,7 @@ export const generateEngineeringOutputs = (
   const selectedSpeakerProduct = productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
   const selectedSpeakerCount = selectedSpeakerProduct && quantityOverrides[selectedSpeakerProduct.productId] !== undefined ? selectedSpeakerProduct.quantity : undefined;
   const hasManualSpeakerCount = selectedSpeakerCount !== undefined;
-  const points = canGenerateCore
+  const points = canGenerateDrawings
     ? generateBrandEngineeringPoints(profile, {
         arrayMicCount: getSelectedArrayMicQuantity(productSelection),
         speakerCount: selectedSpeakerCount,
@@ -162,7 +165,7 @@ export const generateEngineeringOutputs = (
   const validationSpeakerProductId = selectedSpeakerProduct?.productId === "CEILING-SPEAKER" || selectedSpeakerProduct?.productId === "COLUMN-SPEAKER"
     ? selectedSpeakerProduct.productId
     : getSpeakerProductId(profile);
-  const requiredSpeakerCount = canGenerateCore && shouldGenerateNewSpeakers(profile)
+  const requiredSpeakerCount = canGenerateDrawings && shouldGenerateNewSpeakers(profile)
     ? getRequiredSpeakerCount(profile, validationSpeakerProductId === "COLUMN-SPEAKER")
     : 0;
   const pointValidation = validatePointPlan({
@@ -170,10 +173,11 @@ export const generateEngineeringOutputs = (
     brandId,
     generatedPoints: points,
     requiredArrayMicCount,
-    requiredSpeakerCount
+    requiredSpeakerCount,
+    solutionSelection
   });
   const riskItems = getRiskItems(profile, acousticAssessment, points, brandId);
-  const connectionLines = canGenerateCore ? generateConnectionLines(profile, productSelection, brandId) : [];
+  const connectionLines = canGenerateDrawings ? generateConnectionLines(profile, productSelection, brandId) : [];
   const engineeringBasis: EngineeringBasis[] = [];
   const installationGuide = getInstallationGuide(profile, points);
   const audioPlan = getAudioPlan(profile, points, acousticAssessment, brandId, requiredArrayMicCount);
@@ -215,7 +219,8 @@ export const generateEngineeringOutputs = (
     drawings,
     pdfReportModel: report.pdfReportModel,
     reportText: report.reportText,
-    pointValidation
+    pointValidation,
+    solutionSelection
   };
 };
 
@@ -375,6 +380,7 @@ const getProductSelection = (
   brandId: AppBrandId
 ): ProductRecommendation[] => {
   const lineArray = getLineArrayDecision(profile);
+  const useLineArrayProduct = lineArray.selected || lineArray.requested;
   const hasLegacySound = Boolean(profile.existingDevices.legacySoundSystem.trim());
   const needsAuditoriumRearFill = needsAuditoriumRearFillSpeakers(profile);
   const speakerProductId = getSpeakerProductId(profile);
@@ -391,7 +397,7 @@ const getProductSelection = (
       const arrayCount = points.filter((item) => item.type === "arrayMic").length;
       const speakerCount = points.filter((item) => item.type === "speaker").length;
 
-      if (rule.productId === "DT2-Pro") quantity = Math.max(1, arrayCount);
+      if (rule.productId === "DT2-Pro") quantity = lineArray.requested && !lineArray.selected ? 0 : Math.max(1, arrayCount);
       if (rule.productId === "CEILING-SPEAKER" || rule.productId === "COLUMN-SPEAKER") {
         quantity = (hasLegacySound && profile.scenario === "auditorium" && !needsAuditoriumRearFill) || rule.productId !== speakerProductId ? 0 : clampSpeakerQuantity(speakerCount);
       }
@@ -401,10 +407,10 @@ const getProductSelection = (
       }
 
       return {
-        productId: rule.productId === "DT2-Pro" && lineArray.selected
+        productId: rule.productId === "DT2-Pro" && useLineArrayProduct
           ? LINE_ARRAY_PRODUCT_ID
           : brandId === "yinman" && rule.productId === "DT2-Pro" ? PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID : rule.productId,
-        name: rule.productId === "DT2-Pro" && lineArray.selected ? "智能线阵麦克风" : rule.name,
+        name: rule.productId === "DT2-Pro" && useLineArrayProduct ? "智能线阵麦克风" : rule.name,
         category: rule.category,
         quantity,
         why: "",
@@ -530,7 +536,8 @@ const getWhereText = (profile: ClassroomProfile, defaultText: string) => {
 const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAssessment, points: GeneratedPoint[], brandId: AppBrandId) => {
   const risks: string[] = [];
   const lineArray = getLineArrayDecision(profile);
-  if (lineArray.fallbackReason) risks.push(lineArray.fallbackReason);
+  if (lineArray.requested && !lineArray.selected) risks.push("该方案无法完整覆盖，建议改选阵麦");
+  else if (lineArray.fallbackReason) risks.push(lineArray.fallbackReason);
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = getProcessorTier(profile, brandId, lineArray.count, speakerCount);
@@ -546,7 +553,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   const speakerOverride = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   if (acousticAssessment.risk === "high") risks.push(`${acousticAssessment.label}会影响阵麦拾音清晰度。`);
   if (speakerOverride === "ceiling") {
-    risks.push("推荐吸顶选择会影响吊顶、开孔、检修和维护条件。");
+    risks.push("吸顶选择会影响顶面安装、开孔、检修和维护条件。");
   }
   if (speakerOverride === "wall") {
     risks.push("推荐壁挂选择会影响墙面承重、走线和覆盖均匀性。");

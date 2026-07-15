@@ -166,6 +166,7 @@ export const createInitialProfile = (): ClassroomProfile => ({
     auditoriumRearFillSpeakers: "unknown",
     speakerProductOverride: "auto",
     microphoneSolution: "auto",
+    overheadSpeakerMounting: "unknown",
     hasPodium: true,
     lineArrayMode: "auto",
     lineArrayInstallation: "auto",

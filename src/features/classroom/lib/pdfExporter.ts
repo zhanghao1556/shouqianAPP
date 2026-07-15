@@ -219,6 +219,11 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ["房间尺寸", `${profile.roomGeometry.length}m x ${profile.roomGeometry.width}m x ${profile.roomGeometry.height}m`],
     ["房间面积", `${getRoomArea(profile).toFixed(1)} 平方米`],
     ["扩声形态", getSpeakerMode(profile)],
+    ["麦克风选型", getSelectionArchiveValue(outputs.solutionSelection.microphone)],
+    ["麦克风提示", getSelectionArchiveNote(outputs.solutionSelection.microphone)],
+    ["音箱选型", getSelectionArchiveValue(outputs.solutionSelection.speaker)],
+    ["音箱提示", getSelectionArchiveNote(outputs.solutionSelection.speaker, outputs.solutionSelection.speaker.requiresSpecialReview)],
+    ["顶面音箱安装", overheadSpeakerMountingLabels[profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"]],
     ["吊顶条件", ceilingLabels[profile.engineeringConstraints.ceiling]],
     ["讲台位置", podiumPositionLabels[profile.engineeringConstraints.podiumPosition]],
     [
@@ -247,10 +252,37 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
   return rows;
 }
 
+function getSelectionArchiveValue(choice: { selectedLabel: string; recommendedLabel: string; isNonRecommended: boolean; userSelected: boolean }) {
+  if (choice.isNonRecommended) return `${choice.selectedLabel}（客户选择；系统推荐：${choice.recommendedLabel}）`;
+  return choice.userSelected ? `${choice.selectedLabel}（客户选择，与系统推荐一致）` : `${choice.selectedLabel}（系统推荐）`;
+}
+
+function getSelectionArchiveNote(
+  choice: { selectedLabel: string; isNonRecommended: boolean },
+  requiresSpecialReview = false
+) {
+  const review = requiresSpecialReview ? "需专项复核；" : "";
+  if (!choice.isNonRecommended && !requiresSpecialReview) return "采用系统推荐";
+  const detail = choice.selectedLabel.includes("线阵麦")
+    ? "优势：教师区定向；注意：覆盖宽度与接口容量"
+    : choice.selectedLabel.includes("阵列麦")
+      ? "优势：全场覆盖与扩展；注意：安装位置与多麦配合"
+      : choice.selectedLabel.includes("吸顶")
+        ? "优势：覆盖均匀；注意：顶面安装与避让"
+        : "优势：安装检修直观；注意：墙面、均匀性与啸叫";
+  return `${review}${detail}`;
+}
+
 function getSpeakerMode(profile: ClassroomProfile) {
   if (profile.roomGeometry.length <= 0 || profile.roomGeometry.width <= 0) return "待确认";
   return getSpeakerModelName(profile);
 }
+
+const overheadSpeakerMountingLabels = {
+  available: "可安装",
+  unavailable: "不可安装",
+  unknown: "待确认"
+} as const;
 
 function getAcousticSummary(profile: ClassroomProfile) {
   const acoustic = profile.acousticEnvironment;

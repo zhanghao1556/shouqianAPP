@@ -41,7 +41,15 @@ const getAutomaticSpeakerSelectionResult = (profile: ClassroomProfile): SpeakerS
   const { length, width } = profile.roomGeometry;
   if (length <= 0 || width <= 0) return "CEILING-SPEAKER";
   if (needsAuditoriumRearFillSpeakers(profile)) return "COLUMN-SPEAKER";
+  if (profile.engineeringConstraints.overheadSpeakerMounting === "unavailable") return "COLUMN-SPEAKER";
   if (shouldUseLectureClassroomCeilingSpeaker(profile)) return "CEILING-SPEAKER";
+  if (
+    profile.engineeringConstraints.overheadSpeakerMounting === "available" &&
+    (profile.scenario === "standardClassroom" || profile.scenario === "combinedClassroom") &&
+    profile.amplificationScope === "full"
+  ) {
+    return "CEILING-SPEAKER";
+  }
   if (hasHighCeilingReverberationRisk(profile)) return "COLUMN-SPEAKER";
   if (profile.engineeringConstraints.ceiling === "unknown") return "COLUMN-SPEAKER";
   if (isMeetingScenario(profile.scenario) && profile.engineeringConstraints.ceiling !== "suspended") return "COLUMN-SPEAKER";
@@ -80,10 +88,10 @@ export const getSpeakerSelectionReason = (profile: ClassroomProfile) => {
     return "报告厅已确认有后排补声 / 辅助音箱，默认使用利旧原音频系统，不新增吸顶音箱或壁挂音柱。";
   }
   if (override === "ceiling") {
-    return `客户已选择推荐吸顶音箱方案，系统按 ${modelName} 输出；需复核吊顶、开孔、层高、检修口、灯具空调避让和后期维护条件。`;
+    return `客户已选择吸顶音箱方案，系统按 ${modelName} 输出；需复核吊顶、开孔、层高、检修口、灯具空调避让和后期维护条件。`;
   }
   if (override === "wall") {
-    return `客户已选择推荐壁挂音箱方案，系统按 ${modelName} 输出；需复核墙面承重、走线路径、门窗遮挡、投影幕布、覆盖均匀性和啸叫风险。`;
+    return `客户已选择壁挂音箱方案，系统按 ${modelName} 输出；需复核墙面承重、走线路径、门窗遮挡、投影幕布、覆盖均匀性和啸叫风险。`;
   }
   if (needsAuditoriumRearFillSpeakers(profile)) {
     return `报告厅默认利旧原音频系统；当原系统缺少后排补声或辅助音箱时，仅新增 ${modelName} 用于后排补声，不做舞台区域和前场监听。`;

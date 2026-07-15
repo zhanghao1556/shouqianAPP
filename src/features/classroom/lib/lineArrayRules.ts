@@ -10,6 +10,8 @@ export const LINE_ARRAY_FULL_RADIUS_M = 5;
 
 export interface LineArrayDecision {
   selected: boolean;
+  requested: boolean;
+  supported: boolean;
   count: number;
   mode: "front" | "full";
   installation: "podium" | "hanging";
@@ -27,22 +29,22 @@ export function getLineArrayDecision(profile: ClassroomProfile): LineArrayDecisi
   const hasLocalAmplification = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
   const manuallySelected = solution === "lineArray";
 
-  if (solution === "existingArray") return { selected: false, count: 0, mode, installation };
-  if (!manuallySelected && !hasLocalAmplification) return { selected: false, count: 0, mode, installation };
+  if (solution === "existingArray") return { selected: false, requested: false, supported: true, count: 0, mode, installation };
+  if (!manuallySelected && !hasLocalAmplification) return { selected: false, requested: false, supported: true, count: 0, mode, installation };
 
   if (mode === "front") {
     const width = getLineArrayFrontWidth(profile);
     if (width > LINE_ARRAY_DOUBLE_MAX_WIDTH_M) {
-      return { selected: false, count: 0, mode, installation, fallbackReason: "教师活动区宽度超过15m，改用现有阵麦方案。" };
+      return { selected: false, requested: manuallySelected, supported: false, count: 0, mode, installation, fallbackReason: "教师活动区宽度超过15m，改用现有阵麦方案。" };
     }
-    return { selected: true, count: width > LINE_ARRAY_SINGLE_MAX_WIDTH_M ? 2 : 1, mode, installation };
+    return { selected: true, requested: manuallySelected, supported: true, count: width > LINE_ARRAY_SINGLE_MAX_WIDTH_M ? 2 : 1, mode, installation };
   }
 
   const farthestCornerDistance = Math.hypot(profile.roomGeometry.width / 2, profile.roomGeometry.length / 2);
   if (farthestCornerDistance > LINE_ARRAY_FULL_RADIUS_M) {
-    return { selected: false, count: 0, mode, installation, fallbackReason: "全场区域超出单只5m覆盖半径，改用现有阵麦方案。" };
+    return { selected: false, requested: manuallySelected, supported: false, count: 0, mode, installation, fallbackReason: "全场区域超出单只5m覆盖半径，改用现有阵麦方案。" };
   }
-  return { selected: true, count: 1, mode, installation };
+  return { selected: true, requested: manuallySelected, supported: true, count: 1, mode, installation };
 }
 
 export function getLineArrayFrontWidth(profile: ClassroomProfile) {
@@ -50,11 +52,10 @@ export function getLineArrayFrontWidth(profile: ClassroomProfile) {
   return profile.engineeringConstraints.teachingAreaSize?.width || profile.roomGeometry.width;
 }
 
-export function getProcessorTier(profile: ClassroomProfile, brandId: AppBrandId, lineArrayCount: number, speakerCount: number): Exclude<ProcessorTier, "auto"> {
+export function getProcessorTier(profile: ClassroomProfile, _brandId: AppBrandId, lineArrayCount: number, speakerCount: number): Exclude<ProcessorTier, "auto"> {
   if (lineArrayCount > 1) return "sixMic";
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
   if (requested !== "auto") return requested;
-  if (brandId === "yinman") return "highPerformance";
   const inputCount = splitDevices(profile.existingDevices.legacyWirelessMic).length;
   const outputCount = splitDevices(profile.existingDevices.recordingHost).length;
   return Math.max(inputCount, outputCount, speakerCount) > 2 ? "sixMic" : "twoMic";
