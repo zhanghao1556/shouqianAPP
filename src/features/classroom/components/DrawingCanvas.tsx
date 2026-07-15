@@ -5,6 +5,11 @@ import { generateEngineeringPoints, getArrayMicCentralAirRequiredClearance, getA
 import { isMeetingScenario } from "../lib/scenarioRules";
 import { PODIUM_DEPTH_M, PODIUM_FRONT_CLEARANCE_M } from "../lib/podiumGeometry";
 import {
+  getMeetingFurnitureLayout,
+  MEETING_CHAIR_DEPTH_M,
+  MEETING_CHAIR_WIDTH_M
+} from "../lib/meetingFurnitureRules";
+import {
   CEILING_SPEAKER_IDEAL_COVERAGE_RADIUS_M,
   MAX_SPEAKERS_PER_DT,
   getExternalAmplifierLineOutCountForSpeakers,
@@ -580,6 +585,7 @@ function InstallationDiagram({
           {micOnly ? `${hasLineArray ? "线阵麦" : "阵列麦"}点位图` : `${hasLineArray ? "线阵麦" : "阵列麦"}与音箱点位图`}
         </text>
         <line x1={room.x} y1={room.y} x2={room.x + room.width} y2={room.y} stroke="#111827" strokeWidth="0.8" strokeDasharray="5 4" />
+        <MeetingFurnitureMarker profile={profile} width={width} height={height} roomClipId={roomClipId} />
         {!isMeetingScenario(profile.scenario) && <PodiumMarker profile={profile} width={width} height={height} />}
         <LectureAudienceStepMarker profile={profile} generatedPoints={visibleGeneratedPoints} width={width} height={height} />
         <text x={footerX} y={installationViewBox.y + installationViewBox.height - 18} textAnchor="middle" className="cadSmall">
@@ -1077,6 +1083,138 @@ function LectureAudienceStepMarker({
           )}
         </g>
       ))}
+    </g>
+  );
+}
+
+function MeetingFurnitureMarker({
+  profile,
+  width,
+  height,
+  roomClipId
+}: {
+  profile: ClassroomProfile;
+  width: number;
+  height: number;
+  roomClipId: string;
+}) {
+  if (!isMeetingScenario(profile.scenario)) return null;
+  const room = getCanvasRoomLayout(profile, width, height);
+  const layout = getMeetingFurnitureLayout(profile);
+  const tableCenter = toCanvasPoint(layout.tableCenter, profile, width, height);
+  const tableCanvasWidth = (layout.orientation === "top" ? layout.tableWidth : layout.tableLength) * room.meterPx;
+  const tableCanvasHeight = (layout.orientation === "top" ? layout.tableLength : layout.tableWidth) * room.meterPx;
+  const tableX = tableCenter.x - tableCanvasWidth / 2;
+  const tableY = tableCenter.y - tableCanvasHeight / 2;
+  const screenLength = Math.min(
+    (layout.orientation === "top" ? room.width : room.height) * 0.34,
+    Math.max(34, 1.2 * room.meterPx)
+  );
+
+  return (
+    <g aria-label="会议桌椅布局">
+      <g clipPath={`url(#${roomClipId})`} opacity="0.92">
+        {layout.orientation === "top" ? (
+          <rect x={room.x + (room.width - screenLength) / 2} y={room.y + 4} width={screenLength} height={5} rx="1.5" fill="#dbeafe" stroke="#2563eb" strokeWidth="0.7" />
+        ) : (
+          <rect x={room.x + 4} y={room.y + (room.height - screenLength) / 2} width={5} height={screenLength} rx="1.5" fill="#dbeafe" stroke="#2563eb" strokeWidth="0.7" />
+        )}
+        {layout.shape === "round" ? (
+          <ellipse
+            cx={tableCenter.x}
+            cy={tableCenter.y}
+            rx={tableCanvasWidth / 2}
+            ry={tableCanvasHeight / 2}
+            fill="#eef2f7"
+            stroke="#64748b"
+            strokeWidth="0.75"
+          />
+        ) : (
+          <rect x={tableX} y={tableY} width={tableCanvasWidth} height={tableCanvasHeight} rx="5" fill="#eef2f7" stroke="#64748b" strokeWidth="0.75" />
+        )}
+        {layout.seats.map((seat) => (
+          <MeetingChairMarker key={seat.id} seat={seat} profile={profile} width={width} height={height} />
+        ))}
+      </g>
+      {layout.orientation === "top" ? (
+        <text x={room.x + 7} y={room.y + 14} className="cadTiny" fill="#2563eb">
+          前墙 / 显示端
+        </text>
+      ) : (
+        <text
+          x={room.x + 14}
+          y={room.y + room.height / 2}
+          textAnchor="middle"
+          className="cadTiny"
+          fill="#2563eb"
+          transform={`rotate(-90 ${room.x + 14} ${room.y + room.height / 2})`}
+        >
+          左墙 / 显示端
+        </text>
+      )}
+      <text x={tableCenter.x} y={tableCenter.y + 3} textAnchor="middle" className="cadTiny" fill="#475569">
+        {layout.shape === "round" ? "小型会议桌" : `会议桌 ${layout.seatCount}席`} · {layout.tableLength.toFixed(1)}m x {layout.tableWidth.toFixed(1)}m
+      </text>
+      {layout.requiresReview && (
+        <text x={room.x + room.width - 7} y={room.y + 14} textAnchor="end" className="cadTiny" fill="#b45309">
+          桌椅通道需现场复核
+        </text>
+      )}
+    </g>
+  );
+}
+
+function MeetingChairMarker({
+  seat,
+  profile,
+  width,
+  height
+}: {
+  seat: ReturnType<typeof getMeetingFurnitureLayout>["seats"][number];
+  profile: ClassroomProfile;
+  width: number;
+  height: number;
+}) {
+  const room = getCanvasRoomLayout(profile, width, height);
+  const center = toCanvasPoint(seat.position, profile, width, height);
+  const isHorizontalSeat = seat.side === "top" || seat.side === "bottom";
+  const chairWidth = (isHorizontalSeat ? MEETING_CHAIR_WIDTH_M : MEETING_CHAIR_DEPTH_M) * room.meterPx;
+  const chairHeight = (isHorizontalSeat ? MEETING_CHAIR_DEPTH_M : MEETING_CHAIR_WIDTH_M) * room.meterPx;
+  const x = center.x - chairWidth / 2;
+  const y = center.y - chairHeight / 2;
+  const backLine =
+    seat.side === "left"
+      ? { x1: x + 2, y1: y + 3, x2: x + 2, y2: y + chairHeight - 3 }
+      : seat.side === "right"
+        ? { x1: x + chairWidth - 2, y1: y + 3, x2: x + chairWidth - 2, y2: y + chairHeight - 3 }
+        : seat.side === "top"
+          ? { x1: x + 3, y1: y + 2, x2: x + chairWidth - 3, y2: y + 2 }
+          : { x1: x + 3, y1: y + chairHeight - 2, x2: x + chairWidth - 3, y2: y + chairHeight - 2 };
+
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={chairWidth}
+        height={chairHeight}
+        rx="3"
+        fill={seat.leader ? "#fef3c7" : "#ffffff"}
+        stroke={seat.leader ? "#d97706" : "#94a3b8"}
+        strokeWidth={seat.leader ? "1.05" : "0.65"}
+      />
+      <line {...backLine} stroke={seat.leader ? "#d97706" : "#94a3b8"} strokeWidth="0.6" />
+      {seat.leader && (
+        <text
+          x={seat.side === "right" ? x - 5 : x + chairWidth + 5}
+          y={center.y + 3}
+          textAnchor={seat.side === "right" ? "end" : "start"}
+          className="cadTiny"
+          fill="#b45309"
+        >
+          领导位
+        </text>
+      )}
     </g>
   );
 }
@@ -2943,6 +3081,7 @@ function ArrayMicDistanceRail({
 }) {
   if (mics.length === 0) return null;
   const room = getCanvasRoomLayout(profile, width, height);
+  const wallLabels = getVerticalWallLabels(profile);
   const railX = room.x - 28;
   const micCanvasPoints = mics.map((mic) => ({ mic, canvas: toCanvasPoint(mic.position, profile, width, height) }));
   const segments = [
@@ -2950,7 +3089,7 @@ function ArrayMicDistanceRail({
       id: "front-to-mic",
       y1: room.y,
       y2: micCanvasPoints[0].canvas.y,
-      label: `前墙-阵麦 ${micCanvasPoints[0].mic.position.y.toFixed(1)}m`
+      label: `${wallLabels.near}-阵麦 ${micCanvasPoints[0].mic.position.y.toFixed(1)}m`
     },
     ...micCanvasPoints.slice(1).map(({ mic, canvas }, index) => {
       const previous = micCanvasPoints[index];
@@ -2965,7 +3104,7 @@ function ArrayMicDistanceRail({
       id: "last-mic-to-back-wall",
       y1: micCanvasPoints[micCanvasPoints.length - 1].canvas.y,
       y2: room.y + room.height,
-      label: `阵麦-后墙 ${(profile.roomGeometry.length - micCanvasPoints[micCanvasPoints.length - 1].mic.position.y).toFixed(1)}m`
+      label: `阵麦-${wallLabels.far} ${(profile.roomGeometry.length - micCanvasPoints[micCanvasPoints.length - 1].mic.position.y).toFixed(1)}m`
     }
   ].filter((segment) => Math.abs(segment.y2 - segment.y1) > 6);
 
@@ -2987,6 +3126,12 @@ function ArrayMicDistanceRail({
   );
 }
 
+function getVerticalWallLabels(profile: ClassroomProfile) {
+  return isMeetingScenario(profile.scenario) && profile.roomGeometry.width > profile.roomGeometry.length
+    ? { near: "上墙", far: "下墙" }
+    : { near: "前墙", far: "后墙" };
+}
+
 function SpeakerDistanceRail({
   profile,
   rows,
@@ -3000,6 +3145,7 @@ function SpeakerDistanceRail({
 }) {
   if (rows.length === 0) return null;
   const room = getCanvasRoomLayout(profile, width, height);
+  const wallLabels = getVerticalWallLabels(profile);
   const railX = room.x + room.width + 28;
   const rowCanvasPoints = rows.map((row) => ({ row, canvas: toCanvasPoint(row[0].position, profile, width, height) }));
   const segments = [
@@ -3007,7 +3153,7 @@ function SpeakerDistanceRail({
       id: "front-to-speaker",
       y1: room.y,
       y2: rowCanvasPoints[0].canvas.y,
-      label: `前墙-音箱 ${rowCanvasPoints[0].row[0].position.y.toFixed(1)}m`
+      label: `${wallLabels.near}-音箱 ${rowCanvasPoints[0].row[0].position.y.toFixed(1)}m`
     },
     ...rowCanvasPoints.slice(1).map(({ row, canvas }, index) => {
       const previous = rowCanvasPoints[index];
@@ -3022,7 +3168,7 @@ function SpeakerDistanceRail({
       id: "last-speaker-to-back-wall",
       y1: rowCanvasPoints[rowCanvasPoints.length - 1].canvas.y,
       y2: room.y + room.height,
-      label: `音箱-后墙 ${(profile.roomGeometry.length - rowCanvasPoints[rowCanvasPoints.length - 1].row[0].position.y).toFixed(1)}m`
+      label: `音箱-${wallLabels.far} ${(profile.roomGeometry.length - rowCanvasPoints[rowCanvasPoints.length - 1].row[0].position.y).toFixed(1)}m`
     }
   ].filter((segment) => Math.abs(segment.y2 - segment.y1) > 6);
 
@@ -3380,13 +3526,14 @@ function getManualArrayMicVisibleRect(point: Point, profile: ClassroomProfile, w
 
 function getDistanceRailBounds(profile: ClassroomProfile, generatedPoints: GeneratedPoint[], width: number, height: number) {
   const room = getCanvasRoomLayout(profile, width, height);
+  const wallLabels = getVerticalWallLabels(profile);
   const rects: InstallationRect[] = [];
   const mics = generatedPoints.filter((point) => point.type === "arrayMic").sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
   if (mics.length) {
     const railX = room.x - 28;
     const micCanvasPoints = mics.map((mic) => ({ mic, canvas: toCanvasPoint(mic.position, profile, width, height) }));
     const segments = [
-      { id: "front-to-mic", y1: room.y, y2: micCanvasPoints[0].canvas.y, label: `前墙-阵麦 ${micCanvasPoints[0].mic.position.y.toFixed(1)}m` },
+      { id: "front-to-mic", y1: room.y, y2: micCanvasPoints[0].canvas.y, label: `${wallLabels.near}-阵麦 ${micCanvasPoints[0].mic.position.y.toFixed(1)}m` },
       ...micCanvasPoints.slice(1).map(({ mic, canvas }, index) => ({
         id: `mic-to-mic-${mic.id}`,
         y1: micCanvasPoints[index].canvas.y,
@@ -3397,7 +3544,7 @@ function getDistanceRailBounds(profile: ClassroomProfile, generatedPoints: Gener
         id: "last-mic-to-back-wall",
         y1: micCanvasPoints[micCanvasPoints.length - 1].canvas.y,
         y2: room.y + room.height,
-        label: `阵麦-后墙 ${(profile.roomGeometry.length - micCanvasPoints[micCanvasPoints.length - 1].mic.position.y).toFixed(1)}m`
+        label: `阵麦-${wallLabels.far} ${(profile.roomGeometry.length - micCanvasPoints[micCanvasPoints.length - 1].mic.position.y).toFixed(1)}m`
       }
     ].filter((segment) => Math.abs(segment.y2 - segment.y1) > 6);
     rects.push({ x: railX - 8, y: room.y - 8, width: 16, height: room.height + 16 }, ...getRotatedRailLabelRects(getRailSegmentLabelLayouts(segments, railX - 16, "left")));
@@ -3408,7 +3555,7 @@ function getDistanceRailBounds(profile: ClassroomProfile, generatedPoints: Gener
     const railX = room.x + room.width + 28;
     const rowCanvasPoints = rows.map((row) => ({ row, canvas: toCanvasPoint(row[0].position, profile, width, height) }));
     const segments = [
-      { id: "front-to-speaker", y1: room.y, y2: rowCanvasPoints[0].canvas.y, label: `前墙-音箱 ${rowCanvasPoints[0].row[0].position.y.toFixed(1)}m` },
+      { id: "front-to-speaker", y1: room.y, y2: rowCanvasPoints[0].canvas.y, label: `${wallLabels.near}-音箱 ${rowCanvasPoints[0].row[0].position.y.toFixed(1)}m` },
       ...rowCanvasPoints.slice(1).map(({ row, canvas }, index) => ({
         id: `speaker-row-${index + 1}`,
         y1: rowCanvasPoints[index].canvas.y,
@@ -3419,7 +3566,7 @@ function getDistanceRailBounds(profile: ClassroomProfile, generatedPoints: Gener
         id: "last-speaker-to-back-wall",
         y1: rowCanvasPoints[rowCanvasPoints.length - 1].canvas.y,
         y2: room.y + room.height,
-        label: `音箱-后墙 ${(profile.roomGeometry.length - rowCanvasPoints[rowCanvasPoints.length - 1].row[0].position.y).toFixed(1)}m`
+        label: `音箱-${wallLabels.far} ${(profile.roomGeometry.length - rowCanvasPoints[rowCanvasPoints.length - 1].row[0].position.y).toFixed(1)}m`
       }
     ].filter((segment) => Math.abs(segment.y2 - segment.y1) > 6);
     rects.push({ x: railX - 8, y: room.y - 8, width: 16, height: room.height + 16 }, ...getRotatedRailLabelRects(getRailSegmentLabelLayouts(segments, railX + 16, "right")));

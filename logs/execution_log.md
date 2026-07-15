@@ -6243,3 +6243,52 @@ Boundary:
   - 5180 rendered `六麦处理器` from `topology-six-mic-processor.png`, with the complete shell and screen visible and outside canvas transparent;
   - both fresh tabs had no console warning / error or framework overlay; 5174 had no horizontal overflow.
 - Scope remained image-only. No microphone recommendation, quantity, point, processor-capacity, topology-routing or speaker rule changed.
+
+## 2026-07-15 meeting-room furniture point-map layout
+
+- User confirmed the first meeting-room furniture scope: add dynamic tables, chairs, front display direction and seat identities to the point map only; do not change microphone or speaker recommendation, quantity or coordinates.
+- Confirmed orientation: the front wall is the main display / camera wall. Rectangular layouts with 6 seats or more mark the rear-end head seat as `领导位`; layouts with 4 seats or fewer use a neutral round table and do not mark a leader seat.
+- Added automatic 4 / 6 / 8 / 10 / 12 / 14 / 16-seat tiers. Automatic selection considers room width, length, area, table size and minimum circulation clearance rather than using area alone.
+- Automatic long-table generation stops at 16 seats. Manual seat count, table length and table width remain editable; more than 16 seats, insufficient clearance or a mismatched seat/table-length combination keeps the drawing but marks `会议桌椅布局需专项复核`.
+- Furniture renders beneath microphones, speakers and coverage layers. It adds a front display marker, table, chairs and leader-seat identity without participating in acoustic placement calculations.
+- Added backward-compatible profile normalization so existing browser drafts and imported JSON without `meetingFurniture` continue to open with automatic mode.
+- Strict TypeScript initially reported the automatic tier as possibly undefined because it was conditionally assigned before ternary use. The tier is now computed unconditionally and ignored by manual mode; runtime behavior is unchanged.
+- Verification passed:
+  - strict TypeScript with unused checks;
+  - point-system rule tests, including 3.0x3.0m 4-seat round layout, representative 6-16-seat tiers, manual 8-seat override and manual 18-seat review;
+  - existing Yinyi point IDs, labels and coordinates remained unchanged;
+  - production build;
+  - isolated browser QA on port 5190 confirmed automatic 16 seats, 3x3m automatic 4 seats with no leader label, manual 18 seats with review label, no console warnings/errors and no horizontal overflow.
+- Browser QA used a separate temporary origin so the user's active 5174 draft was not changed; the temporary server and tab were closed after verification.
+- Chinese reference baseline retained for future calibration: HZ furniture sizing guide, the central-government office-furniture standard page and Guangxi University of Science and Technology meeting-seat guidance. User-confirmed business rules remain the final priority.
+
+## 2026-07-15 meeting-room furniture continuous auto-layout correction
+
+- User rejected the previously confirmed fixed 4/6/8/10/12/14/16-seat tiers after reviewing the real 9.6m x 12.8m meeting-room point map. The 4.6m / 16-seat table occupied too little of the available room and was not a usable general rule.
+- Before changing formal rules, generated and displayed two final previews using live device-generation output:
+  - 9.6m x 12.8m with the meeting front wall at the top;
+  - 12.8m x 9.6m with furniture and the display front moved to the left wall while microphones and speakers stayed unchanged.
+- User confirmed both previews and the final rule口径:
+  - furniture is always automatic and no furniture fields remain in presales collection;
+  - long axis is `max(width, length)` and short axis is `min(width, length)`;
+  - end clearance grows linearly from 1.2m at a 6m long axis to 2.0m at 16m, then stays at 2.0m;
+  - table length is the long axis minus both end clearances, with no 16-seat or other business cap;
+  - each side reserves a 0.48m chair depth plus a 0.9m aisle; table width uses the remaining short-axis space and is clamped to 0.9-2.4m;
+  - both long sides place one seat per 0.7m, the display end has no head seat, and the far end has one centered leader seat;
+  - when width exceeds length, only furniture, display direction and leader-seat direction rotate to the left-wall front; device quantities, coordinates, angles and coverage remain unchanged;
+  - in that horizontal furniture state, existing vertical device measurements use `上墙/下墙` instead of creating a second `前墙/后墙` meaning;
+  - insufficient rectangular space falls back to a 1.1m four-seat round table with no leader; inadequate round-table circulation shows `桌椅通道需现场复核`.
+- Removed the meeting-furniture mode, current-layout, manual seat-count, table-length and table-width controls from the questionnaire. Removed the saved furniture schema/default/normalizer; old JSON may still contain that extra field, but layout generation ignores it.
+- The formal 9.6m x 12.8m case now generates a 9.32m x 2.4m table, 13 seats per side and one leader seat, for 27 seats total.
+- Automated verification passed:
+  - strict TypeScript with unused checks;
+  - point-system tests for 6m/11m/16m clearance boundaries, 2.4m width cap, 0.7m pitch, equal/rotated orientation, four-seat round fallback, legacy manual-field ignore and unchanged device snapshots;
+  - production build.
+- Fresh browser QA passed:
+  - 5174 current 9.6m x 12.8m draft rendered the formal 27-seat layout with no manual furniture UI, no console warning/error and no horizontal overflow;
+  - isolated 12.8m x 9.6m input rendered a left-wall display front, horizontal table, right-end leader and `上墙/下墙` device labels with no device-rule change;
+  - isolated 3m x 3m input rendered a four-seat round table, no leader and the circulation review reminder;
+  - 5180 loaded the Yinman brand shell with no manual furniture UI, warning/error or horizontal overflow. The furniture renderer is the same brand-neutral component used by both brands.
+- One stale Vite HMR error reported `getVerticalWallLabels is not defined` while the browser had loaded a partial edit state. Source inspection confirmed the helper was module-scoped; a completely fresh tab had no error. No code change was made for this transient development state.
+- The in-app browser download listener did not capture the programmatic point-map PNG link and timed out. The export action left the shared SVG rendered and produced no console error; no export code was changed for this browser-tool limitation.
+- No package, release or GitHub push was performed.

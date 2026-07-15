@@ -1727,3 +1727,24 @@ PowerShell reminder:
 - Always regenerate from the untouched source asset after a cutout interpretation is corrected. Do not apply a second mask to an already destructively cropped output.
 - Check the source alpha channel before writing custom masking logic. AJ600 already contains transparent outside pixels and only needs alpha-preserving crop / resize; AJ200 has an opaque gray canvas and requires background removal.
 - Verify product cutouts in their real topology node, not only as standalone PNGs. A transparent background and a preserved shell must both be visible in representative Yinyi and Yinman states.
+
+### 2026-07-15 meeting-room furniture guardrail
+
+- Meeting-room furniture is a drawing-context layer, not an acoustic obstacle or placement input. Do not let table size, seat count or leader-seat identity move or recount microphones and speakers without a separately previewed and confirmed rule change.
+- Select an automatic furniture tier only when room area and both width/length clearances fit. Area-only selection can place a nominally correct table into an unusable narrow room.
+- Keep customer entry simple: automatic mode is the default; manual mode exposes only actual seats, table length and table width. More than 16 seats remains visible but requires special review instead of inventing another automatic tier.
+- Preserve orientation semantics across brands and exports: front wall means main display/camera wall, and the rear-end head seat faces it. Four-seat small rooms stay neutral with no leader label.
+- Test draft-changing UI on a separate local origin when the user's 5174 draft contains active project data. Do not overwrite the user's saved calibration state just to complete browser QA.
+
+### 2026-07-15 continuous meeting-furniture correction guardrail
+
+- A fixed furniture capacity tier can look acceptable in small samples but fail visibly in a real large room. Meeting furniture must derive continuously from room axes and circulation space; do not restore fixed area/seat tiers or a 16-seat cap.
+- Furniture remains derived drawing context. Do not persist manual table dimensions or seat counts, and ignore legacy furniture overrides from old drafts/imports.
+- The approved end-clearance curve is exact: 1.2m through a 6m long axis, linear at `0.08m per additional meter` through 16m, then capped at 2.0m.
+- The approved width calculation reserves 0.48m chair depth plus 0.9m aisle on both sides, then clamps the table itself to 0.9-2.4m. Do not add an unaccounted chair-to-table gap that silently reduces the 0.9m aisle.
+- When room width exceeds length, furniture and the display front rotate to the left wall, but microphones and speakers do not move or recalculate. Rename only the unchanged vertical device-distance labels to `上墙/下墙`; do not reinterpret device coordinates or angles.
+- The display end has no head seat. Rectangular layouts use equal long-side seat counts at approximately 0.7m per seat plus one far-end leader seat; very long rooms have no business seat cap.
+- For small-room fallback, keep the four-seat round table visible and mark inadequate passage for field review instead of requesting manual furniture input.
+- Preview generation must use the live device rules and the same confirmed furniture formulas. A hand-drawn approximation with different table width, end clearance or seat count is not valid evidence.
+- Vite HMR can expose a helper-call/helper-definition mismatch during consecutive edits even when final source scope is correct. Confirm with a fresh tab before rewriting a correctly scoped helper.
+- Programmatic anchor downloads may not surface through the browser download-event listener. Treat a listener timeout separately from application export failure; inspect console state and the export implementation before changing working download code.

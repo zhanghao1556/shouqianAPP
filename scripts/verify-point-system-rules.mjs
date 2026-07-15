@@ -8,6 +8,7 @@ import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingE
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
 import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   getBrandExternalAmplifierCount,
@@ -73,6 +74,51 @@ yinyiRegressionProfiles.forEach((profile, index) => {
   assert.deepEqual(pointSnapshot(wrapped), pointSnapshot(original), "Yinyi point output changed for regression profile " + (index + 1));
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
+
+assert.equal(getMeetingFurnitureEndClearance(6), 1.2);
+assert.equal(getMeetingFurnitureEndClearance(11), 1.6);
+assert.equal(getMeetingFurnitureEndClearance(16), 2);
+assert.equal(getMeetingFurnitureEndClearance(20), 2);
+const continuousMeetingFurniture = getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 9.6, length: 12.8 }));
+assert.equal(continuousMeetingFurniture.orientation, "top");
+assert.equal(continuousMeetingFurniture.tableLength, 9.32);
+assert.equal(continuousMeetingFurniture.tableWidth, 2.4);
+assert.equal(continuousMeetingFurniture.seatsPerSide, 13);
+assert.equal(continuousMeetingFurniture.seatCount, 27);
+assert.equal(continuousMeetingFurniture.seats.filter((seat) => seat.leader).length, 1);
+assert.equal(continuousMeetingFurniture.seats.some((seat) => seat.side === "top"), false);
+const rotatedMeetingFurniture = getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 12.8, length: 9.6 }));
+assert.equal(rotatedMeetingFurniture.orientation, "left");
+assert.equal(rotatedMeetingFurniture.tableLength, continuousMeetingFurniture.tableLength);
+assert.equal(rotatedMeetingFurniture.tableWidth, continuousMeetingFurniture.tableWidth);
+assert.equal(rotatedMeetingFurniture.seatCount, continuousMeetingFurniture.seatCount);
+assert.equal(rotatedMeetingFurniture.seats.find((seat) => seat.leader)?.side, "right");
+assert.equal(getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 10, length: 10 })).orientation, "top");
+assert.equal(getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 10.1, length: 10 })).orientation, "left");
+const mediumMeetingFurniture = getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 4, length: 8 }));
+assert.equal(mediumMeetingFurniture.tableWidth, 1.24);
+assert.equal(mediumMeetingFurniture.requiresReview, false);
+const smallMeetingFurniture = getMeetingFurnitureLayout(makeProfile({ scenario: "meetingRoom", width: 3, length: 3 }));
+assert.equal(smallMeetingFurniture.seatCount, 4);
+assert.equal(smallMeetingFurniture.shape, "round");
+assert.equal(smallMeetingFurniture.seats.some((seat) => seat.leader), false);
+assert.equal(smallMeetingFurniture.requiresReview, true);
+assert.ok(smallMeetingFurniture.reviewReasons.includes("桌椅通道需现场复核"));
+const legacyFurnitureProfile = JSON.parse(JSON.stringify(makeProfile({ scenario: "meetingRoom", width: 9.6, length: 12.8 })));
+legacyFurnitureProfile.engineeringConstraints.meetingFurniture = { mode: "manual", seatCount: 8, tableLength: 2.4, tableWidth: 1.1 };
+const legacyFurnitureLayout = getMeetingFurnitureLayout(normalizeProfile(legacyFurnitureProfile));
+assert.equal(legacyFurnitureLayout.tableLength, continuousMeetingFurniture.tableLength);
+assert.equal(legacyFurnitureLayout.seatCount, continuousMeetingFurniture.seatCount);
+for (const profile of [
+  makeProfile({ scenario: "meetingRoom", width: 9.6, length: 12.8 }),
+  makeProfile({ scenario: "meetingRoom", width: 12.8, length: 9.6 })
+]) {
+  const pointsBeforeFurniture = pointSnapshot(generateEngineeringOutputs(profile, {}, "yinyi").generatedPoints);
+  getMeetingFurnitureLayout(profile);
+  const pointsAfterFurniture = pointSnapshot(generateEngineeringOutputs(profile, {}, "yinyi").generatedPoints);
+  assert.deepEqual(pointsAfterFurniture, pointsBeforeFurniture);
+}
+console.log("PASS continuous meeting furniture sizing, 2.4m cap, 0.7m seat pitch, orientation, round fallback, legacy override ignore and unchanged device points");
 
 assert.equal(getTeacherActivityZone(makeProfile({ width: 10 })).width, 5);
 assert.equal(getTeacherActivityZone(makeProfile({ width: 12 })).width, 6);
