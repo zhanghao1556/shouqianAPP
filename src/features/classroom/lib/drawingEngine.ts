@@ -1809,6 +1809,22 @@ const getWallSpeakerAim = (
       edgeCoverage: undefined
     };
   }
+  if (
+    (side === "front" || side === "back") &&
+    isMeetingScenario(profile.scenario) &&
+    profile.roomGeometry.length > profile.roomGeometry.width + 0.05 &&
+    arrayMics.length > 0
+  ) {
+    const referenceMicY = side === "front"
+      ? Math.max(...arrayMics.map((mic) => mic.position.y))
+      : Math.min(...arrayMics.map((mic) => mic.position.y));
+    const target = getOriginalFrontBackWallSpeakerTarget(profile, position, referenceMicY);
+    return {
+      horizontalAngle: getOriginalMeetingWallSpeakerHorizontalAngleFromTarget(profile, position, target),
+      target,
+      edgeCoverage: undefined
+    };
+  }
   if (side === "front") {
     return {
       horizontalAngle: getOriginalFrontWallSpeakerHorizontalAngle(profile, position),
@@ -1817,7 +1833,7 @@ const getWallSpeakerAim = (
     };
   }
   if (side === "back") {
-    const target = getOriginalBackWallSpeakerTarget(profile, position, arrayMics[0]?.position.y ?? getPrimaryArrayMicY(profile));
+    const target = getOriginalFrontBackWallSpeakerTarget(profile, position, arrayMics[0]?.position.y ?? getPrimaryArrayMicY(profile));
     return {
       horizontalAngle: getOriginalWallSpeakerHorizontalAngleFromTarget(profile, position, target),
       target,
@@ -1851,7 +1867,7 @@ const getOriginalMeetingSideWallSpeakerAim = (profile: ClassroomProfile, positio
   const targetArrayMic = getNearestOriginalMeetingArrayMicTarget(profile, position, arrayMics);
   const target = getOriginalMeetingSideWallSpeakerTarget(profile, position, targetArrayMic);
   return {
-    horizontalAngle: getOriginalMeetingSideWallSpeakerHorizontalAngleFromTarget(profile, position, target),
+    horizontalAngle: getOriginalMeetingWallSpeakerHorizontalAngleFromTarget(profile, position, target),
     target,
     edgeCoverage: undefined
   };
@@ -1901,7 +1917,7 @@ const clampOriginalMeetingSideWallSpeakerTarget = (profile: ClassroomProfile, ta
   y: oneDecimal(clamp(target.y, 0.45, profile.roomGeometry.length - 0.45))
 });
 
-const getOriginalMeetingSideWallSpeakerHorizontalAngleFromTarget = (profile: ClassroomProfile, position: Point, target: Point) => {
+const getOriginalMeetingWallSpeakerHorizontalAngleFromTarget = (profile: ClassroomProfile, position: Point, target: Point) => {
   const direction = position.x <= profile.roomGeometry.width / 2 ? 1 : -1;
   const angle = (Math.atan2(Math.abs(target.x - position.x), Math.max(0.8, Math.abs(target.y - position.y))) * 180) / Math.PI;
   return Math.round(direction * angle);
@@ -1999,14 +2015,14 @@ const getOriginalFrontWallSpeakerHorizontalAngle = (profile: ClassroomProfile, p
   );
 };
 
-const getOriginalBackWallSpeakerTarget = (profile: ClassroomProfile, position: Point, primaryArrayMicY: number) => {
-  const distanceToArrayMic = Math.max(0.8, position.y - primaryArrayMicY);
+const getOriginalFrontBackWallSpeakerTarget = (profile: ClassroomProfile, position: Point, referenceArrayMicY: number) => {
+  const distanceToArrayMic = Math.max(0.8, Math.abs(position.y - referenceArrayMicY));
   const outwardAngle = getFrontBackWallSpeakerOutwardOffset(profile);
   const outwardOffset = Math.tan((outwardAngle * Math.PI) / 180) * distanceToArrayMic;
   const isLeft = position.x <= profile.roomGeometry.width / 2;
   return {
     x: oneDecimal(clamp(profile.roomGeometry.width / 2 + (isLeft ? -outwardOffset : outwardOffset), 0.3, profile.roomGeometry.width - 0.3)),
-    y: oneDecimal(primaryArrayMicY)
+    y: oneDecimal(referenceArrayMicY)
   };
 };
 

@@ -1,5 +1,13 @@
 ﻿# Retrospective
 
+## 2026-07-15 Meeting-room wall-aim symmetry reminder
+
+- Wide meeting rooms and long meeting rooms currently route through different aiming functions: side-wall speakers use nearest-mic rotated targets, while front and back walls use separate fixed-depth and primary-mic targets. Do not infer one rule from the rendered symmetry without tracing the room-shape branch.
+- When the approved visual goal is rotational symmetry and the rear-wall result is the reference, the smallest candidate is limited to long-room front/back layouts: front wall targets the rearmost mic row, back wall targets the frontmost mic row, both with the same outward offset. Preserve the already-correct wide-room side-wall rule.
+- Keep the proposal preview-only until confirmed; speaker and microphone coordinates, quantities, coverage, height and down-tilt remain outside this angle-only change.
+- The user explicitly waived the preview and confirmed implementation. Remove the unused preview artifact and keep regression coverage focused on long-room front/back symmetry plus wide-room isolation.
+- `verify-point-system-rules.mjs` embeds its test program inside a template literal. Do not add an unescaped nested template literal to helper assertions; use ordinary string concatenation inside the embedded program.
+
 ## 2026-07-15 Customer-facing array microphone naming reminder
 
 - A customer-facing product rename must be traced through the shared catalog, selection labels, drawing legends, topology text, reports and release sanitizers; changing only the selected button leaves contradictory output.

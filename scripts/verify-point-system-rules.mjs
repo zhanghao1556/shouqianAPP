@@ -57,6 +57,16 @@ function pointSnapshot(points) {
   }));
 }
 
+function wallMountingAngle(point, profile) {
+  const target = point.target;
+  assert.ok(target, "Missing wall-speaker target for " + point.id);
+  const vector = { x: target.x - point.position.x, y: target.y - point.position.y };
+  if (Math.abs(point.position.y) <= 0.05) return Math.round(90 - (Math.atan2(vector.x, vector.y) * 180) / Math.PI);
+  if (Math.abs(point.position.y - profile.roomGeometry.length) <= 0.05) return Math.round(90 + (Math.atan2(vector.x, -vector.y) * 180) / Math.PI);
+  if (Math.abs(point.position.x) <= 0.05) return Math.round(90 + (Math.atan2(vector.y, vector.x) * 180) / Math.PI);
+  return Math.round(90 - (Math.atan2(vector.y, -vector.x) * 180) / Math.PI);
+}
+
 const yinyiRegressionProfiles = [
   makeProfile({ length: 8, width: 6, scope: "podium" }),
   makeProfile({ length: 14, width: 10, needs: ["interactiveClass"], scope: "full" }),
@@ -119,6 +129,28 @@ for (const profile of [
   assert.deepEqual(pointsAfterFurniture, pointsBeforeFurniture);
 }
 console.log("PASS continuous meeting furniture sizing, 2.4m cap, 0.7m seat pitch, orientation, round fallback, legacy override ignore and unchanged device points");
+
+const longMeetingAimProfile = makeProfile({ scenario: "meetingRoom", width: 9.6, length: 12.8, ceiling: "exposed", speakerProductOverride: "wall" });
+const longMeetingAimPoints = generateEngineeringOutputs(longMeetingAimProfile, {}, "yinyi").generatedPoints;
+const longMeetingMics = longMeetingAimPoints.filter((point) => point.type === "arrayMic").sort((a, b) => a.position.y - b.position.y);
+const longMeetingFrontSpeakers = longMeetingAimPoints.filter((point) => point.type === "speaker" && Math.abs(point.position.y) <= 0.05).sort((a, b) => a.position.x - b.position.x);
+const longMeetingBackSpeakers = longMeetingAimPoints.filter((point) => point.type === "speaker" && Math.abs(point.position.y - longMeetingAimProfile.roomGeometry.length) <= 0.05).sort((a, b) => a.position.x - b.position.x);
+assert.equal(longMeetingMics.length, 2);
+assert.equal(longMeetingFrontSpeakers.length, 2);
+assert.equal(longMeetingBackSpeakers.length, 2);
+assert.ok(longMeetingFrontSpeakers.every((point) => point.target?.y === longMeetingMics[1].position.y));
+assert.ok(longMeetingBackSpeakers.every((point) => point.target?.y === longMeetingMics[0].position.y));
+assert.deepEqual(longMeetingFrontSpeakers.map((point) => wallMountingAngle(point, longMeetingAimProfile)), [74, 106]);
+assert.deepEqual(longMeetingBackSpeakers.map((point) => wallMountingAngle(point, longMeetingAimProfile)), [106, 74]);
+
+const wideMeetingAimProfile = makeProfile({ scenario: "meetingRoom", width: 12.6, length: 10.1, ceiling: "exposed", speakerProductOverride: "wall" });
+const wideMeetingSpeakers = generateEngineeringOutputs(wideMeetingAimProfile, {}, "yinyi").generatedPoints.filter((point) => point.type === "speaker");
+const wideMeetingAngles = wideMeetingSpeakers
+  .map((point) => ({ x: point.position.x, y: point.position.y, angle: wallMountingAngle(point, wideMeetingAimProfile) }))
+  .sort((a, b) => a.y - b.y || a.x - b.x)
+  .map(({ angle }) => angle);
+assert.deepEqual(wideMeetingAngles, [124, 56, 57, 123]);
+console.log("PASS long meeting front/back opposite-mic symmetry and wide meeting side-wall isolation");
 
 assert.equal(getTeacherActivityZone(makeProfile({ width: 10 })).width, 5);
 assert.equal(getTeacherActivityZone(makeProfile({ width: 12 })).width, 6);
