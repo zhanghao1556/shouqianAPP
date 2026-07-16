@@ -1879,3 +1879,9 @@ PowerShell reminder:
 - A short-room layout boundary and a single-center-fill boundary are different concepts. Keep the length-based short-room architecture active across widths, then vary rear-fill quantity by width; using one maximum-width constant for both decisions caused the abrupt legacy-layout fallback at 16.1m.
 - Two rear center-fill speakers must own separate left-middle and right-middle targets. Placing them near the center and aiming both at the room axis creates excessive overlap in the middle while opening gaps toward the side-wall responsibility zones.
 - Scale wide-room rear-fill installation and target positions as room-width ratios so the rule generalizes: 25%/75% installation with 35%/65% targets preserves symmetry and controlled overlap without scenario-specific coordinates.
+
+### 2026-07-16 release 260716-2 completion reminder
+
+- Do not treat structural package checks as release completion. Both branded final HTML files must also pass fresh-context business parity and Android/iOS mobile checks.
+- Inspect ZIP entries with .NET Unicode APIs and verify the actual bytes against the 5MB ceiling; terminal filename rendering alone is not reliable evidence for Chinese package contents.
+- Keep the generated branded directories and ZIPs together in the release checkpoint, preserve earlier same-day package numbers, and leave GitHub synchronization to the explicit upload workflow.

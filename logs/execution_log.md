@@ -6527,3 +6527,15 @@ Boundary:
 - Pre-release cleanup is limited to checks and documented residue scans. It must not alter microphone/speaker selection, quantity or placement rules beyond already confirmed work.
 - Required validation remains: focused rule tests, reverberation tests, strict TypeScript, production build, source/residue scans, release structural and brand-isolation checks, fresh-context business parity, and Android/iOS mobile compatibility for both brands.
 - Next step after release is user business acceptance of the new packages. No packaging metadata, release directory or Git history may be pushed until the user runs the desktop upload script or explicitly authorizes a push.
+
+## 2026-07-16 dual-brand release 260716-2 completed
+
+- Completed the required daily closing sequence before release: logs updated, `.codex-backups/snapshot-20260716-211740-190.zip` verified as the only retained snapshot, cleanup/type/rule/build checks passed, and daily checkpoint `3c1ffde` was created.
+- Rebuilt both brands from current source with `release:all` and generated new non-overwriting deliverables:
+  - Yinyi directory and ZIP: `outputs/音翼AI售前工具-1.1-内部测试版-260716-2`, ZIP size `1,983,814` bytes.
+  - Yinman directory and ZIP: `outputs/音曼AI售前工具-1.1-内部测试版-260716-2`, ZIP size `1,795,642` bytes.
+- Both ZIP files are below the 5MB limit and each contains exactly the branded single-file HTML, `README-打开说明.txt` and branded software outline Markdown.
+- `verify:release-current` passed source freshness, release marker, title/CSS checks and two-way brand text/image isolation. `verify:release-behavior` passed fresh-context equipment-list and point-map parity between current `dist` and each final release HTML.
+- Android Chrome / Pixel 7 and iOS Safari / iPhone 14 mobile release checks passed for both brands, including clean first-open inputs, inline assets, release marker, correct title, no horizontal overflow and no runtime errors.
+- The fresh local-entry smoke suite passed 5174, 5175, 5176, 5177 and 5180 for HTTP response, rendering, brand/mobile scope, overflow and runtime errors.
+- The release remains local. No GitHub push was performed; synchronization waits for the desktop `上传到GitHub.cmd` workflow or a later explicit push request.
