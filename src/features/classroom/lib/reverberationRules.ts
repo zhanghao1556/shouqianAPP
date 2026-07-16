@@ -59,7 +59,7 @@ const ceilingAbsorption: Record<CeilingAcousticTreatment, NumberRange> = {
 };
 
 const glassFraction: Record<GlassCoverage, NumberRange> = {
-  none: { min: 0, max: 0 },
+  none: { min: 0.08, max: 0.2 },
   partial: { min: 0.08, max: 0.2 },
   large: { min: 0.25, max: 0.55 },
   unknown: { min: 0, max: 0.55 }

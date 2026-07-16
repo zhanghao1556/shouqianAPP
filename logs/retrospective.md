@@ -1817,7 +1817,9 @@ PowerShell reminder:
 
 - 5176 is now a repeated judgment queue: generate case parameters, run the unchanged formal assessment, collect a correct/incorrect verdict and immediately advance.
 - Keep generated inputs read-only in the primary workflow. Reintroducing manual fields or expected-grade selection would shift effort back from conclusion review to test construction.
-- Automatic coverage must include both estimated and measured RT60 cases; reuse the shared random profile generator and add only the missing measured-value branch locally.
+- Automatic 5176 cases must contain only explicit confirmed inputs and must never display `请选择`. Resolve the generic random profile's unknown branches at the 5176 boundary rather than weakening unknown coverage in other calibration tools.
+- Do not collect measured mid-frequency RT60 in the automatic queue. Keep measured RT60 support and tests in the formal reverberation engine, but generate 5176 review conclusions from estimated room/material inputs only.
+- A merged customer choice must have one acoustic meaning. `基本无 / 少量玻璃` uses the former small-glass range for conservative estimation; do not retain two hidden RT60 behaviors behind the same visible button.
 - Preserve the existing localStorage and JSON record contract so prior calibration evidence remains loadable. A failed verdict can store the corrected conclusion or reason in the note without requiring another mandatory control.
 
 ### 2026-07-16 explicit presales confirmation guardrail

@@ -53,6 +53,10 @@ expectRisk("missing room volume cannot be low", makeProfile({ room: { length: 0,
 
 const tallAbsorptiveRoom = makeProfile({ room: { height: 4.2 } });
 expectRisk("four-meter absorptive room is not forced high", tallAbsorptiveRoom, "low");
+const noGlassRt = getAcousticAssessment(makeProfile({ acoustic: { glassCoverage: "none" } })).estimatedRt;
+const littleGlassRt = getAcousticAssessment(makeProfile({ acoustic: { glassCoverage: "partial" } })).estimatedRt;
+if (noGlassRt !== littleGlassRt) throw new Error("merged basic/no glass option must use one acoustic range");
+console.log("PASS", "basic/no glass and little glass share one acoustic range");
 if (!hasHighCeilingReverberationRisk(tallAbsorptiveRoom)) {
   throw new Error("speaker-specific high-ceiling selector changed unexpectedly");
 }

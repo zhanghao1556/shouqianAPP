@@ -87,8 +87,8 @@ export const ceilingAcousticTreatmentLabels: Record<CeilingAcousticTreatment, st
 };
 
 export const glassCoverageLabels: Record<GlassCoverage, string> = {
-  none: "基本无玻璃墙",
-  partial: "少量玻璃",
+  none: "基本无 / 少量玻璃",
+  partial: "基本无 / 少量玻璃",
   large: "大面积玻璃",
   unknown: "请选择"
 };

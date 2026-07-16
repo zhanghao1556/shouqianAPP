@@ -404,8 +404,13 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
           <label>
             玻璃比例
             <CustomSelect
-              value={profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")}
-              options={confirmedOptions(glassCoverageLabels)}
+              value={profile.acousticEnvironment.glassCoverage === "none"
+                ? "partial"
+                : profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "unknown")}
+              options={[
+                { value: "partial", label: "基本无 / 少量玻璃" },
+                { value: "large", label: glassCoverageLabels.large }
+              ]}
               onChange={(value) =>
                 setAcoustic({
                   glassCoverage: value as GlassCoverage,

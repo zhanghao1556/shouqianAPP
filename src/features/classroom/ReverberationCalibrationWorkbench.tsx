@@ -367,8 +367,7 @@ function getCaseFacts(profile: ClassroomProfile) {
     { label: "软装 / 吸音", value: softTreatmentLabels[environment.softTreatment] },
     { label: "玻璃比例", value: glassCoverageLabels[environment.glassCoverage ?? "unknown"] },
     { label: "家具布置", value: furnishingDensityLabels[environment.furnishingDensity] },
-    { label: "拍手测试", value: echoObservationLabels[environment.echoObservation ?? "unknown"] },
-    { label: "实测中频 RT60", value: environment.measuredRt60 ? `${environment.measuredRt60.toFixed(2)}s` : "未提供（系统估算）" }
+    { label: "拍手测试", value: echoObservationLabels[environment.echoObservation ?? "unknown"] }
   ];
 }
 
@@ -378,11 +377,43 @@ function profileCaseName(profile: ClassroomProfile) {
 
 function createAutomaticCalibrationProfile(index: number) {
   const profile = createRandomProfile(index);
-  const measuredRt60 = Math.random() < 0.35 ? Math.round((0.3 + Math.random() * 1.5) * 100) / 100 : undefined;
+  const ceiling = confirmedValue(profile.engineeringConstraints.ceiling, ["suspended", "exposed"] as const);
+  const overheadSpeakerMounting = confirmedValue(profile.engineeringConstraints.overheadSpeakerMounting, ["available", "unavailable"] as const);
+  const auditoriumRearFillSpeakers = confirmedValue(profile.engineeringConstraints.auditoriumRearFillSpeakers, ["present", "absent"] as const);
+  const floorMaterial = confirmedValue(profile.acousticEnvironment.floorMaterial, ["tile", "wood", "carpet"] as const);
+  const wallMaterial = confirmedValue(profile.acousticEnvironment.wallMaterial, ["painted", "hard", "acoustic"] as const);
+  const softTreatment = confirmedValue(profile.acousticEnvironment.softTreatment, ["none", "curtains", "acousticPanels", "mixed"] as const);
+  const furnishingDensity = confirmedValue(profile.acousticEnvironment.furnishingDensity, ["empty", "normal", "dense"] as const);
+  const ceilingAcousticTreatment = confirmedValue(profile.acousticEnvironment.ceilingAcousticTreatment, ["hard", "partial", "acoustic"] as const);
+  const resolvedGlassCoverage = confirmedValue(profile.acousticEnvironment.glassCoverage, ["partial", "large"] as const);
+  const glassCoverage = resolvedGlassCoverage === "none" ? "partial" : resolvedGlassCoverage;
+  const echoObservation = confirmedValue(profile.acousticEnvironment.echoObservation, ["none", "tail", "obvious"] as const);
   return normalizeProfile({
     ...profile,
-    acousticEnvironment: { ...profile.acousticEnvironment, measuredRt60 }
+    engineeringConstraints: {
+      ...profile.engineeringConstraints,
+      ceiling,
+      overheadSpeakerMounting,
+      auditoriumRearFillSpeakers
+    },
+    acousticEnvironment: {
+      ...profile.acousticEnvironment,
+      floorMaterial,
+      wallMaterial,
+      softTreatment,
+      furnishingDensity,
+      ceilingAcousticTreatment,
+      glassCoverage,
+      echoObservation,
+      hasGlassWall: glassCoverage === "large",
+      measuredRt60: undefined
+    }
   });
+}
+
+function confirmedValue<T extends string>(value: T | undefined, values: readonly Exclude<T, "unknown">[]): Exclude<T, "unknown"> {
+  if (value !== undefined && value !== "unknown") return value as Exclude<T, "unknown">;
+  return values[Math.floor(Math.random() * values.length)];
 }
 
 function getRecordStats(records: ReverberationCalibrationRecord[]) {
