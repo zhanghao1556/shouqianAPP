@@ -183,6 +183,7 @@ export interface ConnectionLine {
   cableType: string;
   note: string;
   speakerSignalMode?: SpeakerSignalMode;
+  afcSendLevelOffset?: number;
 }
 
 export interface EngineeringBasis {

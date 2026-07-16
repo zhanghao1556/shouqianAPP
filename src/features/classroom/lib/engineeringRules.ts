@@ -29,9 +29,9 @@ import {
   getArrayMicEffectiveAmplificationRadius,
   getArrayMicInstallAdvice,
   getArrayMicInstallLabel,
+  getDefaultSpeakerCount,
   getEffectiveAmplificationScope,
   getMeetingWallSpeakerCenterFillPairCount,
-  getRequiredSpeakerCount,
   getRequiredArrayMicCountForFullRoomAmplification,
   getRoomArea,
   hasValidGeometry,
@@ -180,8 +180,13 @@ export const generateEngineeringOutputs = (
   const validationSpeakerProductId = selectedSpeakerProduct?.productId === "CEILING-SPEAKER" || selectedSpeakerProduct?.productId === "COLUMN-SPEAKER"
     ? selectedSpeakerProduct.productId
     : getSpeakerProductId(profile);
+  const validationLineArray = getLineArrayDecision(profile, points);
   const requiredSpeakerCount = canGenerateDrawings && shouldGenerateNewSpeakers(profile)
-    ? getRequiredSpeakerCount(profile, validationSpeakerProductId === "COLUMN-SPEAKER")
+    ? getDefaultSpeakerCount(
+        profile,
+        validationSpeakerProductId === "COLUMN-SPEAKER",
+        validationLineArray.selected ? { mode: validationLineArray.mode, position: validationLineArray.position } : undefined
+      )
     : 0;
   const pointValidation = validatePointPlan({
     profile,

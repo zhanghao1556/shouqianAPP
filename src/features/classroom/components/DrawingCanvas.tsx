@@ -1619,8 +1619,8 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   }
 
   connections.forEach((connection) => {
-    const fromKey = getTopologyNodeKey(connection.fromDevice, connection.fromPort, connection.speakerSignalMode);
-    const toKey = getTopologyNodeKey(connection.toDevice, connection.toPort, connection.speakerSignalMode);
+    const fromKey = getTopologyNodeKey(connection.fromDevice, connection.fromPort, connection.speakerSignalMode, connection.afcSendLevelOffset);
+    const toKey = getTopologyNodeKey(connection.toDevice, connection.toPort, connection.speakerSignalMode, connection.afcSendLevelOffset);
     if (isUnknownTopologyNodeKey(fromKey) || isUnknownTopologyNodeKey(toKey)) return;
     if (shouldSkipTopologyConnection(connection, fromKey, toKey)) return;
     ensureNode(getTopologyNode(connection.fromDevice, connection.fromPort, fromKey, speakerCount, topologySpeakerType));
@@ -1823,7 +1823,12 @@ function formatTopologyCableLabel(label: string, quantity: number) {
   return `${label} ×${Math.max(1, Math.round(quantity))}`;
 }
 
-function getTopologyNodeKey(device: string, port = "", speakerSignalMode?: ConnectionLine["speakerSignalMode"]) {
+function getTopologyNodeKey(
+  device: string,
+  port = "",
+  speakerSignalMode?: ConnectionLine["speakerSignalMode"],
+  afcSendLevelOffset?: number
+) {
   if (device.includes("智能音频处理主机") || device.includes("双麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
   if (device.includes("智能线阵麦克风")) {
     const match = device.match(/(\d+)\s*$/);
@@ -1843,6 +1848,7 @@ function getTopologyNodeKey(device: string, port = "", speakerSignalMode?: Conne
   if (device === "无源音箱") return "legacy-passive-speaker";
   if (isTopologySpeaker(device, port)) {
     if (speakerSignalMode === "withoutLineArrayAfc") return "speaker-without-line-array-afc";
+    if (speakerSignalMode === "afc" && afcSendLevelOffset !== undefined) return "speaker-afc-center-fill";
     if (speakerSignalMode === "afc") return "speaker-afc";
     return device.includes("扩展分组") ? "speaker-amplifier" : "speaker-dt";
   }
@@ -1905,7 +1911,7 @@ function isTopologySpeaker(device: string, port: string) {
 }
 
 function isTopologySpeakerKey(key: string) {
-  return key === "speaker-dt" || key === "speaker-amplifier" || key === "speaker" || key === "speaker-afc" || key === "speaker-without-line-array-afc";
+  return key === "speaker-dt" || key === "speaker-amplifier" || key === "speaker" || key === "speaker-afc" || key === "speaker-afc-center-fill" || key === "speaker-without-line-array-afc";
 }
 
 function getTopologySpeakerTypeFromPoints(points: GeneratedPoint[]) {
@@ -1916,12 +1922,13 @@ function getTopologySpeakerTypeFromPoints(points: GeneratedPoint[]) {
 
 function getTopologySpeakerLabel(type: "吸顶" | "壁挂", key: string) {
   if (key === "speaker-without-line-array-afc") return `${type}音箱（不送线阵AFC）`;
+  if (key === "speaker-afc-center-fill") return `${type}音箱（中置AFC -3dB）`;
   if (key === "speaker-afc") return `${type}音箱（AFC）`;
   return `${type}音箱`;
 }
 
 function getTopologySpeakerQuantity(key: string, speakerCount: number, device: string) {
-  if (key === "speaker-afc" || key === "speaker-without-line-array-afc") {
+  if (key === "speaker-afc" || key === "speaker-afc-center-fill" || key === "speaker-without-line-array-afc") {
     return getTopologyQuantityFromText(device) ?? 1;
   }
   if (key === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
@@ -3911,6 +3918,9 @@ function getPointLabelLines(
       : point.speakerSignalMode === "afc"
         ? "正常AFC扩声"
         : "",
+    point.label.includes("后墙中置") && point.afcSendLevelOffset !== undefined
+      ? `AFC初始 ${point.afcSendLevelOffset}dB / 延时校准`
+      : "",
     extraLine ?? ""
   ].filter(Boolean);
 }
@@ -4180,6 +4190,7 @@ function PointLabel({
 function getShortPointName(point: GeneratedPoint) {
   if (point.type === "arrayMic") return point.pickupKind === "lineArray" ? "线阵麦" : "阵列麦";
   if (point.label.includes("吸顶音箱")) return "吸顶音箱";
+  if (point.label.includes("后墙中置")) return "后墙中置壁挂";
   if (point.label.includes("壁挂音柱")) return "壁挂音箱";
   return "音箱";
 }

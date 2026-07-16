@@ -129,7 +129,8 @@ function addLineArraySpeakerFindings(
   const usesFrontLineArray = mics.some((mic) => mic.pickupKind === "lineArray" && mic.pickupPattern === "front180");
   if (!usesFrontLineArray || !speakers.length) return;
   const wallSpeakers = speakers.filter((speaker) => speaker.horizontalAngle !== undefined || speaker.downTiltAngle !== undefined);
-  if (wallSpeakers.length === 1 || wallSpeakers.length === 3) {
+  const approvedRearCenterFill = isApprovedLineArrayRearCenterFill(profile, wallSpeakers);
+  if ((wallSpeakers.length === 1 || wallSpeakers.length === 3) && !approvedRearCenterFill) {
     findings.push({
       code: "speaker.line-array-odd-wall-count",
       severity: "hard",
@@ -148,6 +149,22 @@ function addLineArraySpeakerFindings(
     speaker.position.y > 0.05 && speaker.position.y < profile.roomGeometry.length - 0.05
   );
   if (sideSpeakers.length !== 2) return;
+  if (
+    profile.roomGeometry.length <= 10 &&
+    profile.roomGeometry.width >= 13 &&
+    profile.roomGeometry.width <= 16
+  ) {
+    findings.push({
+      code: "speaker.line-array-center-fill-omitted",
+      severity: "warning",
+      title: "线阵短房后墙中置补声",
+      actual: 2,
+      limit: 3,
+      internalMessage: "13-16m宽房当前仅保留两只侧墙壁挂，视为后墙中置无法安装的现场兜底；中轴覆盖需现场复核。",
+      sourceRefs: ["用户确认的线阵短房两侧墙加后墙中置规则"]
+    });
+  }
+  if (profile.roomGeometry.length <= 10) return;
   const rearGap = profile.roomGeometry.length - Math.min(...sideSpeakers.map((speaker) => speaker.position.y));
   const coverageRadius = Math.min(...sideSpeakers.map((speaker) => speaker.coverageRadius ?? 5));
   if (rearGap <= coverageRadius + 0.05) return;
@@ -160,6 +177,24 @@ function addLineArraySpeakerFindings(
     internalMessage: "两只侧墙壁挂朝后时无法完整覆盖后场，建议增加到4只；当前不自动改变客户数量。",
     sourceRefs: ["用户确认的两只不足时建议增加侧墙或后墙补声规则"]
   });
+}
+
+function isApprovedLineArrayRearCenterFill(profile: ClassroomProfile, wallSpeakers: GeneratedPoint[]) {
+  if (
+    wallSpeakers.length !== 3 ||
+    profile.roomGeometry.length > 10 ||
+    profile.roomGeometry.width < 13 ||
+    profile.roomGeometry.width > 16
+  ) return false;
+  const sideCount = wallSpeakers.filter((speaker) =>
+    (Math.abs(speaker.position.x) <= 0.05 || Math.abs(speaker.position.x - profile.roomGeometry.width) <= 0.05) &&
+    speaker.position.y > 0.05 && speaker.position.y < profile.roomGeometry.length - 0.05
+  ).length;
+  const centerCount = wallSpeakers.filter((speaker) =>
+    Math.abs(speaker.position.x - profile.roomGeometry.width / 2) <= 0.05 &&
+    Math.abs(speaker.position.y - profile.roomGeometry.length) <= 0.05
+  ).length;
+  return sideCount === 2 && centerCount === 1;
 }
 
 function addWallSpeakerCoverageFinding(findings: PointValidationFinding[], speakers: GeneratedPoint[]) {

@@ -367,18 +367,22 @@ function generateProcessorDirectConnectionLines(
     const speakerPoints = generatedPoints.filter((point) => point.type === "speaker");
     const directSignalGroups = getSpeakerSignalGroups(speakerPoints.slice(0, directSpeakerCount));
     if (directSignalGroups.length) {
-      directSignalGroups.forEach(({ mode, count }) => {
+      directSignalGroups.forEach(({ mode, count, afcSendLevelOffset }) => {
+        const isCenterFill = mode === "afc" && afcSendLevelOffset !== undefined;
         lines.push({
-          id: `processor-speaker-direct-${mode}`,
+          id: `processor-speaker-direct-${mode}${isCenterFill ? "-center-fill" : ""}`,
           fromDevice: coreName,
-          fromPort: mode === "withoutLineArrayAfc" ? "功放输出（不送线阵AFC）" : "功放输出（AFC）",
-          toDevice: `${speakerMode} ${getSpeakerSignalGroupLabel(mode)} × ${count}`,
+          fromPort: mode === "withoutLineArrayAfc" ? "功放输出（不送线阵AFC）" : isCenterFill ? "功放输出（AFC中置补声）" : "功放输出（AFC）",
+          toDevice: `${speakerMode} ${getSpeakerSignalGroupLabel(mode, isCenterFill)} × ${count}`,
           toPort: "音箱 + / -",
           cableType: "音箱线",
           note: mode === "withoutLineArrayAfc"
             ? "该扬声器分组保留安装和其他现有信号路径，不送线阵麦AFC扩声信号。"
+            : isCenterFill
+              ? `后墙中置分组只补充侧墙音箱未覆盖的中间区域；AFC初始 ${afcSendLevelOffset}dB，现场与侧墙组做延时和增益对齐。`
             : "该扬声器分组承担线阵麦AFC扩声，现场复核阻抗、线径、极性和通道负载。",
-          speakerSignalMode: mode
+          speakerSignalMode: mode,
+          afcSendLevelOffset
         });
       });
     } else {
@@ -430,16 +434,25 @@ function generateProcessorDirectConnectionLines(
   return lines;
 }
 
-function getSpeakerSignalGroups(points: GeneratedPoint[]): Array<{ mode: SpeakerSignalMode; count: number }> {
+function getSpeakerSignalGroups(points: GeneratedPoint[]): Array<{ mode: SpeakerSignalMode; count: number; afcSendLevelOffset?: number }> {
   if (!points.some((point) => point.speakerSignalMode)) return [];
-  return (["withoutLineArrayAfc", "afc"] as const).flatMap((mode) => {
-    const count = points.filter((point) => (point.speakerSignalMode ?? "afc") === mode).length;
-    return count ? [{ mode, count }] : [];
+  const groups = new Map<string, { mode: SpeakerSignalMode; count: number; afcSendLevelOffset?: number }>();
+  points.forEach((point) => {
+    const mode = point.speakerSignalMode ?? "afc";
+    const afcSendLevelOffset = point.afcSendLevelOffset;
+    const key = `${mode}:${afcSendLevelOffset ?? "default"}`;
+    const group = groups.get(key);
+    if (group) group.count += 1;
+    else groups.set(key, { mode, count: 1, afcSendLevelOffset });
+  });
+  return Array.from(groups.values()).sort((a, b) => {
+    if (a.mode !== b.mode) return a.mode === "withoutLineArrayAfc" ? -1 : 1;
+    return (a.afcSendLevelOffset ?? 0) - (b.afcSendLevelOffset ?? 0);
   });
 }
 
-function getSpeakerSignalGroupLabel(mode: SpeakerSignalMode) {
-  return mode === "withoutLineArrayAfc" ? "不送线阵AFC分组" : "AFC扩声分组";
+function getSpeakerSignalGroupLabel(mode: SpeakerSignalMode, isCenterFill = false) {
+  return mode === "withoutLineArrayAfc" ? "不送线阵AFC分组" : isCenterFill ? "后墙中置AFC补声分组" : "AFC扩声分组";
 }
 
 function splitDeviceText(value: string) {

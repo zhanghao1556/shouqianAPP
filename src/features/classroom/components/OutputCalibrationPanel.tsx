@@ -193,6 +193,7 @@ function getOutputCalibrationItems(profile: ClassroomProfile, outputs: Generated
         `${point.label}：(${point.position.x.toFixed(1)}m, ${point.position.y.toFixed(1)}m)` +
         `${point.horizontalAngle === undefined ? "" : `；水平摆角${point.horizontalAngle}°`}` +
         `${point.speakerSignalMode === "withoutLineArrayAfc" ? "；不送线阵AFC" : point.speakerSignalMode === "afc" ? "；正常AFC扩声" : ""}` +
+        `${point.label.includes("后墙中置") && point.afcSendLevelOffset !== undefined ? `；AFC初始${point.afcSendLevelOffset}dB；需延时校准` : ""}` +
         `；${point.reason}`
       )
     },

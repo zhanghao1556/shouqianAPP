@@ -113,7 +113,11 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
         目标设备: line.toDevice,
         目标接口: line.toPort,
         线材: line.cableType,
-        信号: line.speakerSignalMode === "withoutLineArrayAfc" ? "不送线阵AFC" : line.speakerSignalMode === "afc" ? "正常AFC扩声" : "-"
+        信号: line.speakerSignalMode === "withoutLineArrayAfc"
+          ? "不送线阵AFC"
+          : line.speakerSignalMode === "afc"
+            ? line.afcSendLevelOffset === undefined ? "正常AFC扩声" : `中置AFC初始${line.afcSendLevelOffset}dB并校准延时`
+            : "-"
       }))
     },
     ...input.drawings.map((drawing) => ({

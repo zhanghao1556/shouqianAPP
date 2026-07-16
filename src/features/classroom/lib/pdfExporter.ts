@@ -314,7 +314,11 @@ function getSpeakerSignalArchiveValue(points: GeneratedOutputs["generatedPoints"
   if (!speakers.length) return "未启用";
   const withoutAfc = speakers.filter((point) => point.speakerSignalMode === "withoutLineArrayAfc").length;
   const afc = speakers.filter((point) => point.speakerSignalMode === "afc").length;
-  return `不送线阵AFC ${withoutAfc}只 / 正常AFC扩声 ${afc}只`;
+  const rearCenterFill = speakers.find((point) => point.label.includes("后墙中置"));
+  const rearCenterText = rearCenterFill?.afcSendLevelOffset === undefined
+    ? ""
+    : ` / 后墙中置初始${rearCenterFill.afcSendLevelOffset}dB并校准延时`;
+  return `不送线阵AFC ${withoutAfc}只 / 正常AFC扩声 ${afc}只${rearCenterText}`;
 }
 
 function getSelectionArchiveValue(choice: { selectedLabel: string; recommendedLabel: string; isNonRecommended: boolean; userSelected: boolean }) {
