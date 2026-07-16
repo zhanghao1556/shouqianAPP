@@ -1846,3 +1846,24 @@ PowerShell reminder:
 - The latest user correction overrides the spreadsheet cell: ordinary painted wall is slight increase. Hard wall remains neutral and acoustic wall remains strong decrease.
 - WPS symbol fonts may round-trip confirmation marks through spreadsheet tooling as numeric text such as `49`. Compare those cells with rendered appearance and row-change patterns before treating them as literal calibration values.
 - When adding a branch against a project enum, verify the existing union first. The ceiling code uses `exposed`, not the display-language concept `none`.
+
+### 2026-07-16 brand-specific speaker availability guardrail
+
+- Product availability is a brand boundary, not a room-acoustics patch. Put the Yinman automatic default ahead of shared Yinyi automatic selection while preserving legacy-only and explicit customer override precedence.
+- A brand default must flow through both generated points and the customer selector. Pass the explicit brand ID where an API already has it, while retaining the runtime brand default for drawing callers in the active branded app.
+- Do not delete the ceiling option when the user only requests a default recommendation. Keep manual ceiling selection available and visibly non-recommended so a future supplied ceiling product can still be reviewed without another UI redesign.
+- Reuse the existing wall quantity and geometry engine. A separate Yinman wall coordinate algorithm would duplicate rules and risk cross-brand drift.
+- When unrelated work is already dirty, isolate the implementation to clean files and a new test. Do not stage shared dirty logs or engineering files without explicit commit-scope confirmation.
+
+### 2026-07-16 line-array speaker signal guardrail
+
+- Keep speaker placement and signal routing as separate decisions. A front-wall or first-row speaker can remain physically installed while its line-array AFC send is disabled.
+- Four-speaker line-array layouts are side-wall first: the second pair uses the side wall whenever the existing 3.3m same-side spacing and back-wall coverage reserve both fit; rear-wall placement is a fallback, not the default.
+- When a ternary result populates a shared string-literal union such as `SpeakerSignalMode`, annotate it explicitly so TypeScript does not widen the value to `string` through a mapped array.
+- Never assign an internal extended point object directly to the public `Point` field. Copy `{x, y}` explicitly so placement hints and rule traces cannot leak into saved profiles, reports or exported JSON.
+- Scope every boundary to the bullet that owns it. The `width > 8m` legacy fallback is a 2-speaker exception and must not short-circuit the separately confirmed 4-speaker side-wall-first rule.
+- A signal legend and its rendered device marker must use the same color token. Verify the actual SVG symbol color, not only the label text, whenever a new drawing key is added.
+- Pass final generated points into connection generation whenever routing depends on placement metadata. Duplicating front-row or wall-side inference in topology code would let point maps and wiring drift apart.
+- Test localStorage-heavy pages on the alternate `localhost` hostname when the user's active draft uses `127.0.0.1`; this preserves the user's draft while exercising the real 5174/5175/5180 entry modes.
+- A timed-out browser `download` event is not proof of export failure for programmatic anchors. Check the actual downloaded file, file size and rendered contents before changing working export code.
+- If the bundled Poppler command wrapper cannot resolve its internal path, call the native executable under the bundled runtime directly and keep the failure classified as a tooling-path issue.

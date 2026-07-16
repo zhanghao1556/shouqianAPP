@@ -188,8 +188,13 @@ function getOutputCalibrationItems(profile: ClassroomProfile, outputs: Generated
     {
       key: "speakerPoints",
       title: "音箱点位与角度",
-      summary: `${speakers.length} 只${speakers.some((point) => point.horizontalAngle !== undefined) ? "；含壁挂角度" : ""}`,
-      details: speakers.map((point) => `${point.label}：(${point.position.x.toFixed(1)}m, ${point.position.y.toFixed(1)}m)${point.horizontalAngle === undefined ? "" : `；水平摆角${point.horizontalAngle}°`}`)
+      summary: `${speakers.length} 只${speakers.some((point) => point.horizontalAngle !== undefined) ? "；含壁挂角度" : ""}${speakers.some((point) => point.speakerSignalMode) ? "；含AFC分组" : ""}`,
+      details: speakers.map((point) =>
+        `${point.label}：(${point.position.x.toFixed(1)}m, ${point.position.y.toFixed(1)}m)` +
+        `${point.horizontalAngle === undefined ? "" : `；水平摆角${point.horizontalAngle}°`}` +
+        `${point.speakerSignalMode === "withoutLineArrayAfc" ? "；不送线阵AFC" : point.speakerSignalMode === "afc" ? "；正常AFC扩声" : ""}` +
+        `；${point.reason}`
+      )
     },
     {
       key: "wiring",

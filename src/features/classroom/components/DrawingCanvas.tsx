@@ -181,6 +181,7 @@ function InstallationDiagram({
   const width = 980;
   const height = getInstallationCanvasHeight(profile, width);
   const hasLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
+  const hasSpeakerSignalModes = generatedPoints.some((point) => point.speakerSignalMode);
   const room = getCanvasRoomLayout(profile, width, height);
   const arrayMicCanvasPoints = generatedPoints
     .filter((point) => point.type === "arrayMic")
@@ -629,7 +630,12 @@ function InstallationDiagram({
           />
         ))}
       </svg>
-      <Legend micOnly={micOnly} hasManualArrayMic={manualArrayMicPoints.length > 0} hasLineArray={hasLineArray} />
+      <Legend
+        micOnly={micOnly}
+        hasManualArrayMic={manualArrayMicPoints.length > 0}
+        hasLineArray={hasLineArray}
+        hasSpeakerSignalModes={hasSpeakerSignalModes}
+      />
     </div>
   );
 }
@@ -1613,8 +1619,8 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   }
 
   connections.forEach((connection) => {
-    const fromKey = getTopologyNodeKey(connection.fromDevice, connection.fromPort);
-    const toKey = getTopologyNodeKey(connection.toDevice, connection.toPort);
+    const fromKey = getTopologyNodeKey(connection.fromDevice, connection.fromPort, connection.speakerSignalMode);
+    const toKey = getTopologyNodeKey(connection.toDevice, connection.toPort, connection.speakerSignalMode);
     if (isUnknownTopologyNodeKey(fromKey) || isUnknownTopologyNodeKey(toKey)) return;
     if (shouldSkipTopologyConnection(connection, fromKey, toKey)) return;
     ensureNode(getTopologyNode(connection.fromDevice, connection.fromPort, fromKey, speakerCount, topologySpeakerType));
@@ -1749,6 +1755,9 @@ function isTwoInTwoOutAudioConnection(connection: ConnectionLine) {
 function getTopologyCableQuantity(connection: ConnectionLine, fromKey: string, toKey: string, speakerCount: number) {
   if (connection.cableType.includes("无线信号")) return getTopologyQuantityFromText(connection.fromDevice) ?? 1;
   if (isTopologySpeakerKey(fromKey) || isTopologySpeakerKey(toKey)) {
+    if (connection.speakerSignalMode) {
+      return getTopologyQuantityFromText(connection.fromDevice) ?? getTopologyQuantityFromText(connection.toDevice) ?? 1;
+    }
     if (fromKey === "speaker-amplifier" || toKey === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
     if (fromKey === "mainMic" || toKey === "mainMic" || fromKey === "processorHost" || toKey === "processorHost") {
       return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));
@@ -1814,7 +1823,7 @@ function formatTopologyCableLabel(label: string, quantity: number) {
   return `${label} ×${Math.max(1, Math.round(quantity))}`;
 }
 
-function getTopologyNodeKey(device: string, port = "") {
+function getTopologyNodeKey(device: string, port = "", speakerSignalMode?: ConnectionLine["speakerSignalMode"]) {
   if (device.includes("智能音频处理主机") || device.includes("双麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
   if (device.includes("智能线阵麦克风")) {
     const match = device.match(/(\d+)\s*$/);
@@ -1832,7 +1841,11 @@ function getTopologyNodeKey(device: string, port = "") {
   if (device === "功放") return "legacy-amplifier";
   if (device === "有源音箱") return "legacy-active-speaker";
   if (device === "无源音箱") return "legacy-passive-speaker";
-  if (isTopologySpeaker(device, port)) return device.includes("扩展分组") ? "speaker-amplifier" : "speaker-dt";
+  if (isTopologySpeaker(device, port)) {
+    if (speakerSignalMode === "withoutLineArrayAfc") return "speaker-without-line-array-afc";
+    if (speakerSignalMode === "afc") return "speaker-afc";
+    return device.includes("扩展分组") ? "speaker-amplifier" : "speaker-dt";
+  }
   if (device.includes("功放主机")) return "amplifier";
   if (device.includes("调音台")) return "mixer";
   if (device.includes("处理器") || device.includes("DSP") || device.includes("反馈抑制")) return "processor";
@@ -1854,7 +1867,12 @@ function getTopologyNode(device: string, port: string, key: string, speakerCount
     return { key, label: Number.isFinite(index) ? `阵麦 ${index}` : "阵麦", kind: "mainMic" };
   }
   if (key === "processorHost") return { key, label: "智能音频处理主机", kind: "processor" };
-  if (isTopologySpeakerKey(key)) return { key, label: getTopologySpeakerLabel(speakerType), kind: "speaker", quantity: getTopologySpeakerQuantity(key, speakerCount) };
+  if (isTopologySpeakerKey(key)) return {
+    key,
+    label: getTopologySpeakerLabel(speakerType, key),
+    kind: "speaker",
+    quantity: getTopologySpeakerQuantity(key, speakerCount, device)
+  };
   if (key === "amplifier") return { key, label: "功放", kind: "amplifier", quantity: getTopologyQuantityFromText(device) };
   if (key === "mixer") return { key, label: "调音台", kind: "mixer", quantity: getTopologyQuantityFromText(device) };
   if (key === "processor") return { key, label: device.includes("反馈抑制") ? "反馈抑制器" : "处理器", kind: "processor", quantity: getTopologyQuantityFromText(device) };
@@ -1887,7 +1905,7 @@ function isTopologySpeaker(device: string, port: string) {
 }
 
 function isTopologySpeakerKey(key: string) {
-  return key === "speaker-dt" || key === "speaker-amplifier" || key === "speaker";
+  return key === "speaker-dt" || key === "speaker-amplifier" || key === "speaker" || key === "speaker-afc" || key === "speaker-without-line-array-afc";
 }
 
 function getTopologySpeakerTypeFromPoints(points: GeneratedPoint[]) {
@@ -1896,11 +1914,16 @@ function getTopologySpeakerTypeFromPoints(points: GeneratedPoint[]) {
   return "壁挂";
 }
 
-function getTopologySpeakerLabel(type: "吸顶" | "壁挂") {
+function getTopologySpeakerLabel(type: "吸顶" | "壁挂", key: string) {
+  if (key === "speaker-without-line-array-afc") return `${type}音箱（不送线阵AFC）`;
+  if (key === "speaker-afc") return `${type}音箱（AFC）`;
   return `${type}音箱`;
 }
 
-function getTopologySpeakerQuantity(key: string, speakerCount: number) {
+function getTopologySpeakerQuantity(key: string, speakerCount: number, device: string) {
+  if (key === "speaker-afc" || key === "speaker-without-line-array-afc") {
+    return getTopologyQuantityFromText(device) ?? 1;
+  }
   if (key === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
   return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));
 }
@@ -3883,6 +3906,11 @@ function getPointLabelLines(
     point.type === "speaker" && point.coverageRadius !== undefined && point.label.includes("吸顶音箱")
       ? `覆盖半径 ${point.coverageRadius.toFixed(1)}m`
       : "",
+    point.speakerSignalMode === "withoutLineArrayAfc"
+      ? "不送线阵AFC"
+      : point.speakerSignalMode === "afc"
+        ? "正常AFC扩声"
+        : "",
     extraLine ?? ""
   ].filter(Boolean);
 }
@@ -3932,7 +3960,13 @@ function GeneratedPointMarker({
       : getWallSpeakerTarget(canvasPoint, arrayMicCanvasPoints, width, height, wallCoverageLength);
   const arrayMicRadiusM = point.coverageRadius ?? getArrayMicEffectiveAmplificationRadius(profile);
   const arrayMicRadiusPx = arrayMicRadiusM * meterPx;
-  const symbolColor = muted ? "#94a3b8" : pointColors[point.type];
+  const symbolColor = muted
+    ? "#94a3b8"
+    : point.speakerSignalMode === "withoutLineArrayAfc"
+      ? "#d9466f"
+      : point.speakerSignalMode === "afc"
+        ? "#2d8a57"
+        : pointColors[point.type];
   const coverageStroke = muted ? "#94a3b8" : "#f59e0b";
   const coverageOpacity = muted ? 0.2 : 0.88;
   const coverageRingOpacity = muted ? 0.28 : 0.46;
@@ -4521,7 +4555,17 @@ function CeilingSpeakerSymbol({ x, y, diameter, color }: { x: number; y: number;
   );
 }
 
-function Legend({ micOnly = false, hasManualArrayMic = false, hasLineArray = false }: { micOnly?: boolean; hasManualArrayMic?: boolean; hasLineArray?: boolean }) {
+function Legend({
+  micOnly = false,
+  hasManualArrayMic = false,
+  hasLineArray = false,
+  hasSpeakerSignalModes = false
+}: {
+  micOnly?: boolean;
+  hasManualArrayMic?: boolean;
+  hasLineArray?: boolean;
+  hasSpeakerSignalModes?: boolean;
+}) {
   return (
     <div className="canvasLegend">
       <span>
@@ -4543,6 +4587,16 @@ function Legend({ micOnly = false, hasManualArrayMic = false, hasLineArray = fal
           <span>
             <i style={{ background: "rgba(245, 158, 11, 0.3)", border: "1px dashed #f59e0b" }} /> 音箱扩声范围
           </span>
+          {hasSpeakerSignalModes && (
+            <>
+              <span>
+                <i style={{ background: "#2d8a57" }} /> 正常AFC扩声
+              </span>
+              <span>
+                <i style={{ background: "#d9466f" }} /> 不送线阵AFC
+              </span>
+            </>
+          )}
         </>
       )}
     </div>

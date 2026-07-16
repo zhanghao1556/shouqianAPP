@@ -110,6 +110,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
 
   addCascadeRouteFinding(findings, brandId, mics);
   addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
+  addLineArraySpeakerFindings(findings, profile, mics, speakers);
   addWallSpeakerCoverageFinding(findings, speakers);
   addInstallationHeightFinding(findings, profile, mics);
   addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
@@ -117,6 +118,48 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   addExistingCalibrationFindings(findings, profile, brandId, mics);
 
   return summarizeFindings(findings);
+}
+
+function addLineArraySpeakerFindings(
+  findings: PointValidationFinding[],
+  profile: ClassroomProfile,
+  mics: GeneratedPoint[],
+  speakers: GeneratedPoint[]
+) {
+  const usesFrontLineArray = mics.some((mic) => mic.pickupKind === "lineArray" && mic.pickupPattern === "front180");
+  if (!usesFrontLineArray || !speakers.length) return;
+  const wallSpeakers = speakers.filter((speaker) => speaker.horizontalAngle !== undefined || speaker.downTiltAngle !== undefined);
+  if (wallSpeakers.length === 1 || wallSpeakers.length === 3) {
+    findings.push({
+      code: "speaker.line-array-odd-wall-count",
+      severity: "hard",
+      title: "线阵正面扩声壁挂奇数配置",
+      actual: wallSpeakers.length,
+      limit: "2只或4只成对布置",
+      internalMessage: "手动壁挂数量为奇数，继续保留原兜底点位，不生成不对称的线阵专属布局。",
+      customerMessage: "壁挂音箱数量与对称覆盖需要专项复核。",
+      sourceRefs: ["用户确认的线阵正面扩声壁挂2/4只规则"]
+    });
+    return;
+  }
+  if (wallSpeakers.length !== 2) return;
+  const sideSpeakers = wallSpeakers.filter((speaker) =>
+    (Math.abs(speaker.position.x) <= 0.05 || Math.abs(speaker.position.x - profile.roomGeometry.width) <= 0.05) &&
+    speaker.position.y > 0.05 && speaker.position.y < profile.roomGeometry.length - 0.05
+  );
+  if (sideSpeakers.length !== 2) return;
+  const rearGap = profile.roomGeometry.length - Math.min(...sideSpeakers.map((speaker) => speaker.position.y));
+  const coverageRadius = Math.min(...sideSpeakers.map((speaker) => speaker.coverageRadius ?? 5));
+  if (rearGap <= coverageRadius + 0.05) return;
+  findings.push({
+    code: "speaker.line-array-two-wall-coverage",
+    severity: "warning",
+    title: "线阵正面扩声两只壁挂后场覆盖",
+    actual: `${rearGap.toFixed(1)}m`,
+    limit: `${coverageRadius.toFixed(1)}m`,
+    internalMessage: "两只侧墙壁挂朝后时无法完整覆盖后场，建议增加到4只；当前不自动改变客户数量。",
+    sourceRefs: ["用户确认的两只不足时建议增加侧墙或后墙补声规则"]
+  });
 }
 
 function addWallSpeakerCoverageFinding(findings: PointValidationFinding[], speakers: GeneratedPoint[]) {

@@ -278,6 +278,7 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ["麦克风提示", getSelectionArchiveNote(outputs.solutionSelection.microphone)],
     ["音箱选型", getSelectionArchiveValue(outputs.solutionSelection.speaker)],
     ["音箱提示", getSelectionArchiveNote(outputs.solutionSelection.speaker, outputs.solutionSelection.speaker.requiresSpecialReview)],
+    ["线阵AFC分组", getSpeakerSignalArchiveValue(outputs.generatedPoints)],
     ["处理器选型", selectedProcessor ? formatPublicDeviceName(selectedProcessor.name) : "待确认"],
     ["顶面音箱安装", overheadSpeakerMountingLabels[profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"]],
     ["吊顶条件", ceilingLabels[profile.engineeringConstraints.ceiling]],
@@ -306,6 +307,14 @@ function getProjectArchiveRows(profile: ClassroomProfile, outputs: GeneratedOutp
     ]);
   }
   return rows;
+}
+
+function getSpeakerSignalArchiveValue(points: GeneratedOutputs["generatedPoints"]) {
+  const speakers = points.filter((point) => point.type === "speaker" && point.speakerSignalMode);
+  if (!speakers.length) return "未启用";
+  const withoutAfc = speakers.filter((point) => point.speakerSignalMode === "withoutLineArrayAfc").length;
+  const afc = speakers.filter((point) => point.speakerSignalMode === "afc").length;
+  return `不送线阵AFC ${withoutAfc}只 / 正常AFC扩声 ${afc}只`;
 }
 
 function getSelectionArchiveValue(choice: { selectedLabel: string; recommendedLabel: string; isNonRecommended: boolean; userSelected: boolean }) {

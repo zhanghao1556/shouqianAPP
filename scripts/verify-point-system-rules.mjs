@@ -290,7 +290,78 @@ const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "com
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanEconomyLine, yinmanInterfaceRichLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
-console.log("PASS line-array recommendation, Yinman processor defaults and alternatives, teacher-zone inference, 8m/10m/15m/5m boundaries, forced two-line handling and model hiding");
+
+const getOutputSpeakers = (outputs) => outputs.generatedPoints.filter((point) => point.type === "speaker");
+const getOutputLineMic = (outputs) => outputs.generatedPoints.find((point) => point.pickupKind === "lineArray");
+const wallOverride = { "COLUMN-SPEAKER": 2 };
+const shortNarrowLineWall = generateEngineeringOutputs(makeProfile({ length: 6, width: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+assert.deepEqual(getOutputSpeakers(shortNarrowLineWall).map((point) => point.position), [{ x: 0.9, y: 6 }, { x: 5.1, y: 6 }]);
+assert.ok(getOutputSpeakers(shortNarrowLineWall).every((point) => point.speakerSignalMode === "afc" && point.target.y < point.position.y));
+
+const shortWideLineWall = generateEngineeringOutputs(makeProfile({ length: 6, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+const shortWideMic = getOutputLineMic(shortWideLineWall);
+assert.ok(shortWideMic);
+assert.deepEqual(getOutputSpeakers(shortWideLineWall).map((point) => point.position), [{ x: 0, y: Math.round((shortWideMic.position.y + 0.3) * 10) / 10 }, { x: 7, y: Math.round((shortWideMic.position.y + 0.3) * 10) / 10 }]);
+assert.ok(getOutputSpeakers(shortWideLineWall).every((point) => point.speakerSignalMode === "afc" && point.target.y > point.position.y));
+
+const widthBoundaryModes = [6, 6.1, 8, 8.1].map((width) => {
+  const outputs = generateEngineeringOutputs(makeProfile({ length: 6, width, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+  const speakers = getOutputSpeakers(outputs);
+  return speakers.every((point) => point.position.y === 6) ? "back" : speakers.every((point) => point.position.x === 0 || point.position.x === width) ? "side" : "original";
+});
+assert.deepEqual(widthBoundaryModes, ["back", "side", "side", "back"]);
+
+const offsetBoundaryY = [6, 9, 12].map((length) => {
+  const outputs = generateEngineeringOutputs(makeProfile({ length, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+  return {
+    micY: getOutputLineMic(outputs).position.y,
+    speakerY: getOutputSpeakers(outputs)[0].position.y
+  };
+});
+assert.deepEqual(offsetBoundaryY.map(({ micY, speakerY }) => speakerY), [0.3, 0.65, 1].map((offset, index) => Math.round((offsetBoundaryY[index].micY + offset) * 10) / 10));
+
+const shortFourLineWall = generateEngineeringOutputs(makeProfile({ length: 8, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
+const shortFourSpeakers = getOutputSpeakers(shortFourLineWall);
+assert.ok(shortFourSpeakers.slice(0, 2).every((point) => point.position.x === 0 || point.position.x === 7));
+assert.ok(shortFourSpeakers.slice(0, 2).every((point) => point.target.y > point.position.y));
+assert.ok(shortFourSpeakers.slice(2).every((point) => point.position.y === 8 && point.target.y < point.position.y));
+
+const longFourLineWall = generateEngineeringOutputs(makeProfile({ length: 12, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
+const longFourSpeakers = getOutputSpeakers(longFourLineWall);
+assert.ok(longFourSpeakers.every((point) => point.position.x === 0 || point.position.x === 7));
+assert.ok(longFourSpeakers.every((point) => point.target.y > point.position.y));
+assert.ok(longFourSpeakers[2].position.y - longFourSpeakers[0].position.y >= 3.3);
+assert.ok(longFourSpeakers.every((point) => point.speakerSignalMode === "afc"));
+assert.deepEqual(pointSnapshot(getOutputSpeakers(longFourLineWall)), pointSnapshot(getOutputSpeakers(generateEngineeringOutputs(makeProfile({ length: 12, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinman"))));
+
+const wideFourLineWall = generateEngineeringOutputs(makeProfile({ length: 12, width: 9, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
+assert.ok(getOutputSpeakers(wideFourLineWall).slice(0, 2).every((point) => point.position.x === 0 || point.position.x === 9));
+assert.ok(getOutputSpeakers(wideFourLineWall).slice(0, 2).every((point) => point.target.y > point.position.y));
+
+const sixLineWallProfile = makeProfile({ length: 6, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" });
+const sixLineWall = generateEngineeringOutputs(sixLineWallProfile, { "COLUMN-SPEAKER": 6 }, "yinyi");
+const oldSixWall = generateEngineeringPoints(sixLineWallProfile, { speakerProductId: "COLUMN-SPEAKER", speakerCount: 6 }).filter((point) => point.type === "speaker");
+assert.deepEqual(pointSnapshot(getOutputSpeakers(sixLineWall)), pointSnapshot(oldSixWall));
+assert.equal(getOutputSpeakers(sixLineWall).filter((point) => point.speakerSignalMode === "withoutLineArrayAfc").length, 2);
+
+const ceilingLineProfile = makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "ceiling" });
+const ceilingLine = generateEngineeringOutputs(ceilingLineProfile, { "CEILING-SPEAKER": 6 }, "yinyi");
+const ceilingArray = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "existingArray", speakerProductOverride: "ceiling" }), { "CEILING-SPEAKER": 6 }, "yinyi");
+assert.deepEqual(getOutputSpeakers(ceilingLine).map((point) => point.position), getOutputSpeakers(ceilingArray).map((point) => point.position));
+const firstCeilingY = Math.min(...getOutputSpeakers(ceilingLine).map((point) => point.position.y));
+assert.ok(getOutputSpeakers(ceilingLine).filter((point) => Math.abs(point.position.y - firstCeilingY) <= 0.35).every((point) => point.speakerSignalMode === "withoutLineArrayAfc"));
+assert.ok(getOutputSpeakers(ceilingLine).filter((point) => point.position.y - firstCeilingY > 0.35).every((point) => point.speakerSignalMode === "afc"));
+assert.equal(ceilingLine.connectionLines.filter((line) => line.speakerSignalMode === "withoutLineArrayAfc").length, 1);
+assert.equal(ceilingLine.connectionLines.filter((line) => line.speakerSignalMode === "afc").length, 1);
+
+const fullLine = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 6, width: 6, scope: "full", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
+assert.equal(getOutputLineMic(fullLine)?.pickupPattern, "full360");
+assert.ok(getOutputSpeakers(fullLine).every((point) => point.speakerSignalMode === undefined));
+const oddLineWall = generateEngineeringOutputs(makeProfile({ length: 8, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 3 }, "yinyi");
+assert.equal(oddLineWall.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-odd-wall-count")?.severity, "hard");
+const insufficientTwoLineWall = generateEngineeringOutputs(makeProfile({ length: 12, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+assert.equal(insufficientTwoLineWall.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-two-wall-coverage")?.severity, "warning");
+console.log("PASS line-array recommendation, processor tiers, front180 wall 2/4 placement, 6/6.1/8/8.1m widths, 6/9/12m offsets, AFC groups, ceiling first row, full360 and 6+ preservation");
 
 const automaticChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(automaticChoice.solutionSelection.microphone.recommended, "lineArray");

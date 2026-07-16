@@ -115,6 +115,8 @@ export interface CompletenessItem {
   hint: string;
 }
 
+export type SpeakerSignalMode = "afc" | "withoutLineArrayAfc";
+
 export interface GeneratedPoint {
   id: string;
   type: GeneratedPointType;
@@ -129,6 +131,7 @@ export interface GeneratedPoint {
   pickupKind?: "existingArray" | "lineArray";
   pickupPattern?: "front180" | "full360";
   installationMode?: "podium" | "hanging" | "tabletop";
+  speakerSignalMode?: SpeakerSignalMode;
   afcSendLevelOffset?: number;
   target?: Point;
   responsibilityEdgeCoverage?: {
@@ -179,6 +182,7 @@ export interface ConnectionLine {
   toPort: string;
   cableType: string;
   note: string;
+  speakerSignalMode?: SpeakerSignalMode;
 }
 
 export interface EngineeringBasis {

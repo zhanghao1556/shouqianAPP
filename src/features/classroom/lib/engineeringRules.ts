@@ -192,7 +192,7 @@ export const generateEngineeringOutputs = (
     solutionSelection
   });
   const riskItems = getRiskItems(profile, acousticAssessment, points, brandId);
-  const connectionLines = canGenerateDrawings ? generateConnectionLines(profile, productSelection, brandId) : [];
+  const connectionLines = canGenerateDrawings ? generateConnectionLines(profile, productSelection, brandId, points) : [];
   const engineeringBasis: EngineeringBasis[] = [];
   const installationGuide = getInstallationGuide(profile, points);
   const audioPlan = getAudioPlan(profile, points, acousticAssessment, brandId, requiredArrayMicCount);
@@ -373,9 +373,9 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
           ? "阵列麦位于教师主要活动区前方约 0.5-1m，拾音面兼顾授课走动和黑板板书位置；如讲台在左右侧，可小幅偏移但不脱离主活动区。"
           : "阵列麦按主要拾音区域居中覆盖，兼顾讲台、教师走动区和学生发言方向。"
         : isWallSpeaker
-          ? `侧墙壁挂安装，支架支持水平和俯仰调节，默认朝向主要听音区，${angleText}`
+          ? `壁挂安装，支架支持水平和俯仰调节，按点位图朝向主要听音区，${angleText}${getSpeakerSignalInstruction(point)}`
           : isCeilingSpeaker
-          ? "规则房间优先按矩形网格均匀分布，形成均匀扩声覆盖；无感扩声为单声道，不区分左右声道，按前后排顺序分配 SPK1 / SPK2 / SPK3 / SPK4。"
+          ? `规则房间优先按矩形网格均匀分布，形成均匀扩声覆盖；无感扩声为单声道，不区分左右声道，按前后排顺序分配 SPK1 / SPK2 / SPK3 / SPK4。${getSpeakerSignalInstruction(point)}`
           : isBack
           ? "后场补声音箱朝向学生区前中部，音量作为补声，不压过前场。"
           : "前场音箱朝向主要听音区，单声道分组保持对称覆盖。",
@@ -393,6 +393,13 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
         : `${point.reason} 调试时从前排到后排走动听音，确认覆盖均匀且无明显啸叫。`
     };
   });
+
+const getSpeakerSignalInstruction = (point: GeneratedPoint) =>
+  point.speakerSignalMode === "withoutLineArrayAfc"
+    ? "信号分组：不送线阵AFC，其他现有信号路径保持不变。"
+    : point.speakerSignalMode === "afc"
+      ? "信号分组：正常线阵AFC扩声。"
+      : "";
 
 const getProductSelection = (
   profile: ClassroomProfile,

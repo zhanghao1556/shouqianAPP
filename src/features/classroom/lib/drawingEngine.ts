@@ -39,6 +39,11 @@ const WALL_SPEAKER_MAX_REAR_FILL_ROWS = RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_A
 const WALL_SPEAKER_PREFERRED_SAME_SIDE_SPACING_M = 4.5;
 const WALL_SPEAKER_MIN_SAME_SIDE_SPACING_M = 3.3;
 const WALL_COLUMN_MIN_BACK_WALL_DISTANCE_M = 3.5;
+const LINE_ARRAY_WALL_LAYOUT_MAX_ROOM_WIDTH_M = 8;
+const LINE_ARRAY_SIDE_SPEAKER_MIN_OFFSET_M = 0.3;
+const LINE_ARRAY_SIDE_SPEAKER_MAX_OFFSET_M = 1;
+const LINE_ARRAY_SIDE_SPEAKER_OFFSET_MIN_ROOM_LENGTH_M = 6;
+const LINE_ARRAY_SIDE_SPEAKER_OFFSET_MAX_ROOM_LENGTH_M = 12;
 const WALL_SPEAKER_MIN_INSTALL_HEIGHT_M = 2.2;
 const WALL_SPEAKER_MAX_INSTALL_HEIGHT_M = 2.7;
 const WALL_SPEAKER_MIN_HEIGHT_COVERAGE_M = 3.5;
@@ -78,6 +83,8 @@ export const ARRAY_MIC_ONLINE_PICKUP_RADIUS_M = 8;
 
 type WallSpeakerPosition = Point & {
   forcePerpendicularAim?: boolean;
+  lineArrayAim?: "rearward" | "forward";
+  lineArrayPlacementReason?: string;
 };
 
 export const getRoomArea = (profile: ClassroomProfile) =>
@@ -112,6 +119,10 @@ export interface PointQuantityTargets {
   speakerCount?: number;
   speakerProductId?: SpeakerProductId;
   preserveSpeakerCount?: boolean;
+  lineArrayContext?: {
+    mode: "front" | "full";
+    position: Point;
+  };
 }
 
 export const generateEngineeringPoints = (profile: ClassroomProfile, targets: PointQuantityTargets = {}): GeneratedPoint[] => {
@@ -173,13 +184,15 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
 
   if (shouldGenerateNewSpeakers(profile)) {
     const forcedSpeakerProductId = targets.speakerProductId;
+    const lineArrayFrontContext = targets.lineArrayContext?.mode === "front" ? targets.lineArrayContext : undefined;
     const speakerName = getSpeakerModelNameForPointMap(profile, forcedSpeakerProductId);
     const usesWallSpeaker = (forcedSpeakerProductId ?? getSpeakerProductId(profile)) === "COLUMN-SPEAKER";
     const defaultSpeakerCount = getDefaultSpeakerCount(profile, usesWallSpeaker);
     const speakerCount = Math.max(1, Math.round(targets.speakerCount ?? defaultSpeakerCount));
     const speakerPositions: WallSpeakerPosition[] = usesWallSpeaker
-      ? getWallSpeakerPositions(profile, speakerCount, primaryArrayMicY)
+      ? getWallSpeakerPositions(profile, speakerCount, primaryArrayMicY, lineArrayFrontContext)
       : getCeilingSpeakerPositions(profile, speakerCount, points.filter((point) => point.type === "arrayMic"), Boolean(targets.preserveSpeakerCount));
+    const firstSpeakerRowY = Math.min(...speakerPositions.map((position) => position.y));
     const scopeText = getEffectiveAmplificationScope(profile) === "podium" ? (profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声") : "全场扩声";
     const ceilingSpeakerHeight = getCeilingSpeakerInstallHeight(profile);
     const arrayMics = points.filter((point) => point.type === "arrayMic");
@@ -196,7 +209,7 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         shouldReserveTeacherMonitorSpeakerRow(profile) &&
         (isFrontWallSpeaker || (!usesWallSpeaker && !shouldUseMeetingStyleCeilingSpeakerRules(profile) && position.y <= primaryArrayMicY));
       const speakerRowsReason = usesWallSpeaker ? getPodiumSpeakerRowsReason(profile, speakerPositions.length) : getCeilingSpeakerRowsReason(profile, speakerPositions.length);
-      const wallAim = usesWallSpeaker ? getWallSpeakerAim(profile, position, coverageRadius, arrayMics) : undefined;
+      const wallAim = usesWallSpeaker ? getWallSpeakerAim(profile, position, coverageRadius, arrayMics, lineArrayFrontContext) : undefined;
       const wallTarget = wallAim?.target;
       const wallSpeakerStepHeight = usesWallSpeaker ? getLectureClassroomStepHeightAtY(profile, position.y, primaryArrayMicY) : 0;
       const wallSpeakerHeight = usesWallSpeaker ? oneDecimal(wallSpeakerBaseHeight + wallSpeakerStepHeight) : ceilingSpeakerHeight;
@@ -210,7 +223,7 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         id: `speaker-${index + 1}`,
         type: "speaker",
         label: `${isLeft ? "左" : "右"}${isBack ? "后" : "前"}${speakerName}`,
-        position,
+        position: { x: position.x, y: position.y },
         installHeight: usesWallSpeaker ? wallSpeakerHeight : ceilingSpeakerHeight,
         installHeightBase: usesWallSpeaker ? wallSpeakerBaseHeight : undefined,
         installHeightOffset: usesWallSpeaker ? wallSpeakerStepHeight : undefined,
@@ -237,6 +250,21 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
           : isTeacherMonitorSpeaker
             ? `${scopeText}老师区保留一组吸顶补声/监听点位，用于多媒体声音和老师小信号 AFC 监听；吸顶音箱覆盖半径锁定 ${CEILING_SPEAKER_COVERAGE_RADIUS_M}m，相邻中心距按不超过 ${CEILING_SPEAKER_MAX_SPACING_M}m 复核；仅承担老师区多媒体声音和小声 AFC 监听时，不强制执行离阵列麦 ${MIN_CEILING_SPEAKER_TO_MIC_DISTANCE}m。`
             : `${scopeText}吸顶音箱按 ${CEILING_SPEAKER_COVERAGE_RADIUS_M}m 覆盖半径分布，${speakerRowsReason}相邻中心距按不超过 ${CEILING_SPEAKER_MAX_SPACING_M}m 复核；横向在距侧墙 ${CEILING_SPEAKER_SIDE_INSTALL_INSET_M}m 至宽度-${CEILING_SPEAKER_SIDE_INSTALL_INSET_M}m 的覆盖区内均匀分布，纵向优先满足距前墙 1.5m、距后墙 2m，并按阵列麦位置做中间列避让/回填；小房间需现场取舍复核。`
+      };
+    }).map((point, index) => {
+      const position = speakerPositions[index];
+      if (!lineArrayFrontContext || !position) return point;
+      const speakerSignalMode: GeneratedPoint["speakerSignalMode"] = usesWallSpeaker
+        ? position.y <= 0.05 ? "withoutLineArrayAfc" : "afc"
+        : Math.abs(position.y - firstSpeakerRowY) <= 0.35 ? "withoutLineArrayAfc" : "afc";
+      const placementText = position.lineArrayPlacementReason ? `${position.lineArrayPlacementReason} ` : "";
+      const signalText = speakerSignalMode === "withoutLineArrayAfc"
+        ? "该组不送线阵AFC，其他现有信号路径保持不变。"
+        : "该组承担线阵AFC扩声。";
+      return {
+        ...point,
+        speakerSignalMode,
+        reason: `${point.reason} ${placementText}${signalText}`.trim()
       };
     });
     points.push(...filterGeneratedSpeakersByLegacyCoverage(profile, generatedSpeakerPoints, points.filter((point) => point.type === "arrayMic")));
@@ -1497,8 +1525,17 @@ const getCeilingSpeakerAxisRatio = (span: number, index: number, count: number) 
   return axis / span;
 };
 
-const getWallSpeakerPositions = (profile: ClassroomProfile, count: number, primaryMicY: number): WallSpeakerPosition[] => {
+const getWallSpeakerPositions = (
+  profile: ClassroomProfile,
+  count: number,
+  primaryMicY: number,
+  lineArrayFrontContext?: NonNullable<PointQuantityTargets["lineArrayContext"]>
+): WallSpeakerPosition[] => {
   const { length: depth, width: roomWidth } = profile.roomGeometry;
+  const lineArrayPositions = lineArrayFrontContext
+    ? getLineArrayFrontWallSpeakerPositions(profile, count, lineArrayFrontContext)
+    : undefined;
+  if (lineArrayPositions) return lineArrayPositions;
   const preferredSideFirstY = getPreferredFirstSideWallSpeakerY(profile, primaryMicY);
   const pairRows = Math.ceil(count / 2);
   if (shouldUseFullRoomWallSpeakerOrientationByRoomShape(profile)) {
@@ -1531,6 +1568,86 @@ const getWallSpeakerPositions = (profile: ClassroomProfile, count: number, prima
     x: index % 2 === 0 ? 0 : roomWidth,
     y: oneDecimal(yValues[Math.floor(index / 2)])
   }));
+};
+
+const getLineArrayFrontWallSpeakerPositions = (
+  profile: ClassroomProfile,
+  count: number,
+  context: NonNullable<PointQuantityTargets["lineArrayContext"]>
+): WallSpeakerPosition[] | undefined => {
+  const { length: depth, width: roomWidth } = profile.roomGeometry;
+  if (count !== 2 && count !== 4) return undefined;
+  if (count === 2 && roomWidth > LINE_ARRAY_WALL_LAYOUT_MAX_ROOM_WIDTH_M) return undefined;
+
+  if (count === 2 && depth <= 6 && roomWidth <= 6) {
+    return [true, false].map((isLeft) => ({
+      x: getFrontBackWallSpeakerX(roomWidth, isLeft),
+      y: depth,
+      lineArrayAim: "forward",
+      lineArrayPlacementReason: "线阵正面扩声且房间长宽均不超过6m，壁挂安装在后墙并朝前覆盖。"
+    }));
+  }
+
+  const firstSideY = getLineArrayFirstSideWallSpeakerY(profile, context.position.y);
+  const firstPair: WallSpeakerPosition[] = [
+    {
+      x: 0,
+      y: firstSideY,
+      lineArrayAim: "rearward",
+      lineArrayPlacementReason: "线阵正面扩声第一组壁挂安装在侧墙、位于线阵后方并朝后覆盖。"
+    },
+    {
+      x: roomWidth,
+      y: firstSideY,
+      lineArrayAim: "rearward",
+      lineArrayPlacementReason: "线阵正面扩声第一组壁挂安装在侧墙、位于线阵后方并朝后覆盖。"
+    }
+  ];
+  if (count === 2) return firstPair;
+
+  const maxSecondSideY = depth - getWallColumnBackWallHardLimit(2, depth - context.position.y);
+  const preferredSecondSideY = firstSideY + WALL_SPEAKER_PREFERRED_SAME_SIDE_SPACING_M;
+  const secondSideY = oneDecimal(Math.min(preferredSecondSideY, maxSecondSideY));
+  const canUseSecondSidePair = secondSideY - firstSideY >= WALL_SPEAKER_MIN_SAME_SIDE_SPACING_M;
+  if (canUseSecondSidePair) {
+    return [
+      ...firstPair,
+      {
+        x: 0,
+        y: secondSideY,
+        lineArrayAim: "rearward",
+        lineArrayPlacementReason: "第二组壁挂满足侧墙最小间距和后墙覆盖余量，继续安装在侧墙并朝后覆盖。"
+      },
+      {
+        x: roomWidth,
+        y: secondSideY,
+        lineArrayAim: "rearward",
+        lineArrayPlacementReason: "第二组壁挂满足侧墙最小间距和后墙覆盖余量，继续安装在侧墙并朝后覆盖。"
+      }
+    ];
+  }
+
+  return [
+    ...firstPair,
+    ...[true, false].map((isLeft): WallSpeakerPosition => ({
+      x: getFrontBackWallSpeakerX(roomWidth, isLeft),
+      y: depth,
+      lineArrayAim: "forward",
+      lineArrayPlacementReason: "第二组壁挂在侧墙无法同时满足3.3m间距和后墙覆盖余量，改装后墙并朝前覆盖。"
+    }))
+  ];
+};
+
+const getLineArrayFirstSideWallSpeakerY = (profile: ClassroomProfile, lineArrayY: number) => {
+  const lengthProgress = clamp(
+    (profile.roomGeometry.length - LINE_ARRAY_SIDE_SPEAKER_OFFSET_MIN_ROOM_LENGTH_M) /
+      (LINE_ARRAY_SIDE_SPEAKER_OFFSET_MAX_ROOM_LENGTH_M - LINE_ARRAY_SIDE_SPEAKER_OFFSET_MIN_ROOM_LENGTH_M),
+    0,
+    1
+  );
+  const offset = LINE_ARRAY_SIDE_SPEAKER_MIN_OFFSET_M +
+    (LINE_ARRAY_SIDE_SPEAKER_MAX_OFFSET_M - LINE_ARRAY_SIDE_SPEAKER_MIN_OFFSET_M) * lengthProgress;
+  return oneDecimal(clamp(lineArrayY + offset, 0.8, Math.max(0.8, profile.roomGeometry.length - 0.8)));
 };
 
 const shouldUseFullRoomWallSpeakerOrientationByRoomShape = (profile: ClassroomProfile) => shouldUseMeetingStyleFullRoomWallSpeakerRules(profile);
@@ -1797,9 +1914,36 @@ const getWallSpeakerAim = (
   profile: ClassroomProfile,
   position: WallSpeakerPosition,
   coverageLength: number,
-  arrayMics: GeneratedPoint[]
+  arrayMics: GeneratedPoint[],
+  lineArrayFrontContext?: NonNullable<PointQuantityTargets["lineArrayContext"]>
 ) => {
   const side = getWallSpeakerRoomSide(profile, position);
+  if (position.lineArrayAim === "rearward" && (side === "left" || side === "right")) {
+    const forwardDistance = Math.max(0.8, Math.min(coverageLength, profile.roomGeometry.length - position.y - 0.45));
+    const target = getOriginalSideWallSpeakerTarget(
+      profile,
+      position,
+      getOriginalSideWallSpeakerMountingAngle(profile, position),
+      forwardDistance
+    );
+    return {
+      horizontalAngle: getOriginalWallSpeakerHorizontalAngleFromTarget(profile, position, target),
+      target: { x: oneDecimal(target.x), y: oneDecimal(target.y) },
+      edgeCoverage: undefined
+    };
+  }
+  if (position.lineArrayAim === "forward" && side === "back") {
+    const target = getOriginalFrontBackWallSpeakerTarget(
+      profile,
+      position,
+      lineArrayFrontContext?.position.y ?? arrayMics[0]?.position.y ?? getPrimaryArrayMicY(profile)
+    );
+    return {
+      horizontalAngle: getOriginalWallSpeakerHorizontalAngleFromTarget(profile, position, target),
+      target,
+      edgeCoverage: undefined
+    };
+  }
   if (position.forcePerpendicularAim) {
     return {
       horizontalAngle: 0,

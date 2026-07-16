@@ -72,7 +72,11 @@ export function generateBrandEngineeringPoints(
 ): GeneratedPoint[] {
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.selected) {
-    const generated = generateEngineeringPoints(profile, { ...targets, arrayMicCount: lineArray.count });
+    const generated = generateEngineeringPoints(profile, {
+      ...targets,
+      arrayMicCount: lineArray.count,
+      lineArrayContext: { mode: lineArray.mode, position: lineArray.position }
+    });
     const baseMic = generated.find((point) => point.type === "arrayMic");
     const { activityZone } = lineArray;
     const y = lineArray.position.y;

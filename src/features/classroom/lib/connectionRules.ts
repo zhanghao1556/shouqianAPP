@@ -1,5 +1,5 @@
 import type { AppBrandId } from "../brand";
-import type { ClassroomProfile, ConnectionLine, ProductRecommendation } from "../types";
+import type { ClassroomProfile, ConnectionLine, GeneratedPoint, ProductRecommendation, SpeakerSignalMode } from "../types";
 import {
   DT_SPK_OUTPUT_COUNT,
   EXTERNAL_AMPLIFIER_MAX_LINE_OUT_COUNT,
@@ -28,10 +28,11 @@ export const getPrimaryDtProduct = (selection: ProductRecommendation[]) =>
 export const generateConnectionLines = (
   profile: ClassroomProfile,
   selection: ProductRecommendation[],
-  brandId: AppBrandId = "yinyi"
+  brandId: AppBrandId = "yinyi",
+  generatedPoints: GeneratedPoint[] = []
 ): ConnectionLine[] => {
   if (brandId === "yinman" || selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0)) {
-    return generateProcessorDirectConnectionLines(profile, selection, brandId);
+    return generateProcessorDirectConnectionLines(profile, selection, brandId, generatedPoints);
   }
   const dt = getPrimaryDtProduct(selection);
   if (!dt) return [];
@@ -221,7 +222,12 @@ export const generateConnectionLines = (
   return applyAudioLineCapacityRules(lines, dtName);
 };
 
-function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selection: ProductRecommendation[], brandId: AppBrandId): ConnectionLine[] {
+function generateProcessorDirectConnectionLines(
+  profile: ClassroomProfile,
+  selection: ProductRecommendation[],
+  brandId: AppBrandId,
+  generatedPoints: GeneratedPoint[]
+): ConnectionLine[] {
   const arrayMic = selection.find((item) => (item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID || item.productId === LINE_ARRAY_PRODUCT_ID) && item.quantity > 0);
   const processor = selection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID && item.quantity > 0);
   if (!arrayMic || !processor) return [];
@@ -358,15 +364,34 @@ function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selec
 
   if (speakerCount > 0) {
     const directSpeakerCount = Math.min(speakerCount, capability.integratedSpeakerCapacity);
-    lines.push({
-      id: "processor-speaker-direct",
-      fromDevice: coreName,
-      fromPort: "功放输出",
-      toDevice: `${speakerMode} 主机直驱分组 × ${directSpeakerCount}`,
-      toPort: "音箱 + / -",
-      cableType: "音箱线",
-      note: `智能音频处理主机直接推动前 ${directSpeakerCount} 只无源音箱，现场复核阻抗、线径、极性和通道负载。`
-    });
+    const speakerPoints = generatedPoints.filter((point) => point.type === "speaker");
+    const directSignalGroups = getSpeakerSignalGroups(speakerPoints.slice(0, directSpeakerCount));
+    if (directSignalGroups.length) {
+      directSignalGroups.forEach(({ mode, count }) => {
+        lines.push({
+          id: `processor-speaker-direct-${mode}`,
+          fromDevice: coreName,
+          fromPort: mode === "withoutLineArrayAfc" ? "功放输出（不送线阵AFC）" : "功放输出（AFC）",
+          toDevice: `${speakerMode} ${getSpeakerSignalGroupLabel(mode)} × ${count}`,
+          toPort: "音箱 + / -",
+          cableType: "音箱线",
+          note: mode === "withoutLineArrayAfc"
+            ? "该扬声器分组保留安装和其他现有信号路径，不送线阵麦AFC扩声信号。"
+            : "该扬声器分组承担线阵麦AFC扩声，现场复核阻抗、线径、极性和通道负载。",
+          speakerSignalMode: mode
+        });
+      });
+    } else {
+      lines.push({
+        id: "processor-speaker-direct",
+        fromDevice: coreName,
+        fromPort: "功放输出",
+        toDevice: `${speakerMode} 主机直驱分组 × ${directSpeakerCount}`,
+        toPort: "音箱 + / -",
+        cableType: "音箱线",
+        note: `智能音频处理主机直接推动前 ${directSpeakerCount} 只无源音箱，现场复核阻抗、线径、极性和通道负载。`
+      });
+    }
     if (speakerCount > capability.integratedSpeakerCapacity) {
       const externalAmplifier = selection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0);
       const externalSpeakerCount = Math.min(
@@ -381,7 +406,10 @@ function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selec
           toDevice: externalAmplifier.name,
           toPort: "音频输入",
           cableType: "音频线",
-          note: "第 9-16 只无源音箱通过一台教学模拟功放主机扩展。"
+          note: "第 9-16 只无源音箱通过一台教学模拟功放主机扩展。",
+          speakerSignalMode: speakerPoints.slice(capability.integratedSpeakerCapacity).some((point) => point.speakerSignalMode === "withoutLineArrayAfc")
+            ? undefined
+            : speakerPoints.some((point) => point.speakerSignalMode) ? "afc" : undefined
         });
         lines.push({
           id: "processor-amplifier-speakers",
@@ -390,13 +418,28 @@ function generateProcessorDirectConnectionLines(profile: ClassroomProfile, selec
           toDevice: `${speakerMode} 扩展分组 × ${externalSpeakerCount}`,
           toPort: "音箱 + / -",
           cableType: "音箱线",
-          note: "超过主机直驱容量的无源音箱由教学模拟功放主机承载。"
+          note: "超过主机直驱容量的无源音箱由教学模拟功放主机承载。",
+          speakerSignalMode: speakerPoints.slice(capability.integratedSpeakerCapacity).some((point) => point.speakerSignalMode)
+            ? "afc"
+            : undefined
         });
       }
     }
   }
 
   return lines;
+}
+
+function getSpeakerSignalGroups(points: GeneratedPoint[]): Array<{ mode: SpeakerSignalMode; count: number }> {
+  if (!points.some((point) => point.speakerSignalMode)) return [];
+  return (["withoutLineArrayAfc", "afc"] as const).flatMap((mode) => {
+    const count = points.filter((point) => (point.speakerSignalMode ?? "afc") === mode).length;
+    return count ? [{ mode, count }] : [];
+  });
+}
+
+function getSpeakerSignalGroupLabel(mode: SpeakerSignalMode) {
+  return mode === "withoutLineArrayAfc" ? "不送线阵AFC分组" : "AFC扩声分组";
 }
 
 function splitDeviceText(value: string) {

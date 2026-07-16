@@ -112,7 +112,8 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
         源接口: line.fromPort,
         目标设备: line.toDevice,
         目标接口: line.toPort,
-        线材: line.cableType
+        线材: line.cableType,
+        信号: line.speakerSignalMode === "withoutLineArrayAfc" ? "不送线阵AFC" : line.speakerSignalMode === "afc" ? "正常AFC扩声" : "-"
       }))
     },
     ...input.drawings.map((drawing) => ({
