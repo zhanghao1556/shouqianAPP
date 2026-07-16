@@ -568,6 +568,12 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+.customSelectButton[aria-invalid="true"] {
+  border-color: rgba(180, 83, 9, 0.55);
+  background: #fffaf0;
+  color: #92400e;
+}
+
 .customSelectArrow {
   color: var(--color-brand-dark);
   font-size: 18px;
@@ -2415,6 +2421,37 @@ textarea:focus {
   font-weight: 800;
 }
 
+.reverbCaseFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reverbCaseFacts > div {
+  min-height: 66px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.reverbCaseFacts span,
+.reverbCurrentConclusion span,
+.reverbCurrentConclusion small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.reverbCaseFacts strong {
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .reverbFormGrid input,
 .reverbFormGrid select,
 .reverbReviewEditor input,
@@ -2583,7 +2620,7 @@ textarea:focus {
 
 .reverbCounterGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -2634,6 +2671,35 @@ textarea:focus {
   gap: 14px;
   padding-right: 20px;
   border-right: 1px solid var(--color-line);
+}
+
+.reverbCurrentConclusion {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 8px;
+  background: var(--color-brand-tint);
+}
+
+.reverbCurrentConclusion strong {
+  color: var(--color-brand-dark);
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.reverbDecisionActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reverbDecisionActions button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
 }
 
 .reverbReviewEditor label,
@@ -3144,6 +3210,7 @@ th {
 
 @media (max-width: 960px) {
   .reverberationWorkbenchGrid,
+  .reverbCaseFacts,
   .reverbFormGrid,
   .reverbImpactGrid,
   .reverbCalibrationBody,

@@ -102,9 +102,21 @@ export const getCompleteness = (profile: ClassroomProfile): CompletenessItem[] =
       profile.acousticEnvironment.softTreatment !== "unknown" &&
       (profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown") !== "unknown" &&
       (profile.acousticEnvironment.glassCoverage ?? "unknown") !== "unknown" &&
-      profile.acousticEnvironment.furnishingDensity !== "unknown",
-    blocking: false,
-    hint: "确认吊顶、顶面吸声、地面、墙面、软装、玻璃比例和家具布置。"
+      profile.acousticEnvironment.furnishingDensity !== "unknown" &&
+      (profile.acousticEnvironment.echoObservation ?? "unknown") !== "unknown",
+    blocking: true,
+    hint: "请选择吊顶、顶面吸声、地面、墙面、软装、玻璃比例、家具布置和拍手测试结果。"
+  },
+  {
+    key: "installation",
+    label: "安装与后排补声",
+    complete:
+      (profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown") !== "unknown" &&
+      (profile.scenario !== "auditorium" || (profile.engineeringConstraints.auditoriumRearFillSpeakers ?? "unknown") !== "unknown"),
+    blocking: true,
+    hint: profile.scenario === "auditorium"
+      ? "请选择顶面音箱安装条件和报告厅后排补声情况。"
+      : "请选择顶面音箱安装条件。"
   },
   {
     key: "external",

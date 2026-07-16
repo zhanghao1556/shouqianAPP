@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
+import { Check, Download, RefreshCw, Trash2, X } from "lucide-react";
 import {
   ceilingAcousticTreatmentLabels,
-  createInitialProfile,
   echoObservationLabels,
   floorMaterialLabels,
   furnishingDensityLabels,
@@ -16,18 +16,9 @@ import { createRandomProfile } from "./lib/randomProfile";
 import { getAcousticAssessment } from "./lib/reverberationRules";
 import type {
   AcousticAssessment,
-  CeilingAcousticTreatment,
-  CeilingType,
   ClassroomProfile,
-  EchoObservation,
-  FloorMaterial,
-  FurnishingDensity,
-  GlassCoverage,
   Need,
   ReverberationRisk,
-  Scenario,
-  SoftTreatment,
-  WallMaterial
 } from "./types";
 
 const storageVersion = 1;
@@ -53,14 +44,7 @@ interface CalibrationStoragePayload {
   records: ReverberationCalibrationRecord[];
 }
 
-interface StandardCalibrationCase {
-  id: string;
-  label: string;
-  expectedRisk: ReverberationRisk;
-  profile: ClassroomProfile;
-}
-
-const ceilingLabels: Record<CeilingType, string> = {
+const ceilingLabels: Record<ClassroomProfile["engineeringConstraints"]["ceiling"], string> = {
   suspended: "有吊顶",
   exposed: "无吊顶 / 裸顶",
   unknown: "待确认"
@@ -74,142 +58,9 @@ const calibrationNeedOptions: Array<{ value: Need; label: string }> = [
   { value: "remoteTeaching", label: "远程教学" }
 ];
 
-const standardCases: StandardCalibrationCase[] = [
-  {
-    id: "estimated-low",
-    label: "估算小",
-    expectedRisk: "low",
-    profile: createStandardProfile({
-      projectName: "标准案例-估算小",
-      scenario: "standardClassroom",
-      needs: ["localAmplification"],
-      room: { length: 8, width: 6, height: 3 },
-      ceiling: "suspended",
-      acoustic: {
-        floorMaterial: "carpet",
-        wallMaterial: "acoustic",
-        softTreatment: "acousticPanels",
-        furnishingDensity: "normal",
-        ceilingAcousticTreatment: "acoustic",
-        glassCoverage: "none",
-        echoObservation: "none"
-      }
-    })
-  },
-  {
-    id: "measured-medium",
-    label: "实测中",
-    expectedRisk: "medium",
-    profile: createStandardProfile({
-      projectName: "标准案例-实测中",
-      scenario: "meetingRoom",
-      needs: ["videoConference"],
-      room: { length: 8, width: 5.8, height: 3 },
-      ceiling: "suspended",
-      acoustic: {
-        floorMaterial: "tile",
-        wallMaterial: "hard",
-        softTreatment: "none",
-        furnishingDensity: "normal",
-        ceilingAcousticTreatment: "hard",
-        glassCoverage: "large",
-        echoObservation: "none",
-        measuredRt60: 0.7
-      }
-    })
-  },
-  {
-    id: "estimated-high",
-    label: "估算大",
-    expectedRisk: "high",
-    profile: createStandardProfile({
-      projectName: "标准案例-估算大",
-      scenario: "standardClassroom",
-      needs: ["interactiveClass"],
-      room: { length: 10, width: 8, height: 3.8 },
-      ceiling: "exposed",
-      acoustic: {
-        floorMaterial: "tile",
-        wallMaterial: "hard",
-        softTreatment: "none",
-        furnishingDensity: "empty",
-        ceilingAcousticTreatment: "hard",
-        glassCoverage: "large",
-        echoObservation: "none"
-      }
-    })
-  },
-  {
-    id: "audible-tail",
-    label: "拖尾保底中",
-    expectedRisk: "medium",
-    profile: createStandardProfile({
-      projectName: "标准案例-拖尾保底中",
-      scenario: "standardClassroom",
-      needs: ["localAmplification"],
-      room: { length: 8, width: 6, height: 3 },
-      ceiling: "suspended",
-      acoustic: {
-        floorMaterial: "carpet",
-        wallMaterial: "acoustic",
-        softTreatment: "acousticPanels",
-        furnishingDensity: "normal",
-        ceilingAcousticTreatment: "acoustic",
-        glassCoverage: "none",
-        echoObservation: "tail"
-      }
-    })
-  },
-  {
-    id: "obvious-echo",
-    label: "回声强制大",
-    expectedRisk: "high",
-    profile: createStandardProfile({
-      projectName: "标准案例-回声强制大",
-      scenario: "meetingRoom",
-      needs: ["videoConference"],
-      room: { length: 7, width: 5, height: 2.9 },
-      ceiling: "suspended",
-      acoustic: {
-        floorMaterial: "carpet",
-        wallMaterial: "acoustic",
-        softTreatment: "mixed",
-        furnishingDensity: "normal",
-        ceilingAcousticTreatment: "acoustic",
-        glassCoverage: "partial",
-        echoObservation: "obvious",
-        measuredRt60: 0.5
-      }
-    })
-  },
-  {
-    id: "incomplete",
-    label: "信息缺失不判小",
-    expectedRisk: "medium",
-    profile: createStandardProfile({
-      projectName: "标准案例-信息缺失",
-      scenario: "standardClassroom",
-      needs: ["localAmplification"],
-      room: { length: 8, width: 6, height: 3 },
-      ceiling: "unknown",
-      acoustic: {
-        floorMaterial: "unknown",
-        wallMaterial: "unknown",
-        softTreatment: "unknown",
-        furnishingDensity: "unknown",
-        ceilingAcousticTreatment: "unknown",
-        glassCoverage: "unknown",
-        echoObservation: "unknown"
-      }
-    })
-  }
-];
-
 export function ReverberationCalibrationWorkbench() {
-  const [profile, setProfile] = useState<ClassroomProfile>(() => normalizeProfile(createInitialProfile()));
-  const [caseName, setCaseName] = useState("手动案例");
-  const [expectedRisk, setExpectedRisk] = useState<ReverberationRisk | "">("");
-  const [verdict, setVerdict] = useState<CalibrationVerdict>("pending");
+  const [profile, setProfile] = useState<ClassroomProfile>(() => createAutomaticCalibrationProfile(1));
+  const [caseName, setCaseName] = useState(() => profileCaseName(profile));
   const [note, setNote] = useState("");
   const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
   const [records, setRecords] = useState<ReverberationCalibrationRecord[]>(() => loadCalibrationRecords());
@@ -217,50 +68,19 @@ export function ReverberationCalibrationWorkbench() {
   const assessment = useMemo(() => getAcousticAssessment(profile), [profile]);
   const centralAirClearance = useMemo(() => getArrayMicCentralAirRequiredClearance(profile), [profile]);
   const arrayMicInstallHeight = useMemo(() => getArrayMicInstallHeight(profile), [profile]);
-  const currentMatch = expectedRisk ? assessment.risk === expectedRisk : null;
   const stats = useMemo(() => getRecordStats(records), [records]);
 
-  const updateProfile = (patch: Partial<ClassroomProfile>) => {
-    setProfile((current) => normalizeProfile({ ...current, ...patch }));
-  };
-
-  const updateRoom = (patch: Partial<ClassroomProfile["roomGeometry"]>) => {
-    setProfile((current) => normalizeProfile({ ...current, roomGeometry: { ...current.roomGeometry, ...patch } }));
-  };
-
-  const updateConstraints = (patch: Partial<ClassroomProfile["engineeringConstraints"]>) => {
-    setProfile((current) =>
-      normalizeProfile({ ...current, engineeringConstraints: { ...current.engineeringConstraints, ...patch } })
-    );
-  };
-
-  const updateAcoustic = (patch: Partial<ClassroomProfile["acousticEnvironment"]>) => {
-    setProfile((current) =>
-      normalizeProfile({ ...current, acousticEnvironment: { ...current.acousticEnvironment, ...patch } })
-    );
-  };
-
-  const startCase = (nextProfile: ClassroomProfile, nextCaseName: string, nextExpected: ReverberationRisk | "" = "") => {
+  const startCase = (nextProfile: ClassroomProfile, nextCaseName = profileCaseName(nextProfile)) => {
     setProfile(normalizeProfile(nextProfile));
     setCaseName(nextCaseName);
-    setExpectedRisk(nextExpected);
-    setVerdict("pending");
     setNote("");
     setActiveRecordId(null);
     setStatusText("");
   };
 
-  const applyStandardCase = (item: StandardCalibrationCase) => {
-    startCase(item.profile, item.label, item.expectedRisk);
-  };
-
   const createRandomCase = () => {
-    const randomProfile = normalizeProfile(createRandomProfile(records.length + 1));
-    startCase(randomProfile, randomProfile.projectName || "随机案例");
-  };
-
-  const createManualCase = () => {
-    startCase(normalizeProfile(createInitialProfile()), "手动案例");
+    const randomProfile = createAutomaticCalibrationProfile(records.length + 1);
+    startCase(randomProfile);
   };
 
   const updateRecords = (updater: (current: ReverberationCalibrationRecord[]) => ReverberationCalibrationRecord[]) => {
@@ -280,16 +100,7 @@ export function ReverberationCalibrationWorkbench() {
     });
   };
 
-  const saveCurrentRecord = () => {
-    if (!expectedRisk) {
-      setStatusText("请选择人工期望等级后再保存。");
-      return;
-    }
-    if (verdict === "pending") {
-      setStatusText("请选择通过或不通过后再保存。");
-      return;
-    }
-
+  const saveCurrentRecord = (verdict: Exclude<CalibrationVerdict, "pending">) => {
     const now = new Date().toISOString();
     const id = activeRecordId ?? createRecordId();
     const existing = records.find((item) => item.id === id);
@@ -300,20 +111,19 @@ export function ReverberationCalibrationWorkbench() {
       updatedAt: now,
       profile: normalizeProfile(profile),
       assessment,
-      expectedRisk,
+      expectedRisk: existing?.expectedRisk ?? assessment.risk,
       verdict,
       note: note.trim()
     };
     updateRecords((current) => (existing ? current.map((item) => (item.id === id ? record : item)) : [record, ...current]));
-    setActiveRecordId(id);
-    setStatusText(existing ? "当前校准记录已更新。" : "当前校准记录已保存。");
+    const nextProfile = createAutomaticCalibrationProfile(records.length + (existing ? 1 : 2));
+    startCase(nextProfile);
+    setStatusText(existing ? "记录已更新，已生成下一例。" : "判断已记录，已生成下一例。");
   };
 
   const loadRecord = (record: ReverberationCalibrationRecord) => {
     setProfile(normalizeProfile(record.profile));
     setCaseName(record.caseName);
-    setExpectedRisk(record.expectedRisk);
-    setVerdict(record.verdict);
     setNote(record.note);
     setActiveRecordId(record.id);
     setStatusText("已载入记录；右侧显示当前算法重算结果。");
@@ -356,8 +166,7 @@ export function ReverberationCalibrationWorkbench() {
           <p className="workspaceSubTitle">会议室与教室 RT60 风险判定</p>
         </div>
         <div className="outputActions">
-          <button type="button" onClick={createRandomCase}>随机案例</button>
-          <button type="button" onClick={createManualCase}>新建手动案例</button>
+          <button type="button" onClick={createRandomCase}><RefreshCw size={16} /> 换一组用例</button>
         </div>
       </header>
 
@@ -371,142 +180,13 @@ export function ReverberationCalibrationWorkbench() {
             </div>
           </div>
 
-          <div className="reverbPresetRow" aria-label="标准校准案例">
-            {standardCases.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`deviceOption ${caseName === item.label ? "active" : ""}`}
-                onClick={() => applyStandardCase(item)}
-              >
-                {item.label}
-              </button>
+          <div className="reverbCaseFacts" aria-label="自动生成用例参数">
+            {getCaseFacts(profile).map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
             ))}
-          </div>
-
-          <div className="reverbFormGrid">
-            <label>
-              使用场景
-              <select value={profile.scenario} onChange={(event) => updateProfile({ scenario: event.target.value as Scenario })}>
-                {Object.entries(scenarioLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              主要语音用途
-              <select
-                value={getCalibrationNeed(profile)}
-                onChange={(event) => updateProfile({ needs: [event.target.value as Need] })}
-              >
-                {calibrationNeedOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              吊顶结构
-              <select
-                value={profile.engineeringConstraints.ceiling}
-                onChange={(event) => updateConstraints({ ceiling: event.target.value as CeilingType })}
-              >
-                {Object.entries(ceilingLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              顶面吸声
-              <select
-                value={profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"}
-                onChange={(event) => updateAcoustic({ ceilingAcousticTreatment: event.target.value as CeilingAcousticTreatment })}
-              >
-                {Object.entries(ceilingAcousticTreatmentLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              房间长度 m
-              <input type="number" min="1" step="0.1" value={profile.roomGeometry.length} onChange={(event) => updateRoom({ length: Number(event.target.value) })} />
-            </label>
-            <label>
-              房间宽度 m
-              <input type="number" min="1" step="0.1" value={profile.roomGeometry.width} onChange={(event) => updateRoom({ width: Number(event.target.value) })} />
-            </label>
-            <label>
-              房间高度 m
-              <input type="number" min="2" step="0.1" value={profile.roomGeometry.height} onChange={(event) => updateRoom({ height: Number(event.target.value) })} />
-            </label>
-            <label>
-              地面材质
-              <select value={profile.acousticEnvironment.floorMaterial} onChange={(event) => updateAcoustic({ floorMaterial: event.target.value as FloorMaterial })}>
-                {Object.entries(floorMaterialLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              墙面情况
-              <select value={profile.acousticEnvironment.wallMaterial} onChange={(event) => updateAcoustic({ wallMaterial: event.target.value as WallMaterial })}>
-                {Object.entries(wallMaterialLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              软装 / 吸音
-              <select value={profile.acousticEnvironment.softTreatment} onChange={(event) => updateAcoustic({ softTreatment: event.target.value as SoftTreatment })}>
-                {Object.entries(softTreatmentLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              玻璃比例
-              <select
-                value={profile.acousticEnvironment.glassCoverage ?? "unknown"}
-                onChange={(event) => {
-                  const glassCoverage = event.target.value as GlassCoverage;
-                  updateAcoustic({ glassCoverage, hasGlassWall: glassCoverage === "large" });
-                }}
-              >
-                {Object.entries(glassCoverageLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              家具布置
-              <select value={profile.acousticEnvironment.furnishingDensity} onChange={(event) => updateAcoustic({ furnishingDensity: event.target.value as FurnishingDensity })}>
-                {Object.entries(furnishingDensityLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              拍手测试
-              <select
-                value={profile.acousticEnvironment.echoObservation ?? "unknown"}
-                onChange={(event) => updateAcoustic({ echoObservation: event.target.value as EchoObservation })}
-              >
-                {Object.entries(echoObservationLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              实测中频 RT60 s
-              <input
-                type="number"
-                min="0.1"
-                max="10"
-                step="0.01"
-                placeholder="未测量"
-                value={profile.acousticEnvironment.measuredRt60 ?? ""}
-                onChange={(event) => updateAcoustic({ measuredRt60: event.target.value ? Number(event.target.value) : undefined })}
-              />
-            </label>
           </div>
         </section>
 
@@ -571,67 +251,40 @@ export function ReverberationCalibrationWorkbench() {
           <div className="panelHeader">
             <div>
               <span className="sectionBadge">校准</span>
-              <h2>人工复判与记录</h2>
-              <p>{currentMatch === null ? "等待人工期望" : currentMatch ? "算法与人工期望一致" : "算法与人工期望不一致"}</p>
+              <h2>判断系统结论</h2>
+              <p>核对自动用例与系统结论，判断是否正确。</p>
             </div>
             <div className="outputActions">
-              <button type="button" onClick={exportRecords}>导出 JSON</button>
-              <button type="button" onClick={clearRecords}>清空记录</button>
+              <button type="button" onClick={exportRecords}><Download size={16} /> 导出 JSON</button>
+              <button type="button" onClick={clearRecords}><Trash2 size={16} /> 清空记录</button>
             </div>
           </div>
 
           <div className="reverbCounterGrid">
             <Counter label="总记录" value={stats.total} />
-            <Counter label="通过" value={stats.pass} tone="pass" />
-            <Counter label="不通过" value={stats.fail} tone="fail" />
-            <Counter label="等级不一致" value={stats.mismatch} tone="warn" />
+            <Counter label="结论正确" value={stats.pass} tone="pass" />
+            <Counter label="结论不正确" value={stats.fail} tone="fail" />
           </div>
 
           <div className="reverbCalibrationBody">
             <div className="reverbReviewEditor">
-              <label>
-                案例名称
-                <input value={caseName} onChange={(event) => setCaseName(event.target.value)} />
-              </label>
-
-              <fieldset>
-                <legend>人工期望等级</legend>
-                <div className="reverbChoiceRow">
-                  {(["low", "medium", "high"] as const).map((risk) => (
-                    <button
-                      key={risk}
-                      type="button"
-                      className={`deviceOption ${expectedRisk === risk ? "active" : ""}`}
-                      aria-pressed={expectedRisk === risk}
-                      onClick={() => setExpectedRisk(risk)}
-                    >
-                      {riskText(risk)}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend>校准结论</legend>
-                <div className="reverbChoiceRow verdict">
-                  <button type="button" className={`mark pass ${verdict === "pass" ? "active" : ""}`} aria-pressed={verdict === "pass"} onClick={() => setVerdict("pass")}>通过</button>
-                  <button type="button" className={`mark fail ${verdict === "fail" ? "active" : ""}`} aria-pressed={verdict === "fail"} onClick={() => setVerdict("fail")}>不通过</button>
-                </div>
-              </fieldset>
+              <div className="reverbCurrentConclusion">
+                <span>系统结论</span>
+                <strong>{assessment.label}</strong>
+                <small>{caseName}</small>
+              </div>
 
               <label>
-                校准备注
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="记录现场判断、差异和后续规则建议" />
+                判断备注
+                <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="不正确时记录正确结论或原因；正确时可留空" />
               </label>
 
-              <div className={`reverbMatchNotice ${currentMatch === false ? "mismatch" : currentMatch ? "match" : "pending"}`}>
-                <span>算法：{riskText(assessment.risk)}</span>
-                <span>人工：{expectedRisk ? riskText(expectedRisk) : "未选"}</span>
-                <strong>{currentMatch === null ? "待复判" : currentMatch ? "一致" : "不一致"}</strong>
+              <div className="reverbDecisionActions">
+                <button type="button" className="mark pass" onClick={() => saveCurrentRecord("pass")}><Check size={18} /> 结论正确</button>
+                <button type="button" className="mark fail" onClick={() => saveCurrentRecord("fail")}><X size={18} /> 结论不正确</button>
               </div>
 
               <div className="reverbEditorActions">
-                <button type="button" className="primaryAction" onClick={saveCurrentRecord}>{activeRecordId ? "更新记录" : "保存记录"}</button>
                 <span role="status">{statusText}</span>
               </div>
             </div>
@@ -642,10 +295,9 @@ export function ReverberationCalibrationWorkbench() {
                   <thead>
                     <tr>
                       <th>案例</th>
-                      <th>算法</th>
-                      <th>人工</th>
-                      <th>差异</th>
-                      <th>结论</th>
+                      <th>系统结论</th>
+                      <th>人工判断</th>
+                      <th>备注</th>
                       <th>更新时间</th>
                       <th>操作</th>
                     </tr>
@@ -654,10 +306,9 @@ export function ReverberationCalibrationWorkbench() {
                     {records.map((record) => (
                       <tr key={record.id} className={activeRecordId === record.id ? "active" : ""}>
                         <td>{record.caseName}</td>
-                        <td>{riskText(record.assessment.risk)}</td>
-                        <td>{riskText(record.expectedRisk)}</td>
-                        <td>{record.assessment.risk === record.expectedRisk ? "一致" : "不一致"}</td>
-                        <td>{record.verdict === "pass" ? "通过" : "不通过"}</td>
+                        <td>{record.assessment.label}</td>
+                        <td>{record.verdict === "pass" ? "正确" : "不正确"}</td>
+                        <td>{record.note || "-"}</td>
                         <td>{formatDate(record.updatedAt)}</td>
                         <td>
                           <div className="reverbRecordActions">
@@ -698,34 +349,40 @@ function Counter({ label, value, tone = "" }: { label: string; value: number; to
   );
 }
 
-function createStandardProfile(input: {
-  projectName: string;
-  scenario: Scenario;
-  needs: Need[];
-  room: Pick<ClassroomProfile["roomGeometry"], "length" | "width" | "height">;
-  ceiling: CeilingType;
-  acoustic: Omit<ClassroomProfile["acousticEnvironment"], "hasGlassWall">;
-}) {
-  const base = createInitialProfile();
-  const glassCoverage = input.acoustic.glassCoverage ?? "unknown";
-  return normalizeProfile({
-    ...base,
-    projectName: input.projectName,
-    scenario: input.scenario,
-    needs: input.needs,
-    customNeed: "",
-    roomGeometry: { ...base.roomGeometry, ...input.room },
-    engineeringConstraints: { ...base.engineeringConstraints, ceiling: input.ceiling },
-    acousticEnvironment: {
-      ...base.acousticEnvironment,
-      ...input.acoustic,
-      hasGlassWall: glassCoverage === "large"
-    }
-  });
-}
-
 function getCalibrationNeed(profile: ClassroomProfile): Need {
   return calibrationNeedOptions.find((item) => profile.needs.includes(item.value))?.value ?? "localAmplification";
+}
+
+function getCaseFacts(profile: ClassroomProfile) {
+  const environment = profile.acousticEnvironment;
+  const need = calibrationNeedOptions.find((item) => item.value === getCalibrationNeed(profile))?.label ?? "其他";
+  return [
+    { label: "使用场景", value: scenarioLabels[profile.scenario] },
+    { label: "主要语音用途", value: need },
+    { label: "房间尺寸", value: `${profile.roomGeometry.length}m × ${profile.roomGeometry.width}m × ${profile.roomGeometry.height}m` },
+    { label: "吊顶结构", value: ceilingLabels[profile.engineeringConstraints.ceiling] },
+    { label: "顶面吸声", value: ceilingAcousticTreatmentLabels[environment.ceilingAcousticTreatment ?? "unknown"] },
+    { label: "地面材质", value: floorMaterialLabels[environment.floorMaterial] },
+    { label: "墙面情况", value: wallMaterialLabels[environment.wallMaterial] },
+    { label: "软装 / 吸音", value: softTreatmentLabels[environment.softTreatment] },
+    { label: "玻璃比例", value: glassCoverageLabels[environment.glassCoverage ?? "unknown"] },
+    { label: "家具布置", value: furnishingDensityLabels[environment.furnishingDensity] },
+    { label: "拍手测试", value: echoObservationLabels[environment.echoObservation ?? "unknown"] },
+    { label: "实测中频 RT60", value: environment.measuredRt60 ? `${environment.measuredRt60.toFixed(2)}s` : "未提供（系统估算）" }
+  ];
+}
+
+function profileCaseName(profile: ClassroomProfile) {
+  return profile.projectName || "自动生成用例";
+}
+
+function createAutomaticCalibrationProfile(index: number) {
+  const profile = createRandomProfile(index);
+  const measuredRt60 = Math.random() < 0.35 ? Math.round((0.3 + Math.random() * 1.5) * 100) / 100 : undefined;
+  return normalizeProfile({
+    ...profile,
+    acousticEnvironment: { ...profile.acousticEnvironment, measuredRt60 }
+  });
 }
 
 function getRecordStats(records: ReverberationCalibrationRecord[]) {
@@ -733,10 +390,9 @@ function getRecordStats(records: ReverberationCalibrationRecord[]) {
     (stats, record) => ({
       total: stats.total + 1,
       pass: stats.pass + (record.verdict === "pass" ? 1 : 0),
-      fail: stats.fail + (record.verdict === "fail" ? 1 : 0),
-      mismatch: stats.mismatch + (record.assessment.risk !== record.expectedRisk ? 1 : 0)
+      fail: stats.fail + (record.verdict === "fail" ? 1 : 0)
     }),
-    { total: 0, pass: 0, fail: 0, mismatch: 0 }
+    { total: 0, pass: 0, fail: 0 }
   );
 }
 

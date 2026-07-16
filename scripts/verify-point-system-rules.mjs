@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { createInitialProfile } from "./src/features/classroom/data/initialProfile.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
-import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
+import { generateEngineeringOutputs, getCompleteness } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
 import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
@@ -85,6 +85,13 @@ yinyiRegressionProfiles.forEach((profile, index) => {
   assert.deepEqual(pointSnapshot(wrapped), pointSnapshot(original), "Yinyi point output changed for regression profile " + (index + 1));
 });
 console.log("PASS Yinyi point count and coordinates remain unchanged");
+
+const unconfirmedInstallation = getCompleteness(makeProfile({ overheadSpeakerMounting: "unknown" })).find((item) => item.key === "installation");
+const confirmedInstallation = getCompleteness(makeProfile({ overheadSpeakerMounting: "available" })).find((item) => item.key === "installation");
+assert.equal(unconfirmedInstallation?.complete, false);
+assert.equal(unconfirmedInstallation?.blocking, true);
+assert.equal(confirmedInstallation?.complete, true);
+console.log("PASS presales installation conditions require an explicit customer choice");
 
 const invalidYinmanRoom = generateEngineeringOutputs(makeProfile({ length: 0, width: 12, height: 2.6 }), {}, "yinman");
 assert.equal(invalidYinmanRoom.isFinalReady, false);

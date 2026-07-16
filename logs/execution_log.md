@@ -6401,6 +6401,24 @@ Boundary:
 - Root cause: the previous overflow fix stacked `.calibrationWorkbenchGrid` into one column at every width below `1180px`, so the current viewport could never retain the intended two-column workflow.
 - Fix scope is 5175 layout only: use a compact bounded left column and a shrinkable right column, then stack only on genuinely narrow screens. Calibration data, verdicts, generated products, points and other ports remain unchanged.
 - User additionally requested microphone and speaker family switches in the 5175 calibration area. Reuse the formal customer selector for `智能天花阵列麦克风 / 智能线阵麦克风` and `壁挂音柱 / 吸顶音箱`; selection changes update the active calibration profile and regenerate the same shared output engine.
+
+## 2026-07-16 automatic reverberation review queue
+
+- User requested changing 5176 from manual case construction and expected-grade entry to automatically generated cases and conclusions; the user only judges whether each system conclusion is correct.
+- Removed standard-case presets and the editable acoustic input form from the main workflow. The first screen now generates a complete room/acoustic case and shows its parameters read-only beside the live formal assessment.
+- The automatic generator reuses `createRandomProfile`; 35% of cases additionally include a valid measured mid-frequency RT60 so both estimated and measured rule paths receive review coverage.
+- The review area now contains the system conclusion, an optional note and `结论正确 / 结论不正确`. Either decision saves immediately to the existing local record/JSON format and generates the next case. Existing records remain loadable and exportable.
+- No reverberation classification threshold, override, suggestion, microphone rule, speaker rule or point rule changed.
+- Verification passed: strict TypeScript, reverberation boundary tests, production build and `git diff --check`. At 1088x778, 5176 had no horizontal overflow or panel overlap; a real correct-decision interaction incremented the counters, added one record and generated the next case. The QA record was deleted afterward, and a fresh console check had no warnings or errors.
 - Completed the 5175 layout with a 360px case column and flexible right calibration column at the 1088px viewport; measured tracks were `360px / 657px` with no horizontal overflow. The left header now uses a full-width title and two-column action grid.
 - Added the shared selector to the right calibration panel. Browser interaction confirmed both microphone and speaker family switches become selected, expose the restore action and return to the original system recommendation; browser console remained clean.
 - Production build and the fresh-context 5174/5175/5176/5177/5180 smoke suite passed. No calibration verdict, product recommendation, quantity, point, connection or other-port layout rule changed.
+
+## 2026-07-16 require explicit presales confirmations
+
+- User required that customer-facing presales collection never offer `待确认`; the customer must explicitly confirm the applicable site and acoustic conditions.
+- Removed the `unknown` option from ceiling, overhead-speaker mounting, auditorium rear-fill, floor, ceiling absorption, wall, soft treatment, glass, furnishing and clap-test selectors. `无讲台` remains because it is a confirmed physical state rather than an unknown value.
+- Legacy drafts/imports that still contain `unknown` are preserved without inventing an answer. The shared custom select now displays an orange `请选择` placeholder and `aria-invalid=true` instead of silently falling back to the first option.
+- Unified unknown public labels use `请选择`; the project completeness list treats all eight acoustic inputs, overhead-speaker mounting and auditorium rear-fill as blocking confirmation items.
+- No microphone or speaker recommendation, quantity, placement, angle, reverberation threshold or topology rule changed.
+- Verification passed: strict TypeScript, point-system regression, reverberation tests, production build and `git diff --check`. Browser QA on the preserved 5174 draft showed no `待确认`, the unknown overhead-mounting field displayed `请选择`, its menu contained only `可安装 / 不可安装`, the project record showed the blocking prompt, 1088x778 had no horizontal overflow and the console was clean.

@@ -61,14 +61,14 @@ export const floorMaterialLabels: Record<FloorMaterial, string> = {
   tile: "瓷砖 / 石材地面",
   wood: "木地板 / PVC 地面",
   carpet: "地毯 / 软质地面",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const wallMaterialLabels: Record<WallMaterial, string> = {
   painted: "普通粉刷墙",
   hard: "硬质墙面",
   acoustic: "有吸音墙面",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const softTreatmentLabels: Record<SoftTreatment, string> = {
@@ -76,35 +76,35 @@ export const softTreatmentLabels: Record<SoftTreatment, string> = {
   curtains: "有窗帘",
   acousticPanels: "有吸音板 / 声学装修",
   mixed: "窗帘与少量吸音混合",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const ceilingAcousticTreatmentLabels: Record<CeilingAcousticTreatment, string> = {
   hard: "硬质顶面 / 石膏板",
   partial: "局部吸声处理",
   acoustic: "大面积吸声吊顶",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const glassCoverageLabels: Record<GlassCoverage, string> = {
   none: "基本无玻璃墙",
   partial: "少量玻璃",
   large: "大面积玻璃",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const echoObservationLabels: Record<EchoObservation, string> = {
   none: "无明显拖尾",
   tail: "有明显拖尾",
   obvious: "有明显回声 / 颤动回声",
-  unknown: "未测试"
+  unknown: "请选择"
 };
 
 export const furnishingDensityLabels: Record<FurnishingDensity, string> = {
   empty: "空房 / 家具很少",
   normal: "正常桌椅布置",
   dense: "家具布置密集",
-  unknown: "待确认"
+  unknown: "请选择"
 };
 
 export const podiumPositionLabels = {
@@ -117,7 +117,7 @@ export const podiumPositionLabels = {
 export const auditoriumRearFillSpeakerLabels: Record<AuditoriumRearFillSpeakerStatus, string> = {
   present: "有后排补声 / 辅助音箱",
   absent: "无后排补声 / 辅助音箱",
-  unknown: "后排补声 / 辅助音箱待确认"
+  unknown: "请选择是否有后排补声 / 辅助音箱"
 };
 
 export const externalDeviceOptions = {

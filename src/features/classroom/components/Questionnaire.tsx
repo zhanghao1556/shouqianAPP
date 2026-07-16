@@ -306,8 +306,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
               value={profile.engineeringConstraints.ceiling}
               options={[
                 { value: "suspended", label: "有吊顶" },
-                { value: "exposed", label: "无吊顶 / 裸顶" },
-                { value: "unknown", label: "待确认" }
+                { value: "exposed", label: "无吊顶 / 裸顶" }
               ]}
               onChange={(value) => setConstraints({ ceiling: value as ClassroomProfile["engineeringConstraints"]["ceiling"] })}
             />
@@ -318,8 +317,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
               value={profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown"}
               options={[
                 { value: "available", label: "可安装" },
-                { value: "unavailable", label: "不可安装" },
-                { value: "unknown", label: "待确认" }
+                { value: "unavailable", label: "不可安装" }
               ]}
               onChange={(value) => setConstraints({ overheadSpeakerMounting: value as OverheadSpeakerMounting })}
             />
@@ -360,7 +358,6 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
               <CustomSelect
                 value={profile.engineeringConstraints.auditoriumRearFillSpeakers ?? "unknown"}
                 options={[
-                  { value: "unknown", label: "待确认" },
                   { value: "present", label: "有后排补声 / 辅助音箱" },
                   { value: "absent", label: "无后排补声 / 辅助音箱" }
                 ]}
@@ -376,7 +373,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             地面材质
             <CustomSelect
               value={profile.acousticEnvironment.floorMaterial}
-              options={Object.entries(floorMaterialLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(floorMaterialLabels)}
               onChange={(value) => setAcoustic({ floorMaterial: value as FloorMaterial })}
             />
           </label>
@@ -384,7 +381,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             顶面吸声
             <CustomSelect
               value={profile.acousticEnvironment.ceilingAcousticTreatment ?? "unknown"}
-              options={Object.entries(ceilingAcousticTreatmentLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(ceilingAcousticTreatmentLabels)}
               onChange={(value) => setAcoustic({ ceilingAcousticTreatment: value as CeilingAcousticTreatment })}
             />
           </label>
@@ -392,7 +389,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             墙面情况
             <CustomSelect
               value={profile.acousticEnvironment.wallMaterial}
-              options={Object.entries(wallMaterialLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(wallMaterialLabels)}
               onChange={(value) => setAcoustic({ wallMaterial: value as WallMaterial })}
             />
           </label>
@@ -400,7 +397,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             软装 / 吸音
             <CustomSelect
               value={profile.acousticEnvironment.softTreatment}
-              options={Object.entries(softTreatmentLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(softTreatmentLabels)}
               onChange={(value) => setAcoustic({ softTreatment: value as SoftTreatment })}
             />
           </label>
@@ -408,7 +405,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             玻璃比例
             <CustomSelect
               value={profile.acousticEnvironment.glassCoverage ?? (profile.acousticEnvironment.hasGlassWall ? "large" : "none")}
-              options={Object.entries(glassCoverageLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(glassCoverageLabels)}
               onChange={(value) =>
                 setAcoustic({
                   glassCoverage: value as GlassCoverage,
@@ -421,7 +418,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             房间布置（不含人员）
             <CustomSelect
               value={profile.acousticEnvironment.furnishingDensity}
-              options={Object.entries(furnishingDensityLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(furnishingDensityLabels)}
               onChange={(value) => setAcoustic({ furnishingDensity: value as FurnishingDensity })}
             />
           </label>
@@ -429,7 +426,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             拍手测试
             <CustomSelect
               value={profile.acousticEnvironment.echoObservation ?? "unknown"}
-              options={Object.entries(echoObservationLabels).map(([value, label]) => ({ value, label }))}
+              options={confirmedOptions(echoObservationLabels)}
               onChange={(value) => setAcoustic({ echoObservation: value as EchoObservation })}
             />
           </label>
@@ -607,7 +604,7 @@ export function CustomSelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const activeOption = options.find((option) => option.value === value) ?? options[0];
+  const activeOption = options.find((option) => option.value === value);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -620,8 +617,8 @@ export function CustomSelect({
 
   return (
     <div className={isOpen ? "customSelect open" : "customSelect"} ref={rootRef}>
-      <button type="button" className="customSelectButton" aria-expanded={isOpen} onClick={() => setIsOpen((current) => !current)}>
-        <span>{activeOption?.label ?? "待选择"}</span>
+      <button type="button" className="customSelectButton" aria-expanded={isOpen} aria-invalid={!activeOption} onClick={() => setIsOpen((current) => !current)}>
+        <span>{activeOption?.label ?? "请选择"}</span>
         <span aria-hidden="true" className="customSelectArrow">⌄</span>
       </button>
       {isOpen ? (
@@ -645,4 +642,10 @@ export function CustomSelect({
       ) : null}
     </div>
   );
+}
+
+function confirmedOptions(labels: Record<string, string>) {
+  return Object.entries(labels)
+    .filter(([value]) => value !== "unknown")
+    .map(([value, label]) => ({ value, label }));
 }

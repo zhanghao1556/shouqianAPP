@@ -1812,3 +1812,17 @@ PowerShell reminder:
 - Prevent overflow by allowing the right track to shrink with `minmax(0, 1fr)`; do not solve a roughly 1088px desktop issue by stacking the whole workbench at `1180px`.
 - Keep the breakpoint scoped to `.calibrationWorkbenchGrid` so 5174, 5176, 5177 and 5180 remain unaffected.
 - Reuse `CustomerSolutionSelector` in 5175 instead of creating calibration-only microphone/speaker switches; the active case profile and shared outputs must stay synchronized after each selection.
+
+### 2026-07-16 automatic reverberation calibration reminder
+
+- 5176 is now a repeated judgment queue: generate case parameters, run the unchanged formal assessment, collect a correct/incorrect verdict and immediately advance.
+- Keep generated inputs read-only in the primary workflow. Reintroducing manual fields or expected-grade selection would shift effort back from conclusion review to test construction.
+- Automatic coverage must include both estimated and measured RT60 cases; reuse the shared random profile generator and add only the missing measured-value branch locally.
+- Preserve the existing localStorage and JSON record contract so prior calibration evidence remains loadable. A failed verdict can store the corrected conclusion or reason in the note without requiring another mandatory control.
+
+### 2026-07-16 explicit presales confirmation guardrail
+
+- Removing an `unknown` option must not make the select fall back visually to its first valid answer; that would silently claim customer confirmation. Show `请选择`, mark the control invalid and preserve the underlying unknown value until the customer acts.
+- Keep confirmed negative states such as `无讲台`, `无吊顶`, `不可安装`, `无后排补声` and `无明显拖尾`. They are decisions, not placeholders.
+- Required confirmation coverage belongs in the shared completeness model so 5174, release builds and imported legacy drafts report the same missing inputs.
+- This input-boundary change does not authorize changing acoustic thresholds, speaker recommendations or device point rules.
