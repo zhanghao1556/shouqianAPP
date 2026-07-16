@@ -6394,3 +6394,13 @@ Boundary:
   - point-system regression covers Yinman default high-performance selection, economic/interface alternatives, forced two-line six-microphone selection, unchanged Yinyi default and model-name hiding;
   - 5180 browser QA confirmed the default selector and topology both reference `yinman-audio-processor.png`, switching to `双麦处理器` updates the list and topology image, restoring the recommendation returns to the AJ350 image, no AJ model string is visible, and the console has no warnings or errors.
 - No package, release or GitHub push was performed.
+
+## 2026-07-16 restore 5175 side-by-side calibration layout
+
+- User requested restoring the calibration workbench to `left case list / right calibration area` at the current 1088px desktop viewport.
+- Root cause: the previous overflow fix stacked `.calibrationWorkbenchGrid` into one column at every width below `1180px`, so the current viewport could never retain the intended two-column workflow.
+- Fix scope is 5175 layout only: use a compact bounded left column and a shrinkable right column, then stack only on genuinely narrow screens. Calibration data, verdicts, generated products, points and other ports remain unchanged.
+- User additionally requested microphone and speaker family switches in the 5175 calibration area. Reuse the formal customer selector for `智能天花阵列麦克风 / 智能线阵麦克风` and `壁挂音柱 / 吸顶音箱`; selection changes update the active calibration profile and regenerate the same shared output engine.
+- Completed the 5175 layout with a 360px case column and flexible right calibration column at the 1088px viewport; measured tracks were `360px / 657px` with no horizontal overflow. The left header now uses a full-width title and two-column action grid.
+- Added the shared selector to the right calibration panel. Browser interaction confirmed both microphone and speaker family switches become selected, expose the restore action and return to the original system recommendation; browser console remained clean.
+- Production build and the fresh-context 5174/5175/5176/5177/5180 smoke suite passed. No calibration verdict, product recommendation, quantity, point, connection or other-port layout rule changed.

@@ -1805,3 +1805,10 @@ PowerShell reminder:
 
 - A release is complete only after both brand packages pass source freshness, cross-brand text/image isolation, fresh-context business parity and Android/iOS mobile checks.
 - Keep universal release directories and ZIP files below the requested 5 MB ceiling and commit them with the release checkpoint; GitHub synchronization remains manual.
+
+### 2026-07-16 calibration workbench layout reminder
+
+- 5175 is a repeated comparison workflow: keep generated cases in a compact left column and the active calibration surface in a flexible right column at ordinary desktop widths.
+- Prevent overflow by allowing the right track to shrink with `minmax(0, 1fr)`; do not solve a roughly 1088px desktop issue by stacking the whole workbench at `1180px`.
+- Keep the breakpoint scoped to `.calibrationWorkbenchGrid` so 5174, 5176, 5177 and 5180 remain unaffected.
+- Reuse `CustomerSolutionSelector` in 5175 instead of creating calibration-only microphone/speaker switches; the active case profile and shared outputs must stay synchronized after each selection.

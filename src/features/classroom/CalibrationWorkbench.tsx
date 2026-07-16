@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createInitialProfile, needLabels, scenarioLabels } from "./data/initialProfile";
 import { mistakeCaseSeeds } from "./data/mistakeCases";
 import { createRuleChangeApproval, ruleChangePolicy } from "./data/ruleGovernance";
+import { CustomerSolutionSelector, type SolutionChangeKind } from "./components/CustomerSolutionSelector";
 import { DrawingCanvas } from "./components/DrawingCanvas";
 import { PointValidationSummary } from "./components/PointValidationSummary";
 import {
@@ -281,6 +282,15 @@ export function CalibrationWorkbench() {
     setExportStatus(calibrationCases.length ? `已导出 ${calibrationCases.length} 条记录（${exportedAt.slice(11, 19)}）` : "当前没有记录，已导出空记录文件。");
   };
 
+  const changeSolution = (nextProfile: ClassroomProfile, _kind: SolutionChangeKind) => {
+    const normalizedProfile = normalizeProfile(nextProfile);
+    setProfile(normalizedProfile);
+    setQuantityOverrides({});
+    if (activeCaseId) {
+      updateCalibrationCases((current) => current.map((item) => (item.id === activeCaseId ? { ...item, profile: normalizedProfile } : item)));
+    }
+  };
+
   const changeBrand = (nextBrand: AppBrandId) => {
     window.__APP_BRAND__ = nextBrand;
     setBrandId(nextBrand);
@@ -331,6 +341,7 @@ export function CalibrationWorkbench() {
             <span>接线 {outputs.connectionLines.length} 条</span>
             <span>{outputs.audioPlan.mode}</span>
           </div>
+          <CustomerSolutionSelector profile={profile} selection={outputs.solutionSelection} onChange={changeSolution} />
           <MicrophoneRecommendationCalibration profile={profile} decision={microphoneDecision} />
           <OutputCalibrationPanel
             profile={profile}
