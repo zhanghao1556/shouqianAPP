@@ -6517,3 +6517,13 @@ Boundary:
 - Preview rendering initially found the locally installed Playwright package had no bundled Chromium executable. This was a tooling-only issue; the ignored preview script used the installed Microsoft Edge executable instead, without changing application code or dependencies.
 - Verification passed for 12.9/13/16.1/18/18.1/20m width boundaries, 10/10.1m length boundary, exact rear-fill positions and targets, manual two-speaker warning limit, Yinyi/Yinman parity, strict TypeScript, production build and `git diff --check`.
 - Fresh localhost browser QA at 9.9x20m generated four speakers with rear points 5m from each side wall and mounting angles 112/68 degrees, retained the side pair at 115/65 degrees, exposed no deferred AFC customer text and logged no application warnings or errors.
+
+## 2026-07-16 daily closing and dual-brand release scope
+
+- User requested packaging and release after confirming the continuous short-room center-fill rule. Release scope is both Yinyi and Yinman 1.1 internal-test packages from current source; no GitHub push is authorized.
+- Today's completed state includes customer microphone/speaker selection, output-calibration coverage, processor-tier assets and selection, automatic meeting furniture, reverberation calibration, AFC internal/customer visibility separation, short-room 2/3/4 wall-speaker layouts and the confirmed Yinman automatic wall-speaker default.
+- Three previously isolated working-tree files belong to the confirmed Yinman default: `solutionSelection.ts`, `speakerRules.ts` and `verify-yinman-speaker-default.mjs`. They must be verified and included in the daily checkpoint before packaging so source, 5180 behavior and release packages remain aligned.
+- Release identifiers must advance without overwriting the existing `260716-1` packages. The expected new directories and ZIPs are Yinyi and Yinman `260716-2`, each below 5MB.
+- Pre-release cleanup is limited to checks and documented residue scans. It must not alter microphone/speaker selection, quantity or placement rules beyond already confirmed work.
+- Required validation remains: focused rule tests, reverberation tests, strict TypeScript, production build, source/residue scans, release structural and brand-isolation checks, fresh-context business parity, and Android/iOS mobile compatibility for both brands.
+- Next step after release is user business acceptance of the new packages. No packaging metadata, release directory or Git history may be pushed until the user runs the desktop upload script or explicitly authorizes a push.

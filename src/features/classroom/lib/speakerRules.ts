@@ -1,4 +1,5 @@
 import type { ClassroomProfile, GeneratedPoint } from "../types";
+import { getAppBrand, type AppBrandId } from "../brand";
 import { needsAuditoriumRearFillSpeakers } from "./auditoriumRules";
 import { isClassroomScenario, isMeetingScenario } from "./scenarioRules";
 
@@ -29,11 +30,15 @@ const LECTURE_CLASSROOM_HIGH_CEILING_OR_EXPOSED_SWITCH_WIDTH_M = 14;
 export const hasHighCeilingReverberationRisk = (profile: ClassroomProfile) =>
   profile.scenario !== "auditorium" && profile.engineeringConstraints.ceiling === "suspended" && profile.roomGeometry.height >= 4;
 
-export const getSpeakerSelectionResult = (profile: ClassroomProfile): SpeakerSelectionResult => {
+export const getSpeakerSelectionResult = (
+  profile: ClassroomProfile,
+  brandId: AppBrandId = getAppBrand().id
+): SpeakerSelectionResult => {
   if (shouldUseAuditoriumLegacySystemOnly(profile)) return "NO_NEW_SPEAKER";
   const override = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   if (override === "ceiling") return "CEILING-SPEAKER";
   if (override === "wall") return "COLUMN-SPEAKER";
+  if (brandId === "yinman") return "COLUMN-SPEAKER";
   return getAutomaticSpeakerSelectionResult(profile);
 };
 
@@ -65,23 +70,26 @@ const getAutomaticSpeakerSelectionResult = (profile: ClassroomProfile): SpeakerS
   return "COLUMN-SPEAKER";
 };
 
-export const getSpeakerProductId = (profile: ClassroomProfile): SpeakerProductId => {
-  const result = getSpeakerSelectionResult(profile);
+export const getSpeakerProductId = (
+  profile: ClassroomProfile,
+  brandId: AppBrandId = getAppBrand().id
+): SpeakerProductId => {
+  const result = getSpeakerSelectionResult(profile, brandId);
   return result === "CEILING-SPEAKER" || result === "BOTH_ACCEPTABLE" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
 };
 
-export const getSpeakerModelName = (profile: ClassroomProfile) =>
-  getSpeakerSelectionResult(profile) === "NO_NEW_SPEAKER"
+export const getSpeakerModelName = (profile: ClassroomProfile, brandId: AppBrandId = getAppBrand().id) =>
+  getSpeakerSelectionResult(profile, brandId) === "NO_NEW_SPEAKER"
     ? "利旧原音频系统"
-    : getSpeakerSelectionResult(profile) === "BOTH_ACCEPTABLE"
+    : getSpeakerSelectionResult(profile, brandId) === "BOTH_ACCEPTABLE"
       ? "吸顶音箱或壁挂音箱"
-      : getSpeakerProductId(profile) === "CEILING-SPEAKER"
+      : getSpeakerProductId(profile, brandId) === "CEILING-SPEAKER"
         ? "吸顶音箱"
         : "壁挂音箱";
 
-export const getSpeakerSelectionReason = (profile: ClassroomProfile) => {
+export const getSpeakerSelectionReason = (profile: ClassroomProfile, brandId: AppBrandId = getAppBrand().id) => {
   const { length, width } = profile.roomGeometry;
-  const modelName = getSpeakerModelName(profile);
+  const modelName = getSpeakerModelName(profile, brandId);
   const override = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   if (length <= 0 || width <= 0) return `房间尺寸待补充，暂按 ${modelName} 作为默认扩声形态。`;
   if (shouldUseAuditoriumLegacySystemOnly(profile)) {
@@ -95,6 +103,9 @@ export const getSpeakerSelectionReason = (profile: ClassroomProfile) => {
   }
   if (needsAuditoriumRearFillSpeakers(profile)) {
     return `报告厅默认利旧原音频系统；当原系统缺少后排补声或辅助音箱时，仅新增 ${modelName} 用于后排补声，不做舞台区域和前场监听。`;
+  }
+  if (brandId === "yinman") {
+    return "音曼自动方案默认采用壁挂音箱；如需吸顶方案可手动选择并复核供货与安装条件。";
   }
   if (profile.scenario === "lectureClassroom") {
     if (shouldUseLectureClassroomCeilingSpeaker(profile)) {

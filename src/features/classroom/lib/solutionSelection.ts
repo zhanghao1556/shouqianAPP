@@ -40,7 +40,7 @@ export function getCustomerSolutionSelection(
   const lineArraySupported = selectedMicrophone !== "lineArray" || selectedLineArrayDecision.selected;
 
   const automaticSpeakerProfile = withSpeakerOverride(profile, "auto");
-  const recommendedSpeaker = getSpeakerProductId(automaticSpeakerProfile) === "CEILING-SPEAKER" ? "ceiling" : "wall";
+  const recommendedSpeaker = getSpeakerProductId(automaticSpeakerProfile, brandId) === "CEILING-SPEAKER" ? "ceiling" : "wall";
   const requestedSpeaker = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   const selectedSpeaker = requestedSpeaker === "auto" ? recommendedSpeaker : requestedSpeaker;
   const requiresSpecialReview = selectedSpeaker === "ceiling" && profile.engineeringConstraints.overheadSpeakerMounting === "unavailable";
