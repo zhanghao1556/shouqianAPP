@@ -57,7 +57,7 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
         <SolutionChoiceGroup
           title="音箱"
           options={[
-            { value: "wall", label: "壁挂音柱", imageSrc: wallSpeakerImage },
+            { value: "wall", label: "壁挂音箱", imageSrc: wallSpeakerImage },
             { value: "ceiling", label: "吸顶音箱", imageSrc: ceilingSpeakerImage }
           ]}
           selected={selection.speaker.selected}

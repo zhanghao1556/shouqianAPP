@@ -34,7 +34,8 @@ export function EngineeringOutputs({
   onLegacySpeakerPointTargetChange
 }: EngineeringOutputsProps) {
   const brand = getAppBrand();
-  const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id);
+  const selectedSpeakerProductId = outputs.solutionSelection.speaker.selected === "ceiling" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
+  const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId);
   const exportDrawingImage = (type: "installation" | "topology") => {
       const selector =
         type === "installation"
@@ -145,9 +146,11 @@ export function EngineeringOutputs({
 
 function getEquipmentRows(
   selection: ProductRecommendation[],
-  brandId: "yinyi" | "yinman"
+  brandId: "yinyi" | "yinman",
+  selectedSpeakerProductId: "CEILING-SPEAKER" | "COLUMN-SPEAKER"
 ): Array<{ item: ProductRecommendation; processorTier?: Exclude<ProcessorTier, "auto"> }> {
   return selection.flatMap((item) => {
+    if (item.category === "speaker" && item.productId !== selectedSpeakerProductId) return [];
     if (item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID) return [{ item }];
     return getProcessorTiersForBrand(brandId).map((processorTier) => ({
       processorTier,

@@ -6426,3 +6426,13 @@ Boundary:
 - Unified unknown public labels use `请选择`; the project completeness list treats all eight acoustic inputs, overhead-speaker mounting and auditorium rear-fill as blocking confirmation items.
 - No microphone or speaker recommendation, quantity, placement, angle, reverberation threshold or topology rule changed.
 - Verification passed: strict TypeScript, point-system regression, reverberation tests, production build and `git diff --check`. Browser QA on the preserved 5174 draft showed no `待确认`, the unknown overhead-mounting field displayed `请选择`, its menu contained only `可安装 / 不可安装`, the project record showed the blocking prompt, 1088x778 had no horizontal overflow and the console was clean.
+
+## 2026-07-16 equipment-list speaker visibility and naming
+
+- User reported that the equipment list showed both speaker families even after choosing one: the selected family had a positive quantity while the unselected family remained visible as a zero-quantity row.
+- Root cause: the shared product selection intentionally retains both speaker candidates, and `EngineeringOutputs` rendered every candidate without applying the active customer speaker choice.
+- Confirmed correction scope: the equipment list shows only the selected speaker family; customer-visible product names become `吸顶音箱` and `壁挂音箱`. Speaker recommendation, quantity, points, angles, coverage, topology and internal point-label recognition must remain unchanged.
+- Implemented active-family filtering in the equipment-list row builder. Filtering uses the selected speaker product ID instead of quantity, so the current family remains available even if its manual quantity reaches zero.
+- Updated the product catalog, customer selector, recommendation labels, report-facing speaker name and point-map display-name boundary. Internal wall-point labels continue to use `壁挂音柱` so existing drawing classification remains unchanged.
+- Verification passed: point-system regression, production build and `git diff --check`. Browser QA on 5174 switched wall -> ceiling -> wall and confirmed exactly one active speaker row each time (`壁挂音箱` or `吸顶音箱`), no legacy size name, no framework overlay and no console warning/error.
+- One literal-name scan initially used an incorrectly escaped regular expression and `rg` rejected it. The scan was rerun with `rg -F`; this was a command-only error and did not modify source files.

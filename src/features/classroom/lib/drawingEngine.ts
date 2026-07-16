@@ -3,7 +3,6 @@ import { needsAuditoriumRearFillSpeakers as hasAuditoriumRearFillNeed } from "./
 import { isClassroomScenario, isMeetingScenario } from "./scenarioRules";
 import { getReverberationRisk } from "./reverberationRules";
 import {
-  getSpeakerModelName,
   getSpeakerProductId,
   RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER,
   type SpeakerProductId
@@ -104,9 +103,8 @@ export const getEffectiveAmplificationScope = (profile: ClassroomProfile) =>
   profile.scenario === "lectureClassroom" ? "podium" : profile.amplificationScope;
 
 const getSpeakerModelNameForPointMap = (profile: ClassroomProfile, forcedSpeakerProductId?: SpeakerProductId) => {
-  if (forcedSpeakerProductId === "CEILING-SPEAKER") return "4寸吸顶音箱";
-  if (forcedSpeakerProductId === "COLUMN-SPEAKER") return "2×3寸壁挂音柱";
-  return getSpeakerModelName(profile);
+  const speakerProductId = forcedSpeakerProductId ?? getSpeakerProductId(profile);
+  return speakerProductId === "CEILING-SPEAKER" ? "吸顶音箱" : "壁挂音柱";
 };
 
 export interface PointQuantityTargets {

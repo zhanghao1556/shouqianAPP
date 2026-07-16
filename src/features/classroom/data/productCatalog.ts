@@ -22,7 +22,7 @@ export const classroomProductRules: ClassroomProductRule[] = [
   },
   {
     productId: "CEILING-SPEAKER",
-    name: "4寸吸顶音箱",
+    name: "吸顶音箱",
     category: "speaker",
     applyWhen: ["localAmplification", "interactiveClass"],
     source: "阵列麦功放输出端子说明、音翼大客户教室扩声规则",
@@ -31,7 +31,7 @@ export const classroomProductRules: ClassroomProductRule[] = [
   },
   {
     productId: "COLUMN-SPEAKER",
-    name: "2×3寸壁挂音柱",
+    name: "壁挂音箱",
     category: "speaker",
     applyWhen: ["localAmplification", "interactiveClass"],
     source: "阵列麦功放输出端子说明、音翼大客户教室扩声规则",

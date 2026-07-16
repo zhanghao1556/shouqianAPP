@@ -74,10 +74,10 @@ export const getSpeakerModelName = (profile: ClassroomProfile) =>
   getSpeakerSelectionResult(profile) === "NO_NEW_SPEAKER"
     ? "利旧原音频系统"
     : getSpeakerSelectionResult(profile) === "BOTH_ACCEPTABLE"
-      ? "吸顶音箱或壁挂音柱"
+      ? "吸顶音箱或壁挂音箱"
       : getSpeakerProductId(profile) === "CEILING-SPEAKER"
-        ? "4寸吸顶音箱"
-        : "2×3寸壁挂音柱";
+        ? "吸顶音箱"
+        : "壁挂音箱";
 
 export const getSpeakerSelectionReason = (profile: ClassroomProfile) => {
   const { length, width } = profile.roomGeometry;

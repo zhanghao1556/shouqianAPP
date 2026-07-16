@@ -1828,3 +1828,11 @@ PowerShell reminder:
 - Keep confirmed negative states such as `无讲台`, `无吊顶`, `不可安装`, `无后排补声` and `无明显拖尾`. They are decisions, not placeholders.
 - Required confirmation coverage belongs in the shared completeness model so 5174, release builds and imported legacy drafts report the same missing inputs.
 - This input-boundary change does not authorize changing acoustic thresholds, speaker recommendations or device point rules.
+
+### 2026-07-16 selected-speaker equipment-row guardrail
+
+- Product selection may retain zero-quantity alternatives for internal calculation or replacement workflows, but the customer equipment list must not expose an unselected speaker family.
+- Filter speaker rows by the active customer selection, not only by positive quantity, so a selected row remains recoverable if its manual quantity reaches zero.
+- Keep customer-facing generic names separate from internal point-label tokens such as `壁挂音柱`; drawing rules currently use those tokens to classify speaker geometry, so a display-name cleanup must not silently alter point behavior.
+- Use `rg -F` for literal Chinese product-name scans. Building a regular expression around quoted names adds shell escaping risk without providing any value.
+- In the current Browser runtime, viewport capture is exposed as `tab.screenshot(...)`; a documented `tab.playwright.screenshot(...)` attempt was unavailable. Treat this as a tooling API mismatch, switch to the supported tab method and do not change application code.

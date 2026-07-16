@@ -23,7 +23,7 @@ const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
 
 const speakerLabels: Record<Exclude<SpeakerProductOverride, "auto">, string> = {
   ceiling: "吸顶音箱",
-  wall: "壁挂音柱"
+  wall: "壁挂音箱"
 };
 
 export function getCustomerSolutionSelection(
