@@ -6506,3 +6506,14 @@ Boundary:
 - Preserved the rear-center point, all speaker coordinates, quantities and internal connection groups. Updated generated customer-facing point reasons so structured internal tuning data cannot leak through report acceptance text.
 - Regression coverage now proves raw outputs retain AFC modes, center-fill `-3dB` and independent connection groups while customer points, connections and report text contain none of the deferred terms.
 - Verification passed: point-system regression, strict TypeScript with unused checks, production build and `git diff --check`. Fresh localhost browser QA confirmed 5174 and 5180 contain no deferred AFC text, while 5175 still displays AFC grouping and internal topology detail with no console warnings or errors.
+
+### Confirmed continuous short-room center-fill rule beyond 16m width
+
+- User corrected the earlier 16m cutoff: a `front180` wall-speaker room no longer than 10m must not return to the legacy wide-room layout when width exceeds 16m.
+- Confirmed default quantities are now continuous by width: below 13m uses the existing two side-wall speakers; 13-18m uses the same side pair plus one rear-wall center fill; above 18m uses the same side pair plus two rear-wall middle-zone fills.
+- For widths above 18m, rear fills install at 25% and 75% of room width and target 35% and 65% respectively. This keeps them farther apart, reduces inward crossing and preserves slight overlap with the side-wall coverage instead of leaving a gap.
+- The side-wall pair position and direction remain unchanged. The new rule is limited to line-array `front180`, wall speakers and room length no greater than 10m; ceiling speakers, `full360`, array-microphone plans and longer rooms retain existing rules.
+- Internal AFC metadata remains structured and hidden from customer outputs under the pre-4.0 visibility policy. The two rear fills share the confirmed center-fill tuning group while customer drawings show only ordinary speaker points and connections.
+- Preview rendering initially found the locally installed Playwright package had no bundled Chromium executable. This was a tooling-only issue; the ignored preview script used the installed Microsoft Edge executable instead, without changing application code or dependencies.
+- Verification passed for 12.9/13/16.1/18/18.1/20m width boundaries, 10/10.1m length boundary, exact rear-fill positions and targets, manual two-speaker warning limit, Yinyi/Yinman parity, strict TypeScript, production build and `git diff --check`.
+- Fresh localhost browser QA at 9.9x20m generated four speakers with rear points 5m from each side wall and mounting angles 112/68 degrees, retained the side pair at 115/65 degrees, exposed no deferred AFC customer text and logged no application warnings or errors.

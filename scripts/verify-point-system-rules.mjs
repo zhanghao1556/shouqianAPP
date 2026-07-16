@@ -326,7 +326,10 @@ assert.deepEqual(offsetBoundaryY.map(({ micY, speakerY }) => speakerY), [0.3, 0.
 const shortRoomDefaultCases = [
   { length: 10, width: 12.9, expectedCount: 2 },
   { length: 10, width: 13, expectedCount: 3 },
-  { length: 10, width: 16, expectedCount: 3 }
+  { length: 10, width: 16.1, expectedCount: 3 },
+  { length: 10, width: 18, expectedCount: 3 },
+  { length: 10, width: 18.1, expectedCount: 4 },
+  { length: 10, width: 20, expectedCount: 4 }
 ].map(({ length, width, expectedCount }) => {
   const outputs = generateEngineeringOutputs(makeProfile({ length, width, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), {}, "yinyi");
   assert.equal(getOutputSpeakers(outputs).length, expectedCount);
@@ -365,8 +368,20 @@ const shortRoomManualTwo = generateEngineeringOutputs(makeProfile({ length: 10, 
 assert.equal(getOutputSpeakers(shortRoomManualTwo).length, 2);
 assert.equal(shortRoomManualTwo.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-center-fill-omitted")?.severity, "warning");
 assert.equal(shortRoomManualTwo.pointValidation.findings.some((finding) => finding.code === "speaker.line-array-two-wall-coverage"), false);
-const overWidthCenterFill = generateEngineeringOutputs(makeProfile({ length: 10, width: 16.1, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), {}, "yinyi");
-assert.notEqual(getOutputSpeakers(overWidthCenterFill).length, 3);
+const doubleCenterFill = shortRoomDefaultCases[5];
+const doubleCenterFillSpeakers = getOutputSpeakers(doubleCenterFill);
+assert.deepEqual(doubleCenterFillSpeakers.slice(0, 2).map((point) => point.position), [{ x: 0, y: 3 }, { x: 20, y: 3 }]);
+assert.deepEqual(doubleCenterFillSpeakers.slice(2).map((point) => point.position), [{ x: 5, y: 10 }, { x: 15, y: 10 }]);
+assert.deepEqual(doubleCenterFillSpeakers.slice(2).map((point) => point.target), [{ x: 7, y: 5 }, { x: 13, y: 5 }]);
+assert.ok(doubleCenterFillSpeakers.slice(2).every((point) => point.afcSendLevelOffset === -3));
+assert.ok(doubleCenterFillSpeakers.some((point) => point.label.includes("后墙左中区")));
+assert.ok(doubleCenterFillSpeakers.some((point) => point.label.includes("后墙右中区")));
+const doubleCenterFillConnections = doubleCenterFill.connectionLines.filter((line) => line.speakerSignalMode === "afc");
+assert.ok(doubleCenterFillConnections.some((line) => line.afcSendLevelOffset === undefined && line.toDevice.includes("× 2")));
+assert.ok(doubleCenterFillConnections.some((line) => line.afcSendLevelOffset === -3 && line.toDevice.includes("× 2")));
+const wideManualTwo = generateEngineeringOutputs(makeProfile({ length: 10, width: 20, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
+assert.equal(wideManualTwo.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-center-fill-omitted")?.limit, 4);
+assert.deepEqual(pointSnapshot(getOutputSpeakers(generateEngineeringOutputs(makeProfile({ length: 10, width: 20, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), {}, "yinman"))), pointSnapshot(doubleCenterFillSpeakers));
 const overLengthCenterFill = generateEngineeringOutputs(makeProfile({ length: 10.1, width: 13, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), {}, "yinyi");
 assert.notEqual(getOutputSpeakers(overLengthCenterFill).length, 3);
 
@@ -411,7 +426,7 @@ const oddLineWall = generateEngineeringOutputs(makeProfile({ length: 8, width: 7
 assert.equal(oddLineWall.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-odd-wall-count")?.severity, "hard");
 const insufficientTwoLineWall = generateEngineeringOutputs(makeProfile({ length: 12, width: 7, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");
 assert.equal(insufficientTwoLineWall.pointValidation.findings.find((finding) => finding.code === "speaker.line-array-two-wall-coverage")?.severity, "warning");
-console.log("PASS line-array recommendation, processor tiers, short-room 2/3 defaults, 10/10.1m and 12.9/13/16/16.1m boundaries, front180 wall placement, AFC groups, ceiling first row, full360 and 6+ preservation");
+console.log("PASS line-array recommendation, processor tiers, short-room 2/3/4 defaults, 10/10.1m and 12.9/13/16.1/18/18.1/20m boundaries, front180 wall placement, AFC groups, ceiling first row, full360 and 6+ preservation");
 
 const automaticChoice = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(automaticChoice.solutionSelection.microphone.recommended, "lineArray");

@@ -46,7 +46,7 @@ const LINE_ARRAY_SIDE_SPEAKER_OFFSET_MIN_ROOM_LENGTH_M = 6;
 const LINE_ARRAY_SIDE_SPEAKER_OFFSET_MAX_ROOM_LENGTH_M = 12;
 const LINE_ARRAY_SHORT_ROOM_MAX_LENGTH_M = 10;
 const LINE_ARRAY_CENTER_FILL_MIN_ROOM_WIDTH_M = 13;
-const LINE_ARRAY_CENTER_FILL_MAX_ROOM_WIDTH_M = 16;
+const LINE_ARRAY_SINGLE_CENTER_FILL_MAX_ROOM_WIDTH_M = 18;
 const LINE_ARRAY_CENTER_FILL_AFC_SEND_OFFSET_DB = -3;
 const WALL_SPEAKER_MIN_INSTALL_HEIGHT_M = 2.2;
 const WALL_SPEAKER_MAX_INSTALL_HEIGHT_M = 2.7;
@@ -89,6 +89,8 @@ type WallSpeakerPosition = Point & {
   forcePerpendicularAim?: boolean;
   lineArrayAim?: "rearward" | "forward" | "centerFillForward";
   lineArrayRole?: "rearCenterFill";
+  lineArrayFillSide?: "left" | "right";
+  lineArrayTargetXRatio?: number;
   lineArrayPlacementReason?: string;
 };
 
@@ -228,7 +230,9 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         id: `speaker-${index + 1}`,
         type: "speaker",
         label: position.lineArrayRole === "rearCenterFill"
-          ? `后墙中置${speakerName}`
+          ? position.lineArrayFillSide
+            ? `后墙${position.lineArrayFillSide === "left" ? "左" : "右"}中区${speakerName}`
+            : `后墙中置${speakerName}`
           : `${isLeft ? "左" : "右"}${isBack ? "后" : "前"}${speakerName}`,
         position: { x: position.x, y: position.y },
         installHeight: usesWallSpeaker ? wallSpeakerHeight : ceilingSpeakerHeight,
@@ -248,7 +252,7 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
               ? `${scopeText}壁挂音柱按覆盖责任区补充中区覆盖；墙面条件、门窗和屏幕位置会影响安装微调。`
               : `${scopeText}壁挂音柱按房间整体覆盖布置；墙面条件、门窗和屏幕位置会影响安装微调。`
             : position.lineArrayRole === "rearCenterFill"
-              ? `${scopeText}后墙中置音箱只补充两侧墙壁挂未覆盖的中间区域；现场复核与侧墙组的覆盖衔接。`
+              ? `${scopeText}后墙中区补声音箱只补充两侧墙壁挂未覆盖的中间区域；现场复核与侧墙组的覆盖衔接。`
             : isFrontWallSpeaker
             ? isTeacherMonitorSpeaker
               ? `${scopeText}前墙保留一组补声/监听点位，用于多媒体声音和老师小信号监听；前墙音柱正对阵麦时反馈余量较低，仅按基础补声处理。`
@@ -1584,13 +1588,17 @@ const getLineArrayFrontWallSpeakerPositions = (
   context: NonNullable<PointQuantityTargets["lineArrayContext"]>
 ): WallSpeakerPosition[] | undefined => {
   const { length: depth, width: roomWidth } = profile.roomGeometry;
-  const usesShortRoomLayout = depth <= LINE_ARRAY_SHORT_ROOM_MAX_LENGTH_M && roomWidth <= LINE_ARRAY_CENTER_FILL_MAX_ROOM_WIDTH_M;
+  const usesShortRoomLayout = depth <= LINE_ARRAY_SHORT_ROOM_MAX_LENGTH_M;
   const firstSideY = usesShortRoomLayout
     ? oneDecimal(Math.max(getLineArrayFirstSideWallSpeakerY(profile, context.position.y), depth - WALL_SPEAKER_MAX_COVERAGE_RADIUS_M))
     : getLineArrayFirstSideWallSpeakerY(profile, context.position.y);
-  const shortRoomSideReason = roomWidth >= LINE_ARRAY_CENTER_FILL_MIN_ROOM_WIDTH_M
+  const shortRoomSideReason = roomWidth > LINE_ARRAY_SINGLE_CENTER_FILL_MAX_ROOM_WIDTH_M
+    ? count === 4
+      ? "房长不超过10m且房宽超过18m，第一组采用两只侧墙壁挂，后墙两只壁挂另行补充中区覆盖。"
+      : "后墙双补声无法安装时保留侧墙壁挂作为现场兜底，中区覆盖需复核。"
+    : roomWidth >= LINE_ARRAY_CENTER_FILL_MIN_ROOM_WIDTH_M
     ? count === 3
-      ? "房长不超过10m且房宽13-16m，第一组采用两只侧墙壁挂，后墙中置另行补充中轴覆盖。"
+      ? "房长不超过10m且房宽13-18m，第一组采用两只侧墙壁挂，后墙中置另行补充中轴覆盖。"
       : "后墙中置无法安装时保留两只侧墙壁挂作为现场兜底，中轴覆盖需复核。"
     : "房长不超过10m，默认采用两只侧墙壁挂；点位位于线阵后方并保持距后墙不超过7m。";
   const firstPair: WallSpeakerPosition[] = [
@@ -1624,8 +1632,28 @@ const getLineArrayFrontWallSpeakerPositions = (
         y: depth,
         lineArrayAim: "centerFillForward",
         lineArrayRole: "rearCenterFill",
-        lineArrayPlacementReason: "房宽13-16m时，后墙中置壁挂只补充两侧墙音箱未覆盖的中间区域；现场无法安装时可手动减为两只侧墙壁挂。"
+        lineArrayPlacementReason: roomWidth <= LINE_ARRAY_SINGLE_CENTER_FILL_MAX_ROOM_WIDTH_M
+          ? "房宽13-18m时，后墙中置壁挂只补充两侧墙音箱未覆盖的中间区域；现场无法安装时可手动减为两只侧墙壁挂。"
+          : "房宽超过18m时手动保留单只后墙中置壁挂，中区覆盖需专项复核。"
       }
+    ];
+  }
+
+  if (count === 4 && usesShortRoomLayout && roomWidth > LINE_ARRAY_SINGLE_CENTER_FILL_MAX_ROOM_WIDTH_M) {
+    return [
+      ...firstPair,
+      ...[
+        { positionRatio: 0.25, targetRatio: 0.35, side: "left" as const },
+        { positionRatio: 0.75, targetRatio: 0.65, side: "right" as const }
+      ].map(({ positionRatio, targetRatio, side }): WallSpeakerPosition => ({
+        x: oneDecimal(roomWidth * positionRatio),
+        y: depth,
+        lineArrayAim: "centerFillForward",
+        lineArrayRole: "rearCenterFill",
+        lineArrayFillSide: side,
+        lineArrayTargetXRatio: targetRatio,
+        lineArrayPlacementReason: "房宽超过18m时，后墙两只壁挂分别补充左中区和右中区，并与侧墙覆盖保持少量衔接。"
+      }))
     ];
   }
 
@@ -1963,7 +1991,7 @@ const getWallSpeakerAim = (
   if (position.lineArrayAim === "centerFillForward" && side === "back") {
     const preferredTargetY = Math.max((lineArrayFrontContext?.position.y ?? 0) + 1, profile.roomGeometry.length / 2);
     const target = {
-      x: oneDecimal(profile.roomGeometry.width / 2),
+      x: oneDecimal((position.lineArrayTargetXRatio ?? 0.5) * profile.roomGeometry.width),
       y: oneDecimal(clamp(preferredTargetY, 0.3, Math.max(0.3, profile.roomGeometry.length - 0.8)))
     };
     return {
@@ -2261,9 +2289,9 @@ export const getDefaultSpeakerCount = (
   if (
     usesWallSpeaker &&
     lineArrayContext?.mode === "front" &&
-    profile.roomGeometry.length <= LINE_ARRAY_SHORT_ROOM_MAX_LENGTH_M &&
-    profile.roomGeometry.width <= LINE_ARRAY_CENTER_FILL_MAX_ROOM_WIDTH_M
+    profile.roomGeometry.length <= LINE_ARRAY_SHORT_ROOM_MAX_LENGTH_M
   ) {
+    if (profile.roomGeometry.width > LINE_ARRAY_SINGLE_CENTER_FILL_MAX_ROOM_WIDTH_M) return 4;
     return profile.roomGeometry.width >= LINE_ARRAY_CENTER_FILL_MIN_ROOM_WIDTH_M ? 3 : 2;
   }
   return Math.min(RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER, getRequiredSpeakerCount(profile, usesWallSpeaker));

@@ -151,17 +151,19 @@ function addLineArraySpeakerFindings(
   if (sideSpeakers.length !== 2) return;
   if (
     profile.roomGeometry.length <= 10 &&
-    profile.roomGeometry.width >= 13 &&
-    profile.roomGeometry.width <= 16
+    profile.roomGeometry.width >= 13
   ) {
+    const expectedCount = profile.roomGeometry.width > 18 ? 4 : 3;
     findings.push({
       code: "speaker.line-array-center-fill-omitted",
       severity: "warning",
-      title: "线阵短房后墙中置补声",
+      title: "线阵短房后墙中区补声",
       actual: 2,
-      limit: 3,
-      internalMessage: "13-16m宽房当前仅保留两只侧墙壁挂，视为后墙中置无法安装的现场兜底；中轴覆盖需现场复核。",
-      sourceRefs: ["用户确认的线阵短房两侧墙加后墙中置规则"]
+      limit: expectedCount,
+      internalMessage: profile.roomGeometry.width > 18
+        ? "超过18m宽房当前仅保留两只侧墙壁挂，视为后墙双补声无法安装的现场兜底；中区覆盖需现场复核。"
+        : "13-18m宽房当前仅保留两只侧墙壁挂，视为后墙中置无法安装的现场兜底；中轴覆盖需现场复核。",
+      sourceRefs: ["用户确认的线阵短房两侧墙加后墙中区补声规则"]
     });
   }
   if (profile.roomGeometry.length <= 10) return;
@@ -184,7 +186,7 @@ function isApprovedLineArrayRearCenterFill(profile: ClassroomProfile, wallSpeake
     wallSpeakers.length !== 3 ||
     profile.roomGeometry.length > 10 ||
     profile.roomGeometry.width < 13 ||
-    profile.roomGeometry.width > 16
+    profile.roomGeometry.width > 18
   ) return false;
   const sideCount = wallSpeakers.filter((speaker) =>
     (Math.abs(speaker.position.x) <= 0.05 || Math.abs(speaker.position.x - profile.roomGeometry.width) <= 0.05) &&
