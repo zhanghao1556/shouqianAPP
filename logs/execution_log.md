@@ -6493,3 +6493,16 @@ Boundary:
 - Exported and visually inspected `音翼方案-点位图 (2).png` and `音翼方案-系统拓扑图.png` from a live 10x13m state. The center-fill cone covers the room axis, the side pair remains aimed rearward, labels fit, and the two topology groups are separate.
 - Fresh localhost browser QA passed on 5174 Yinyi, 5180 Yinman and 5175 calibration workbench: both brands generated the same three coordinates and split topology; validation passed; no overflow, framework overlay, console warning or console error was present.
 - Final verification passed: strict TypeScript with unused checks, focused point-system regression, production build and `git diff --check` with only the existing DrawingCanvas CRLF normalization warning. No package, release or GitHub push was performed.
+
+### AFC customer-visibility deferral until version 4.0
+
+- User clarified that AFC differences are internal engineering knowledge for now and must not be shown to customers before a future 4.0 release.
+- Preserve all structured signal modes, center-fill -3dB metadata, delay guidance, connection grouping and 5175 calibration detail in the shared outputs.
+- Hide AFC mode, send/no-send status, gain offset, delay calibration and split AFC labels from 5174/5180 customer drawings, customer topology/wiring, PNG/PDF, report tables and project archive.
+- Customer topology may collapse internal speaker signal groups into one generic speaker node/connection for display only; internal connection data and 5175 topology must remain split and independently calibratable.
+- Enabling customer-visible AFC differences later requires an explicit 4.0 scope confirmation; current work does not add a public switch or release marker.
+- Implemented a customer-output projection that strips point-level AFC metadata and collapses processor-direct AFC speaker groups into one generic speaker connection without mutating shared `GeneratedOutputs`.
+- `DrawingCanvas` now defaults to the customer projection; 5175 point-map and wiring/topology calibration callers explicitly enable internal signal details. Customer report archive, installation guide and connection table no longer expose AFC group, gain or delay details.
+- Preserved the rear-center point, all speaker coordinates, quantities and internal connection groups. Updated generated customer-facing point reasons so structured internal tuning data cannot leak through report acceptance text.
+- Regression coverage now proves raw outputs retain AFC modes, center-fill `-3dB` and independent connection groups while customer points, connections and report text contain none of the deferred terms.
+- Verification passed: point-system regression, strict TypeScript with unused checks, production build and `git diff --check`. Fresh localhost browser QA confirmed 5174 and 5180 contain no deferred AFC text, while 5175 still displays AFC grouping and internal topology detail with no console warnings or errors.

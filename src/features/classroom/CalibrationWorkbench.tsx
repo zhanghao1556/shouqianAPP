@@ -372,7 +372,7 @@ export function CalibrationWorkbench() {
           </div>
           <div className="drawingBlock wiringDiagramBlock">
             <h4>接线与拓扑合并图</h4>
-            <DrawingCanvas profile={profile} generatedPoints={outputs.generatedPoints} connectionLines={outputs.connectionLines} activeDrawing="system" />
+            <DrawingCanvas profile={profile} generatedPoints={outputs.generatedPoints} connectionLines={outputs.connectionLines} activeDrawing="system" showInternalSignalDetails />
           </div>
           <ConnectionLineTable lines={outputs.connectionLines} />
         </section>
@@ -474,6 +474,7 @@ function CalibrationPointMap({
         generatedPoints={outputs.generatedPoints}
         connectionLines={outputs.connectionLines}
         activeDrawing="installation"
+        showInternalSignalDetails
         onCentralAirConditionerPointChange={onCentralAirConditionerPointChange}
         onCentralAirConditionerCountChange={onCentralAirConditionerCountChange}
         manualArrayMicPoints={activeCase?.manualArrayMicPoints ?? []}

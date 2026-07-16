@@ -248,18 +248,18 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
               ? `${scopeText}壁挂音柱按覆盖责任区补充中区覆盖；墙面条件、门窗和屏幕位置会影响安装微调。`
               : `${scopeText}壁挂音柱按房间整体覆盖布置；墙面条件、门窗和屏幕位置会影响安装微调。`
             : position.lineArrayRole === "rearCenterFill"
-              ? `${scopeText}后墙中置音箱只补充两侧墙壁挂未覆盖的中间区域；正常输出 AFC，初始发送量 ${LINE_ARRAY_CENTER_FILL_AFC_SEND_OFFSET_DB}dB，现场与侧墙组做延时和增益对齐。`
+              ? `${scopeText}后墙中置音箱只补充两侧墙壁挂未覆盖的中间区域；现场复核与侧墙组的覆盖衔接。`
             : isFrontWallSpeaker
             ? isTeacherMonitorSpeaker
-              ? `${scopeText}前墙保留一组补声/监听点位，用于多媒体声音和老师小信号 AFC 监听；前墙音柱正对阵麦时 AFC 余量较低，仅按基础补声处理。`
-              : `${scopeText}前墙壁挂补声点位，前墙音柱正对阵麦时 AFC 余量较低，仅按基础补声处理。`
+              ? `${scopeText}前墙保留一组补声/监听点位，用于多媒体声音和老师小信号监听；前墙音柱正对阵麦时反馈余量较低，仅按基础补声处理。`
+              : `${scopeText}前墙壁挂补声点位，前墙音柱正对阵麦时反馈余量较低，仅按基础补声处理。`
             : isBackWallSpeaker
-              ? `${scopeText}小房间长度不超过 ${FRONT_BACK_WALL_SPEAKER_MAX_ROOM_LENGTH_M}m，壁挂音柱优先前后墙对称布置；当客户减少到 2 只时，优先保留后墙 AFC 补声组并移除前墙补声组。`
+              ? `${scopeText}小房间长度不超过 ${FRONT_BACK_WALL_SPEAKER_MAX_ROOM_LENGTH_M}m，壁挂音柱优先前后墙对称布置；当客户减少到 2 只时，优先保留后墙补声组并移除前墙补声组。`
             : position.forcePerpendicularAim
-              ? `${scopeText}无吊顶长宽跨距补声组按覆盖责任区自动指向；补声组覆盖半径按 ${MEETING_WALL_SPEAKER_CENTER_FILL_COVERAGE_RADIUS_M}m，AFC 发送量默认 ${MEETING_WALL_SPEAKER_CENTER_FILL_AFC_SEND_OFFSET}。`
-              : `${scopeText}侧墙壁挂点位，${speakerRowsReason}后场多排时组间距从前往后梯度递增，前段优先补齐主麦后方覆盖，后段利用更高 AFC 余量覆盖更远区域；壁挂音箱最大覆盖半径按 ${WALL_SPEAKER_MAX_COVERAGE_RADIUS_M}m 硬上限控制；同侧相邻音柱 3.3m 仅作房间太浅时兜底，排不下时优先减少后场排数。现场按门窗、黑板和屏幕位置微调。`
+              ? `${scopeText}无吊顶长宽跨距补声组按覆盖责任区自动指向；补声组覆盖半径按 ${MEETING_WALL_SPEAKER_CENTER_FILL_COVERAGE_RADIUS_M}m，现场按责任区听感复核。`
+              : `${scopeText}侧墙壁挂点位，${speakerRowsReason}后场多排时组间距从前往后梯度递增，前段优先补齐主麦后方覆盖，后段覆盖更远区域；壁挂音箱最大覆盖半径按 ${WALL_SPEAKER_MAX_COVERAGE_RADIUS_M}m 硬上限控制；同侧相邻音柱 3.3m 仅作房间太浅时兜底，排不下时优先减少后场排数。现场按门窗、黑板和屏幕位置微调。`
           : isTeacherMonitorSpeaker
-            ? `${scopeText}老师区保留一组吸顶补声/监听点位，用于多媒体声音和老师小信号 AFC 监听；吸顶音箱覆盖半径锁定 ${CEILING_SPEAKER_COVERAGE_RADIUS_M}m，相邻中心距按不超过 ${CEILING_SPEAKER_MAX_SPACING_M}m 复核；仅承担老师区多媒体声音和小声 AFC 监听时，不强制执行离阵列麦 ${MIN_CEILING_SPEAKER_TO_MIC_DISTANCE}m。`
+            ? `${scopeText}老师区保留一组吸顶补声/监听点位，用于多媒体声音和老师小信号监听；吸顶音箱覆盖半径锁定 ${CEILING_SPEAKER_COVERAGE_RADIUS_M}m，相邻中心距按不超过 ${CEILING_SPEAKER_MAX_SPACING_M}m 复核；仅承担老师区多媒体声音和小声监听时，不强制执行离阵列麦 ${MIN_CEILING_SPEAKER_TO_MIC_DISTANCE}m。`
             : `${scopeText}吸顶音箱按 ${CEILING_SPEAKER_COVERAGE_RADIUS_M}m 覆盖半径分布，${speakerRowsReason}相邻中心距按不超过 ${CEILING_SPEAKER_MAX_SPACING_M}m 复核；横向在距侧墙 ${CEILING_SPEAKER_SIDE_INSTALL_INSET_M}m 至宽度-${CEILING_SPEAKER_SIDE_INSTALL_INSET_M}m 的覆盖区内均匀分布，纵向优先满足距前墙 1.5m、距后墙 2m，并按阵列麦位置做中间列避让/回填；小房间需现场取舍复核。`
       };
     }).map((point, index) => {
@@ -269,13 +269,10 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
         ? position.y <= 0.05 ? "withoutLineArrayAfc" : "afc"
         : Math.abs(position.y - firstSpeakerRowY) <= 0.35 ? "withoutLineArrayAfc" : "afc";
       const placementText = position.lineArrayPlacementReason ? `${position.lineArrayPlacementReason} ` : "";
-      const signalText = speakerSignalMode === "withoutLineArrayAfc"
-        ? "该组不送线阵AFC，其他现有信号路径保持不变。"
-        : "该组承担线阵AFC扩声。";
       return {
         ...point,
         speakerSignalMode,
-        reason: `${point.reason} ${placementText}${signalText}`.trim()
+        reason: `${point.reason} ${placementText}`.trim()
       };
     });
     points.push(...filterGeneratedSpeakersByLegacyCoverage(profile, generatedSpeakerPoints, points.filter((point) => point.type === "arrayMic")));

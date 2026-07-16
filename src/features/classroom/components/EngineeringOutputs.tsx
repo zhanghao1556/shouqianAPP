@@ -1,6 +1,7 @@
 ﻿import { Download } from "lucide-react";
 import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProcessorTier, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
+import { getCustomerVisibleConnectionLines } from "../lib/customerOutput";
 import { getProcessorTierName, getProcessorTiersForBrand, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
 import { AUDIO_PROCESSOR_HOST_PRODUCT_ID } from "../lib/systemCapabilities";
 import { formatBrandText, getAppBrand } from "../brand";
@@ -189,6 +190,7 @@ function DrawingBlock({
   onLegacySpeakerPointTargetChange?: (index: number, target: Point) => void;
   blockedMessage?: string;
 }) {
+  const customerConnectionLines = getCustomerVisibleConnectionLines(outputs.connectionLines);
   return (
     <div className="drawingBlock">
       <div className="drawingBlockHeader">
@@ -219,7 +221,7 @@ function DrawingBlock({
       )}
       {type === "system" && (
         <div className="connectionList">
-          {outputs.connectionLines.map((line) => (
+          {customerConnectionLines.map((line) => (
             <p key={line.id}>
               {line.fromDevice} [{line.fromPort}] → {line.toDevice} [{line.toPort}]：{line.cableType}
             </p>

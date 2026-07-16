@@ -10,6 +10,8 @@ import { getCustomerPointValidationStatus, validatePointPlan } from "./src/featu
 import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
+import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
+import { buildReport } from "./src/features/classroom/lib/reportBuilder.ts";
 import {
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
@@ -343,12 +345,20 @@ assert.equal(rearCenterSpeaker.speakerSignalMode, "afc");
 assert.equal(rearCenterSpeaker.afcSendLevelOffset, -3);
 assert.equal(rearCenterSpeaker.horizontalAngle, 0);
 assert.ok(rearCenterSpeaker.target.y > getOutputLineMic(shortRoomCenterFill).position.y + 0.5);
-assert.ok(rearCenterSpeaker.reason.includes("延时和增益对齐"));
+assert.doesNotMatch(rearCenterSpeaker.reason, /AFC|延时|-3dB/);
 assert.equal(shortRoomCenterFill.pointValidation.findings.some((finding) => finding.code === "speaker.line-array-odd-wall-count"), false);
 const shortRoomAfcConnections = shortRoomCenterFill.connectionLines.filter((line) => line.speakerSignalMode === "afc");
 assert.equal(shortRoomAfcConnections.length, 2);
 assert.ok(shortRoomAfcConnections.some((line) => line.afcSendLevelOffset === undefined && line.toDevice.includes("× 2")));
 assert.ok(shortRoomAfcConnections.some((line) => line.afcSendLevelOffset === -3 && line.toDevice.includes("后墙中置") && line.toDevice.includes("× 1") && line.note.includes("延时和增益对齐")));
+const customerVisiblePoints = getCustomerVisiblePoints(shortRoomCenterFill.generatedPoints);
+const customerVisibleConnections = getCustomerVisibleConnectionLines(shortRoomCenterFill.connectionLines);
+assert.ok(customerVisiblePoints.every((point) => point.speakerSignalMode === undefined && point.afcSendLevelOffset === undefined));
+assert.equal(customerVisibleConnections.filter((line) => line.id === "processor-speaker-direct-customer").length, 1);
+assert.ok(customerVisibleConnections.every((line) => line.speakerSignalMode === undefined && line.afcSendLevelOffset === undefined));
+assert.doesNotMatch(JSON.stringify([customerVisiblePoints, customerVisibleConnections]), /正常AFC|不送线阵AFC|中置AFC|-3dB|延时校准|AFC分组/);
+const customerReport = buildReport(makeProfile({ length: 10, width: 13, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), shortRoomCenterFill);
+assert.doesNotMatch(customerReport.reportText, /正常AFC|不送线阵AFC|中置AFC|-3dB|延时校准|AFC分组/);
 const yinmanShortRoomCenterFill = generateEngineeringOutputs(makeProfile({ length: 10, width: 13, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), {}, "yinman");
 assert.deepEqual(pointSnapshot(getOutputSpeakers(yinmanShortRoomCenterFill)), pointSnapshot(shortRoomCenterSpeakers));
 const shortRoomManualTwo = generateEngineeringOutputs(makeProfile({ length: 10, width: 13, teachingWidth: 6, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), wallOverride, "yinyi");

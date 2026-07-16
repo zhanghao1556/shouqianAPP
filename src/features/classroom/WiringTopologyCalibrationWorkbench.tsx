@@ -319,7 +319,7 @@ export function WiringTopologyCalibrationWorkbench() {
           </div>
           <div className="drawingBlock wiringDiagramBlock">
             <h4>接线与拓扑合并图</h4>
-            <DrawingCanvas profile={profile} generatedPoints={outputs.generatedPoints} connectionLines={outputs.connectionLines} activeDrawing="system" />
+            <DrawingCanvas profile={profile} generatedPoints={outputs.generatedPoints} connectionLines={outputs.connectionLines} activeDrawing="system" showInternalSignalDetails />
           </div>
           <ConnectionLineTable lines={outputs.connectionLines} />
           {activeCase && (
@@ -352,6 +352,7 @@ export function WiringTopologyCalibrationWorkbench() {
               generatedPoints={outputs.generatedPoints}
               connectionLines={outputs.connectionLines}
               activeDrawing="installation"
+              showInternalSignalDetails
               onCentralAirConditionerPointChange={activeCase ? markCentralAirConditionerPoint : undefined}
               onCentralAirConditionerCountChange={activeCase ? updateCentralAirConditionerCount : undefined}
               manualArrayMicPoints={activeCase?.manualArrayMicPoints ?? []}

@@ -17,6 +17,7 @@ import {
   getSpeakerOutputGroups
 } from "../lib/speakerRules";
 import { formatBrandText, getAppBrand } from "../brand";
+import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "../lib/customerOutput";
 import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
 import topologyAllInOneImage from "../../../assets/topology-all-in-one.png";
 import topologyAmplifierImage from "../../../assets/topology-amplifier.png";
@@ -61,6 +62,7 @@ interface DrawingCanvasProps {
   connectionLines: ConnectionLine[];
   activeDrawing: DrawingType;
   micOnly?: boolean;
+  showInternalSignalDetails?: boolean;
   onCentralAirConditionerPointChange?: (position: Point, index: number) => void;
   onCentralAirConditionerCountChange?: (count: number) => void;
   onLegacySpeakerPointAdd?: (input: { position: Point; type: LegacySpeakerType; wallAdjustability: LegacyWallAdjustability }) => void;
@@ -82,6 +84,7 @@ export function DrawingCanvas({
   connectionLines,
   activeDrawing,
   micOnly = false,
+  showInternalSignalDetails = false,
   onCentralAirConditionerPointChange,
   onCentralAirConditionerCountChange,
   onLegacySpeakerPointAdd,
@@ -97,6 +100,8 @@ export function DrawingCanvas({
   manualSpeakerFixedType
 }: DrawingCanvasProps) {
   const roomReady = profile.roomGeometry.length > 0 && profile.roomGeometry.width > 0;
+  const visibleGeneratedPoints = showInternalSignalDetails ? generatedPoints : getCustomerVisiblePoints(generatedPoints);
+  const visibleConnectionLines = showInternalSignalDetails ? connectionLines : getCustomerVisibleConnectionLines(connectionLines);
 
   if (!roomReady) {
     return (
@@ -107,13 +112,13 @@ export function DrawingCanvas({
     );
   }
 
-  if (activeDrawing === "system") return <SystemDiagram profile={profile} connections={connectionLines} generatedPoints={generatedPoints} />;
-  if (activeDrawing === "wiring") return <WiringDiagram connections={connectionLines} />;
-  if (activeDrawing === "topology") return <TopologyDiagram profile={profile} connections={connectionLines} generatedPoints={generatedPoints} />;
+  if (activeDrawing === "system") return <SystemDiagram profile={profile} connections={visibleConnectionLines} generatedPoints={visibleGeneratedPoints} />;
+  if (activeDrawing === "wiring") return <WiringDiagram connections={visibleConnectionLines} />;
+  if (activeDrawing === "topology") return <TopologyDiagram profile={profile} connections={visibleConnectionLines} generatedPoints={visibleGeneratedPoints} />;
   return (
     <InstallationDiagram
       profile={profile}
-      generatedPoints={generatedPoints}
+      generatedPoints={visibleGeneratedPoints}
       micOnly={micOnly}
       onCentralAirConditionerPointChange={onCentralAirConditionerPointChange}
       onCentralAirConditionerCountChange={onCentralAirConditionerCountChange}

@@ -22,6 +22,7 @@ import type {
   ReportSection
 } from "../types";
 import { getEffectiveAmplificationScope, getRoomArea, isOversizedForFullRoomAmplification } from "./drawingEngine";
+import { getCustomerVisibleConnectionLines } from "./customerOutput";
 import { getAmplificationScopeText, getNeedText, getScenarioText } from "./profileText";
 import { getSpeakerModelName } from "./speakerRules";
 
@@ -49,6 +50,7 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
     ? `${getAmplificationScopeText(profile)}（方案按${getEffectiveAmplificationScope(profile) === "podium" ? localAreaScopeText : getAmplificationScopeText(profile)}落地）`
     : getAmplificationScopeText(profile);
   const acoustic = input.acousticAssessment;
+  const customerConnectionLines = getCustomerVisibleConnectionLines(input.connectionLines);
   const sections: ReportSection[] = [
     {
       id: "cover",
@@ -107,17 +109,12 @@ export const buildReport = (profile: ClassroomProfile, input: ReportInput) => {
       id: "connections",
       type: "table",
       title: "接口接线表",
-      rows: input.connectionLines.map((line) => ({
+      rows: customerConnectionLines.map((line) => ({
         源设备: line.fromDevice,
         源接口: line.fromPort,
         目标设备: line.toDevice,
         目标接口: line.toPort,
-        线材: line.cableType,
-        信号: line.speakerSignalMode === "withoutLineArrayAfc"
-          ? "不送线阵AFC"
-          : line.speakerSignalMode === "afc"
-            ? line.afcSendLevelOffset === undefined ? "正常AFC扩声" : `中置AFC初始${line.afcSendLevelOffset}dB并校准延时`
-            : "-"
+        线材: line.cableType
       }))
     },
     ...input.drawings.map((drawing) => ({
