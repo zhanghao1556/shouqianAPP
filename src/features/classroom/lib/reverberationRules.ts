@@ -238,43 +238,83 @@ function getAssessmentFactors(profile: ClassroomProfile): AcousticAssessment["fa
   const environment = profile.acousticEnvironment;
   const ceiling = environment.ceilingAcousticTreatment ?? "unknown";
   const glass = getGlassCoverage(profile);
+  const roomVolume = getRoomVolume(profile);
+  const roomHeight = profile.roomGeometry.height;
   const factors: AcousticAssessment["factors"] = [
     {
+      label: "使用场景",
+      impact: "neutral",
+      detail: "使用场景用于选择目标 RT60，不改变房间的物理混响。"
+    },
+    {
+      label: "主要语音用途",
+      impact: "neutral",
+      detail: "语音用途用于决定目标是否收紧，不直接改变房间混响。"
+    },
+    {
       label: "房间体积",
-      impact: getRoomVolume(profile) >= 300 ? "increase" : "neutral",
-      detail: `${roundOne(getRoomVolume(profile))}m3，体积用于混响估算和场景目标选择。`
+      impact: roomVolume > 600 ? "strongIncrease" : roomVolume >= 300 ? "slightIncrease" : roomVolume < 150 ? "slightDecrease" : "neutral",
+      detail: `${roundOne(roomVolume)}m3，体积用于混响估算和场景目标选择。`
+    },
+    {
+      label: "吊顶结构",
+      impact: profile.engineeringConstraints.ceiling === "exposed" ? (roomHeight > 3.2 ? "strongIncrease" : "slightIncrease") : "neutral",
+      detail: profile.engineeringConstraints.ceiling === "exposed"
+        ? `无吊顶，层高 ${roundOne(roomHeight)}m。`
+        : profile.engineeringConstraints.ceiling === "suspended"
+          ? "有吊顶，实际吸声能力由顶面吸声判断。"
+          : "吊顶结构待确认。"
     },
     {
       label: "顶面吸声",
-      impact: ceiling === "acoustic" ? "decrease" : ceiling === "hard" ? "increase" : "neutral",
+      impact: ceiling === "acoustic" ? "strongDecrease" : ceiling === "partial" ? "slightDecrease" : "neutral",
       detail: ceiling === "acoustic" ? "大面积吸声顶面可增加等效吸声面积。" : ceiling === "hard" ? "硬质顶面反射较强。" : ceiling === "partial" ? "局部吸声可降低部分反射。" : "顶面吸声情况待确认。"
     },
     {
       label: "地面",
-      impact: environment.floorMaterial === "carpet" ? "decrease" : environment.floorMaterial === "tile" ? "increase" : "neutral",
+      impact: environment.floorMaterial === "carpet" ? "slightDecrease" : environment.floorMaterial === "tile" ? "strongIncrease" : "neutral",
       detail: environment.floorMaterial === "carpet" ? "软质地面可吸收部分中高频声能。" : environment.floorMaterial === "tile" ? "瓷砖 / 石材地面反射较强。" : "地面按当前材质范围估算。"
     },
     {
-      label: "墙面与软装",
-      impact: environment.wallMaterial === "acoustic" || environment.softTreatment === "acousticPanels" ? "decrease" : environment.wallMaterial === "hard" && environment.softTreatment === "none" ? "increase" : "neutral",
-      detail: environment.softTreatment === "none" ? "未记录窗帘或吸声处理。" : "墙面材料与软装覆盖共同计入吸声估算。"
+      label: "墙面",
+      impact: environment.wallMaterial === "acoustic" ? "strongDecrease" : environment.wallMaterial === "painted" ? "slightIncrease" : "neutral",
+      detail: environment.wallMaterial === "acoustic" ? "吸音墙面可明显增加等效吸声。" : environment.wallMaterial === "painted" ? "普通粉刷墙按小幅增加计入。" : environment.wallMaterial === "hard" ? "硬质墙面按中性基准计入。" : "墙面情况待确认。"
+    },
+    {
+      label: "软装 / 吸音",
+      impact: environment.softTreatment === "acousticPanels"
+        ? "strongDecrease"
+        : environment.softTreatment === "mixed" || (environment.softTreatment === "curtains" && glass === "large")
+          ? "slightDecrease"
+          : "neutral",
+      detail: environment.softTreatment === "curtains"
+        ? glass === "large" ? "大面积玻璃配有窗帘，按小幅降低计入。" : "非大面积玻璃场景的窗帘按中性计入。"
+        : environment.softTreatment === "mixed" ? "窗帘与少量吸音混合按小幅降低计入。"
+          : environment.softTreatment === "acousticPanels" ? "吸音板 / 声学装修按明显降低计入。"
+            : environment.softTreatment === "none" ? "基本无软装吸音，按中性基准计入。" : "软装 / 吸音情况待确认。"
     },
     {
       label: "玻璃比例",
-      impact: glass === "large" ? "increase" : "neutral",
+      impact: glass === "large" ? "strongIncrease" : "neutral",
       detail: glass === "large" ? "大面积玻璃会增加反射风险。" : glass === "partial" ? "少量玻璃按局部反射计入。" : glass === "unknown" ? "玻璃比例待确认。" : "基本无玻璃墙。"
     },
     {
       label: "家具布置",
-      impact: environment.furnishingDensity === "dense" ? "decrease" : environment.furnishingDensity === "empty" ? "increase" : "neutral",
+      impact: environment.furnishingDensity === "dense" ? "slightDecrease" : environment.furnishingDensity === "empty" ? "slightIncrease" : "neutral",
       detail: environment.furnishingDensity === "dense" ? "密集家具可增加空场等效吸声。" : environment.furnishingDensity === "empty" ? "空房或家具很少时吸声面积较小。" : environment.furnishingDensity === "unknown" ? "家具布置待确认。" : "按正常桌椅布置估算。"
+    },
+    {
+      label: "中央空调",
+      impact: "neutral",
+      detail: "中央空调影响噪声和阵麦避让，不参与混响风险计算。"
     }
   ];
   if (environment.echoObservation === "tail") {
-    factors.push({ label: "拍手测试", impact: "increase", detail: "现场记录到明显拖尾，风险至少为中。" });
-  }
-  if (environment.echoObservation === "obvious") {
-    factors.push({ label: "拍手测试", impact: "increase", detail: "现场记录到明显回声或颤动回声，风险直接判大。" });
+    factors.push({ label: "拍手测试", impact: "slightIncrease", detail: "现场记录到明显拖尾，风险至少为中。" });
+  } else if (environment.echoObservation === "obvious") {
+    factors.push({ label: "拍手测试", impact: "strongIncrease", detail: "现场记录到明显回声或颤动回声，风险直接判大。" });
+  } else {
+    factors.push({ label: "拍手测试", impact: environment.echoObservation === "none" ? "slightDecrease" : "neutral", detail: environment.echoObservation === "none" ? "现场未发现明显拖尾，按小幅降低计入。" : "拍手测试待确认。" });
   }
   return factors;
 }

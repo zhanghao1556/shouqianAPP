@@ -1836,3 +1836,13 @@ PowerShell reminder:
 - Keep customer-facing generic names separate from internal point-label tokens such as `壁挂音柱`; drawing rules currently use those tokens to classify speaker geometry, so a display-name cleanup must not silently alter point behavior.
 - Use `rg -F` for literal Chinese product-name scans. Building a regular expression around quoted names adds shell escaping risk without providing any value.
 - In the current Browser runtime, viewport capture is exposed as `tab.screenshot(...)`; a documented `tab.playwright.screenshot(...)` attempt was unavailable. Treat this as a tooling API mismatch, switch to the supported tab method and do not change application code.
+
+### 2026-07-16 reverberation factor-grade guardrail
+
+- Factor grades explain direction and strength; they do not independently add to the Sabine estimate or risk score. Keep the absorption calculation as the single numerical source of truth.
+- Every collected reverberation parameter should have its own visible factor row. Do not recombine wall material and soft treatment because their calibrated grades and conditional behavior differ.
+- Preserve the calibrated exposed-ceiling boundary exactly: height `<= 3.2m` is slight increase and height `> 3.2m` is strong increase.
+- Curtains are conditional: slight decrease only when paired with large glass, neutral otherwise. This condition belongs in the shared assessment factor mapping, not in the 5176 component.
+- The latest user correction overrides the spreadsheet cell: ordinary painted wall is slight increase. Hard wall remains neutral and acoustic wall remains strong decrease.
+- WPS symbol fonts may round-trip confirmation marks through spreadsheet tooling as numeric text such as `49`. Compare those cells with rendered appearance and row-change patterns before treating them as literal calibration values.
+- When adding a branch against a project enum, verify the existing union first. The ceiling code uses `exposed`, not the display-language concept `none`.

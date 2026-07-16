@@ -223,7 +223,7 @@ export interface AcousticAssessment {
   reference: string;
   factors: Array<{
     label: string;
-    impact: "increase" | "decrease" | "neutral";
+    impact: "strongIncrease" | "slightIncrease" | "neutral" | "slightDecrease" | "strongDecrease";
     detail: string;
   }>;
   reasons: string[];

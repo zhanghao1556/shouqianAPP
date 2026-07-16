@@ -481,9 +481,11 @@ function confidenceText(confidence: AcousticAssessment["confidence"]) {
 }
 
 function impactText(impact: AcousticAssessment["factors"][number]["impact"]) {
-  if (impact === "increase") return "增加风险";
-  if (impact === "decrease") return "降低风险";
-  return "中性 / 待确认";
+  if (impact === "strongIncrease") return "明显增加";
+  if (impact === "slightIncrease") return "小幅增加";
+  if (impact === "strongDecrease") return "明显降低";
+  if (impact === "slightDecrease") return "小幅降低";
+  return "中性";
 }
 
 function formatDate(value: string) {

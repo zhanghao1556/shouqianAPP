@@ -6436,3 +6436,14 @@ Boundary:
 - Updated the product catalog, customer selector, recommendation labels, report-facing speaker name and point-map display-name boundary. Internal wall-point labels continue to use `壁挂音柱` so existing drawing classification remains unchanged.
 - Verification passed: point-system regression, production build and `git diff --check`. Browser QA on 5174 switched wall -> ceiling -> wall and confirmed exactly one active speaker row each time (`壁挂音箱` or `吸顶音箱`), no legacy size name, no framework overlay and no console warning/error.
 - One literal-name scan initially used an incorrectly escaped regular expression and `rg` rejected it. The scan was rerun with `rg -F`; this was a command-only error and did not modify source files.
+
+## 2026-07-16 reverberation factor five-level calibration
+
+- Read the user's completed `混响因素五档校准表-2026-07-16.xlsx` without overwriting it. WPS symbol-font value `49` was treated as confirmation; the only blank option, `有吸音墙面`, retained the proposed `明显降低` grade.
+- Expanded the shared acoustic-factor display from three directions to five levels: `明显增加 / 小幅增加 / 中性 / 小幅降低 / 明显降低`. This is an explanation layer only; RT60 absorption coefficients, risk thresholds and hard overrides remain unchanged.
+- Confirmed mappings include volume bands, exposed-ceiling height split at 3.2m, ceiling absorption, floor, wall, soft treatment, glass, furnishing, clap test, scenario/use neutrality and HVAC neutrality.
+- User correction superseded the spreadsheet entry for ordinary painted walls: `普通粉刷墙` is `小幅增加`, not `小幅降低`.
+- Key conditional mappings: exposed ceiling at or below 3.2m is `小幅增加`, above 3.2m is `明显增加`; curtains are `小幅降低` only with large glass and otherwise neutral; no audible tail is `小幅降低`; tile/stone floor is `明显增加`; hard wall is neutral.
+- Split the old combined `墙面与软装` factor into independent `墙面` and `软装 / 吸音` rows so every collected parameter has its own grade.
+- Verification passed: reverberation regression suite, strict TypeScript, production build and browser rendering on 5176. Browser interaction generated a new case and showed all five-level labels with no console warnings/errors.
+- A first build exposed the internal ceiling enum mismatch (`none` vs `exposed`); corrected to the existing `exposed` value before completion. No runtime or committed broken state was produced.

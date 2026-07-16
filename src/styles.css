@@ -2588,12 +2588,20 @@ textarea:focus {
   font-weight: 850;
 }
 
-.reverbFactor.increase span {
+.reverbFactor.strongIncrease span {
   color: #b42318;
 }
 
-.reverbFactor.decrease span {
+.reverbFactor.slightIncrease span {
+  color: #d15c14;
+}
+
+.reverbFactor.strongDecrease span {
   color: #087443;
+}
+
+.reverbFactor.slightDecrease span {
+  color: #2f8f64;
 }
 
 .reverbFactor p {

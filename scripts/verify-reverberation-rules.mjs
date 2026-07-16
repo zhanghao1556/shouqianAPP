@@ -42,6 +42,14 @@ function expectRisk(name, profile, expected) {
   console.log("PASS", name, assessment.risk, assessment.estimatedRt + "s");
 }
 
+function expectFactor(name, profile, label, expected) {
+  const factor = getAcousticAssessment(profile).factors.find((item) => item.label === label);
+  if (factor?.impact !== expected) {
+    throw new Error(name + ": expected " + label + " to be " + expected + ", received " + factor?.impact);
+  }
+  console.log("PASS", name, label, expected);
+}
+
 expectRisk("meeting target boundary", makeProfile({ scenario: "meetingRoom", needs: ["videoConference"], acoustic: { measuredRt60: 0.6 } }), "low");
 expectRisk("meeting medium boundary", makeProfile({ scenario: "meetingRoom", needs: ["videoConference"], acoustic: { measuredRt60: 0.8 } }), "medium");
 expectRisk("meeting above boundary", makeProfile({ scenario: "meetingRoom", needs: ["videoConference"], acoustic: { measuredRt60: 0.81 } }), "high");
@@ -57,6 +65,18 @@ const noGlassRt = getAcousticAssessment(makeProfile({ acoustic: { glassCoverage:
 const littleGlassRt = getAcousticAssessment(makeProfile({ acoustic: { glassCoverage: "partial" } })).estimatedRt;
 if (noGlassRt !== littleGlassRt) throw new Error("merged basic/no glass option must use one acoustic range");
 console.log("PASS", "basic/no glass and little glass share one acoustic range");
+expectFactor("small room volume lowers slightly", makeProfile({ room: { length: 6, width: 5, height: 3 } }), "房间体积", "slightDecrease");
+expectFactor("large room volume raises strongly", makeProfile({ room: { length: 16, width: 10, height: 4 } }), "房间体积", "strongIncrease");
+expectFactor("low exposed ceiling raises slightly", makeProfile({ ceiling: "exposed", room: { height: 3.2 } }), "吊顶结构", "slightIncrease");
+expectFactor("high exposed ceiling raises strongly", makeProfile({ ceiling: "exposed", room: { height: 3.3 } }), "吊顶结构", "strongIncrease");
+expectFactor("partial ceiling lowers slightly", makeProfile({ acoustic: { ceilingAcousticTreatment: "partial" } }), "顶面吸声", "slightDecrease");
+expectFactor("acoustic ceiling lowers strongly", makeProfile({ acoustic: { ceilingAcousticTreatment: "acoustic" } }), "顶面吸声", "strongDecrease");
+expectFactor("tile floor raises strongly", makeProfile({ acoustic: { floorMaterial: "tile" } }), "地面", "strongIncrease");
+expectFactor("hard wall is neutral", makeProfile({ acoustic: { wallMaterial: "hard" } }), "墙面", "neutral");
+expectFactor("painted wall raises slightly", makeProfile({ acoustic: { wallMaterial: "painted" } }), "墙面", "slightIncrease");
+expectFactor("curtains are neutral without large glass", makeProfile({ acoustic: { softTreatment: "curtains", glassCoverage: "partial" } }), "软装 / 吸音", "neutral");
+expectFactor("curtains lower slightly with large glass", makeProfile({ acoustic: { softTreatment: "curtains", glassCoverage: "large" } }), "软装 / 吸音", "slightDecrease");
+expectFactor("no audible tail lowers slightly", makeProfile({ acoustic: { echoObservation: "none" } }), "拍手测试", "slightDecrease");
 if (!hasHighCeilingReverberationRisk(tallAbsorptiveRoom)) {
   throw new Error("speaker-specific high-ceiling selector changed unexpectedly");
 }
