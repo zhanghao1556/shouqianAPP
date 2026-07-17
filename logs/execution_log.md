@@ -6556,3 +6556,30 @@ Boundary:
 - Added regression coverage for the live 10.8m x 15.9m vertical odd-axis case, the rotated 15.9m x 10.8m horizontal odd-axis case, 14/15-speaker count preservation, center-axis positions, 2m standard clearance, 1.5m line-array first-row clearance, AFC state retention and Yinyi/Yinman parity.
 - Verification passed: strict TypeScript with unused checks, the complete point-system suite, production build and `git diff --check`.
 - Fresh 5180 browser verification preserved the user's draft and showed 14 ceiling speakers, four restored middle-axis points behind the first row, uniform approximately 3m longitudinal groups, one expansion amplifier, no framework overlay and no console warnings/errors.
+
+## 2026-07-17 local-amplification speaker coverage audit
+
+- Added the repeatable internal `npm run audit:speaker-coverage` sweep and `npm run test:speaker-coverage` regression. The final fixed seed `20260717` run contains 636 cases across both brands, formal/boundary/experimental/stress phases, array/line microphones and wall/ceiling speakers.
+- The audit imports the formal generated points and the existing drawing geometry; the only production-engine change is exporting the existing `isPointCoveredByGeneratedSpeaker` helper. No formal speaker selection, quantity, coordinate, angle or microphone rule was changed.
+- User calibration replaced the initial full-room/binary coverage premise:
+  - meeting rooms use every automatically generated seat as a hard point;
+  - classroom/auditorium checks use the occupied listening zone and exclude teaching/stage space, side/rear circulation margins and unoccupied corners;
+  - listening-zone uncovered ratios up to 5% pass, 5-10% warn and above 10% can fail only when the largest connected gap is at least 4m2;
+  - ceiling speakers retain the formal 2m drawing radius while the audit uses a 0.35m decay-edge tolerance; connected gaps below 2m2 do not warn;
+  - candidate additions require a current failure and at least three percentage points of listening-zone improvement per added speaker.
+- User confirmed the existing line-array `front180` short-room 2/3/4-speaker architecture is already calibrated. The audit recognizes 29 such cases as a baseline and never adds speakers because of hard-cone edge pixels. Five longer line-array wall cases remain deferred with no candidate drawing.
+- User removed overlap calibration from this task. Double/triple coverage ratios remain in JSON/CSV only and do not affect status, clustering, candidate scoring or recommendations.
+- All candidate layouts are deterministic and visually symmetric: side-wall points and targets use left/right mirror pairs at the same longitudinal coordinate, ceiling columns mirror around the center axis, and a single fill may exist only on the room center axis. A regression assertion locks this constraint.
+- Final audit result: pass 161, warning 6, fail 29, drawing-blocked 108, capacity-limited 20, special-design 288 and experimental-normalized 24; deterministic summary hash `48ef39f6c836c68aa94463b2bde4f1c8f34ca243ca7d33b9c6643706397bb69d`.
+- Only two candidate families remain for user confirmation:
+  - meeting-room wall speakers: 7/7 seat-gap cases become pass by symmetric rearrangement with no added speaker;
+  - ordinary wide-room wall speakers: 22/23 cases meet the price/benefit gate and become pass by adding one mirrored pair; one low-benefit case is explicitly rejected.
+- Ceiling-speaker actionable large-gap count is zero after listening-zone and decay-edge calibration, so the audit makes no ceiling-speaker addition recommendation.
+- Generated ignored evidence lives under `work/speaker-coverage-audit`: JSON, CSV, Markdown root-cause report and two current A/B PNG/SVG previews. Every preview is marked `拟调整预览 / 尚未写入正式规则`.
+- Tooling issues recorded and resolved during implementation:
+  - local Playwright had no bundled Chromium executable, so ignored PNG rendering uses the installed Microsoft Edge executable without adding a dependency;
+  - the first symmetry-test template used nested backticks and failed to parse; it was changed to ordinary string concatenation before any production check;
+  - status-derived stress-case selection caused the sample count to drift during calibration; the stress matrix was made deterministic and the final count locked at 636.
+- Verification passed: speaker-coverage regression with two identical-seed sweeps, symmetry assertions, full point-system regression, strict TypeScript unused checks, production build and `git diff --check`.
+- Fresh localhost 5174/5180 browser checks showed correct brand pages, meaningful point-map SVGs, zero `candidate-*` nodes and no console warnings/errors. The active Yinman 10m x 13m short-room draft still renders its confirmed three-speaker formal layout; the audit candidate never enters customer pages.
+- No package, release or GitHub push was performed. The two remaining candidate rules await explicit user confirmation before any formal point-rule work.

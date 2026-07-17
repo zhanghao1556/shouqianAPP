@@ -1895,3 +1895,15 @@ PowerShell reminder:
 - A front-line-array first-row ceiling speaker may use the confirmed 1.5m minimum only while it retains the internal no-line-array-AFC state. If it moves out of the geometric first row, preserve that signal state structurally instead of re-inferring it from the final coordinate.
 - Keep array-microphone and line-array distance behavior separately asserted: a safe line-array grid point may remain where an array-microphone point must move to satisfy 2m. Do not restore an equality snapshot that erases this approved distinction.
 - Lock both orientations in regression tests. A vertical center-column fix is incomplete unless the rotated center-row case also preserves quantity, clearance and signal state.
+
+### 2026-07-17 coverage-audit guardrail
+
+- Do not equate a room outline with the occupied listening zone. Meeting rooms use generated seats; classrooms and auditoriums exclude teacher/stage space, circulation margins and unused corners before any speaker-addition decision.
+- A nominal coverage radius is not an acoustic cliff. Keep the customer drawing radius unchanged, but allow a small internal decay-edge tolerance and ignore fragmented intersection gaps; only a connected large uncovered region can justify candidate work.
+- Coverage percentage alone cannot authorize hardware. Require both a true failure in the occupied zone and a minimum improvement per added speaker so a tiny edge gap never creates a costly extra row or rear fill.
+- Existing user-calibrated architectures are evidence. The line-array short-room 2/3/4-speaker structure is an audit baseline across its full generic width/length boundaries, not a one-room exception and not a target for automatic grid optimization.
+- When a candidate places a second side-wall pair near the rear wall and still aims it rearward, treat the layout as physically wasteful even if the binary heatmap improves. Withdraw the candidate instead of optimizing the score harder.
+- Overlap and uncovered-area calibration are separate tasks. Preserve overlap measurements for later work, but do not let them affect this audit after the user explicitly took ownership of overlap calibration.
+- Candidate generation must be deterministic and symmetric: mirrored left/right pairs share the same longitudinal coordinate and mirrored targets; ceiling columns mirror around the centerline; any unpaired fill stays exactly on the center axis.
+- A sweep count derived from which cases currently pass is not stable. Keep stress specifications fixed independently from audit status, then assert the total count and summary hash deterministically.
+- Generated A/B images are not proof of a formal change. Keep them in ignored work output, label them as not implemented, verify customer pages contain no candidate nodes, and wait for explicit confirmation before touching formal point rules.

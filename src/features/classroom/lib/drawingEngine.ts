@@ -368,7 +368,7 @@ const clampBoundsToRoom = (profile: ClassroomProfile, bounds: { minX: number; ma
   maxY: clamp(bounds.maxY, 0, profile.roomGeometry.length)
 });
 
-const isPointCoveredByGeneratedSpeaker = (profile: ClassroomProfile, speaker: GeneratedPoint, point: { x: number; y: number }) => {
+export const isPointCoveredByGeneratedSpeaker = (profile: ClassroomProfile, speaker: GeneratedPoint, point: { x: number; y: number }) => {
   const radius = speaker.coverageRadius ?? (isGeneratedCeilingSpeaker(speaker) ? CEILING_SPEAKER_COVERAGE_RADIUS_M : WALL_SPEAKER_COVERAGE_AXIS_M);
   if (isGeneratedCeilingSpeaker(speaker)) return getDistance(speaker.position, point) <= radius;
   return isPointInVisualWallSpeakerCoverage(profile, speaker.position, getGeneratedWallSpeakerCoverageTarget(profile, speaker, radius), radius, point);
