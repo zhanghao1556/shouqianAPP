@@ -6,7 +6,7 @@ import {
   getRequiredArrayMicCountForFullRoomAmplification,
   type PointQuantityTargets
 } from "./drawingEngine";
-import { getLineArrayDecision, LINE_ARRAY_FULL_RADIUS_M } from "./lineArrayRules";
+import { getLineArrayDecision, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./lineArrayRules";
 
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
@@ -89,13 +89,13 @@ export function generateBrandEngineeringPoints(
       id: `line-array-mic-${index + 1}`,
       label: lineArray.count > 1 ? `智能线阵麦克风 ${index + 1}` : "智能线阵麦克风",
       position: lineArrayPositions[index] ?? lineArray.position,
-      coverageRadius: LINE_ARRAY_FULL_RADIUS_M,
+      coverageRadius: lineArray.mode === "full" ? LINE_ARRAY_ONLINE_RADIUS_M : LINE_ARRAY_LOCAL_RADIUS_M,
       pickupKind: "lineArray",
       pickupPattern: lineArray.mode === "full" ? "full360" : "front180",
       installationMode: lineArray.installation,
       installHeight: lineArray.installation === "podium" ? 1.1 : lineArray.installation === "tabletop" ? 0.75 : baseMic?.installHeight,
       reason: lineArray.mode === "full"
-        ? "桌面线阵麦按5m半径覆盖会议发言区。"
+        ? `线阵麦按${LINE_ARRAY_ONLINE_RADIUS_M}m线上拾音半径覆盖全场发言区。`
         : `正面180度声幕覆盖${activityZone.label}，屏蔽背向区域声音。`
     }));
     return [...lineMics, ...generated.filter((point) => point.type !== "arrayMic")];

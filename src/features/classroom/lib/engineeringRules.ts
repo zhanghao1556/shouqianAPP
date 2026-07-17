@@ -563,6 +563,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   const risks: string[] = [];
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.requested && !lineArray.selected) risks.push("该方案无法完整覆盖，建议改选阵麦");
+  else if (lineArray.requested && lineArray.coverageWarning) risks.push("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。");
   else if (lineArray.requested && !lineArray.recommended) risks.push("当前线阵麦为非推荐选择，建议阵麦。");
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;

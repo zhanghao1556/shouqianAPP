@@ -1908,3 +1908,13 @@ PowerShell reminder:
 - A sweep count derived from which cases currently pass is not stable. Keep stress specifications fixed independently from audit status, then assert the total count and summary hash deterministically.
 - Generated A/B images are not proof of a formal change. Keep them in ignored work output, label them as not implemented, verify customer pages contain no candidate nodes, and wait for explicit confirmation before touching formal point rules.
 - Matching room dimensions do not mean matching business cases. Every A/B preview header must include brand, scenario, amplification scope, microphone family/mode and speaker family; omitting those dimensions can falsely imply that an array-microphone candidate replaces a line-array formal layout.
+- A user-rejected candidate is closed evidence, not a pending suggestion. Record it as rejected, stop regenerating its preview, keep the formal rule unchanged and return to root-cause calibration instead of tuning the same candidate again.
+
+### 2026-07-17 line-array online-pickup guardrail
+
+- Online pickup capability and local-amplification capability are different contracts. Keep separate 8m online and 5m local constants so changing online interaction never enlarges front180 teacher/stage responsibility or podium placement.
+- Interactive classroom is online interaction pickup. Its online pickup uses 8m; any simultaneous local-amplification responsibility still uses the separate 5m local rule.
+- Incomplete pickup coverage is not the same as an impossible configuration. When the customer forces a line-array online solution beyond 8m, preserve the equipment, points, topology and report, keep the automatic recommendation on the array microphone, and represent the gap as a structured warning.
+- A hard generation gate should remain reserved for line-array configurations that cannot be represented at all, such as a front responsibility width beyond the confirmed two-line-array limit. Do not reuse that gate for a valid but incomplete online-pickup plan.
+- Boundary tests must distinguish exactly 8m, just beyond 5m, and beyond 8m. Old assertions often encode the rule being replaced; when one fails, verify whether it protects a still-valid boundary before changing production logic.
+- Vite HMR WebSocket failure can leave a live localhost tab on stale JavaScript even after source and build are correct. Reload the existing tab and verify the resulting equipment quantities, drawings and warnings before diagnosing a rule mismatch.

@@ -8,7 +8,8 @@ export const LINE_ARRAY_PRODUCT_ID = "LINE-ARRAY-MIC";
 export const LINE_ARRAY_SINGLE_MAX_WIDTH_M = 10;
 export const LINE_ARRAY_DOUBLE_MAX_WIDTH_M = 15;
 export const LINE_ARRAY_MAX_COUNT = 2;
-export const LINE_ARRAY_FULL_RADIUS_M = 5;
+export const LINE_ARRAY_LOCAL_RADIUS_M = 5;
+export const LINE_ARRAY_ONLINE_RADIUS_M = 8;
 export const LINE_ARRAY_ACTIVITY_MAX_DEPTH_M = 5;
 export const STANDARD_CLASSROOM_LINE_ARRAY_MAX_SIZE_M = 8;
 export const LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M = 2.5;
@@ -41,6 +42,7 @@ export interface LineArrayDecision {
   activityZone: LineArrayActivityZone;
   recommendationReason: string;
   decisionFactors: string[];
+  coverageWarning?: string;
   fallbackReason?: string;
 }
 
@@ -71,6 +73,7 @@ export function getLineArrayDecision(profile: ClassroomProfile, generatedPoints?
     activityZone,
     recommendationReason: recommendation.reason,
     decisionFactors,
+    coverageWarning: support.coverageWarning,
     fallbackReason: support.reason
   };
 }
@@ -189,13 +192,16 @@ function getLineArraySupport(
   profile: ClassroomProfile,
   zone: LineArrayActivityZone,
   mode: "front" | "full"
-): { supported: boolean; count: number; reason?: string } {
+): { supported: boolean; count: number; reason?: string; coverageWarning?: string } {
   if (mode === "full") {
     const farthest = Math.hypot(profile.roomGeometry.width / 2, profile.roomGeometry.length / 2);
-    if (farthest > LINE_ARRAY_FULL_RADIUS_M) {
-      return { supported: false, count: 0, reason: `全场最远发言位置约${oneDecimal(farthest)}m，超出单只线阵麦5m拾音半径，建议改选阵麦。` };
-    }
-    return { supported: true, count: 1 };
+    return {
+      supported: true,
+      count: 1,
+      coverageWarning: farthest > LINE_ARRAY_ONLINE_RADIUS_M
+        ? `全场最远发言位置约${oneDecimal(farthest)}m，超出线阵麦${LINE_ARRAY_ONLINE_RADIUS_M}m线上拾音半径。`
+        : undefined
+    };
   }
 
   const depthLimited = profile.scenario === "lectureClassroom" || profile.scenario === "combinedClassroom" || profile.scenario === "auditorium";
@@ -212,7 +218,7 @@ function getLineArrayRecommendation(
   profile: ClassroomProfile,
   zone: LineArrayActivityZone,
   mode: "front" | "full",
-  support: { supported: boolean; count: number; reason?: string }
+  support: { supported: boolean; count: number; reason?: string; coverageWarning?: string }
 ): { recommended: boolean; reason: string; factors: string[] } {
   const factors = [
     `覆盖：${zone.label} ${oneDecimal(zone.width)}m × ${oneDecimal(zone.depth)}m`,
@@ -220,6 +226,7 @@ function getLineArrayRecommendation(
   ];
   if (!hasMicrophoneNeed(profile)) return { recommended: false, reason: "当前需求未形成明确拾音或扩声任务，默认保留阵麦方案。", factors };
   if (!support.supported) return { recommended: false, reason: support.reason ?? "线阵麦无法完整覆盖当前责任区，建议阵麦。", factors };
+  if (support.coverageWarning) return { recommended: false, reason: "线阵麦线上拾音无法覆盖全部发言区域，系统优先推荐阵麦。", factors };
   if (support.count > 1) {
     return { recommended: false, reason: `当前责任区需要两只线阵麦；两线阵方案不进入自动推荐，建议采用阵麦。`, factors };
   }
@@ -278,7 +285,7 @@ function getLineArrayPlacement(
 
   const requestedInstallation = profile.engineeringConstraints.lineArrayInstallation ?? "auto";
   const podiumX = getPodiumX(profile);
-  const podiumCoversZone = Math.max(Math.abs(podiumX - zone.left), Math.abs(zone.right - podiumX)) <= LINE_ARRAY_FULL_RADIUS_M;
+  const podiumCoversZone = Math.max(Math.abs(podiumX - zone.left), Math.abs(zone.right - podiumX)) <= LINE_ARRAY_LOCAL_RADIUS_M;
   const canUsePodium = profile.engineeringConstraints.hasPodium !== false && podiumCoversZone;
   const hasDrawnPodium = profile.scenario !== "auditorium" && profile.scenario !== "combinedClassroom";
   if (requestedInstallation === "podium" && canUsePodium) {

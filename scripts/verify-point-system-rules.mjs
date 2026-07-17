@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs, getCompleteness } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
@@ -214,7 +214,7 @@ const overWidth = generateEngineeringOutputs(makeProfile({ length: 8, width: 24.
 assert.equal(overWidth.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
 assert.equal(overWidth.generatedPoints.length, 0);
 assert.equal(overWidth.connectionLines.length, 0);
-assert.equal(overWidth.solutionSelection.drawingBlocked, true);
+assert.equal(overWidth.solutionSelection.drawingBlocked, true, "front-mode line array beyond the 15m responsibility width must remain blocked");
 assert.equal(overWidth.solutionSelection.blockingMessage, "该方案无法完整覆盖，建议改选阵麦");
 assert.ok(overWidth.riskItems.includes("该方案无法完整覆盖，建议改选阵麦"));
 assert.equal(overWidth.pointValidation.findings.find((item) => item.code === "selection.line-array-coverage")?.severity, "hard");
@@ -228,6 +228,24 @@ const longClassroomFull = generateEngineeringOutputs(makeProfile({ length: 8.1, 
 assert.equal(longClassroomFull.solutionSelection.microphone.recommended, "existingArray");
 const interactiveClassroom = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "full", needs: ["interactiveClass"], microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(interactiveClassroom.solutionSelection.microphone.recommended, "existingArray");
+
+assert.equal(LINE_ARRAY_LOCAL_RADIUS_M, 5);
+assert.equal(LINE_ARRAY_ONLINE_RADIUS_M, 8);
+const onlineBoundaryLine = generateEngineeringOutputs(makeProfile({ length: 9.6, width: 12.8, scope: "podium", needs: ["interactiveClass"], microphoneSolution: "lineArray" }), {}, "yinman");
+assert.equal(onlineBoundaryLine.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 8);
+assert.equal(onlineBoundaryLine.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
+const forcedOnlineLine = generateEngineeringOutputs(makeProfile({ length: 9.5, width: 14.9, scope: "podium", needs: ["interactiveClass"], microphoneSolution: "lineArray" }), {}, "yinman");
+const forcedOnlineLinePoint = forcedOnlineLine.generatedPoints.find((point) => point.pickupKind === "lineArray");
+assert.equal(forcedOnlineLine.solutionSelection.drawingBlocked, false);
+assert.equal(forcedOnlineLine.solutionSelection.microphone.recommended, "existingArray");
+assert.equal(forcedOnlineLinePoint?.coverageRadius, 8);
+assert.equal(forcedOnlineLinePoint?.pickupPattern, "full360");
+assert.ok(forcedOnlineLine.productSelection.length > 0, "forced online line-array selection must retain its equipment list");
+assert.ok(forcedOnlineLine.drawings.length > 0, "forced online line-array selection must generate drawings");
+assert.match(forcedOnlineLine.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /8m线上拾音半径/);
+assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-online-coverage")?.severity, "warning");
+assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended"), undefined);
+assert.ok(forcedOnlineLine.riskItems.includes("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。"), "forced online line-array selection must expose the customer coverage warning");
 
 const lectureFit = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(lectureFit.solutionSelection.microphone.recommended, "lineArray");
@@ -256,7 +274,13 @@ const meetingFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "mee
 assert.equal(meetingFiveMeter.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(meetingFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
 const meetingOverFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 8.1, width: 6, microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(meetingOverFiveMeter.solutionSelection.drawingBlocked, true);
+assert.equal(meetingOverFiveMeter.solutionSelection.drawingBlocked, false);
+assert.equal(meetingOverFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 8);
+assert.equal(meetingOverFiveMeter.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
+const meetingOverEightMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 9.5, width: 14.9, microphoneSolution: "lineArray" }), {}, "yinyi");
+assert.equal(meetingOverEightMeter.solutionSelection.drawingBlocked, false);
+assert.ok(meetingOverEightMeter.generatedPoints.some((point) => point.pickupKind === "lineArray"));
+assert.match(meetingOverEightMeter.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /8m线上拾音半径/);
 const meetingLeader = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 20, width: 10, notes: "主位扩声", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(meetingLeader.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(meetingLeader.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");

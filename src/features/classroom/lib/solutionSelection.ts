@@ -67,7 +67,8 @@ export function getCustomerSolutionSelection(
         : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
       recommendationReason: automaticLineArrayDecision.recommendationReason,
       decisionFactors: automaticLineArrayDecision.decisionFactors,
-      lineArraySupported
+      lineArraySupported,
+      lineArrayCoverageWarning: selectedMicrophone === "lineArray" ? selectedLineArrayDecision.coverageWarning : undefined
     },
     speaker: {
       recommended: recommendedSpeaker,

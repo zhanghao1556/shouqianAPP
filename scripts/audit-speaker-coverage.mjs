@@ -79,9 +79,11 @@ const rootCauseDefinitions = [
     impact: "影响阵麦或线阵full360下的壁挂数量、分组和角度；不改变强制选择能力及吸顶规则。"
   }
 ];
+const rejectedRootCauseIds = new Set(["meeting-wall-seat-coverage", "wall-width-responsibility"]);
 
 await mkdir(previewDir, { recursive: true });
 const rootCauseResults = await buildRootCauseResults(result, runner, previewDir);
+const rejectedCases = getRejectedCases(result);
 await writeFile(rootCausePath, buildRootCauseMarkdown(result, rootCauseResults), "utf8");
 
 console.log(JSON.stringify({
@@ -90,6 +92,7 @@ console.log(JSON.stringify({
   statusCounts: result.statusCounts,
   clusterCount: result.clusters.length,
   rootCauseCount: rootCauseResults.length,
+  rejectedCaseCount: rejectedCases.length,
   jsonPath,
   csvPath,
   markdownPath,
@@ -98,13 +101,15 @@ console.log(JSON.stringify({
 }, null, 2));
 
 async function buildRootCauseResults(result, runner, previewDir) {
+  const activeDefinitions = rootCauseDefinitions.filter((definition) => !rejectedRootCauseIds.has(definition.id));
+  if (!activeDefinitions.length) return [];
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
   });
   try {
     const items = [];
-    for (const definition of rootCauseDefinitions) {
+    for (const definition of activeDefinitions) {
       const matchedCases = result.cases.filter((item) => item.coverage && item.coverage.status !== "pass" && definition.matches(item));
       if (!matchedCases.length) continue;
       const transitions = matchedCases.map((item) => {
@@ -170,16 +175,17 @@ async function buildRootCauseResults(result, runner, previewDir) {
 
 function buildRootCauseMarkdown(result, rootCauses) {
   const categorized = new Set();
-  for (const definition of rootCauseDefinitions) {
+  for (const definition of rootCauseDefinitions.filter((item) => !rejectedRootCauseIds.has(item.id))) {
     result.cases.filter((item) => item.coverage && item.coverage.status !== "pass" && definition.matches(item)).forEach((item) => categorized.add(item.id));
   }
   const auditableIssues = result.cases.filter((item) => item.coverage && item.coverage.status !== "pass");
+  const rejectedCases = getRejectedCases(result);
   const deferredLineWallCases = auditableIssues.filter((item) => item.coverage.rootCauseSignature.includes("|line-front|wall|"));
   const lines = [
     "# 本地扩声音箱覆盖根因与拟调整建议",
     "",
     `- 审计用例：${result.caseCount}；原始问题签名：${result.clusters.length}；通用根因：${rootCauses.length}`,
-    `- 已形成候选规则：${categorized.size}/${auditableIssues.length}例；暂缓自动建议：${deferredLineWallCases.length}例。`,
+    `- 已形成候选规则：${categorized.size}/${auditableIssues.length}例；用户已拒绝候选：${rejectedCases.length}例；暂缓自动建议：${deferredLineWallCases.length}例。`,
     `- 吸顶音箱连续大面积缺口：${auditableIssues.filter((item) => item.speakerProductOverride === "ceiling").length}例；相切小缝和衰减边缘不触发增配。`,
     `- 已确认短房线阵壁挂基准：${result.cases.filter((item) => item.coverage?.assessmentBasis === "approved-line-array-short-room-layout").length}例；保留原2/3/4只结构，不因网格边缘红区自动增配。`,
     "- 本轮只判定覆盖不全和会议坐席漏覆盖；多重覆盖率保留在JSON/CSV中，不参与失败判定、候选优选或规则建议。",
@@ -207,6 +213,14 @@ function buildRootCauseMarkdown(result, rootCauses) {
     );
   }
   lines.push(
+    "## 已拒绝候选",
+    "",
+    `- 案例：${rejectedCases.map((item) => item.id).join("、") || "无"}`,
+    "- 会议室对称壁挂重排和普通宽房壁挂增配均已由用户判定不通过。",
+    "- 保留失败案例，不再生成对应A/B图，不进入正式规则。",
+    ""
+  );
+  lines.push(
     "## 暂缓：线阵长房壁挂",
     "",
     `- 案例：${deferredLineWallCases.map((item) => item.id).join("、") || "无"}`,
@@ -216,6 +230,16 @@ function buildRootCauseMarkdown(result, rootCauses) {
     ""
   );
   return `${lines.join("\n")}\n`;
+}
+
+function getRejectedCases(result) {
+  const ids = new Set();
+  for (const definition of rootCauseDefinitions.filter((item) => rejectedRootCauseIds.has(item.id))) {
+    result.cases
+      .filter((item) => item.coverage && item.coverage.status !== "pass" && definition.matches(item))
+      .forEach((item) => ids.add(item.id));
+  }
+  return result.cases.filter((item) => ids.has(item.id));
 }
 
 function renderComparisonSvg(definition, comparison) {

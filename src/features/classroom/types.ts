@@ -297,6 +297,7 @@ export interface CustomerSolutionChoice<T extends string> {
 export interface CustomerSolutionSelection {
   microphone: CustomerSolutionChoice<Exclude<MicrophoneSolution, "auto">> & {
     lineArraySupported: boolean;
+    lineArrayCoverageWarning?: string;
   };
   speaker: CustomerSolutionChoice<Exclude<SpeakerProductOverride, "auto">> & {
     requiresSpecialReview: boolean;

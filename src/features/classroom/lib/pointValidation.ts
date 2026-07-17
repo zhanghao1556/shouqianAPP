@@ -48,9 +48,21 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
+  if (solutionSelection?.microphone.lineArrayCoverageWarning) {
+    findings.push({
+      code: "selection.line-array-online-coverage",
+      severity: "warning",
+      title: "线阵麦线上拾音覆盖",
+      internalMessage: `${solutionSelection.microphone.lineArrayCoverageWarning} 当前继续生成方案，线上拾音无法全覆盖。`,
+      customerMessage: "线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。",
+      sourceRefs: ["用户确认的线阵麦8m线上拾音与非阻断规则"]
+    });
+  }
+
   if (
     solutionSelection?.microphone.selected === "lineArray" &&
     solutionSelection.microphone.isNonRecommended &&
+    !solutionSelection.microphone.lineArrayCoverageWarning &&
     !solutionSelection.drawingBlocked
   ) {
     findings.push({
@@ -81,7 +93,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
       severity: "info",
       title: "阵麦覆盖口径",
       actual: `线上 ${capability.onlinePickupRadiusM}m / 扩声 ${capability.localAmplificationRadiusM}m`,
-      internalMessage: `当前继续按主轴判断数量；线上拾音为半径 ${capability.onlinePickupRadiusM}m，本地扩声与互动课堂为半径 ${capability.localAmplificationRadiusM}m。`,
+      internalMessage: `当前继续按主轴判断数量；线上拾音（含线上互动）为半径 ${capability.onlinePickupRadiusM}m，本地扩声为半径 ${capability.localAmplificationRadiusM}m。`,
       sourceRefs: ["用户确认的阵麦覆盖口径", "当前主轴数量算法"]
     });
   }
