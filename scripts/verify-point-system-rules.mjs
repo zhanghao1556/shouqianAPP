@@ -412,12 +412,64 @@ assert.equal(getOutputSpeakers(sixLineWall).filter((point) => point.speakerSigna
 const ceilingLineProfile = makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", speakerProductOverride: "ceiling" });
 const ceilingLine = generateEngineeringOutputs(ceilingLineProfile, { "CEILING-SPEAKER": 6 }, "yinyi");
 const ceilingArray = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "existingArray", speakerProductOverride: "ceiling" }), { "CEILING-SPEAKER": 6 }, "yinyi");
-assert.deepEqual(getOutputSpeakers(ceilingLine).map((point) => point.position), getOutputSpeakers(ceilingArray).map((point) => point.position));
+assert.deepEqual(getOutputSpeakers(ceilingLine).map((point) => point.position), [
+  { x: 2.25, y: 2 }, { x: 5.75, y: 2 },
+  { x: 2.25, y: 4 }, { x: 5.75, y: 4 },
+  { x: 2.25, y: 6 }, { x: 5.75, y: 6 }
+]);
+assert.deepEqual(getOutputSpeakers(ceilingArray).map((point) => point.position), [
+  { x: 2.25, y: 2 }, { x: 5.75, y: 2 },
+  { x: 2.25, y: 4.2 }, { x: 5.75, y: 4.2 },
+  { x: 2.25, y: 6 }, { x: 5.75, y: 6 }
+]);
 const firstCeilingY = Math.min(...getOutputSpeakers(ceilingLine).map((point) => point.position.y));
 assert.ok(getOutputSpeakers(ceilingLine).filter((point) => Math.abs(point.position.y - firstCeilingY) <= 0.35).every((point) => point.speakerSignalMode === "withoutLineArrayAfc"));
 assert.ok(getOutputSpeakers(ceilingLine).filter((point) => point.position.y - firstCeilingY > 0.35).every((point) => point.speakerSignalMode === "afc"));
 assert.equal(ceilingLine.connectionLines.filter((line) => line.speakerSignalMode === "withoutLineArrayAfc").length, 1);
 assert.equal(ceilingLine.connectionLines.filter((line) => line.speakerSignalMode === "afc").length, 1);
+
+const currentCeilingGapProfile = makeProfile({
+  length: 15.9,
+  width: 10.8,
+  height: 3.2,
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "ceiling",
+  podiumPosition: "unknown",
+  hasPodium: false
+});
+const currentCeilingGapOutputs = generateEngineeringOutputs(currentCeilingGapProfile, {}, "yinman");
+const currentCeilingGapSpeakers = getOutputSpeakers(currentCeilingGapOutputs);
+const currentCeilingGapMic = getOutputLineMic(currentCeilingGapOutputs);
+assert.equal(currentCeilingGapSpeakers.length, 14);
+assert.equal(currentCeilingGapOutputs.productSelection.find((item) => item.productId === "CEILING-SPEAKER")?.quantity, 14);
+const currentCenterAxisSpeakers = currentCeilingGapSpeakers.filter((point) => Math.abs(point.position.x - 5.4) <= 0.05);
+assert.deepEqual(currentCenterAxisSpeakers.map((point) => Math.round(point.position.y * 10) / 10), [5, 8, 10.9, 13.9]);
+assert.ok(currentCeilingGapMic);
+assert.ok(currentCenterAxisSpeakers.every((point) => Math.hypot(point.position.x - currentCeilingGapMic.position.x, point.position.y - currentCeilingGapMic.position.y) >= 2));
+assert.deepEqual(
+  pointSnapshot(currentCeilingGapSpeakers),
+  pointSnapshot(getOutputSpeakers(generateEngineeringOutputs(currentCeilingGapProfile, {}, "yinyi")))
+);
+
+const horizontalOddAxisProfile = makeProfile({
+  length: 10.8,
+  width: 15.9,
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "ceiling",
+  podiumPosition: "unknown",
+  hasPodium: false,
+  teachingWidth: 10
+});
+const horizontalOddAxisOutputs = generateEngineeringOutputs(horizontalOddAxisProfile, {}, "yinman");
+const horizontalOddAxisSpeakers = getOutputSpeakers(horizontalOddAxisOutputs);
+const horizontalOddAxisMic = getOutputLineMic(horizontalOddAxisOutputs);
+assert.equal(horizontalOddAxisSpeakers.length, 15);
+assert.ok(horizontalOddAxisMic);
+assert.ok(Math.min(...horizontalOddAxisSpeakers.map((point) => Math.hypot(point.position.x - horizontalOddAxisMic.position.x, point.position.y - horizontalOddAxisMic.position.y))) >= 1.5);
+assert.equal(horizontalOddAxisSpeakers.filter((point) => point.speakerSignalMode === "withoutLineArrayAfc").length, 5);
+console.log("PASS ceiling odd-axis full-grid preservation, point-level clearance, 1.5m line-array first-row exception and brand parity");
 
 const fullLine = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 6, width: 6, scope: "full", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
 assert.equal(getOutputLineMic(fullLine)?.pickupPattern, "full360");

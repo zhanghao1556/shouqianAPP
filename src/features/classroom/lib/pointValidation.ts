@@ -18,6 +18,7 @@ import { getArrayMicCentralAirRequiredClearance, getEffectiveAmplificationScope 
 const ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M = 1;
 const ARRAY_MIC_BODY_HALF_SIZE_M = 0.3;
 const MIC_SPEAKER_PREFERRED_DISTANCE_M = 2;
+const LINE_ARRAY_FIRST_ROW_DISTANCE_EXCEPTION_M = 1.5;
 const HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M = 3.5;
 
 export interface PointValidationInput {
@@ -312,9 +313,13 @@ function addMicSpeakerDistanceFinding(
   if (!nearest) return;
 
   const isTeacherMonitor = nearest.speaker.reason.includes("老师区") || nearest.speaker.reason.includes("监听点位");
-  const isCenterBackfill = isApprovedCenterBackfill(profile, nearest.speaker, mics);
+  const isCenterBackfill = nearest.speaker.reason.includes("中心列覆盖回填") || isApprovedCenterBackfill(profile, nearest.speaker, mics);
+  const isLineArrayFirstRowException =
+    nearest.mic.pickupKind === "lineArray" &&
+    nearest.speaker.speakerSignalMode === "withoutLineArrayAfc" &&
+    nearest.distance >= LINE_ARRAY_FIRST_ROW_DISTANCE_EXCEPTION_M;
   const belowPreferred = nearest.distance < MIC_SPEAKER_PREFERRED_DISTANCE_M;
-  const exception = belowPreferred && (isTeacherMonitor || isCenterBackfill);
+  const exception = belowPreferred && (isTeacherMonitor || isCenterBackfill || isLineArrayFirstRowException);
   findings.push({
     code: "speaker.mic-distance",
     severity: belowPreferred && !exception ? "warning" : "info",
@@ -322,7 +327,7 @@ function addMicSpeakerDistanceFinding(
     actual: `${nearest.distance.toFixed(1)}m`,
     limit: `${MIC_SPEAKER_PREFERRED_DISTANCE_M}m`,
     internalMessage: exception
-      ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，采用${isTeacherMonitor ? "老师区监听" : "中心列覆盖回填"}例外，点位保持不变。`
+      ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，采用${isLineArrayFirstRowException ? "线阵首排1.5m" : isTeacherMonitor ? "老师区监听" : "中心列覆盖回填"}例外，点位保持不变。`
       : belowPreferred
         ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，未识别到已确认例外，需要现场复核。`
         : `最近设备为 ${nearest.speaker.label} 与 ${nearest.mic.label}，距离 ${nearest.distance.toFixed(1)}m。`,

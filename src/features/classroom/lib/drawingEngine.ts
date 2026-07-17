@@ -27,8 +27,6 @@ const ARRAY_MIC_SUPPLEMENT_LAYOUT_BACK_WALL_OFFSET_M = 1;
 const ARRAY_MIC_SUPPLEMENT_BACK_WALL_BASE_DISTANCE_M = 2;
 const MEETING_ARRAY_MIC_MAX_AMPLIFICATION_SPACING_M = 8;
 const MEETING_ARRAY_MIC_MAX_ONLINE_PICKUP_SPACING_M = 10;
-const CENTER_COLUMN_SPEAKER_BETWEEN_MIC_GAP_TRIGGER_M = 3.5;
-const CENTER_COLUMN_SPEAKER_WALL_GAP_TRIGGER_M = 4;
 const AUDITORIUM_WIDE_STAGE_ARRAY_MIC_WIDTH_M = 11;
 const AUDITORIUM_STAGE_ARRAY_MIC_OUTWARD_OFFSET_M = 0.5;
 const WALL_SPEAKER_COVERAGE_AXIS_M = 3.5;
@@ -92,6 +90,8 @@ type WallSpeakerPosition = Point & {
   lineArrayFillSide?: "left" | "right";
   lineArrayTargetXRatio?: number;
   lineArrayPlacementReason?: string;
+  ceilingPlacementReason?: string;
+  forceWithoutLineArrayAfc?: boolean;
 };
 
 export const getRoomArea = (profile: ClassroomProfile) =>
@@ -129,6 +129,7 @@ export interface PointQuantityTargets {
   lineArrayContext?: {
     mode: "front" | "full";
     position: Point;
+    positions?: Point[];
   };
 }
 
@@ -198,7 +199,7 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
     const speakerCount = Math.max(1, Math.round(targets.speakerCount ?? defaultSpeakerCount));
     const speakerPositions: WallSpeakerPosition[] = usesWallSpeaker
       ? getWallSpeakerPositions(profile, speakerCount, primaryArrayMicY, lineArrayFrontContext)
-      : getCeilingSpeakerPositions(profile, speakerCount, points.filter((point) => point.type === "arrayMic"), Boolean(targets.preserveSpeakerCount));
+      : getCeilingSpeakerPositions(profile, speakerCount, points.filter((point) => point.type === "arrayMic"), targets.lineArrayContext);
     const firstSpeakerRowY = Math.min(...speakerPositions.map((position) => position.y));
     const scopeText = getEffectiveAmplificationScope(profile) === "podium" ? (profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声") : "全场扩声";
     const ceilingSpeakerHeight = getCeilingSpeakerInstallHeight(profile);
@@ -268,11 +269,14 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
       };
     }).map((point, index) => {
       const position = speakerPositions[index];
-      if (!lineArrayFrontContext || !position) return point;
+      if (!position) return point;
+      const placementText = [position.ceilingPlacementReason, position.lineArrayPlacementReason].filter(Boolean).join(" ");
+      if (!lineArrayFrontContext) {
+        return placementText ? { ...point, reason: `${point.reason} ${placementText}`.trim() } : point;
+      }
       const speakerSignalMode: GeneratedPoint["speakerSignalMode"] = usesWallSpeaker
         ? position.y <= 0.05 ? "withoutLineArrayAfc" : "afc"
-        : Math.abs(position.y - firstSpeakerRowY) <= 0.35 ? "withoutLineArrayAfc" : "afc";
-      const placementText = position.lineArrayPlacementReason ? `${position.lineArrayPlacementReason} ` : "";
+        : position.forceWithoutLineArrayAfc || Math.abs(position.y - firstSpeakerRowY) <= 0.35 ? "withoutLineArrayAfc" : "afc";
       return {
         ...point,
         speakerSignalMode,
@@ -1149,7 +1153,12 @@ const hasOnlinePickupNeed = (profile: ClassroomProfile) =>
 const shouldUseMeetingStyleCeilingSpeakerRules = (profile: ClassroomProfile) =>
   isMeetingScenario(profile.scenario) || (profile.scenario === "standardClassroom" && hasLocalAmplificationNeed(profile));
 
-const getCeilingSpeakerPositions = (profile: ClassroomProfile, count: number, arrayMics: GeneratedPoint[], preserveSpeakerCount = false) => {
+const getCeilingSpeakerPositions = (
+  profile: ClassroomProfile,
+  count: number,
+  arrayMics: GeneratedPoint[],
+  lineArrayContext?: PointQuantityTargets["lineArrayContext"]
+) => {
   const columns = Math.max(1, Math.min(count, getCeilingSpeakerColumnCount(profile)));
   const firstRowCount = getCeilingSpeakerFirstRowCount(profile, count, columns);
   const rowCounts = getCeilingSpeakerRowCounts(count, columns, firstRowCount);
@@ -1173,31 +1182,13 @@ const getCeilingSpeakerPositions = (profile: ClassroomProfile, count: number, ar
       };
     })
   );
-  const micRowsForAvoidance = getArrayMicRowsForCeilingSpeakerRemoval(profile, arrayMics);
-  const useCenterColumnGapAvoidance =
-    profile.roomGeometry.length > profile.roomGeometry.width &&
-    (columns === 3 || columns === 5) &&
-    shouldUseCenterColumnArrayMicGapAvoidance(profile, micRowsForAvoidance);
-  const useCenterRowGapAvoidance = profile.roomGeometry.width > profile.roomGeometry.length && (rows === 3 || rows === 5);
-  const arrangedLayout =
-    columns === 3 && shouldRemoveFirstRowCenterCeilingSpeaker(profile, micRowsForAvoidance)
-      ? removeFirstRowCenterCeilingSpeaker(profile, layout, columns)
-      : useCenterRowGapAvoidance
-      ? avoidCenterRowArrayMicConflict(profile, layout, arrayMics)
-      : useCenterColumnGapAvoidance
-      ? avoidCenterColumnArrayMicConflict(profile, layout, micRowsForAvoidance.flatMap((row) => row.mics))
-      : columns === 3 && profile.roomGeometry.length > profile.roomGeometry.width
-        ? removeCeilingSpeakersNearArrayMicRows(profile, layout, columns, arrayMics)
-        : layout;
-  const centerColumnSafeLayout =
-    useCenterColumnGapAvoidance || useCenterRowGapAvoidance
-      ? arrangedLayout
-      : removeNearestCenterColumnCeilingSpeakerNearArrayMic(profile, arrangedLayout, arrayMics);
-  const finalLayout =
-    preserveSpeakerCount && centerColumnSafeLayout.length !== count
-      ? restoreManualCeilingSpeakerCount(profile, centerColumnSafeLayout, count)
-      : centerColumnSafeLayout;
-  return finalLayout.map((target) => getCeilingSpeakerPositionAwayFromMics(profile, target, arrayMics));
+  const positions = layout.map((target) => getCeilingSpeakerPositionAwayFromMics(profile, target, arrayMics));
+  const micPositions = lineArrayContext?.positions?.length
+    ? lineArrayContext.positions
+    : lineArrayContext
+      ? [lineArrayContext.position]
+      : arrayMics.map((mic) => mic.position);
+  return adjustCeilingSpeakerPositionsForMicClearance(profile, positions, micPositions, lineArrayContext);
 };
 
 const getCeilingSpeakerFirstRowCount = (profile: ClassroomProfile, count: number, columns: number) => {
@@ -1223,240 +1214,10 @@ const shouldLimitClassroomFirstCeilingSpeakerRowToTwo = (profile: ClassroomProfi
 const getClassroomFirstCeilingSpeakerRowReduction = (profile: ClassroomProfile, columns: number) =>
   shouldLimitClassroomFirstCeilingSpeakerRowToTwo(profile) ? Math.max(0, columns - 2) : 0;
 
-const removeNearestCenterColumnCeilingSpeakerNearArrayMic = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  arrayMics: GeneratedPoint[]
-) => {
-  if (profile.roomGeometry.length <= profile.roomGeometry.width) return layout;
-  if (!layout.length || !arrayMics.length) return layout;
-  const xColumns = Array.from(new Set(layout.map((item) => oneDecimal(item.xRatio)))).sort((a, b) => a - b);
-  if (xColumns.length !== 3 && xColumns.length !== 5) return layout;
-
-  const centerXRatio = xColumns.reduce((best, xRatio) => (Math.abs(xRatio - 0.5) < Math.abs(best - 0.5) ? xRatio : best), xColumns[0] ?? 0.5);
-  const centerMics = arrayMics.filter((mic) => isArrayMicInCenterCeilingColumn(profile, mic, xColumns, centerXRatio));
-  if (!centerMics.length) return layout;
-
-  const centerCandidates = layout
-    .map((item, index) => ({ item, index }))
-    .filter(({ item }) => Math.abs(oneDecimal(item.xRatio) - centerXRatio) <= 0.01);
-  if (!centerCandidates.length) return layout;
-
-  const nearest = centerCandidates.reduce(
-    (best, candidate) => {
-      const speakerPosition = getCeilingSpeakerPositionAwayFromMics(profile, candidate.item, arrayMics);
-      const nearestDistance = centerMics.reduce((min, mic) => Math.min(min, getDistance(speakerPosition, mic.position)), Number.POSITIVE_INFINITY);
-      return nearestDistance < best.distance ? { index: candidate.index, distance: nearestDistance } : best;
-    },
-    { index: -1, distance: Number.POSITIVE_INFINITY }
-  );
-  if (nearest.index < 0 || nearest.distance >= MIN_CEILING_SPEAKER_TO_MIC_DISTANCE) return layout;
-  return layout.filter((_, index) => index !== nearest.index);
-};
-
-const isArrayMicInCenterCeilingColumn = (
-  profile: ClassroomProfile,
-  mic: GeneratedPoint,
-  xColumns: number[],
-  centerXRatio: number
-) => {
-  if (profile.roomGeometry.width <= 0) return false;
-  const micXRatio = mic.position.x / profile.roomGeometry.width;
-  const nearestColumn = xColumns.reduce((best, xRatio) => (Math.abs(xRatio - micXRatio) < Math.abs(best - micXRatio) ? xRatio : best), xColumns[0] ?? 0.5);
-  return Math.abs(nearestColumn - centerXRatio) <= 0.01;
-};
-
-const restoreManualCeilingSpeakerCount = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  targetCount: number
-) => {
-  if (!layout.length || layout.length === targetCount) return layout;
-  if (layout.length > targetCount) return layout.slice(0, targetCount);
-  const rows = new Map<number, Array<{ xRatio: number; yRatio: number }>>();
-  layout.forEach((item) => {
-    const rowKey = oneDecimal(item.yRatio);
-    const row = rows.get(rowKey) ?? [];
-    row.push(item);
-    rows.set(rowKey, row);
-  });
-
-  const sortedRows = Array.from(rows.entries()).sort(([a], [b]) => a - b);
-  let remainingToAdd = targetCount - layout.length;
-  while (remainingToAdd > 0) {
-    const lastRow = sortedRows[sortedRows.length - 1];
-    if (!lastRow) break;
-    lastRow[1].push({ xRatio: 0.5, yRatio: lastRow[0] });
-    remainingToAdd -= 1;
-  }
-
-  return sortedRows.flatMap(([, row]) =>
-    row
-      .sort((a, b) => a.xRatio - b.xRatio)
-      .map((item, column) => ({
-        xRatio: getCeilingSpeakerXRatio(profile, column, row.length),
-        yRatio: item.yRatio
-      }))
-  );
-};
-
-const shouldRemoveFirstRowCenterCeilingSpeaker = (profile: ClassroomProfile, micRows: Array<{ y: number; mics: GeneratedPoint[] }>) =>
-  isClassroomScenario(profile.scenario) &&
-  !shouldUseMeetingStyleCeilingSpeakerRules(profile) &&
-  getEffectiveAmplificationScope(profile) === "podium" &&
-  micRows.length === 1 &&
-  micRows[0]?.mics.length === 1;
-
-const removeFirstRowCenterCeilingSpeaker = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  columns: number
-) => {
-  const firstRowCount = Math.min(columns, layout.length);
-  if (firstRowCount < 3) return layout;
-  const centerOffset = Math.floor(firstRowCount / 2);
-  return reflowCeilingSpeakerRowsAfterRemoval(profile, layout, columns, new Set([centerOffset]));
-};
-
 const shouldUseCenterColumnArrayMicGapAvoidance = (profile: ClassroomProfile, micRows: Array<{ y: number; mics: GeneratedPoint[] }>) => {
   if (!micRows.length || micRows.some((row) => row.mics.length !== 1)) return false;
   if (isMeetingScenario(profile.scenario) || shouldUseMeetingStyleCeilingSpeakerRules(profile)) return true;
   return isClassroomScenario(profile.scenario) && getEffectiveAmplificationScope(profile) === "full";
-};
-
-const avoidCenterColumnArrayMicConflict = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  sourceMics: GeneratedPoint[]
-) => {
-  if (!sourceMics.length) return layout;
-
-  const xColumns = Array.from(new Set(layout.map((item) => oneDecimal(item.xRatio)))).sort((a, b) => a - b);
-  const centerXRatio = xColumns.reduce((best, xRatio) => (Math.abs(xRatio - 0.5) < Math.abs(best - 0.5) ? xRatio : best), xColumns[0] ?? 0.5);
-  const centerIndexes = layout
-    .map((item, index) => ({ item, index }))
-    .filter(({ item }) => Math.abs(oneDecimal(item.xRatio) - centerXRatio) <= 0.01)
-    .map(({ index }) => index);
-  if (!centerIndexes.length) return layout;
-
-  const centerColumnLayout = getCenterColumnSpeakerYRatiosByArrayMicGaps(profile, sourceMics)
-    .map((yRatio) => ({
-      xRatio: centerXRatio,
-      yRatio
-    }));
-  const centerIndexSet = new Set(centerIndexes);
-  return [...layout.filter((_, index) => !centerIndexSet.has(index)), ...centerColumnLayout].sort((a, b) => a.yRatio - b.yRatio || a.xRatio - b.xRatio);
-};
-
-const avoidCenterRowArrayMicConflict = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  sourceMics: GeneratedPoint[]
-) => {
-  if (!sourceMics.length) return layout;
-
-  const yRows = Array.from(new Set(layout.map((item) => oneDecimal(item.yRatio)))).sort((a, b) => a - b);
-  if (yRows.length !== 3 && yRows.length !== 5) return layout;
-  const centerYRatio = yRows.reduce((best, yRatio) => (Math.abs(yRatio - 0.5) < Math.abs(best - 0.5) ? yRatio : best), yRows[0] ?? 0.5);
-  const centerIndexes = layout
-    .map((item, index) => ({ item, index }))
-    .filter(({ item }) => Math.abs(oneDecimal(item.yRatio) - centerYRatio) <= 0.01)
-    .map(({ index }) => index);
-  if (!centerIndexes.length) return layout;
-
-  const centerRowLayout = getCenterRowSpeakerXRatiosByArrayMicGaps(profile, sourceMics)
-    .map((xRatio) => ({
-      xRatio,
-      yRatio: centerYRatio
-    }));
-  const centerIndexSet = new Set(centerIndexes);
-  return [...layout.filter((_, index) => !centerIndexSet.has(index)), ...centerRowLayout].sort((a, b) => a.yRatio - b.yRatio || a.xRatio - b.xRatio);
-};
-
-const getCenterColumnSpeakerYRatiosByArrayMicGaps = (profile: ClassroomProfile, arrayMics: GeneratedPoint[]) => {
-  const { length } = profile.roomGeometry;
-  if (length <= 0) return [];
-
-  const anchors = Array.from(new Set(arrayMics.map((mic) => oneDecimal(clamp(mic.position.y, 0, length))))).sort((a, b) => a - b);
-  if (!anchors.length) return [];
-
-  const yValues: number[] = [];
-  if (anchors[0] >= CENTER_COLUMN_SPEAKER_WALL_GAP_TRIGGER_M) {
-    yValues.push(anchors[0] / 2);
-  }
-  anchors.slice(1).forEach((anchor, index) => {
-    const previousAnchor = anchors[index];
-    if (anchor - previousAnchor >= CENTER_COLUMN_SPEAKER_BETWEEN_MIC_GAP_TRIGGER_M) {
-      yValues.push((previousAnchor + anchor) / 2);
-    }
-  });
-  const lastAnchor = anchors[anchors.length - 1];
-  if (length - lastAnchor >= CENTER_COLUMN_SPEAKER_WALL_GAP_TRIGGER_M) {
-    yValues.push((lastAnchor + length) / 2);
-  }
-
-  return yValues.map((y) => clamp(y, 0, length) / length);
-};
-
-const getCenterRowSpeakerXRatiosByArrayMicGaps = (profile: ClassroomProfile, arrayMics: GeneratedPoint[]) => {
-  const { width } = profile.roomGeometry;
-  if (width <= 0) return [];
-
-  const anchors = Array.from(new Set(arrayMics.map((mic) => oneDecimal(clamp(mic.position.x, 0, width))))).sort((a, b) => a - b);
-  if (!anchors.length) return [];
-
-  const xValues: number[] = [];
-  if (anchors[0] >= CENTER_COLUMN_SPEAKER_WALL_GAP_TRIGGER_M) {
-    xValues.push(anchors[0] / 2);
-  }
-  anchors.slice(1).forEach((anchor, index) => {
-    const previousAnchor = anchors[index];
-    if (anchor - previousAnchor >= CENTER_COLUMN_SPEAKER_BETWEEN_MIC_GAP_TRIGGER_M) {
-      xValues.push((previousAnchor + anchor) / 2);
-    }
-  });
-  const lastAnchor = anchors[anchors.length - 1];
-  if (width - lastAnchor >= CENTER_COLUMN_SPEAKER_WALL_GAP_TRIGGER_M) {
-    xValues.push((lastAnchor + width) / 2);
-  }
-
-  return xValues.map((x) => clamp(x, 0, width) / width);
-};
-
-const removeCeilingSpeakersNearArrayMicRows = (
-  profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  columns: number,
-  arrayMics: GeneratedPoint[]
-) => {
-  const micRows = getArrayMicRowsForCeilingSpeakerRemoval(profile, arrayMics);
-  if (!micRows.length) return layout;
-
-  const removedIndexes = new Set<number>();
-  if (micRows.length === 1 && !isMeetingScenario(profile.scenario)) {
-    const firstRowCount = Math.min(columns, layout.length);
-    const primaryMic = micRows[0]?.mics[0]?.position ?? { x: profile.roomGeometry.width / 2, y: getPrimaryArrayMicY(profile) };
-    const firstRowIndexes = Array.from({ length: firstRowCount }, (_, index) => index);
-    const removeIndex = firstRowIndexes.reduce((best, index) => {
-      const bestX = profile.roomGeometry.width * layout[best].xRatio;
-      const currentX = profile.roomGeometry.width * layout[index].xRatio;
-      return Math.abs(currentX - primaryMic.x) < Math.abs(bestX - primaryMic.x) ? index : best;
-    }, firstRowIndexes[0]);
-    removedIndexes.add(removeIndex);
-  } else {
-    micRows.forEach((micRow) => {
-      const availableIndexes = layout.map((_, index) => index).filter((index) => !removedIndexes.has(index));
-      if (!availableIndexes.length) return;
-      const removeIndex = availableIndexes.reduce((best, index) => {
-        const bestDistance = getNearestDistanceToMicRow(profile, layout[best], micRow.mics);
-        const currentDistance = getNearestDistanceToMicRow(profile, layout[index], micRow.mics);
-        return currentDistance < bestDistance ? index : best;
-      }, availableIndexes[0]);
-      removedIndexes.add(removeIndex);
-    });
-  }
-
-  return reflowCeilingSpeakerRowsAfterRemoval(profile, layout, columns, removedIndexes);
 };
 
 const getArrayMicRowsForCeilingSpeakerRemoval = (profile: ClassroomProfile, arrayMics: GeneratedPoint[]) => {
@@ -1483,35 +1244,77 @@ const getArrayMicRowsForCeilingSpeakerRemoval = (profile: ClassroomProfile, arra
     .sort((a, b) => a.y - b.y);
 };
 
-const getNearestDistanceToMicRow = (profile: ClassroomProfile, target: { xRatio: number; yRatio: number }, mics: GeneratedPoint[]) => {
-  const targetPosition = {
-    x: profile.roomGeometry.width * target.xRatio,
-    y: profile.roomGeometry.length * target.yRatio
-  };
-  return mics.reduce((nearest, mic) => Math.min(nearest, getDistance(targetPosition, mic.position)), Number.POSITIVE_INFINITY);
+const adjustCeilingSpeakerPositionsForMicClearance = (
+  profile: ClassroomProfile,
+  positions: WallSpeakerPosition[],
+  micPositions: Point[],
+  lineArrayContext?: PointQuantityTargets["lineArrayContext"]
+) => {
+  if (!positions.length || !micPositions.length) return positions;
+  const firstRowY = Math.min(...positions.map((position) => position.y));
+  return positions.map((position, index) => {
+    const usesLineArrayFirstRowException =
+      lineArrayContext?.mode === "front" && Math.abs(position.y - firstRowY) <= 0.35;
+    const minimumDistance = usesLineArrayFirstRowException
+      ? TEACHER_MONITOR_CEILING_SPEAKER_SOFT_MIC_DISTANCE
+      : MIN_CEILING_SPEAKER_TO_MIC_DISTANCE;
+    const nearestDistance = getNearestPointDistance(position, micPositions);
+    if (nearestDistance >= minimumDistance) return position;
+
+    const candidate = findNearestCeilingSpeakerClearancePosition(profile, positions, index, micPositions, minimumDistance);
+    if (candidate) {
+      return {
+        ...candidate,
+        forceWithoutLineArrayAfc: usesLineArrayFirstRowException || undefined,
+        ceilingPlacementReason: `与麦克风实际距离不足，吸顶音箱仅做单点中轴移位，自动覆盖数量保持 ${positions.length} 只。`
+      };
+    }
+    return {
+      ...position,
+      ceilingPlacementReason: `中心列覆盖回填点位按已确认例外保留，最近麦箱距离 ${oneDecimal(nearestDistance)}m，自动覆盖数量保持 ${positions.length} 只。`
+    };
+  });
 };
 
-const reflowCeilingSpeakerRowsAfterRemoval = (
+const findNearestCeilingSpeakerClearancePosition = (
   profile: ClassroomProfile,
-  layout: Array<{ xRatio: number; yRatio: number }>,
-  columns: number,
-  removedIndexes: Set<number>
+  positions: WallSpeakerPosition[],
+  targetIndex: number,
+  micPositions: Point[],
+  minimumDistance: number
 ) => {
-  const removedRows = new Set(Array.from(removedIndexes, (index) => Math.floor(index / columns)));
-  const result: Array<{ xRatio: number; yRatio: number }> = [];
-  for (let row = 0; row * columns < layout.length; row += 1) {
-    const rowStartIndex = row * columns;
-    const rowItems = layout.slice(rowStartIndex, rowStartIndex + columns).filter((_, offset) => !removedIndexes.has(rowStartIndex + offset));
-    const shouldReflow = removedRows.has(row);
-    rowItems.forEach((item, column) => {
-      result.push({
-        xRatio: shouldReflow ? getCeilingSpeakerXRatio(profile, column, rowItems.length) : item.xRatio,
-        yRatio: item.yRatio
-      });
-    });
+  const original = positions[targetIndex];
+  if (!original) return undefined;
+  const bounds = getCeilingSpeakerWallBounds(profile);
+  const primaryAxis: keyof Point = profile.roomGeometry.length >= profile.roomGeometry.width ? "y" : "x";
+  const axes: Array<keyof Point> = [primaryAxis, primaryAxis === "y" ? "x" : "y"];
+
+  for (const axis of axes) {
+    const crossAxis: keyof Point = axis === "y" ? "x" : "y";
+    const minAxis = axis === "y" ? bounds.minY : bounds.minX;
+    const maxAxis = axis === "y" ? bounds.maxY : bounds.maxX;
+    for (let offset = 0.1; offset <= MIN_CEILING_SPEAKER_TO_MIC_DISTANCE + 0.5; offset += 0.1) {
+      for (const direction of [1, -1]) {
+        const axisValue = oneDecimal(original[axis] + offset * direction);
+        if (axisValue < minAxis || axisValue > maxAxis) continue;
+        const candidate: WallSpeakerPosition = { ...original, [axis]: axisValue };
+        if (getNearestPointDistance(candidate, micPositions) < minimumDistance) continue;
+        if (positions.some((position, index) => index !== targetIndex && getDistance(position, candidate) < 0.8)) continue;
+        const sameTrackAxisValues = positions
+          .filter((position, index) => index !== targetIndex && Math.abs(position[crossAxis] - candidate[crossAxis]) <= 0.15)
+          .map((position) => position[axis])
+          .concat(candidate[axis])
+          .sort((a, b) => a - b);
+        if (sameTrackAxisValues.slice(1).some((value, index) => value - sameTrackAxisValues[index] > CEILING_SPEAKER_MAX_SPACING_M + 0.05)) continue;
+        return candidate;
+      }
+    }
   }
-  return result;
+  return undefined;
 };
+
+const getNearestPointDistance = (point: Point, targets: Point[]) =>
+  targets.reduce((nearest, target) => Math.min(nearest, getDistance(point, target)), Number.POSITIVE_INFINITY);
 
 const getCeilingSpeakerXRatio = (profile: ClassroomProfile, column: number, columns: number) => {
   return getCeilingSpeakerHorizontalAxisRatio(profile.roomGeometry.width, column, columns);

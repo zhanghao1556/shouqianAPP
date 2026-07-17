@@ -1885,3 +1885,13 @@ PowerShell reminder:
 - Do not treat structural package checks as release completion. Both branded final HTML files must also pass fresh-context business parity and Android/iOS mobile checks.
 - Inspect ZIP entries with .NET Unicode APIs and verify the actual bytes against the 5MB ceiling; terminal filename rendering alone is not reliable evidence for Chinese package contents.
 - Keep the generated branded directories and ZIPs together in the release checkpoint, preserve earlier same-day package numbers, and leave GitHub synchronization to the explicit upload workflow.
+
+### 2026-07-17 ceiling-speaker center-axis avoidance guardrail
+
+- Ceiling-speaker microphone avoidance must start from the complete coverage-derived grid. Never delete a whole 3/5-column or 3/5-row center axis merely because a microphone maps to that axis, and never let automatic avoidance silently reduce the selected quantity.
+- Test actual Euclidean point-to-microphone distance before moving anything. Safe center-axis speakers stay in their regular grid coordinates; only a genuinely conflicting point may move.
+- A local move must retain the current wall bounds and 3.6m same-track maximum spacing. Try the room's primary axis first, then the other axis; preserving coverage and count is more important than preserving the original row identity.
+- Pass real line-array coordinates into shared placement logic, especially for two-line-array plans. Generic array-microphone placeholders are not valid clearance references after the product family has changed.
+- A front-line-array first-row ceiling speaker may use the confirmed 1.5m minimum only while it retains the internal no-line-array-AFC state. If it moves out of the geometric first row, preserve that signal state structurally instead of re-inferring it from the final coordinate.
+- Keep array-microphone and line-array distance behavior separately asserted: a safe line-array grid point may remain where an array-microphone point must move to satisfy 2m. Do not restore an equality snapshot that erases this approved distinction.
+- Lock both orientations in regression tests. A vertical center-column fix is incomplete unless the rotated center-row case also preserves quantity, clearance and signal state.

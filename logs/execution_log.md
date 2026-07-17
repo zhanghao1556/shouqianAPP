@@ -6539,3 +6539,20 @@ Boundary:
 - Android Chrome / Pixel 7 and iOS Safari / iPhone 14 mobile release checks passed for both brands, including clean first-open inputs, inline assets, release marker, correct title, no horizontal overflow and no runtime errors.
 - The fresh local-entry smoke suite passed 5174, 5175, 5176, 5177 and 5180 for HTTP response, rendering, brand/mobile scope, overflow and runtime errors.
 - The release remains local. No GitHub push was performed; synchronization waits for the desktop `上传到GitHub.cmd` workflow or a later explicit push request.
+
+## 2026-07-17 ceiling-speaker odd-axis point avoidance correction
+
+- User reported that line-array plans switched to ceiling speakers could lose the full middle column or row when the ceiling grid used 3/5 columns or 3/5 rows, leaving a visible uncovered center band.
+- Root cause was the shared ceiling-speaker avoidance branch: once a microphone belonged to the odd grid's center axis, it removed the complete center axis and rebuilt only a small number of midpoint speakers from microphone/wall gaps. It did not first test whether each original speaker was actually within the 2m microphone clearance, and automatic avoidance could silently reduce the coverage-derived speaker count.
+- Before formal changes, generated `work/rule-previews/line-array-ceiling-center-axis-preview-20260717.png` for the live 10.8m x 15.9m Yinman case. The preview compared the current 11-speaker result with the proposed 14-speaker full grid and was explicitly marked as not yet written into production rules.
+- User confirmed all three proposed boundaries:
+  - automatic microphone avoidance must never reduce the ceiling-speaker quantity produced by the coverage algorithm;
+  - the first line-array ceiling-speaker row may use the confirmed 1.5m distance exception;
+  - the no-whole-axis-deletion rule applies to both array microphones and line-array microphones, with their existing distance exceptions retained.
+- Replaced whole-axis deletion with point-level Euclidean clearance handling. The complete coverage grid is generated first; safe points stay fixed, only an actually conflicting point searches for the nearest valid move, and the generated count remains unchanged. Candidate movement tries the room's primary axis first and then the other axis while retaining the existing 3.6m same-track maximum spacing.
+- Line-array generation now passes the actual one/two line-array coordinates into the ceiling avoidance engine instead of relying on the generic pre-conversion microphone points. If a first-row point must move off the geometric first row, it retains the internal `withoutLineArrayAfc` state.
+- The unified point validator now recognizes a line-array first-row 1.5m exception only when the microphone is a line array, the speaker is internally marked `withoutLineArrayAfc`, and the measured distance is at least 1.5m. Customer outputs continue to hide all AFC differences before version 4.0.
+- The first focused regression run stopped on the old assertion that line-array and array-microphone ceiling points must be identical. This assertion encoded the superseded distance behavior: the line-array plan now keeps the safe regular row while the array-microphone plan still moves the truly conflicting row to 2m. The test was replaced with explicit expected positions for both approved behaviors.
+- Added regression coverage for the live 10.8m x 15.9m vertical odd-axis case, the rotated 15.9m x 10.8m horizontal odd-axis case, 14/15-speaker count preservation, center-axis positions, 2m standard clearance, 1.5m line-array first-row clearance, AFC state retention and Yinyi/Yinman parity.
+- Verification passed: strict TypeScript with unused checks, the complete point-system suite, production build and `git diff --check`.
+- Fresh 5180 browser verification preserved the user's draft and showed 14 ceiling speakers, four restored middle-axis points behind the first row, uniform approximately 3m longitudinal groups, one expansion amplifier, no framework overlay and no console warnings/errors.

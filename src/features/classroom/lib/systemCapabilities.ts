@@ -72,22 +72,23 @@ export function generateBrandEngineeringPoints(
 ): GeneratedPoint[] {
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.selected) {
+    const { activityZone } = lineArray;
+    const y = lineArray.position.y;
+    const lineArrayPositions = Array.from({ length: lineArray.count }, (_, index) => ({
+      x: lineArray.count === 1 ? lineArray.position.x : activityZone.left + activityZone.width * (index === 0 ? 0.25 : 0.75),
+      y
+    }));
     const generated = generateEngineeringPoints(profile, {
       ...targets,
       arrayMicCount: lineArray.count,
-      lineArrayContext: { mode: lineArray.mode, position: lineArray.position }
+      lineArrayContext: { mode: lineArray.mode, position: lineArray.position, positions: lineArrayPositions }
     });
     const baseMic = generated.find((point) => point.type === "arrayMic");
-    const { activityZone } = lineArray;
-    const y = lineArray.position.y;
     const lineMics = Array.from({ length: lineArray.count }, (_, index): GeneratedPoint => ({
       ...(baseMic ?? { id: "line-array-mic", type: "arrayMic" as const, label: "智能线阵麦克风", position: { x: profile.roomGeometry.width / 2, y }, reason: "" }),
       id: `line-array-mic-${index + 1}`,
       label: lineArray.count > 1 ? `智能线阵麦克风 ${index + 1}` : "智能线阵麦克风",
-      position: {
-        x: lineArray.count === 1 ? lineArray.position.x : activityZone.left + activityZone.width * (index === 0 ? 0.25 : 0.75),
-        y
-      },
+      position: lineArrayPositions[index] ?? lineArray.position,
       coverageRadius: LINE_ARRAY_FULL_RADIUS_M,
       pickupKind: "lineArray",
       pickupPattern: lineArray.mode === "full" ? "full360" : "front180",
