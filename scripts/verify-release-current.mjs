@@ -20,7 +20,8 @@ const brands = [
       "yinman-audio-processor.png",
       "yinman-hanging-mic.png",
       "yinman-small-disc-mic.png",
-      "yinman-audio-extender.png"
+      "yinman-audio-extender.png",
+      "yinman-line-array-converter.png"
     ]
   },
   {

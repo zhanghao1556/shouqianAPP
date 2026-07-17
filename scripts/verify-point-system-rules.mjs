@@ -20,6 +20,9 @@ import {
   SMALL_DISC_03_PRODUCT_ID,
   SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
   SMALL_DISC_LINK_SEGMENT_LIMIT_M,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_RECORDING_NAME,
+  SMALL_DISC_SLAVE_NAME,
   SMALL_DISC_USB_CABLE_PRODUCT_ID
 } from "./src/features/classroom/lib/yinmanSmallDiscRules.ts";
 import {
@@ -677,6 +680,8 @@ assert.equal(smallDisc01.solutionSelection.microphone.selected, "smallDisc01");
 assert.notEqual(smallDisc01.solutionSelection.microphone.recommended, "smallDisc01");
 assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_01_PRODUCT_ID)?.quantity, 1);
 assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity, 3);
+assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_01_PRODUCT_ID)?.name, SMALL_DISC_MAIN_NAME);
+assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.name, SMALL_DISC_SLAVE_NAME);
 assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID)?.quantity, 1);
 assert.equal(smallDisc01.productSelection.some((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID), false);
 assert.equal(smallDisc01.productSelection.some((item) => item.category === "processor" && item.quantity > 0), false);
@@ -686,6 +691,7 @@ assert.equal(smallDisc01.productSelection.find((item) => item.category === "ampl
 assert.equal(smallDisc01Points.length, 4);
 assert.equal(smallDisc01Points.filter((point) => point.pickupKind === "smallDisc01").length, 1, JSON.stringify(smallDisc01Points.map((point) => ({ id: point.id, pickupKind: point.pickupKind }))));
 assert.equal(smallDisc01Points.filter((point) => point.pickupKind === "smallDisc02").length, 3);
+assert.ok(smallDisc01Points.every((point) => point.label.startsWith(point.pickupKind === "smallDisc01" ? SMALL_DISC_MAIN_NAME : SMALL_DISC_SLAVE_NAME)));
 assert.ok(smallDisc01Points.every((point) => point.coverageRadius === 3 && point.installationMode === "hanging"));
 assert.equal(smallDisc01.connectionLines.filter((line) => line.id.startsWith("small-disc-01-cascade-")).length, 3);
 assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-usb-host" && line.cableType.includes("客户自购")));
@@ -721,6 +727,7 @@ const smallDisc03 = generateEngineeringOutputs(makeProfile({
 assert.equal(smallDisc03.solutionSelection.microphone.recommended, "smallDisc03");
 assert.equal(smallDisc03.solutionSelection.microphone.selected, "smallDisc03");
 assert.equal(smallDisc03.productSelection.find((item) => item.productId === SMALL_DISC_03_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc03.productSelection.find((item) => item.productId === SMALL_DISC_03_PRODUCT_ID)?.name, SMALL_DISC_RECORDING_NAME);
 assert.equal(smallDisc03.productSelection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.quantity, 1);
 assert.equal(
   smallDisc03.productSelection.some((item) => item.quantity > 0 && (item.category === "processor" || item.category === "amplifier" || item.category === "speaker")),
@@ -728,6 +735,7 @@ assert.equal(
   JSON.stringify(smallDisc03.productSelection.filter((item) => item.quantity > 0 && (item.category === "processor" || item.category === "amplifier" || item.category === "speaker")))
 );
 assert.ok(smallDisc03.generatedPoints.filter((point) => point.pickupKind === "smallDisc03").every((point) => point.coverageRadius === 5 && point.installationMode === "hanging"));
+assert.ok(smallDisc03.generatedPoints.filter((point) => point.pickupKind === "smallDisc03").every((point) => point.label.startsWith(SMALL_DISC_RECORDING_NAME)));
 assert.ok(smallDisc03.connectionLines.some((line) => line.id === "small-disc-03-link-extender"));
 assert.doesNotMatch([smallDisc03.audioPlan.summary, smallDisc03.audioPlan.pickupGoal, smallDisc03.audioPlan.amplificationGoal].join(" "), /AFC|AEC/);
 
@@ -772,8 +780,8 @@ const longSegmentValidation = validatePointPlan({
   profile: segmentProfile,
   brandId: "yinman",
   generatedPoints: [
-    { id: "segment-main", type: "arrayMic", label: "小圆盘阵麦（录音巡课） 1", position: { x: 1, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" },
-    { id: "segment-slave", type: "arrayMic", label: "小圆盘阵麦（录音巡课） 2", position: { x: 22, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" }
+    { id: "segment-main", type: "arrayMic", label: "小圆盘阵麦03 1", position: { x: 1, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" },
+    { id: "segment-slave", type: "arrayMic", label: "小圆盘阵麦03 2", position: { x: 22, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" }
   ],
   requiredArrayMicCount: 2,
   requiredSpeakerCount: 0

@@ -106,7 +106,7 @@ export function getCustomerSolutionSelection(
       selectedLabel: getMicrophoneLabel(selectedMicrophone, brandId),
       recommendedLabel: getMicrophoneLabel(recommendedMicrophone, brandId),
       advantages: selectedMicrophone === "smallDisc01"
-        ? "整套成本最低，内置处理并可按覆盖需要级联从麦。"
+        ? "整套成本最低，可按覆盖需要级联小圆盘阵麦02。"
         : selectedMicrophone === "smallDisc03"
           ? "成本较低，适合直接录音和巡课设备拾音。"
           : selectedMicrophone === "hangingMic"
@@ -124,10 +124,10 @@ export function getCustomerSolutionSelection(
           ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
           : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
       recommendationReason: recommendedMicrophone === "smallDisc03"
-        ? "当前为纯录音或巡课需求，系统优先采用低成本录音巡课阵麦。"
+        ? "当前为纯录音或巡课需求，系统优先采用低成本小圆盘阵麦03。"
         : automaticLineArrayDecision.recommendationReason,
       decisionFactors: recommendedMicrophone === "smallDisc03"
-        ? ["功能：只承担主要区域录音或巡课拾音", "成本：低于内置处理型和大圆盘阵麦方案"]
+        ? ["功能：只承担主要区域录音或巡课拾音", "成本：低于小圆盘阵麦01和大圆盘阵麦方案"]
         : automaticLineArrayDecision.decisionFactors,
       lineArraySupported,
       lineArrayCoverageWarning,

@@ -248,7 +248,7 @@ function generateSmallDisc01ConnectionLines(
 ): ConnectionLine[] {
   const lines: ConnectionLine[] = [];
   const slaveCount = selection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity ?? 0;
-  const mainName = `${SMALL_DISC_MAIN_NAME} 主麦`;
+  const mainName = SMALL_DISC_MAIN_NAME;
   for (let index = 0; index < slaveCount; index += 1) {
     lines.push({
       id: `small-disc-01-cascade-${index + 1}`,
@@ -324,7 +324,7 @@ function generateSmallDisc01ConnectionLines(
         toDevice: amplifier,
         toPort: "音频输入",
         cableType: "音频线",
-        note: "小圆盘阵麦内置处理后的本地扩声信号送入功放。"
+        note: "小圆盘阵麦01的本地扩声信号送入功放。"
       },
       {
         id: "small-disc-01-wall-speakers",
@@ -355,7 +355,7 @@ function generateSmallDisc03ConnectionLines(
       toDevice: `${SMALL_DISC_RECORDING_NAME} ${index + 1}`,
       toPort: "LINK",
       cableType: "超五类纯铜网线（T568B）",
-      note: "录音巡课阵麦逐级连接；单段超过20m时需专项复核。"
+      note: "小圆盘阵麦03逐级连接；单段超过20m时需专项复核。"
     });
   }
   const firstMicName = count > 1 ? `${SMALL_DISC_RECORDING_NAME} 1` : SMALL_DISC_RECORDING_NAME;
@@ -378,7 +378,7 @@ function generateSmallDisc03ConnectionLines(
       toDevice: device,
       toPort: "音频输入",
       cableType: "3.5mm音频线",
-      note: "录音巡课拾音经扩展器输出到录播或巡课设备。"
+      note: "小圆盘阵麦03拾音经扩展器输出到录播或巡课设备。"
     });
   });
   return lines;

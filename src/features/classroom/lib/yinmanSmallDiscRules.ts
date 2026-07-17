@@ -9,9 +9,9 @@ export const SMALL_DISC_03_PRODUCT_ID = "YINMAN-SMALL-DISC-03";
 export const SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID = "YINMAN-AUDIO-EXTENDER";
 export const SMALL_DISC_USB_CABLE_PRODUCT_ID = "USB-AUDIO-CABLE";
 
-export const SMALL_DISC_MAIN_NAME = "小圆盘阵麦（内置处理）";
-export const SMALL_DISC_SLAVE_NAME = "小圆盘阵麦从麦";
-export const SMALL_DISC_RECORDING_NAME = "小圆盘阵麦（录音巡课）";
+export const SMALL_DISC_MAIN_NAME = "小圆盘阵麦01";
+export const SMALL_DISC_SLAVE_NAME = "小圆盘阵麦02";
+export const SMALL_DISC_RECORDING_NAME = "小圆盘阵麦03";
 export const SMALL_DISC_AUDIO_EXTENDER_NAME = "音频扩展器";
 
 export const SMALL_DISC_ONLINE_RADIUS_M = 5;
@@ -77,10 +77,10 @@ export function shouldShowSmallDiscConnectionChoice(profile: ClassroomProfile) {
 
 export function getSmallDiscReviewMessage(solution: "smallDisc01" | "smallDisc03", count: number) {
   if (solution === "smallDisc01" && count - 1 > SMALL_DISC_RECOMMENDED_SLAVE_COUNT) {
-    return `当前需要${count - 1}只从麦，超过3只从麦推荐边界，需专项复核。`;
+    return `当前需要${count - 1}只小圆盘阵麦02，超过3只推荐边界，需专项复核。`;
   }
   if (solution === "smallDisc03" && count > SMALL_DISC_RECORDING_RECOMMENDED_COUNT) {
-    return `当前需要${count}只录音巡课阵麦，超过3只推荐边界，需专项复核。`;
+    return `当前需要${count}只小圆盘阵麦03，超过3只推荐边界，需专项复核。`;
   }
   return undefined;
 }

@@ -30,7 +30,7 @@ import {
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
 export const LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID = "LINE-ARRAY-MIC-CONVERTER";
-export const LINE_ARRAY_MIC_CONVERTER_NAME = "线阵麦克风信号转换器";
+export const LINE_ARRAY_MIC_CONVERTER_NAME = "线阵拓展器";
 export const LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M = 4;
 export const LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M = 6;
 export const LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT = 3;
@@ -157,14 +157,14 @@ export function generateBrandEngineeringPoints(
       return {
         ...point,
         id: isMain ? "small-disc-01-main" : `small-disc-02-slave-${index}`,
-        label: isMain ? `${SMALL_DISC_MAIN_NAME} 主麦` : `${SMALL_DISC_SLAVE_NAME} ${index}`,
+        label: isMain ? SMALL_DISC_MAIN_NAME : `${SMALL_DISC_SLAVE_NAME} ${index}`,
         coverageRadius: radius,
         pickupKind: isMain ? "smallDisc01" as const : "smallDisc02" as const,
         pickupPattern: "full360" as const,
         installationMode: "hanging" as const,
         reason: isMain
-          ? `主麦优先服务核心拾音位置，按${radius}m半径承担主要拾音。`
-          : `从麦按${radius}m半径补充主麦未覆盖的主要活动区。`
+          ? `小圆盘阵麦01优先服务核心拾音位置，按${radius}m半径承担主要拾音。`
+          : `小圆盘阵麦02按${radius}m半径补充小圆盘阵麦01未覆盖的主要活动区。`
       };
     });
   }

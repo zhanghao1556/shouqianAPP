@@ -2034,3 +2034,15 @@ PowerShell reminder:
 - Do not expose an internal cascade-count annotation merely because the engineering model can calculate it. The latest customer-topology contract shows the grouped microphone quantity and the single processor cable only; detailed cascade steps stay in wiring data and installation notes.
 - Even-distribution tests must derive the expected angular gap from the direct groups actually present in the fixture. Optional computers, receivers or media devices must not be hard-coded into every scenario's group count; verify the real five-group page separately when that exact profile is the acceptance case.
 - Visual hierarchy must follow confirmed equipment ownership rather than raw signal-record direction: processor -> converter -> line array, while the underlying connection may still be emitted from microphone toward processor.
+
+### 2026-07-17 product-photo and customer-name guardrail
+
+- For a small product-photo cleanup, preserve the supplied hardware pixels and repair only the confirmed flat-background region. Row-wise interpolation is safer than regenerating the whole device when the requested removal is limited to printed text and a cable line.
+- A topology product photo and its engineering identity are separate contracts. Visual size and customer label may change without altering the stable product ID, port ownership, processor demand or connection generation.
+- The confirmed customer naming contract is `小圆盘阵麦01 / 02 / 03`. Keep functional roles such as primary position, cascade supplement and recording-only responsibility in descriptions or internal fields; do not turn those roles back into customer product names.
+- The project's generic model-hiding rule may have explicit user-approved exceptions. Record each exception in `AGENTS.md` and add brand-release sanitization at the same time so one brand's permitted identifier cannot leak into the other brand's package.
+- Visual scaling must remain center-preserving. For the final point map, the line array is 130% of its previous icon size and the small disc is 60% of its original icon size; neither value is an acoustic radius or placement input.
+- A user request to “shrink 60%” applies as a 60% reduction when the follow-up names the same topology device; the final converter image therefore keeps 40% of the prior `112 x 68` box, rounded to `45 x 27`.
+- Do not add a project dependency for a one-off bitmap repair. If a bundled image runtime has an incomplete dependency graph, switch to an already bundled deterministic image library, validate the output visually, and keep only the final project asset.
+- On Windows `cmd`, do not combine spaced search alternatives into an unquoted `rg` expression. Run one fixed-string query per pattern and always include an explicit project path; an accidental root scan should be terminated immediately and recorded.
+- Every new brand-specific static asset must be added to both the opposite-brand replacement map and the release verifier's forbidden-asset hash list before packaging. Runtime feature gating does not prevent Vite from bundling an unconditional import into a single-file release.

@@ -84,6 +84,7 @@ function getReplacementAsset(_assetName, sourceAssetName) {
     if (sourceAssetName === "yinman-hanging-mic.png") return assetReplacement("topology-wired-mic.png");
     if (sourceAssetName === "yinman-small-disc-mic.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-audio-extender.png") return assetReplacement("topology-audio-processor.png");
+    if (sourceAssetName === "yinman-line-array-converter.png") return assetReplacement("topology-audio-processor.png");
     return undefined;
   }
 
@@ -123,6 +124,7 @@ function isolateInlineBrandAssets(value) {
     next = replaceInlineAsset(next, "yinman-hanging-mic.png", "topology-wired-mic.png");
     next = replaceInlineAsset(next, "yinman-small-disc-mic.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-audio-extender.png", "topology-audio-processor.png");
+    next = replaceInlineAsset(next, "yinman-line-array-converter.png", "topology-audio-processor.png");
     return next;
   }
 
@@ -175,6 +177,9 @@ function transformBrandText(value) {
       .replace(/音曼售前方案/g, "音翼售前方案")
       .replace(/音曼/g, "音翼")
       .replace(/吊麦/g, "有线麦克风")
+      .replace(/小圆盘阵麦01/g, "智能天花阵列麦克风")
+      .replace(/小圆盘阵麦02/g, "智能天花阵列麦克风")
+      .replace(/小圆盘阵麦03/g, "智能天花阵列麦克风")
       .replace(/小圆盘阵麦（内置处理）/g, "智能天花阵列麦克风")
       .replace(/小圆盘阵麦（录音巡课）/g, "智能天花阵列麦克风")
       .replace(/小圆盘阵麦从麦/g, "智能天花阵列麦克风从麦")

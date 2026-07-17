@@ -97,7 +97,7 @@ export const getSpeakerSelectionReason = (profile: ClassroomProfile, brandId: Ap
     return "报告厅已确认有后排补声 / 辅助音箱，默认使用利旧原音频系统，不新增吸顶音箱或壁挂音柱。";
   }
   if (brandId === "yinman" && profile.engineeringConstraints.microphoneSolution === "smallDisc01") {
-    return "小圆盘阵麦内置处理方案固定搭配壁挂音箱，吸顶音箱不进入该方案。";
+    return "小圆盘阵麦01方案固定搭配壁挂音箱，吸顶音箱不进入该方案。";
   }
   if (override === "ceiling") {
     return `客户已选择吸顶音箱方案，系统按 ${modelName} 输出；需复核吊顶、开孔、层高、检修口、灯具空调避让和后期维护条件。`;

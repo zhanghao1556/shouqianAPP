@@ -286,9 +286,9 @@ const getAudioPlan = (
   const capability = getBrandSystemCapability(brandId);
   const oversizedForFullRoomAmp = !usesSmallDisc && requiredArrayMicCount > capability.maxArrayMicCount;
   const mode = usesSmallDisc03
-    ? "录音巡课拾音方案"
+    ? "小圆盘阵麦03拾音方案"
     : usesSmallDisc01
-      ? hasLocalAmp ? "小圆盘阵麦内置处理扩声方案" : "小圆盘阵麦线上拾音方案"
+      ? hasLocalAmp ? "小圆盘阵麦01扩声方案" : "小圆盘阵麦01线上拾音方案"
       : getAudioMode(profile, area, arrayCount, capability.maxArrayMicCount, oversizedForFullRoomAmp);
   const tuning = usesSmallDisc03
     ? [
@@ -297,8 +297,8 @@ const getAudioPlan = (
       ]
     : usesSmallDisc01
       ? [
-          "确认主麦、从麦级联以及USB直连或音频扩展器链路，逐段检查供电和音频连接。",
-          "本地扩声先校准主麦内置处理，再调整教学模拟功放主机和壁挂音箱音量。",
+          "确认小圆盘阵麦01、02级联以及USB直连或音频扩展器链路，逐段检查供电和音频连接。",
+          "本地扩声先校准小圆盘阵麦01，再调整教学模拟功放主机和壁挂音箱音量。",
           "验收时分别测试主要拾音位置、远端音频和本地壁挂音箱覆盖。"
         ]
       : [
@@ -314,7 +314,7 @@ const getAudioPlan = (
     summary: usesSmallDisc03
       ? "本方案采用小圆盘阵麦服务录音或巡课，麦克风级联后共用一台音频扩展器接入录播或巡课设备。"
       : usesSmallDisc01
-        ? "本方案采用小圆盘阵麦内置处理；本地扩声经教学模拟功放主机驱动壁挂音箱，线上音频按所选USB直连或音频扩展器接入。"
+        ? "本方案采用小圆盘阵麦01；本地扩声经教学模拟功放主机驱动壁挂音箱，线上音频按所选USB直连或音频扩展器接入。"
       : usesHangingMic
       ? "本方案由吊麦配合智能音频处理主机完成讲台区域拾音和本地扩声；每只吊麦独占一路带供电MIC输入。"
       : brandId === "yinman"
@@ -332,7 +332,7 @@ const getAudioPlan = (
     amplificationGoal: usesSmallDisc03
       ? "当前为录音或巡课拾音方案，不配置本地扩声音箱。"
       : usesSmallDisc01
-        ? hasLocalAmp ? "本地扩声只采用壁挂音箱，由小圆盘阵麦内置处理后经教学模拟功放主机驱动。" : "当前不配置本地扩声，壁挂音箱不进入方案。"
+        ? hasLocalAmp ? "本地扩声只采用壁挂音箱，由小圆盘阵麦01经教学模拟功放主机驱动。" : "当前不配置本地扩声，壁挂音箱不进入方案。"
       : hasLocalAmp
       ? oversizedForFullRoomAmp
         ? brandId === "yinyi"
@@ -345,9 +345,9 @@ const getAudioPlan = (
           : "扩声目标以讲台 / 教师活动区为主，保证教师声音自然覆盖主要听音区。"
       : "当前未选择本地扩声需求，音箱输出仅作为可选配置或后续扩展项。",
     areaBoundary: usesSmallDisc01
-      ? "按主要拾音区域自动配置1只主麦和从麦；超过3只从麦时继续出图并转专项复核。"
+      ? "按主要拾音区域自动配置1只小圆盘阵麦01和小圆盘阵麦02；02超过3只时继续出图并转专项复核。"
       : usesSmallDisc03
-        ? "按主要录音或巡课区域自动配置麦克风；超过3只时继续出图并转专项复核。"
+        ? "按主要录音或巡课区域自动配置小圆盘阵麦03；超过3只时继续出图并转专项复核。"
         : getAreaBoundary(profile, area, arrayCount, brandId, requiredArrayMicCount),
     environmentBoundary: `建议背景噪声不高于 45dBSPL，混响时间控制在 800ms 以内；若采用精品分区均衡扩音模式，建议混响时间控制在 600ms 以内。当前声学评估为：${acousticAssessment.label}。`,
     tuning

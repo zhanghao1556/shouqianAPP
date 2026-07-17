@@ -18,7 +18,9 @@ import wallSpeakerImage from "../../../assets/topology-wall-speaker.png";
 import {
   getSmallDiscConnectionMode,
   isPureRecordingOrPatrolNeed,
-  shouldShowSmallDiscConnectionChoice
+  shouldShowSmallDiscConnectionChoice,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_RECORDING_NAME
 } from "../lib/yinmanSmallDiscRules";
 
 export type SolutionChangeKind = "microphone" | "speaker" | "processor" | "connection";
@@ -36,8 +38,8 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
   const microphoneOptions = brand.id === "yinman"
     ? [
         { value: "existingArray", label: "大圆盘阵麦", imageSrc: arrayMicImage },
-        { value: "smallDisc01", label: "小圆盘阵麦（内置处理）", imageSrc: smallDiscMicImage },
-        ...(pureRecordingOrPatrol ? [{ value: "smallDisc03", label: "小圆盘阵麦（录音巡课）", imageSrc: smallDiscMicImage }] : []),
+        { value: "smallDisc01", label: SMALL_DISC_MAIN_NAME, imageSrc: smallDiscMicImage },
+        ...(pureRecordingOrPatrol ? [{ value: "smallDisc03", label: SMALL_DISC_RECORDING_NAME, imageSrc: smallDiscMicImage }] : []),
         { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage },
         { value: "hangingMic", label: "吊麦", imageSrc: hangingMicImage }
       ]

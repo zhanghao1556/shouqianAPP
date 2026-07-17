@@ -49,25 +49,25 @@ export const classroomProductRules: ClassroomProductRule[] = [
     name: SMALL_DISC_MAIN_NAME,
     category: "pickup",
     applyWhen: ["videoConference", "interactiveClass", "localAmplification", "recording", "remoteTeaching"],
-    source: "小圆盘阵麦主麦产品资料、接线图及技术支持确认口径",
-    installation: "采用吊杆安装，主麦优先布置在主要拾音区的核心位置。",
-    wiring: "内置音频处理；本地扩声由SPK-OUT接功放，线上音频可使用客户自购USB音频线或音频扩展器。"
+    source: "小圆盘阵麦01产品资料、接线图及技术支持确认口径",
+    installation: "采用吊杆安装，小圆盘阵麦01优先布置在主要拾音区的核心位置。",
+    wiring: "本地扩声由SPK-OUT接功放，线上音频可使用客户自购USB音频线或音频扩展器。"
   },
   {
     productId: SMALL_DISC_02_PRODUCT_ID,
     name: SMALL_DISC_SLAVE_NAME,
     category: "pickup",
     applyWhen: ["videoConference", "interactiveClass", "localAmplification", "recording", "remoteTeaching"],
-    source: "小圆盘阵麦从麦产品资料及技术支持确认口径",
-    installation: "采用吊杆安装，按主要活动区覆盖需要补充主麦未覆盖位置。",
-    wiring: "通过主麦MIC接口逐级连接，单段使用超五类纯铜网线并按T568B制作。"
+    source: "小圆盘阵麦02产品资料及技术支持确认口径",
+    installation: "采用吊杆安装，按主要活动区覆盖需要补充小圆盘阵麦01未覆盖位置。",
+    wiring: "通过小圆盘阵麦01的MIC接口逐级连接，单段使用超五类纯铜网线并按T568B制作。"
   },
   {
     productId: SMALL_DISC_03_PRODUCT_ID,
     name: SMALL_DISC_RECORDING_NAME,
     category: "pickup",
     applyWhen: ["recording"],
-    source: "小圆盘录音巡课阵麦产品资料及技术支持确认口径",
+    source: "小圆盘阵麦03产品资料及技术支持确认口径",
     installation: "采用吊杆安装，只覆盖讲台、会议桌等主要录音或巡课区域。",
     wiring: "麦克风级联后共用一个音频扩展器，由A OUT连接录播或巡课设备音频输入。"
   },
@@ -85,7 +85,7 @@ export const classroomProductRules: ClassroomProductRule[] = [
     name: "USB音频线（客户自购）",
     category: "accessory",
     applyWhen: ["videoConference", "interactiveClass", "remoteTeaching"],
-    source: "小圆盘阵麦主麦接线图及技术支持确认口径",
+    source: "小圆盘阵麦01接线图及技术支持确认口径",
     installation: "由客户按电脑与麦克风安装距离另行采购。",
     wiring: "小圆盘阵麦USB接口直连电脑USB音频接口，同时承担供电和数字音频。"
   },

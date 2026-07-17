@@ -288,10 +288,10 @@ function addSmallDiscFindings(findings: PointValidationFinding[], profile: Class
     severity: "info",
     title: "小圆盘阵麦覆盖口径",
     actual: `${mics.length}只 / 半径${radius.toFixed(1)}m`,
-    limit: usesBuiltInProcessing ? "1只主麦 + 推荐不超过3只从麦" : "推荐不超过3只",
+    limit: usesBuiltInProcessing ? "1只小圆盘阵麦01 + 推荐不超过3只小圆盘阵麦02" : "推荐不超过3只",
     internalMessage: usesBuiltInProcessing
-      ? "主麦优先布置在核心位置，从麦按主要活动区覆盖需要补充；理论上可继续级联。"
-      : "录音巡课阵麦只覆盖讲台、会议桌等主要区域，整条级联链共用一个音频扩展器。",
+      ? "小圆盘阵麦01优先布置在核心位置，小圆盘阵麦02按主要活动区覆盖需要补充；理论上可继续级联。"
+      : "小圆盘阵麦03只覆盖讲台、会议桌等主要区域，整条级联链共用一个音频扩展器。",
     sourceRefs: ["用户确认的小圆盘阵麦覆盖与级联口径"]
   });
 
@@ -303,10 +303,10 @@ function addSmallDiscFindings(findings: PointValidationFinding[], profile: Class
       actual: mics.length,
       limit: recommendedCount,
       internalMessage: usesBuiltInProcessing
-        ? `当前包含${mics.length - 1}只从麦，超过推荐的3只从麦边界；继续保留方案并转专项复核。`
-        : `当前包含${mics.length}只录音巡课阵麦，超过推荐的3只边界；继续保留方案并转专项复核。`,
+        ? `当前包含${mics.length - 1}只小圆盘阵麦02，超过推荐的3只边界；继续保留方案并转专项复核。`
+        : `当前包含${mics.length}只小圆盘阵麦03，超过推荐的3只边界；继续保留方案并转专项复核。`,
       customerMessage: "小圆盘阵麦数量超出常规推荐范围，当前方案需专项复核。",
-      sourceRefs: ["用户确认的01主麦加3只从麦与03三只推荐边界"]
+      sourceRefs: ["用户确认的01加3只02与03三只推荐边界"]
     });
   }
 
