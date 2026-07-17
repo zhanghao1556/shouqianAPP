@@ -29,7 +29,7 @@ export type DrawingType = "installation" | "wiring" | "topology" | "system";
 export type LegacySpeakerType = "ceiling" | "wall";
 export type LegacyWallAdjustability = "universal" | "fixed" | "unknown";
 export type SpeakerProductOverride = "auto" | "ceiling" | "wall";
-export type MicrophoneSolution = "auto" | "existingArray" | "lineArray";
+export type MicrophoneSolution = "auto" | "existingArray" | "lineArray" | "hangingMic";
 export type OverheadSpeakerMounting = "available" | "unavailable" | "unknown";
 export type LineArrayMode = "auto" | "front" | "full";
 export type LineArrayInstallation = "auto" | "podium" | "hanging";
@@ -128,7 +128,7 @@ export interface GeneratedPoint {
   horizontalAngle?: number;
   downTiltAngle?: number;
   coverageRadius?: number;
-  pickupKind?: "existingArray" | "lineArray";
+  pickupKind?: "existingArray" | "lineArray" | "hangingMic";
   pickupPattern?: "front180" | "full360";
   installationMode?: "podium" | "hanging" | "tabletop";
   speakerSignalMode?: SpeakerSignalMode;
@@ -298,6 +298,7 @@ export interface CustomerSolutionSelection {
   microphone: CustomerSolutionChoice<Exclude<MicrophoneSolution, "auto">> & {
     lineArraySupported: boolean;
     lineArrayCoverageWarning?: string;
+    hangingMicCapacityWarning?: string;
   };
   speaker: CustomerSolutionChoice<Exclude<SpeakerProductOverride, "auto">> & {
     requiresSpecialReview: boolean;

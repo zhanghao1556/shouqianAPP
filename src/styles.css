@@ -1466,6 +1466,19 @@ textarea:focus {
   background: var(--color-surface-soft);
 }
 
+.solutionSegmentedControl.hasThreeOptions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.solutionSegmentedControl.hasThreeOptions > button {
+  grid-template-columns: 38px minmax(0, 1fr);
+  padding-inline: 6px;
+}
+
+.solutionSegmentedControl.hasThreeOptions > button > img {
+  width: 34px;
+}
+
 .solutionSegmentedControl > button {
   position: relative;
   min-width: 0;

@@ -1918,3 +1918,23 @@ PowerShell reminder:
 - A hard generation gate should remain reserved for line-array configurations that cannot be represented at all, such as a front responsibility width beyond the confirmed two-line-array limit. Do not reuse that gate for a valid but incomplete online-pickup plan.
 - Boundary tests must distinguish exactly 8m, just beyond 5m, and beyond 8m. Old assertions often encode the rule being replaced; when one fails, verify whether it protects a still-valid boundary before changing production logic.
 - Vite HMR WebSocket failure can leave a live localhost tab on stale JavaScript even after source and build are correct. Reload the existing tab and verify the resulting equipment quantities, drawings and warnings before diagnosing a rule mismatch.
+### 2026-07-17 Yinman hanging-microphone implementation guardrail
+
+- Keep internal model identity separate from customer naming: `YM-LB102` may appear in code, product evidence and internal tests, while every customer surface says only `吊麦`.
+- Treat Yinman-only availability as a build and data boundary, not merely a hidden selector. Yinyi runtime and release output must not contain the Yinman LB102 image or product text.
+- A hanging microphone is an explicit manual alternative in the first implementation. Do not let the generic automatic microphone selector substitute it for RING02, RING08 or SA110.
+- Gate that manual alternative to podium-area local amplification and the AJ200/AJ600 processor tiers. Its lower cost is product positioning, not permission to recommend it in full-room, recording-only, remote-interaction or AJ350 plans.
+- Quantity has two simultaneous constraints: 3m coverage demand and remaining processor MIC-channel capacity. Each hanging microphone consumes exactly one powered MIC input.
+- Preserve tested and untested processor topologies distinctly. AJ600 dual SA110 is one converter on MIC 1-2 plus one EXTMIC; do not silently generalize the untested two-converter SA110 plus RING02 arrangement into a supported default.
+- When multiple microphone products share placement logic, share geometry only. Product-specific coverage radius, port consumption, image, customer label and connection topology must remain explicit.
+- `verify-point-system-rules.mjs` embeds TypeScript inside an outer template literal. Avoid unescaped inner backticks in new assertions; use concatenation or escaped delimiters so the harness reaches the business assertions.
+
+### 2026-07-17 signal-aware line-array ceiling clearance guardrail
+
+- Placement must consume the structured speaker signal responsibility instead of inferring clearance from `front180/full360`. Signal assignment after coordinate generation is too late and caused a non-AFC `full360` first row to receive the normal 2m rule.
+- A line-array ceiling speaker with `speakerSignalMode = withoutLineArrayAfc` uses the user-confirmed `1.2m` minimum; a normal AFC ceiling speaker remains at `2m`. Keep the separate array-microphone teacher-monitor soft distance unchanged unless the user calibrates it explicitly.
+- Preserve the original coverage grid whenever it already satisfies the applicable signal-aware distance. Only then may symmetric pair/row relocation run as a fallback; never move a complete row rearward solely because its no-AFC state was unavailable during placement.
+- First-row identity must be preserved structurally from the pre-avoidance grid so a moved point cannot lose its non-AFC role and a `full360` point cannot be omitted merely because the older branch only handled `front180`.
+- An esbuild module-resolution `Access is denied` failure inside the managed filesystem sandbox is an environment failure. Rerun the unchanged test with the established elevated test command before diagnosing application rules.
+- Responsibility-zone inputs matter for coverage fixtures. An 8m room does not imply an 8m podium responsibility width; use the existing teacher/stage zone when asserting hanging-microphone quantity.
+- Keep product capacity findings product-specific. A six-input hanging-microphone plan must not inherit the Yinman two-array-microphone limit merely because both products share the `arrayMic` drawing point type.

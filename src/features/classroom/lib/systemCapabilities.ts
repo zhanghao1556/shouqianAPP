@@ -7,6 +7,12 @@ import {
   type PointQuantityTargets
 } from "./drawingEngine";
 import { getLineArrayDecision, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./lineArrayRules";
+import {
+  getDefaultHangingMicCount,
+  getHangingMicPositions,
+  getHangingMicSupport,
+  HANGING_MIC_RADIUS_M
+} from "./hangingMicRules";
 
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
@@ -70,6 +76,41 @@ export function generateBrandEngineeringPoints(
   targets: PointQuantityTargets = {},
   brandId: AppBrandId
 ): GeneratedPoint[] {
+  const requestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
+  if (requestedMicrophone === "hangingMic" && brandId !== "yinman") {
+    return generateBrandEngineeringPoints({
+      ...profile,
+      engineeringConstraints: { ...profile.engineeringConstraints, microphoneSolution: "auto" }
+    }, targets, brandId);
+  }
+  if (requestedMicrophone === "hangingMic") {
+    const support = getHangingMicSupport(profile, brandId);
+    if (!support.supported) return [];
+    const count = Math.max(0, Math.round(targets.arrayMicCount ?? getDefaultHangingMicCount(profile)));
+    if (!count) return [];
+    const positions = getHangingMicPositions(profile, count);
+    const generated = generateEngineeringPoints(profile, {
+      ...targets,
+      arrayMicCount: count
+    });
+    let micIndex = 0;
+    return generated.map((point) => {
+      if (point.type !== "arrayMic") return point;
+      const index = micIndex;
+      micIndex += 1;
+      return {
+        ...point,
+        id: `hanging-mic-${index + 1}`,
+        label: count > 1 ? `吊麦 ${index + 1}` : "吊麦",
+        position: positions[index] ?? point.position,
+        coverageRadius: HANGING_MIC_RADIUS_M,
+        pickupKind: "hangingMic" as const,
+        pickupPattern: "full360" as const,
+        installationMode: "hanging" as const,
+        reason: `按${HANGING_MIC_RADIUS_M}m拾音与扩声半径覆盖讲台活动区。`
+      };
+    });
+  }
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.selected) {
     const { activityZone } = lineArray;

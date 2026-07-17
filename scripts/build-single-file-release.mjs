@@ -81,6 +81,7 @@ function getReplacementAsset(_assetName, sourceAssetName) {
     if (sourceAssetName === "yinman-array-mic-pointmap.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-array-mic-topology.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-audio-processor.png") return assetReplacement("topology-audio-processor.png");
+    if (sourceAssetName === "yinman-hanging-mic.png") return assetReplacement("topology-wired-mic.png");
     return undefined;
   }
 
@@ -117,6 +118,7 @@ function isolateInlineBrandAssets(value) {
     next = replaceInlineAsset(next, "yinman-array-mic-pointmap.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-array-mic-topology.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-audio-processor.png", "topology-audio-processor.png");
+    next = replaceInlineAsset(next, "yinman-hanging-mic.png", "topology-wired-mic.png");
     return next;
   }
 
@@ -168,6 +170,7 @@ function transformBrandText(value) {
       .replace(/音曼AI售前工具/g, "音翼AI售前工具")
       .replace(/音曼售前方案/g, "音翼售前方案")
       .replace(/音曼/g, "音翼")
+      .replace(/吊麦/g, "有线麦克风")
       .replace(/Yinman AI Presales Tool/g, "Yinyi AI Presales Tool");
   }
   return value

@@ -34,6 +34,8 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount, solutionSelection } = input;
   const capability = getBrandSystemCapability(brandId);
   const mics = generatedPoints.filter((point) => point.type === "arrayMic");
+  const arrayMics = mics.filter((point) => point.pickupKind !== "hangingMic");
+  const hangingMics = mics.filter((point) => point.pickupKind === "hangingMic");
   const speakers = generatedPoints.filter((point) => point.type === "speaker");
   const findings: PointValidationFinding[] = [];
 
@@ -87,7 +89,18 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
-  if (profile.roomGeometry.length > 0 && profile.roomGeometry.width > 0) {
+  if (hangingMics.length > 0) {
+    findings.push({
+      code: "hanging-mic.coverage-capacity",
+      severity: solutionSelection?.microphone.hangingMicCapacityWarning ? "warning" : "info",
+      title: "吊麦覆盖与MIC容量",
+      actual: `${hangingMics.length}只 / 半径3m`,
+      limit: "每只占1路MIC",
+      internalMessage: solutionSelection?.microphone.hangingMicCapacityWarning ?? "当前吊麦数量按讲台活动区3m覆盖计算，并受处理器剩余MIC输入容量限制。",
+      customerMessage: solutionSelection?.microphone.hangingMicCapacityWarning,
+      sourceRefs: ["用户确认的吊麦3m覆盖与单只单MIC规则"]
+    });
+  } else if (profile.roomGeometry.length > 0 && profile.roomGeometry.width > 0) {
     findings.push({
       code: "array.coverage-baseline",
       severity: "info",
@@ -98,7 +111,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
-  if (requiredArrayMicCount > capability.maxArrayMicCount) {
+  if (!hangingMics.length && requiredArrayMicCount > capability.maxArrayMicCount) {
     findings.push({
       code: "array.capacity",
       severity: "hard",
@@ -109,26 +122,26 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
       customerMessage: "房间长度与阵麦覆盖能力需要专项复核。",
       sourceRefs: [brandId === "yinman" ? "音曼阵麦与音频处理主机能力确认" : "音翼一主四从能力确认"]
     });
-  } else if (mics.length > 0) {
+  } else if (!hangingMics.length && arrayMics.length > 0) {
     findings.push({
       code: "array.capacity",
       severity: "info",
       title: "阵麦数量能力",
-      actual: mics.length,
+      actual: arrayMics.length,
       limit: capability.maxArrayMicCount,
-      internalMessage: `当前生成 ${mics.length} 只，未超过品牌能力上限 ${capability.maxArrayMicCount} 只。`,
+      internalMessage: `当前生成 ${arrayMics.length} 只，未超过品牌能力上限 ${capability.maxArrayMicCount} 只。`,
       sourceRefs: ["用户确认的品牌阵麦能力"]
     });
   }
 
-  addCascadeRouteFinding(findings, brandId, mics);
+  addCascadeRouteFinding(findings, brandId, arrayMics);
   addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
-  addLineArraySpeakerFindings(findings, profile, mics, speakers);
+  addLineArraySpeakerFindings(findings, profile, arrayMics, speakers);
   addWallSpeakerCoverageFinding(findings, speakers);
   addInstallationHeightFinding(findings, profile, mics);
   addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
   addCentralAirFindings(findings, profile, brandId, mics);
-  addExistingCalibrationFindings(findings, profile, brandId, mics);
+  if (!hangingMics.length) addExistingCalibrationFindings(findings, profile, brandId, arrayMics);
 
   return summarizeFindings(findings);
 }

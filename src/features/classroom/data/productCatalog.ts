@@ -21,6 +21,15 @@ export const classroomProductRules: ClassroomProductRule[] = [
     wiring: "USB Type-B 接电脑 / 一体机；Line Out 接录播主机音频输入；模拟输入 L/R/G 可接无线接收机；功放输出 L+/L-/R+/R- 接无源音箱。"
   },
   {
+    productId: "HANGING-MIC",
+    name: "吊麦",
+    category: "pickup",
+    applyWhen: ["localAmplification"],
+    source: "音曼吊麦产品资料、技术支持确认口径",
+    installation: "仅用于讲台区域扩声，按3m拾音与扩声半径布置吊装点位。",
+    wiring: "每只吊麦独占一路MIC输入，由MIC口直接供电；仅可接双麦处理器或六麦处理器。"
+  },
+  {
     productId: "CEILING-SPEAKER",
     name: "吸顶音箱",
     category: "speaker",

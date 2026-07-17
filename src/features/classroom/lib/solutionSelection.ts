@@ -15,10 +15,17 @@ import {
   getProcessorTierName
 } from "./lineArrayRules";
 import { getSpeakerProductId } from "./speakerRules";
+import {
+  getHangingMicCoverageDemand,
+  getHangingMicProcessorTier,
+  getHangingMicRemainingCapacity,
+  getHangingMicSupport
+} from "./hangingMicRules";
 
 const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
   existingArray: "智能天花阵列麦克风",
-  lineArray: "智能线阵麦克风"
+  lineArray: "智能线阵麦克风",
+  hangingMic: "吊麦"
 };
 
 const speakerLabels: Record<Exclude<SpeakerProductOverride, "auto">, string> = {
@@ -34,7 +41,8 @@ export function getCustomerSolutionSelection(
   const automaticMicrophoneProfile = withMicrophoneSolution(profile, "auto");
   const automaticLineArrayDecision = getLineArrayDecision(automaticMicrophoneProfile, generatedPoints);
   const recommendedMicrophone = automaticLineArrayDecision.recommended ? "lineArray" : "existingArray";
-  const requestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
+  const rawRequestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
+  const requestedMicrophone = rawRequestedMicrophone === "hangingMic" && brandId !== "yinman" ? "auto" : rawRequestedMicrophone;
   const selectedMicrophone = requestedMicrophone === "auto" ? recommendedMicrophone : requestedMicrophone;
   const selectedLineArrayDecision = getLineArrayDecision(profile, generatedPoints);
   const lineArraySupported = selectedMicrophone !== "lineArray" || selectedLineArrayDecision.selected;
@@ -44,7 +52,15 @@ export function getCustomerSolutionSelection(
   const requestedSpeaker = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   const selectedSpeaker = requestedSpeaker === "auto" ? recommendedSpeaker : requestedSpeaker;
   const requiresSpecialReview = selectedSpeaker === "ceiling" && profile.engineeringConstraints.overheadSpeakerMounting === "unavailable";
-  const drawingBlocked = requestedMicrophone === "lineArray" && !lineArraySupported;
+  const hangingMicSupport = getHangingMicSupport(profile, brandId);
+  const hangingMicDemand = getHangingMicCoverageDemand(profile);
+  const hangingMicTier = getHangingMicProcessorTier(profile, hangingMicDemand);
+  const hangingMicCapacity = getHangingMicRemainingCapacity(profile, hangingMicTier);
+  const hangingMicCapacityWarning = selectedMicrophone === "hangingMic" && hangingMicCapacity < hangingMicDemand
+    ? `讲台区按3m覆盖需要${hangingMicDemand}只，当前剩余MIC容量仅支持${hangingMicCapacity}只。`
+    : undefined;
+  const drawingBlocked = (requestedMicrophone === "lineArray" && !lineArraySupported) ||
+    (selectedMicrophone === "hangingMic" && (!hangingMicSupport.supported || hangingMicCapacity === 0));
   const lineArrayCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
   const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
   const processor = brandId === "yinman" && lineArrayCount === 1
@@ -59,16 +75,21 @@ export function getCustomerSolutionSelection(
       isNonRecommended: selectedMicrophone !== recommendedMicrophone,
       selectedLabel: microphoneLabels[selectedMicrophone],
       recommendedLabel: microphoneLabels[recommendedMicrophone],
-      advantages: selectedMicrophone === "lineArray"
-        ? "含处理器的整套价格更低；短距摆放或定向声幕有利于抑制背向噪声。"
-        : "覆盖范围和扩展能力更适合全场拾音及较大空间。",
-      cautions: selectedMicrophone === "lineArray"
-        ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
-        : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
+      advantages: selectedMicrophone === "hangingMic"
+        ? "成本低于线阵麦加处理器方案，适合预算优先的讲台区域扩声。"
+        : selectedMicrophone === "lineArray"
+          ? "含处理器的整套价格更低；短距摆放或定向声幕有利于抑制背向噪声。"
+          : "覆盖范围和扩展能力更适合全场拾音及较大空间。",
+      cautions: selectedMicrophone === "hangingMic"
+        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入，仅可搭配双麦或六麦处理器。"
+        : selectedMicrophone === "lineArray"
+          ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
+          : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
       recommendationReason: automaticLineArrayDecision.recommendationReason,
       decisionFactors: automaticLineArrayDecision.decisionFactors,
       lineArraySupported,
-      lineArrayCoverageWarning: selectedMicrophone === "lineArray" ? selectedLineArrayDecision.coverageWarning : undefined
+      lineArrayCoverageWarning: selectedMicrophone === "lineArray" ? selectedLineArrayDecision.coverageWarning : undefined,
+      hangingMicCapacityWarning
     },
     speaker: {
       recommended: recommendedSpeaker,
@@ -91,7 +112,11 @@ export function getCustomerSolutionSelection(
     },
     processor,
     drawingBlocked,
-    blockingMessage: drawingBlocked ? "该方案无法完整覆盖，建议改选阵麦" : undefined
+    blockingMessage: drawingBlocked
+      ? selectedMicrophone === "hangingMic"
+        ? !hangingMicSupport.supported ? hangingMicSupport.reason : "处理器没有可用MIC输入，无法生成吊麦方案"
+        : "该方案无法完整覆盖，建议改选阵麦"
+      : undefined
   };
 }
 

@@ -6599,3 +6599,44 @@ Boundary:
 - Fresh 5180 browser verification preserved the user's draft and confirmed: hard risks 0, one line-array microphone, twelve ceiling speakers, equipment list, point map and topology all generated, with one online-coverage review finding and the customer coverage warning. The customer selector separately retains the system recommendation for the array microphone without duplicating the same point-validation warning. The page had one Vite HMR WebSocket connection error, so a manual reload was required to load the new source; this development-environment issue was recorded only and not fixed during rule calibration.
 - Closed both rejected speaker-coverage candidates in the audit generator. The final 636-case sweep has hash `23cc4cc66b741146dee32115badb3c6793246f515191b6bfe54d790ff48a8e22`, active candidate count 0, 39 rejected cases and five deferred long-room line-array wall cases. Nine additional rejected cases entered the audit because online line-array solutions no longer stop at the drawing gate. The four stale rejected A/B files were removed from ignored `work` output.
 - No speaker selection, speaker quantity, speaker coordinate, speaker angle, front180 line-array placement, packaging, release or GitHub push was performed.
+## 2026-07-17 Yinman RING and hanging-microphone confirmation recovery
+
+- Context recovery found that the preceding product-calibration discussion had not yet been written to the project logs. This section records the confirmed boundary before formal implementation.
+- `RING01`, `RING02` and `RING03` are internal model identities. Customer output uses only `智能天顶麦克风`; the three products share the same housing and installation appearance.
+- Confirmed engineering radii: RING01 online / interactive-online `5m`, local amplification `3m`; RING02 online `5m`, local amplification `3m`; RING03 customer drawing pickup radius `5m`, only for direct recording / patrol equipment. Existing RING08 remains online `8m` and local amplification `5m`.
+- RING02 is the normal external-processor product. In a front-SA110 plus rear-RING02 plan, rear RING02 follows the existing 5m online-pickup placement logic, does not move SA110 points and does not participate in local amplification. AJ350 with SA110 cannot also use RING02; FAE recommends RING08 when AJ350 needs pickup beyond SA110 coverage.
+- One 6-pin Phoenix-to-RJ45 converter routes one SA110 through two MIC inputs. The FAE-tested AJ600 dual-SA110 topology is one converted SA110 on MIC 1-2 plus one SA110 on EXTMIC. Two SA110 plus RING02 would require both SA110s on MIC 1-4 and RING02 on EXTMIC; this has not been tested and must remain blocked / special-review rather than becoming a default rule.
+- New Yinman-only internal product `YM-LB102` has customer-visible name `吊麦`. Confirmed pickup radius and local-amplification radius are both `3m`; each microphone occupies one MIC input and receives power directly from that MIC input.
+- User confirmed the first implementation boundary: expose the hanging microphone only as a Yinman manual microphone choice, do not automatically replace RING02, RING08 or SA110, derive its default quantity from 3m coverage and cap it by remaining MIC capacity, and render the supplied real LB102 image without exposing the model number.
+- User then narrowed product eligibility: the hanging microphone is used only for podium-area local amplification, is positioned as a lower-cost entry product below a line-array-plus-processor solution, and may connect only to AJ200 or AJ600. The first implementation therefore keeps it manual-only, rejects non-podium / non-local-amplification usage, and excludes the high-performance AJ350 tier.
+- A standalone proposed point-map / topology preview was generated and confirmed before implementation. Formal business code had not yet been modified at the time of this recovery entry.
+- PowerShell 7 resolution returned the Store installation path, but the current command runner rejected direct execution with access denied. UTF-8 reads therefore used Windows PowerShell 5.1 with explicit UTF-8 output; no source file was rewritten because of terminal encoding.
+- A source-import search used a quoted regular expression inside the PowerShell wrapper and was rejected as an unterminated string. No file changed; the query was rerun as a simple literal search.
+- The first hanging-microphone point-system test run failed before assertions because a template literal was inserted inside the script's outer template literal. TypeScript checks still passed. The test expression is changed to ordinary string concatenation before rerunning; no business rule is changed for this test-harness fix.
+- The reverberation regression could not resolve project modules inside the filesystem sandbox because esbuild was denied access while walking the parent directory. This is the documented local sandbox limitation rather than a reverberation failure; the same command is rerun outside the sandbox.
+
+Implementation completed:
+
+- Added a Yinman-only manual `吊麦` microphone choice with the supplied real product image. Internal code uses a stable hanging-microphone ID; no customer surface exposes the model number.
+- Restricted the choice to podium-area local amplification with no online / interactive / recording pickup requirement, and to the dual- or six-microphone processor tiers. The high-performance processor tier and unsupported scopes stop drawing generation with an explicit message.
+- Derived the default count and positions from the existing teacher / stage responsibility zone using a 3m pickup and local-amplification radius. Manual quantity remains capped by remaining powered MIC inputs after existing microphone and new wireless-receiver input demand.
+- Generated one `吊麦 -> MIC` connection per microphone, with the confirmed direct MIC-port power note, and reused the real product image in the selector, point map and topology.
+- Kept hanging-microphone capacity separate from the existing Yinman two-array-microphone limit. Existing array, line-array, RING08, SA110 and speaker placement rules remain unchanged.
+- Added Yinyi draft fallback and release isolation: Yinyi cannot select or generate the hanging microphone, and Yinyi single-file packaging replaces the Yinman hanging-microphone asset and text. Release verification now treats the asset and `吊麦` text as forbidden in Yinyi packages.
+- Updated the dormant legacy product entry to customer name `吊麦` with automatic quantity disabled so it cannot bypass the confirmed manual-only classroom flow.
+
+Verification:
+
+- `npx.cmd tsc --noEmit --noUnusedLocals --noUnusedParameters` passed.
+- `npm.cmd run test:point-system` passed all existing point, line-array, processor, speaker and new hanging-microphone assertions.
+- `npm.cmd run test:reverberation` passed after the documented sandbox rerun.
+- `npm.cmd run build` passed; runtime bundle scan found no `LB102`, `YM-LB102`, `AJ200`, `AJ600` or `AJ350` customer text.
+- Existing development services on ports 5174 and 5180 both returned HTTP 200. No release package was generated and no GitHub push was performed.
+
+## 2026-07-17 line-array non-AFC ceiling-speaker clearance defect
+
+- User reported that a `7.2m x 9.5m` Yinman line-array `full360` plan moved the complete first ceiling-speaker row from the regular `y=2.0m` grid to `y=3.8m`, even though that row does not carry line-array AFC.
+- Browser measurement confirmed the line array at approximately `(3.6, 2.5)` and the regular first-row speakers at approximately `(2.05, 2.0)` / `(5.15, 2.0)`. Their nearest microphone distance is about `1.63m`, but the current placement path applied the normal `2m` clearance and pushed the row rearward, leaving only `1.0m` to the next row.
+- Root cause: ceiling placement decides the distance exception from `lineArrayContext.mode === "front"` before final speaker signal modes exist. A `full360` first row that is internally intended not to send line-array AFC therefore has no `withoutLineArrayAfc` state during placement and is incorrectly treated as a normal AFC row.
+- User confirmed the correction boundary: determine AFC participation before microphone clearance; every line-array ceiling speaker marked `withoutLineArrayAfc` uses a `1.2m` minimum, normal AFC speakers remain at `2m`, and symmetric relocation is only a fallback when the applicable distance is genuinely insufficient.
+- Scope guardrail: this correction must not change array-microphone teacher-monitor spacing, wall-speaker placement, speaker selection/count, line-array coordinates or customer AFC visibility before version 4.0.

@@ -12,6 +12,7 @@ import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./sr
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
 import { buildReport } from "./src/features/classroom/lib/reportBuilder.ts";
+import { HANGING_MIC_PRODUCT_ID, HANGING_MIC_RADIUS_M } from "./src/features/classroom/lib/hangingMicRules.ts";
 import {
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
@@ -206,7 +207,7 @@ const automaticTwoLine = generateEngineeringOutputs(makeProfile({ length: 8, wid
 assert.equal(automaticTwoLine.solutionSelection.microphone.recommended, "existingArray");
 assert.equal(automaticTwoLine.generatedPoints.some((point) => point.pickupKind === "lineArray"), false);
 const forcedTwoLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 14.2, scope: "podium", microphoneSolution: "lineArray", podiumPosition: "frontLeft" }), {}, "yinyi");
-assert.equal(forcedTwoLine.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2);
+assert.equal(forcedTwoLine.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2, "forced two-line boundary");
 assert.equal(forcedTwoLine.solutionSelection.microphone.isNonRecommended, true);
 assert.equal(forcedTwoLine.solutionSelection.drawingBlocked, false);
 assert.equal(forcedTwoLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended")?.severity, "warning");
@@ -267,7 +268,7 @@ const combinedFit = generateEngineeringOutputs(makeProfile({ scenario: "combined
 assert.equal(combinedFit.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(getTeacherActivityZone(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10, teachingDepth: 5 }), combinedFit.generatedPoints).depth, 5);
 const combinedTwo = generateEngineeringOutputs(makeProfile({ scenario: "combinedClassroom", length: 12, width: 12, teachingWidth: 10.1, teachingDepth: 5, microphoneSolution: "lineArray" }), {}, "yinyi");
-assert.equal(combinedTwo.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2);
+assert.equal(combinedTwo.generatedPoints.filter((point) => point.pickupKind === "lineArray").length, 2, "combined classroom two-line boundary");
 assert.equal(combinedTwo.solutionSelection.microphone.recommended, "existingArray");
 
 const meetingFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 8, width: 6, microphoneSolution: "auto" }), {}, "yinyi");
@@ -316,6 +317,68 @@ const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "com
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanEconomyLine, yinmanInterfaceRichLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
+
+const yinmanHanging = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 10,
+  scope: "podium",
+  podiumPosition: "frontLeft",
+  microphoneSolution: "hangingMic"
+}), twoSpeakerOverrides, "yinman");
+const hangingPoints = yinmanHanging.generatedPoints.filter((point) => point.pickupKind === "hangingMic");
+const hangingConnections = yinmanHanging.connectionLines.filter((line) => line.id.startsWith("hanging-mic-processor-"));
+assert.equal(yinmanHanging.solutionSelection.microphone.selected, "hangingMic");
+assert.equal(yinmanHanging.productSelection.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.name, "吊麦");
+assert.equal(yinmanHanging.productSelection.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.quantity, 2);
+assert.equal(yinmanHanging.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.equal(hangingPoints.length, 2);
+assert.ok(hangingPoints.every((point) => point.coverageRadius === HANGING_MIC_RADIUS_M && point.label.startsWith("吊麦")));
+assert.equal(hangingConnections.length, 2);
+assert.ok(hangingConnections.every((line, index) => line.toPort === "MIC " + (index + 1) && line.note.includes("MIC口直接供电")));
+
+const yinmanHangingMicLimited = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 10,
+  scope: "podium",
+  podiumPosition: "frontLeft",
+  microphoneSolution: "hangingMic",
+  processorTier: "twoMic",
+  legacyWirelessMic: "有线麦克风"
+}), { ...twoSpeakerOverrides, [HANGING_MIC_PRODUCT_ID]: 5 }, "yinman");
+assert.equal(yinmanHangingMicLimited.productSelection.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.quantity, 1);
+assert.equal(yinmanHangingMicLimited.generatedPoints.filter((point) => point.pickupKind === "hangingMic").length, 1);
+assert.match(yinmanHangingMicLimited.solutionSelection.microphone.hangingMicCapacityWarning ?? "", /需要2只.*仅支持1只/);
+
+const yinmanHangingHighPerformance = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  processorTier: "highPerformance"
+}), {}, "yinman");
+assert.equal(yinmanHangingHighPerformance.solutionSelection.drawingBlocked, true);
+assert.match(yinmanHangingHighPerformance.solutionSelection.blockingMessage ?? "", /双麦处理器或六麦处理器/);
+assert.equal(yinmanHangingHighPerformance.generatedPoints.length, 0);
+
+const yinmanHangingFullRoom = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  scope: "full",
+  microphoneSolution: "hangingMic"
+}), {}, "yinman");
+assert.equal(yinmanHangingFullRoom.solutionSelection.drawingBlocked, true);
+assert.match(yinmanHangingFullRoom.solutionSelection.blockingMessage ?? "", /仅用于讲台区域扩声/);
+
+const yinyiHangingDraft = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "hangingMic"
+}), {}, "yinyi");
+assert.notEqual(yinyiHangingDraft.solutionSelection.microphone.selected, "hangingMic");
+assert.equal(yinyiHangingDraft.productSelection.some((item) => item.productId === HANGING_MIC_PRODUCT_ID || item.name === "吊麦"), false);
+assert.equal(yinyiHangingDraft.generatedPoints.some((point) => point.pickupKind === "hangingMic"), false);
+console.log("PASS Yinman-only hanging microphone coverage, powered MIC capacity and processor boundaries");
 
 const getOutputSpeakers = (outputs) => outputs.generatedPoints.filter((point) => point.type === "speaker");
 const getOutputLineMic = (outputs) => outputs.generatedPoints.find((point) => point.pickupKind === "lineArray");
@@ -805,4 +868,13 @@ const result = await build({
 const bundledCode = result.outputFiles[0]?.text;
 if (!bundledCode) throw new Error("Point-system rule test bundle was empty.");
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(bundledCode).toString("base64")}`;
-await import(moduleUrl);
+try {
+  await import(moduleUrl);
+} catch (error) {
+  const line = Number(String(error?.stack ?? "").match(/base64,[^:]+:(\d+):\d+/)?.[1]);
+  if (Number.isFinite(line)) {
+    const lines = bundledCode.split("\n");
+    console.error(lines.slice(Math.max(0, line - 3), line + 2).join("\n"));
+  }
+  throw error;
+}

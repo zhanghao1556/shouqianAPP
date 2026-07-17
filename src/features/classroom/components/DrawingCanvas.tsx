@@ -43,6 +43,7 @@ import topologySixMicProcessorImage from "../../../assets/topology-six-mic-proce
 import yinmanArrayMicPointMapImage from "../../../assets/yinman-array-mic-pointmap.png";
 import yinmanArrayMicTopologyImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
+import hangingMicImage from "../../../assets/yinman-hanging-mic.png";
 
 const pointColors: Record<GeneratedPoint["type"], string> = {
   arrayMic: "#00a6a6",
@@ -186,6 +187,8 @@ function InstallationDiagram({
   const width = 980;
   const height = getInstallationCanvasHeight(profile, width);
   const hasLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
+  const hasHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
+  const pickupDrawingName = hasHangingMic ? "吊麦" : hasLineArray ? "线阵麦" : "阵列麦";
   const hasSpeakerSignalModes = generatedPoints.some((point) => point.speakerSignalMode);
   const room = getCanvasRoomLayout(profile, width, height);
   const arrayMicCanvasPoints = generatedPoints
@@ -553,7 +556,7 @@ function InstallationDiagram({
         className={addingCentralAir || addingLegacySpeaker || addingManualArrayMic || addingManualSpeaker || aimingLegacySpeaker || aimingManualSpeaker ? "engineeringCanvas cadCanvas installationCanvas markingCanvas" : "engineeringCanvas cadCanvas installationCanvas"}
         style={{ aspectRatio: `${installationViewBox.width} / ${installationViewBox.height}` }}
         role="img"
-        aria-label={micOnly ? `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}${hasLineArray ? "线阵麦" : "阵列麦"}点位图` : `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}${hasLineArray ? "线阵麦" : "阵列麦"}与音箱点位图`}
+        aria-label={micOnly ? `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}${pickupDrawingName}点位图` : `${getAppBrand().id === "yinman" ? "音曼" : "音翼"}${pickupDrawingName}与音箱点位图`}
         onClick={handleCanvasClick}
       >
         <defs>
@@ -588,7 +591,7 @@ function InstallationDiagram({
         <rect x={installationViewBox.x} y={installationViewBox.y} width={installationViewBox.width} height={installationViewBox.height} fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
         <rect x={room.x} y={room.y} width={room.width} height={room.height} fill="#ffffff" stroke="#111827" strokeWidth="0.9" />
         <text x={titleX} y={installationViewBox.y + 38} textAnchor="middle" className="cadTitle">
-          {micOnly ? `${hasLineArray ? "线阵麦" : "阵列麦"}点位图` : `${hasLineArray ? "线阵麦" : "阵列麦"}与音箱点位图`}
+          {micOnly ? `${pickupDrawingName}点位图` : `${pickupDrawingName}与音箱点位图`}
         </text>
         <line x1={room.x} y1={room.y} x2={room.x + room.width} y2={room.y} stroke="#111827" strokeWidth="0.8" strokeDasharray="5 4" />
         <MeetingFurnitureMarker profile={profile} width={width} height={height} roomClipId={roomClipId} />
@@ -639,6 +642,7 @@ function InstallationDiagram({
         micOnly={micOnly}
         hasManualArrayMic={manualArrayMicPoints.length > 0}
         hasLineArray={hasLineArray}
+        hasHangingMic={hasHangingMic}
         hasSpeakerSignalModes={hasSpeakerSignalModes}
       />
     </div>
@@ -1583,7 +1587,7 @@ type TopologyNodeKind =
   | "computer"
   | "legacy"
   | "device";
-type TopologyNode = { key: string; label: string; kind: TopologyNodeKind; quantity?: number; isLegacy?: boolean; isLineArray?: boolean };
+type TopologyNode = { key: string; label: string; kind: TopologyNodeKind; quantity?: number; isLegacy?: boolean; isLineArray?: boolean; isHangingMic?: boolean };
 type TopologyEdge = { id: string; from: string; to: string; label: string; laneOffset?: number };
 const LEGACY_AUDIO_ROOT_LABELS = ["原有音频系统", "原有扩声系统"];
 const LEGACY_AUDIO_CENTER_PRIORITY = ["legacy-mixer", "legacy-processor", "legacy-amplifier"];
@@ -1600,6 +1604,7 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   };
 
   const isLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
+  const isHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
   const processorDirect = getAppBrand().id === "yinman" || isLineArray;
   const topologyRootKey = processorDirect ? "processorHost" : "mainMic";
   if (processorDirect) {
@@ -1609,11 +1614,14 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
       const key = `arrayMic-${index}`;
       ensureNode({
         key,
-        label: isLineArray ? (arrayMicCount > 1 ? `智能线阵麦克风 ${index}` : "智能线阵麦克风") : arrayMicCount > 1 ? `阵麦 ${index}` : "阵麦",
+        label: isHangingMic
+          ? arrayMicCount > 1 ? `吊麦 ${index}` : "吊麦"
+          : isLineArray ? (arrayMicCount > 1 ? `智能线阵麦克风 ${index}` : "智能线阵麦克风") : arrayMicCount > 1 ? `阵麦 ${index}` : "阵麦",
         kind: "mainMic",
-        isLineArray
+        isLineArray,
+        isHangingMic
       });
-      edges.push({ id: `array-mic-processor-${index}`, from: key, to: topologyRootKey, label: formatTopologyCableLabel("网线", 1) });
+      edges.push({ id: `array-mic-processor-${index}`, from: key, to: topologyRootKey, label: formatTopologyCableLabel(isHangingMic ? "麦克风线" : "网线", 1) });
     });
   } else {
     ensureNode({ key: "mainMic", label: arrayMicCount > 1 ? "主麦" : "阵麦", kind: "mainMic" });
@@ -1839,6 +1847,10 @@ function getTopologyNodeKey(
     const match = device.match(/(\d+)\s*$/);
     return `arrayMic-${match?.[1] ?? "1"}`;
   }
+  if (device.includes("吊麦")) {
+    const match = device.match(/(\d+)\s*$/);
+    return `arrayMic-${match?.[1] ?? "1"}`;
+  }
   if (getAppBrand().id === "yinman" && device.includes("智能天花阵列麦克风")) {
     const match = device.match(/(\d+)\s*$/);
     return `arrayMic-${match?.[1] ?? "1"}`;
@@ -1875,7 +1887,8 @@ function getTopologyNode(device: string, port: string, key: string, speakerCount
   if (key === "mainMic") return { key, label: "阵麦", kind: "mainMic" };
   if (key.startsWith("arrayMic-")) {
     const index = Number(key.slice("arrayMic-".length));
-    return { key, label: Number.isFinite(index) ? `阵麦 ${index}` : "阵麦", kind: "mainMic" };
+    const isHangingMic = device.includes("吊麦");
+    return { key, label: isHangingMic ? `吊麦 ${index}` : Number.isFinite(index) ? `阵麦 ${index}` : "阵麦", kind: "mainMic", isHangingMic };
   }
   if (key === "processorHost") return { key, label: "智能音频处理主机", kind: "processor" };
   if (isTopologySpeakerKey(key)) return {
@@ -2987,6 +3000,7 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
 
 function getTopologyImageSize(node: TopologyNode) {
   if (node.isLineArray) return { width: 116, height: 32 };
+  if (node.isHangingMic) return { width: 34, height: 90 };
   if (node.kind === "mainMic") return { width: 88, height: 66 };
   if (node.kind === "slaveMic") return { width: 66, height: 50 };
   if (node.kind === "speaker" && node.label.includes("吸顶")) return { width: 42, height: 42 };
@@ -3016,6 +3030,7 @@ function getTopologyImageSize(node: TopologyNode) {
 
 function getTopologyDeviceImage(node: TopologyNode) {
   if (node.isLineArray) return lineArrayMicImage;
+  if (node.isHangingMic) return hangingMicImage;
   if (node.kind === "mainMic" || node.kind === "slaveMic") return getAppBrand().id === "yinman" ? yinmanArrayMicTopologyImage : topologyArrayMicImage;
   if (node.kind === "speaker" && node.label.includes("吸顶")) return topologyCeilingSpeakerImage;
   if (node.kind === "speaker" && node.label.includes("壁挂")) return topologyWallSpeakerImage;
@@ -3890,7 +3905,9 @@ function getPointLabelLines(
     getShortPointName(point),
     groupLabel ? `${groupLabel} 分组` : "",
     profile && point.type === "arrayMic"
-      ? point.pickupKind === "lineArray"
+      ? point.pickupKind === "hangingMic"
+        ? "吊装安装"
+        : point.pickupKind === "lineArray"
         ? point.installationMode === "podium"
           ? "讲台摆放 约1.1m"
           : point.installationMode === "tabletop"
@@ -3986,7 +4003,8 @@ function GeneratedPointMarker({
   const coverageOpacity = muted ? 0.2 : 0.88;
   const coverageRingOpacity = muted ? 0.28 : 0.46;
   const useLineArrayMicImage = point.type === "arrayMic" && point.pickupKind === "lineArray";
-  const useYinmanArrayMicImage = point.type === "arrayMic" && !useLineArrayMicImage && getAppBrand().id === "yinman";
+  const useHangingMicImage = point.type === "arrayMic" && point.pickupKind === "hangingMic";
+  const useYinmanArrayMicImage = point.type === "arrayMic" && !useLineArrayMicImage && !useHangingMicImage && getAppBrand().id === "yinman";
   return (
     <g opacity={muted ? 0.62 : 1}>
       {point.type === "arrayMic" ? (
@@ -4008,7 +4026,9 @@ function GeneratedPointMarker({
               </>
             )}
           </g>
-          {useLineArrayMicImage ? (
+          {useHangingMicImage ? (
+            <image href={hangingMicImage} x={canvasPoint.x - micSize * 0.22} y={canvasPoint.y - micSize * 0.8} width={micSize * 0.44} height={micSize * 1.6} preserveAspectRatio="xMidYMid meet" />
+          ) : useLineArrayMicImage ? (
             <image href={lineArrayMicImage} x={canvasPoint.x - micSize} y={canvasPoint.y - micSize * 0.2} width={micSize * 2} height={micSize * 0.4} preserveAspectRatio="xMidYMid meet" />
           ) : useYinmanArrayMicImage ? (
             <image
@@ -4193,7 +4213,7 @@ function PointLabel({
 }
 
 function getShortPointName(point: GeneratedPoint) {
-  if (point.type === "arrayMic") return point.pickupKind === "lineArray" ? "线阵麦" : "阵列麦";
+  if (point.type === "arrayMic") return point.pickupKind === "hangingMic" ? "吊麦" : point.pickupKind === "lineArray" ? "线阵麦" : "阵列麦";
   if (point.label.includes("吸顶音箱")) return "吸顶音箱";
   if (point.label.includes("后墙中置")) return "后墙中置壁挂";
   if (point.label.includes("壁挂音柱")) return "壁挂音箱";
@@ -4575,17 +4595,19 @@ function Legend({
   micOnly = false,
   hasManualArrayMic = false,
   hasLineArray = false,
+  hasHangingMic = false,
   hasSpeakerSignalModes = false
 }: {
   micOnly?: boolean;
   hasManualArrayMic?: boolean;
   hasLineArray?: boolean;
+  hasHangingMic?: boolean;
   hasSpeakerSignalModes?: boolean;
 }) {
   return (
     <div className="canvasLegend">
       <span>
-        <i style={{ background: "#00a6a6" }} /> {hasLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"}
+        <i style={{ background: "#00a6a6" }} /> {hasHangingMic ? "吊麦" : hasLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"}
       </span>
       {hasManualArrayMic && (
         <span>
@@ -4593,7 +4615,7 @@ function Legend({
         </span>
       )}
       <span>
-        <i style={{ background: "rgba(0, 166, 166, 0.28)", border: "1px dashed #00a6a6" }} /> {hasLineArray ? "线阵麦范围" : "阵麦范围"}
+        <i style={{ background: "rgba(0, 166, 166, 0.28)", border: "1px dashed #00a6a6" }} /> {hasHangingMic ? "吊麦3m范围" : hasLineArray ? "线阵麦范围" : "阵麦范围"}
       </span>
       {!micOnly && (
         <>

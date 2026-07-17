@@ -9,6 +9,7 @@ import { getAppBrand } from "../brand";
 import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
 import yinmanArrayMicImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
+import hangingMicImage from "../../../assets/yinman-hanging-mic.png";
 import ceilingSpeakerImage from "../../../assets/topology-ceiling-speaker.png";
 import wallSpeakerImage from "../../../assets/topology-wall-speaker.png";
 
@@ -45,7 +46,8 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           title="麦克风"
           options={[
             { value: "existingArray", label: "智能天花阵列麦克风", imageSrc: arrayMicImage },
-            { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage }
+            { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage },
+            ...(brand.id === "yinman" ? [{ value: "hangingMic", label: "吊麦", imageSrc: hangingMicImage }] : [])
           ]}
           selected={selection.microphone.selected}
           recommended={selection.microphone.recommended}
@@ -131,7 +133,7 @@ function SolutionChoiceGroup({
           </button>
         ) : null}
       </div>
-      <div className="solutionSegmentedControl">
+      <div className={`solutionSegmentedControl${options.length > 2 ? " hasThreeOptions" : ""}`}>
         {options.map((option) => (
           <button
             key={option.value}

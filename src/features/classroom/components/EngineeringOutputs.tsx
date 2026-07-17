@@ -36,11 +36,11 @@ export function EngineeringOutputs({
 }: EngineeringOutputsProps) {
   const brand = getAppBrand();
   const selectedSpeakerProductId = outputs.solutionSelection.speaker.selected === "ceiling" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
-  const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId);
+  const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId, outputs.solutionSelection.microphone.selected);
   const exportDrawingImage = (type: "installation" | "topology") => {
       const selector =
         type === "installation"
-          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"]`
+          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦点位图"]`
           : `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
     const svg = document.querySelector<SVGSVGElement>(selector);
     if (!svg) {
@@ -148,12 +148,14 @@ export function EngineeringOutputs({
 function getEquipmentRows(
   selection: ProductRecommendation[],
   brandId: "yinyi" | "yinman",
-  selectedSpeakerProductId: "CEILING-SPEAKER" | "COLUMN-SPEAKER"
+  selectedSpeakerProductId: "CEILING-SPEAKER" | "COLUMN-SPEAKER",
+  selectedMicrophone: GeneratedOutputs["solutionSelection"]["microphone"]["selected"]
 ): Array<{ item: ProductRecommendation; processorTier?: Exclude<ProcessorTier, "auto"> }> {
   return selection.flatMap((item) => {
     if (item.category === "speaker" && item.productId !== selectedSpeakerProductId) return [];
     if (item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID) return [{ item }];
-    return getProcessorTiersForBrand(brandId).map((processorTier) => ({
+    const processorTiers = selectedMicrophone === "hangingMic" ? getProcessorTiersForBrand(brandId).filter((tier) => tier !== "highPerformance") : getProcessorTiersForBrand(brandId);
+    return processorTiers.map((processorTier) => ({
       processorTier,
       item: {
         ...item,

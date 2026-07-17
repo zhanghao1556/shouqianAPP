@@ -18,6 +18,7 @@ import {
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
+import { HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
@@ -228,7 +229,11 @@ function generateProcessorDirectConnectionLines(
   brandId: AppBrandId,
   generatedPoints: GeneratedPoint[]
 ): ConnectionLine[] {
-  const arrayMic = selection.find((item) => (item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID || item.productId === LINE_ARRAY_PRODUCT_ID) && item.quantity > 0);
+  const arrayMic = selection.find((item) => (
+    item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID ||
+    item.productId === LINE_ARRAY_PRODUCT_ID ||
+    item.productId === HANGING_MIC_PRODUCT_ID
+  ) && item.quantity > 0);
   const processor = selection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID && item.quantity > 0);
   if (!arrayMic || !processor) return [];
 
@@ -236,6 +241,7 @@ function generateProcessorDirectConnectionLines(
   const coreName = processor.name;
   const capability = getBrandSystemCapability(brandId);
   const isLineArray = arrayMic.productId === LINE_ARRAY_PRODUCT_ID;
+  const isHangingMic = arrayMic.productId === HANGING_MIC_PRODUCT_ID;
   const hasRemoteOrRecording =
     profile.needs.includes("videoConference") || profile.needs.includes("remoteTeaching") || profile.needs.includes("recording");
   const speakerProduct = selection.find((item) => item.category === "speaker" && item.quantity > 0);
@@ -250,6 +256,18 @@ function generateProcessorDirectConnectionLines(
   const shouldRouteExternalToLegacyAudio = Boolean(legacySound && legacyAudioInputDevice);
 
   Array.from({ length: arrayMic.quantity }, (_, index) => index + 1).forEach((index) => {
+    if (isHangingMic) {
+      lines.push({
+        id: `hanging-mic-processor-${index}`,
+        fromDevice: `吊麦 ${index}`,
+        fromPort: "音频输出",
+        toDevice: coreName,
+        toPort: `MIC ${index}`,
+        cableType: "麦克风线",
+        note: "每只吊麦独占一路MIC输入，由MIC口直接供电。"
+      });
+      return;
+    }
     lines.push({
       id: `array-mic-processor-network-${index}`,
       fromDevice: `${isLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"} ${index}`,

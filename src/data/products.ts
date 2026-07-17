@@ -127,12 +127,12 @@ export const productRules: ProductRule[] = [
   },
   {
     productId: "YM-LB102",
-    name: "LB102 小振膜电容麦克风",
+    name: "吊麦",
     category: "pickup",
     matchedScenarios: ["auditorium", "other"],
     matchedNeeds: ["recording", "localAmplification"],
     source: "音曼小振膜电容麦克风-LB102参数（铜管）.pdf",
-    quantityRule: (profile) => (profile.needs.includes("recording") ? 2 : 0),
-    reason: () => "适合作为特殊录音或舞台区域的补充拾音。"
+    quantityRule: () => 0,
+    reason: () => "仅在音曼讲台区域扩声方案中手动选择；每只占一路带供电MIC输入。"
   }
 ];

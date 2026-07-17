@@ -60,6 +60,11 @@ import {
 import { validatePointPlan } from "./pointValidation";
 import { getLineArrayDecision, getProcessorCapacity, getProcessorInterfaceDemand, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { getCustomerSolutionSelection } from "./solutionSelection";
+import {
+  getHangingMicProcessorTier,
+  getHangingMicRemainingCapacity,
+  HANGING_MIC_PRODUCT_ID
+} from "./hangingMicRules";
 
 export { getAcousticAssessment } from "./reverberationRules";
 
@@ -144,7 +149,7 @@ export const generateEngineeringOutputs = (
   const completeness = getCompleteness(profile);
   const acousticAssessment = getAcousticAssessment(profile);
   const canGenerateCore = hasValidGeometry(profile);
-  const initialSolutionSelection = getCustomerSolutionSelection(profile);
+  const initialSolutionSelection = getCustomerSolutionSelection(profile, [], brandId);
   const canGenerateDrawings = canGenerateCore && !initialSolutionSelection.drawingBlocked;
   const requiredArrayMicCount = canGenerateDrawings ? getRequiredArrayMicCount(profile, brandId) : 0;
   const defaultPoints = canGenerateDrawings ? generateBrandEngineeringPoints(profile, {}, brandId) : [];
@@ -204,15 +209,15 @@ export const generateEngineeringOutputs = (
   const reviewItems: string[] = [];
   const drawings = [
     {
-      title: "阵麦与音箱点位图",
+      title: "麦克风与音箱点位图",
       type: "installation" as const,
       notes: [
         "按房间尺寸等比例绘制，前方默认为黑板 / 讲台侧，点位需结合门、窗、投影幕、空调出风口和灯具复核。",
-        "蓝色点位用于阵列麦拾音，橙色点位用于音箱覆盖；页面可导出 PNG 图片，便于方案沟通和归档。"
+        "蓝色点位用于麦克风拾音，橙色点位用于音箱覆盖；页面可导出 PNG 图片，便于方案沟通和归档。"
       ]
     },
     { title: "接口接线图", type: "wiring" as const, notes: ["按产品资料生成接口级连接关系，无需销售补充线路路径。"] },
-    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、智能天花阵列麦克风、电脑 / 录播平台和音箱之间的系统链路。"] }
+    { title: "系统拓扑图", type: "topology" as const, notes: ["展示外接设备、麦克风、电脑 / 录播平台和音箱之间的系统链路。"] }
   ];
   const report = {
     pdfReportModel: {
@@ -253,6 +258,7 @@ const getAudioPlan = (
 ): AudioPlan => {
   const area = getRoomArea(profile);
   const arrayCount = points.filter((point) => point.type === "arrayMic").length;
+  const usesHangingMic = points.some((point) => point.pickupKind === "hangingMic");
   const hasOnline = profile.needs.some((need) => ["videoConference", "interactiveClass", "recording", "remoteTeaching"].includes(need));
   const hasLocalAmp = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
   const capability = getBrandSystemCapability(brandId);
@@ -261,10 +267,14 @@ const getAudioPlan = (
 
   return {
     mode,
-    summary: brandId === "yinman"
+    summary: usesHangingMic
+      ? "本方案由吊麦配合智能音频处理主机完成讲台区域拾音和本地扩声；每只吊麦独占一路带供电MIC输入。"
+      : brandId === "yinman"
       ? "本方案由智能天花阵列麦克风配合智能音频处理主机完成拾音、音频处理和无源音箱驱动，结合波束成形、反馈抑制、噪声抑制、回声消除和自动增益，形成完整课堂音频链路。"
       : "本方案以智能天花阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
-    pickupGoal: hasOnline
+    pickupGoal: usesHangingMic
+      ? "吊麦仅服务讲台区域拾音与扩声，按3m半径复核覆盖，不承担全场或线上互动拾音。"
+      : hasOnline
       ? oversizedForFullRoomAmp
         ? `面向远程互动、录播或会议平台，后场以线上拾音为主；线上拾音半径按 ${ARRAY_MIC_ONLINE_PICKUP_RADIUS_M}m 作为点位复核依据，优先保证教师区和后场发言清晰。`
         : "面向远程互动、录播或会议平台，优先保证教师授课区与学生发言区语音清晰，降低反射声和环境噪声对远端听感的影响。"
@@ -348,7 +358,9 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
     const isCeilingSpeaker = point.type === "speaker" && point.label.includes("吸顶音箱");
     const isBack = point.id.includes("back");
     const height = isMic
-      ? point.pickupKind === "lineArray"
+      ? point.pickupKind === "hangingMic"
+        ? "吊装安装，按现场高度复核"
+        : point.pickupKind === "lineArray"
           ? point.installationMode === "podium"
           ? "讲台摆放，建议约1.1m"
           : point.installationMode === "tabletop"
@@ -372,7 +384,9 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
       location: `距左墙约 ${x}m，距前墙 / 黑板一体机侧约 ${y}m`,
       installHeight: height,
       orientation: isMic
-        ? point.pickupKind === "lineArray"
+        ? point.pickupKind === "hangingMic"
+          ? "拾音面朝向讲台主要活动区，按3m半径覆盖。"
+        : point.pickupKind === "lineArray"
           ? point.pickupPattern === "front180" ? "正面朝向责任活动区，形成完整180度正面声幕。" : "面向会议桌主要发言区，按5m半径覆盖。"
         : profile.amplificationScope === "podium"
           ? "阵列麦位于教师主要活动区前方约 0.5-1m，拾音面兼顾授课走动和黑板板书位置；如讲台在左右侧，可小幅偏移但不脱离主活动区。"
@@ -385,7 +399,9 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
           ? "后场补声音箱朝向学生区前中部，音量作为补声，不压过前场。"
           : "前场音箱朝向主要听音区，单声道分组保持对称覆盖。",
       avoidance: isMic
-        ? point.pickupKind === "lineArray"
+        ? point.pickupKind === "hangingMic"
+          ? "避开空调风口、强噪声设备、音箱正前方和灯具检修口；每只独占一路带供电MIC输入。"
+        : point.pickupKind === "lineArray"
           ? `${point.installationMode === "podium" ? "优先放在讲台上并靠近讲话位置。" : point.installationMode === "tabletop" ? "放在会议桌主要发言区并保持拾音面无遮挡。" : "吊挂点保持拾音正面朝向责任区。"}避开空调风口、强噪声设备，网线禁止接PoE。`
           : `${getArrayMicInstallAdvice(profile)}避开投影机、空调出风口、强噪声设备和灯具检修口；不要贴近墙角或门口。`
         : isWallSpeaker
@@ -407,23 +423,26 @@ const getProductSelection = (
 ): ProductRecommendation[] => {
   const lineArray = getLineArrayDecision(profile);
   const useLineArrayProduct = lineArray.selected || lineArray.requested;
+  const requestedMicrophoneSolution = profile.engineeringConstraints.microphoneSolution ?? "auto";
+  const microphoneSolution = requestedMicrophoneSolution === "hangingMic" && brandId !== "yinman" ? "auto" : requestedMicrophoneSolution;
   const hasLegacySound = Boolean(profile.existingDevices.legacySoundSystem.trim());
   const needsAuditoriumRearFill = needsAuditoriumRearFillSpeakers(profile);
   const speakerProductId = getSpeakerProductId(profile);
   return classroomProductRules
-    .filter(
-      (rule) =>
-        rule.productId === "WIRELESS-HANDHELD" ||
-        (rule.category === "speaker" || rule.category === "amplifier"
-          ? shouldGenerateNewSpeakers(profile)
-          : profile.needs.some((need) => rule.applyWhen.includes(need)))
-    )
+    .filter((rule) => {
+      if (rule.productId === HANGING_MIC_PRODUCT_ID) return brandId === "yinman" && microphoneSolution === "hangingMic";
+      if (rule.productId === "DT2-Pro" && microphoneSolution === "hangingMic") return false;
+      if (rule.productId === "WIRELESS-HANDHELD") return true;
+      if (rule.category === "speaker" || rule.category === "amplifier") return shouldGenerateNewSpeakers(profile);
+      return profile.needs.some((need) => rule.applyWhen.includes(need));
+    })
     .map((rule) => {
       let quantity = 1;
       const arrayCount = points.filter((item) => item.type === "arrayMic").length;
       const speakerCount = points.filter((item) => item.type === "speaker").length;
 
       if (rule.productId === "DT2-Pro") quantity = lineArray.requested && !lineArray.selected ? 0 : Math.max(1, arrayCount);
+      if (rule.productId === HANGING_MIC_PRODUCT_ID) quantity = arrayCount;
       if (rule.productId === "CEILING-SPEAKER" || rule.productId === "COLUMN-SPEAKER") {
         quantity = (hasLegacySound && profile.scenario === "auditorium" && !needsAuditoriumRearFill) || rule.productId !== speakerProductId ? 0 : clampSpeakerQuantity(speakerCount);
       }
@@ -489,7 +508,11 @@ const applyQuantityOverrides = (
     const quantity = item.category === "speaker"
       ? clampSpeakerQuantity(override)
       : item.category === "pickup"
-        ? item.productId === LINE_ARRAY_PRODUCT_ID ? Math.min(2, Math.max(0, Math.round(override))) : clampArrayMicCountForBrand(override, brandId)
+        ? item.productId === LINE_ARRAY_PRODUCT_ID
+          ? Math.min(2, Math.max(0, Math.round(override)))
+          : item.productId === HANGING_MIC_PRODUCT_ID
+            ? Math.min(6, Math.max(0, Math.round(override)))
+            : clampArrayMicCountForBrand(override, brandId)
         : Math.max(0, Math.round(override));
     return {
       ...item,
@@ -505,12 +528,22 @@ const syncBrandSystemSelection = (
 ): ProductRecommendation[] => {
   const speakerCount = selection.find((item) => item.category === "speaker")?.quantity ?? 0;
   const amplifierCount = shouldGenerateNewSpeakers(profile) ? getBrandExternalAmplifierCount(speakerCount, brandId) : 0;
-  const selectionWithoutSystemDevices = selection.filter(
+  let selectionWithoutSystemDevices = selection.filter(
     (item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID && item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID
   );
   const lineArrayCount = selectionWithoutSystemDevices.find((item) => item.productId === LINE_ARRAY_PRODUCT_ID)?.quantity ?? 0;
-  const processorTier = getProcessorTier(profile, brandId, lineArrayCount, speakerCount);
+  const hangingMic = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID);
+  const newWirelessInputDemand = selectionWithoutSystemDevices.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
+  const processorTier = hangingMic
+    ? getHangingMicProcessorTier(profile, hangingMic.quantity, newWirelessInputDemand)
+    : getProcessorTier(profile, brandId, lineArrayCount, speakerCount);
   const processorCapacity = getProcessorCapacity(processorTier);
+  if (hangingMic) {
+    const remainingCapacity = getHangingMicRemainingCapacity(profile, processorTier, newWirelessInputDemand);
+    selectionWithoutSystemDevices = selectionWithoutSystemDevices.map((item) => item.productId === HANGING_MIC_PRODUCT_ID
+      ? { ...item, quantity: Math.min(item.quantity, remainingCapacity) }
+      : item);
+  }
 
   const rule = classroomProductRules.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
   const amplifierSelection = rule
@@ -535,6 +568,8 @@ const syncBrandSystemSelection = (
         where: "安装在讲台设备区或弱电机柜，集中完成阵麦接入、音频处理和无源音箱驱动。",
         wiring: lineArrayCount > 0
           ? `每只线阵麦使用独立网线接入阵麦接口，禁止接PoE；当前处理器接口容量为${processorCapacity}路。`
+          : hangingMic
+            ? `每只吊麦独占一路MIC输入并由MIC口直接供电；当前处理器MIC容量为${processorCapacity}路。`
           : "每只阵麦使用独立网线直连主机；主机直接驱动前 8 只无源音箱，9-16 只时通过教学模拟功放主机扩展。",
         basis: ""
       } satisfies ProductRecommendation]
@@ -573,6 +608,10 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
     if (tier !== "highPerformance" && demand > capacity) {
       risks.push(`处理器接口需求超过${capacity}路，需外扩或现场复勘。`);
     }
+  }
+  if ((profile.engineeringConstraints.microphoneSolution ?? "auto") === "hangingMic") {
+    const selection = getCustomerSolutionSelection(profile, points, brandId);
+    if (selection.microphone.hangingMicCapacityWarning) risks.push(selection.microphone.hangingMicCapacityWarning);
   }
   const speakerOverride = profile.engineeringConstraints.speakerProductOverride ?? "auto";
   if (acousticAssessment.risk === "high") risks.push(`${acousticAssessment.label}会影响阵麦拾音清晰度。`);
