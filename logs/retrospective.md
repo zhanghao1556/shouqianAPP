@@ -1971,3 +1971,10 @@ PowerShell reminder:
 - Preserve three independent checks for over-recommended 03 quantities: the product quantity override, the final generated point count and the structured special-review finding. This catches selection, drawing and validation drift separately.
 - When browser-testing a need set that normalizes an empty list back to local amplification, add the destination need before removing the current need. Temporarily clearing all needs can silently recreate the default and make a valid rule look stale.
 - Generic drawing titles and zero-quantity table rows are presentation contracts, not product-capability rules. Record them when they become misleading, then clean them in a dedicated UI pass rather than changing microphone or speaker generation during product calibration.
+
+### 2026-07-17 mixed line-array and RING02 guardrail
+
+- A single microphone-family enum cannot by itself represent a confirmed hybrid plan. Front SA110 plus rear RING02 requires explicit supplemental-pickup data through product selection, point generation, processor capacity, connection topology and validation; treating RING02 only as a RING01 slave silently drops the rear online-pickup responsibility.
+- Online-pickup completeness and processor quality can conflict. A one-line-array AJ350 default cannot automatically coexist with RING02, so do not add a rear point until the user decides whether functional rear coverage may switch the processor to AJ200/AJ600 or whether AJ350 quality keeps priority with a visible coverage warning.
+- A future candidate must preserve the line-array and speaker coordinates, calculate the uncovered occupied student zone rather than the back wall, assign RING02 only the 5m online responsibility, and keep it out of local amplification.
+- Do not share the array-microphone online radius with the line-array online radius. The latest user contract is 8m online for the large-disc array microphone and 5m online for the line array; interactive-class online pickup uses the selected product's own radius.
