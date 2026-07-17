@@ -10,10 +10,18 @@ import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
 import yinmanArrayMicImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
 import hangingMicImage from "../../../assets/yinman-hanging-mic.png";
+import smallDiscMicImage from "../../../assets/yinman-small-disc-mic.png";
+import audioExtenderImage from "../../../assets/yinman-audio-extender.png";
+import computerImage from "../../../assets/topology-laptop.png";
 import ceilingSpeakerImage from "../../../assets/topology-ceiling-speaker.png";
 import wallSpeakerImage from "../../../assets/topology-wall-speaker.png";
+import {
+  getSmallDiscConnectionMode,
+  isPureRecordingOrPatrolNeed,
+  shouldShowSmallDiscConnectionChoice
+} from "../lib/yinmanSmallDiscRules";
 
-export type SolutionChangeKind = "microphone" | "speaker" | "processor";
+export type SolutionChangeKind = "microphone" | "speaker" | "processor" | "connection";
 
 interface CustomerSolutionSelectorProps {
   profile: ClassroomProfile;
@@ -24,6 +32,28 @@ interface CustomerSolutionSelectorProps {
 export function CustomerSolutionSelector({ profile, selection, onChange }: CustomerSolutionSelectorProps) {
   const brand = getAppBrand();
   const arrayMicImage = brand.id === "yinman" ? yinmanArrayMicImage : topologyArrayMicImage;
+  const pureRecordingOrPatrol = isPureRecordingOrPatrolNeed(profile);
+  const microphoneOptions = brand.id === "yinman"
+    ? [
+        { value: "existingArray", label: "大圆盘阵麦", imageSrc: arrayMicImage },
+        { value: "smallDisc01", label: "小圆盘阵麦（内置处理）", imageSrc: smallDiscMicImage },
+        ...(pureRecordingOrPatrol ? [{ value: "smallDisc03", label: "小圆盘阵麦（录音巡课）", imageSrc: smallDiscMicImage }] : []),
+        { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage },
+        { value: "hangingMic", label: "吊麦", imageSrc: hangingMicImage }
+      ]
+    : [
+        { value: "existingArray", label: "智能天花阵列麦克风", imageSrc: arrayMicImage },
+        { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage }
+      ];
+  const speakerOptions = selection.microphone.selected === "smallDisc01"
+    ? [{ value: "wall", label: "壁挂音箱", imageSrc: wallSpeakerImage }]
+    : [
+        { value: "wall", label: "壁挂音箱", imageSrc: wallSpeakerImage },
+        { value: "ceiling", label: "吸顶音箱", imageSrc: ceilingSpeakerImage }
+      ];
+  const showSmallDiscConnectionChoice = shouldShowSmallDiscConnectionChoice(profile);
+  const selectedConnectionMode = getSmallDiscConnectionMode(profile);
+  const recommendedConnectionMode = profile.needs.includes("recording") ? "extender" : "usb";
   const setConstraints = (patch: Partial<ClassroomProfile["engineeringConstraints"]>, kind: SolutionChangeKind) => {
     onChange({
       ...profile,
@@ -44,33 +74,53 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
       <div className="customerSolutionGrid">
         <SolutionChoiceGroup
           title="麦克风"
-          options={[
-            { value: "existingArray", label: "智能天花阵列麦克风", imageSrc: arrayMicImage },
-            { value: "lineArray", label: "智能线阵麦克风", imageSrc: lineArrayMicImage },
-            ...(brand.id === "yinman" ? [{ value: "hangingMic", label: "吊麦", imageSrc: hangingMicImage }] : [])
-          ]}
+          options={microphoneOptions}
           selected={selection.microphone.selected}
           recommended={selection.microphone.recommended}
           userSelected={selection.microphone.userSelected}
-          onSelect={(value) => setConstraints({
-            microphoneSolution: value as MicrophoneSolution,
-            ...(value === "hangingMic" ? { processorTier: "auto" as const } : {})
+          onSelect={(value) => {
+            const leavingSmallDisc01 = profile.engineeringConstraints.microphoneSolution === "smallDisc01" && value !== "smallDisc01";
+            setConstraints({
+              microphoneSolution: value as MicrophoneSolution,
+              ...(value === "smallDisc01" ? { speakerProductOverride: "wall" as const } : leavingSmallDisc01 ? { speakerProductOverride: "auto" as const } : {}),
+              ...(value === "hangingMic" || value === "smallDisc01" || value === "smallDisc03" ? { processorTier: "auto" as const } : {}),
+              ...(value === "smallDisc01" ? { smallDiscConnectionMode: "auto" as const } : leavingSmallDisc01 ? { smallDiscConnectionMode: "auto" as const } : {})
+            }, "microphone");
+          }}
+          onRestore={() => setConstraints({
+            microphoneSolution: "auto",
+            ...(profile.engineeringConstraints.microphoneSolution === "smallDisc01" ? { speakerProductOverride: "auto" as const } : {}),
+            smallDiscConnectionMode: "auto",
+            processorTier: "auto"
           }, "microphone")}
-          onRestore={() => setConstraints({ microphoneSolution: "auto" }, "microphone")}
         />
 
-        <SolutionChoiceGroup
-          title="音箱"
-          options={[
-            { value: "wall", label: "壁挂音箱", imageSrc: wallSpeakerImage },
-            { value: "ceiling", label: "吸顶音箱", imageSrc: ceilingSpeakerImage }
-          ]}
-          selected={selection.speaker.selected}
-          recommended={selection.speaker.recommended}
-          userSelected={selection.speaker.userSelected}
-          onSelect={(value) => setConstraints({ speakerProductOverride: value as SpeakerProductOverride }, "speaker")}
-          onRestore={() => setConstraints({ speakerProductOverride: "auto" }, "speaker")}
-        />
+        {selection.microphone.selected !== "smallDisc03" ? (
+          <SolutionChoiceGroup
+            title="音箱"
+            options={speakerOptions}
+            selected={selection.speaker.selected}
+            recommended={selection.speaker.recommended}
+            userSelected={selection.speaker.userSelected}
+            onSelect={(value) => setConstraints({ speakerProductOverride: value as SpeakerProductOverride }, "speaker")}
+            onRestore={() => setConstraints({ speakerProductOverride: "auto" }, "speaker")}
+          />
+        ) : null}
+
+        {showSmallDiscConnectionChoice ? (
+          <SolutionChoiceGroup
+            title="连接方式"
+            options={[
+              { value: "usb", label: "USB直连", imageSrc: computerImage },
+              { value: "extender", label: "音频扩展器", imageSrc: audioExtenderImage }
+            ]}
+            selected={selectedConnectionMode}
+            recommended={recommendedConnectionMode}
+            userSelected={(profile.engineeringConstraints.smallDiscConnectionMode ?? "auto") !== "auto"}
+            onSelect={(value) => setConstraints({ smallDiscConnectionMode: value as "usb" | "extender" }, "connection")}
+            onRestore={() => setConstraints({ smallDiscConnectionMode: "auto" }, "connection")}
+          />
+        ) : null}
 
       </div>
 
@@ -83,7 +133,7 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           decisionFactors={selection.microphone.decisionFactors}
         />
       ) : null}
-      {selection.speaker.isNonRecommended ? (
+      {selection.microphone.selected !== "smallDisc03" && selection.speaker.isNonRecommended ? (
         <SelectionNote
           title={`音箱：系统推荐 ${selection.speaker.recommendedLabel}`}
           advantages={selection.speaker.advantages}
@@ -136,7 +186,7 @@ function SolutionChoiceGroup({
           </button>
         ) : null}
       </div>
-      <div className={`solutionSegmentedControl${options.length > 2 ? " hasThreeOptions" : ""}`}>
+      <div className={`solutionSegmentedControl${options.length === 1 ? " singleOption" : options.length === 3 ? " hasThreeOptions" : ""}`}>
         {options.map((option) => (
           <button
             key={option.value}

@@ -12,6 +12,8 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 const oneDecimal = (value: number) => Math.round(value * 10) / 10;
 const MIN_CEILING_SPEAKER_TO_MIC_DISTANCE = 2;
 const TEACHER_MONITOR_CEILING_SPEAKER_SOFT_MIC_DISTANCE = 1.5;
+const NON_AFC_CEILING_SPEAKER_TO_LINE_ARRAY_DISTANCE = 1.2;
+const LINE_ARRAY_SYMMETRIC_CEILING_SPEAKER_MAX_SPACING = 4;
 const MIN_CEILING_SPEAKER_TO_FRONT_WALL_DISTANCE = 1.5;
 const MIN_CEILING_SPEAKER_TO_BACK_WALL_DISTANCE = 2;
 const MIN_ARRAY_MIC_TO_CENTRAL_AIR_DISTANCE_M = 0.5;
@@ -123,6 +125,7 @@ const getSpeakerModelNameForPointMap = (profile: ClassroomProfile, forcedSpeaker
 
 export interface PointQuantityTargets {
   arrayMicCount?: number;
+  arrayMicMaxCount?: number;
   speakerCount?: number;
   speakerProductId?: SpeakerProductId;
   preserveSpeakerCount?: boolean;
@@ -139,8 +142,9 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
   const { length: depth, width: roomWidth } = profile.roomGeometry;
   const teacherY = getPrimaryArrayMicY(profile);
   const defaultArrayMicCount = getDefaultArrayMicCount(profile, teacherY);
-  const targetArrayMicCount = clamp(Math.round(targets.arrayMicCount ?? defaultArrayMicCount), 1, ARRAY_MIC_MAX_COUNT);
-  const arrayMicPositions = getArrayMicPositions(profile, teacherY, targetArrayMicCount);
+  const arrayMicMaxCount = Math.max(ARRAY_MIC_MAX_COUNT, Math.round(targets.arrayMicMaxCount ?? ARRAY_MIC_MAX_COUNT));
+  const targetArrayMicCount = clamp(Math.round(targets.arrayMicCount ?? defaultArrayMicCount), 1, arrayMicMaxCount);
+  const arrayMicPositions = getArrayMicPositions(profile, teacherY, targetArrayMicCount, arrayMicMaxCount);
   const primaryArrayMicY = arrayMicPositions.find((position) => position.rowIndex === 0)?.y ?? teacherY;
   const arrayMicInstallHeight = getArrayMicInstallHeight(profile);
   const points: GeneratedPoint[] = [];
@@ -200,7 +204,6 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
     const speakerPositions: WallSpeakerPosition[] = usesWallSpeaker
       ? getWallSpeakerPositions(profile, speakerCount, primaryArrayMicY, lineArrayFrontContext)
       : getCeilingSpeakerPositions(profile, speakerCount, points.filter((point) => point.type === "arrayMic"), targets.lineArrayContext);
-    const firstSpeakerRowY = Math.min(...speakerPositions.map((position) => position.y));
     const scopeText = getEffectiveAmplificationScope(profile) === "podium" ? (profile.scenario === "auditorium" ? "舞台区域扩声" : "讲台区域扩声") : "全场扩声";
     const ceilingSpeakerHeight = getCeilingSpeakerInstallHeight(profile);
     const arrayMics = points.filter((point) => point.type === "arrayMic");
@@ -271,12 +274,13 @@ export const generateEngineeringPoints = (profile: ClassroomProfile, targets: Po
       const position = speakerPositions[index];
       if (!position) return point;
       const placementText = [position.ceilingPlacementReason, position.lineArrayPlacementReason].filter(Boolean).join(" ");
-      if (!lineArrayFrontContext) {
+      const hasLineArraySignalRouting = usesWallSpeaker ? Boolean(lineArrayFrontContext) : Boolean(targets.lineArrayContext);
+      if (!hasLineArraySignalRouting) {
         return placementText ? { ...point, reason: `${point.reason} ${placementText}`.trim() } : point;
       }
       const speakerSignalMode: GeneratedPoint["speakerSignalMode"] = usesWallSpeaker
         ? position.y <= 0.05 ? "withoutLineArrayAfc" : "afc"
-        : position.forceWithoutLineArrayAfc || Math.abs(position.y - firstSpeakerRowY) <= 0.35 ? "withoutLineArrayAfc" : "afc";
+        : position.forceWithoutLineArrayAfc ? "withoutLineArrayAfc" : "afc";
       return {
         ...point,
         speakerSignalMode,
@@ -740,11 +744,16 @@ const getSupplementalArrayMicCoverageRadius = (profile: ClassroomProfile) =>
     ? getArrayMicEffectiveAmplificationRadius(profile)
     : ARRAY_MIC_ONLINE_PICKUP_RADIUS_M;
 
-const getArrayMicPositions = (profile: ClassroomProfile, teacherMicY: number, targetArrayMicCount: number) => {
-  const targetCount = clamp(Math.round(targetArrayMicCount), 1, ARRAY_MIC_MAX_COUNT);
+const getArrayMicPositions = (
+  profile: ClassroomProfile,
+  teacherMicY: number,
+  targetArrayMicCount: number,
+  maxCount = ARRAY_MIC_MAX_COUNT
+) => {
+  const targetCount = clamp(Math.round(targetArrayMicCount), 1, maxCount);
   if (shouldUseMeetingWidthAsArrayMicAxis(profile)) {
     const y = oneDecimal(profile.roomGeometry.length / 2);
-    const positions = getMeetingArrayMicAxisValues(profile, targetCount)
+    const positions = getMeetingArrayMicAxisValues(profile, targetCount, maxCount)
       .map((x, index) => ({
         x,
         y,
@@ -756,7 +765,7 @@ const getArrayMicPositions = (profile: ClassroomProfile, teacherMicY: number, ta
     return keepSameAxisArrayMicsApart(profile, positions, teacherMicY);
   }
 
-  const rowCounts = getArrayMicRowCounts(profile, targetCount);
+  const rowCounts = getArrayMicRowCounts(profile, targetCount, maxCount);
   const rowYs = getArrayMicRowYs(profile, teacherMicY, rowCounts.length);
   const teacherMicX = getTeacherArrayMicX(profile);
   const centerX = profile.roomGeometry.width / 2;
@@ -1048,8 +1057,12 @@ const shouldUseWideAuditoriumStageArrayMics = (profile: ClassroomProfile) =>
 const shouldUseWideClassroomFrontArrayMicPair = (profile: ClassroomProfile) =>
   profile.scenario === "standardClassroom" && getEffectiveAmplificationScope(profile) === "full" && profile.roomGeometry.width > 14;
 
-const getArrayMicRowCounts = (profile: ClassroomProfile, targetArrayMicCount: number) => {
-  const targetCount = clamp(Math.round(targetArrayMicCount), 1, ARRAY_MIC_MAX_COUNT);
+const getArrayMicRowCounts = (
+  profile: ClassroomProfile,
+  targetArrayMicCount: number,
+  maxCount = ARRAY_MIC_MAX_COUNT
+) => {
+  const targetCount = clamp(Math.round(targetArrayMicCount), 1, maxCount);
   if (shouldUseWideAuditoriumStageArrayMics(profile)) {
     if (targetCount <= 2) return [2];
     return [2, ...Array.from({ length: targetCount - 2 }, () => 1)];
@@ -1062,7 +1075,15 @@ const getArrayMicRowCounts = (profile: ClassroomProfile, targetArrayMicCount: nu
   if (targetCount === 2) return [2];
   if (targetCount === 3) return [2, 1];
   if (targetCount === 4) return [2, 2];
-  return [2, 1, 2];
+  if (targetCount === 5) return [2, 1, 2];
+  const rows = [2, 1, 2];
+  let remaining = targetCount - 5;
+  while (remaining > 0) {
+    const rowCount = Math.min(2, remaining);
+    rows.push(rowCount);
+    remaining -= rowCount;
+  }
+  return rows;
 };
 
 const getArrayMicRowXValues = (profile: ClassroomProfile, rowColumnCount: number, singleX: number, rowIndex: number) => {
@@ -1108,9 +1129,9 @@ const getMeetingArrayMicYs = (profile: ClassroomProfile, count: number) => {
   return getMeetingArrayMicAxisValues(profile, count);
 };
 
-const getMeetingArrayMicAxisValues = (profile: ClassroomProfile, count: number) => {
+const getMeetingArrayMicAxisValues = (profile: ClassroomProfile, count: number, maxCount = ARRAY_MIC_MAX_COUNT) => {
   const axisSpan = getMeetingArrayMicPrimaryAxisSpan(profile);
-  const targetCount = clamp(Math.round(count), 1, ARRAY_MIC_MAX_COUNT);
+  const targetCount = clamp(Math.round(count), 1, maxCount);
   if (targetCount <= 1) return [oneDecimal(axisSpan / 2)];
 
   return Array.from({ length: targetCount }, (_, index) => oneDecimal((axisSpan * (index + 1)) / (targetCount + 1)));
@@ -1164,7 +1185,7 @@ const getCeilingSpeakerPositions = (
   const rowCounts = getCeilingSpeakerRowCounts(count, columns, firstRowCount);
   const rows = rowCounts.length;
   const reserveTeacherMonitorRow = shouldReserveTeacherMonitorSpeakerRow(profile) && !shouldUseMeetingStyleCeilingSpeakerRules(profile);
-  const teacherMonitorYRatio = getTeacherMonitorCeilingSpeakerYRatio(profile, arrayMics, firstRowCount);
+  const teacherMonitorYRatio = getTeacherMonitorCeilingSpeakerYRatio(profile, arrayMics, firstRowCount, lineArrayContext);
   const rearRowCount = Math.max(0, rows - 1);
   const layout = rowCounts.flatMap((rowItemCount, row) =>
     Array.from({ length: rowItemCount }, (_, column) => {
@@ -1250,30 +1271,173 @@ const adjustCeilingSpeakerPositionsForMicClearance = (
   micPositions: Point[],
   lineArrayContext?: PointQuantityTargets["lineArrayContext"]
 ) => {
-  if (!positions.length || !micPositions.length) return positions;
+  if (!positions.length) return positions;
   const firstRowY = Math.min(...positions.map((position) => position.y));
-  return positions.map((position, index) => {
-    const usesLineArrayFirstRowException =
-      lineArrayContext?.mode === "front" && Math.abs(position.y - firstRowY) <= 0.35;
-    const minimumDistance = usesLineArrayFirstRowException
-      ? TEACHER_MONITOR_CEILING_SPEAKER_SOFT_MIC_DISTANCE
-      : MIN_CEILING_SPEAKER_TO_MIC_DISTANCE;
+  const signalAwarePositions = positions.map((position) =>
+    lineArrayContext && Math.abs(position.y - firstRowY) <= 0.35
+      ? { ...position, forceWithoutLineArrayAfc: true }
+      : position
+  );
+  if (!micPositions.length) return signalAwarePositions;
+  if (lineArrayContext) {
+    return adjustLineArrayCeilingSpeakerRowsForMicClearance(profile, signalAwarePositions, micPositions);
+  }
+  return signalAwarePositions.map((position, index) => {
+    const minimumDistance = getCeilingSpeakerMinimumMicDistance(position);
     const nearestDistance = getNearestPointDistance(position, micPositions);
     if (nearestDistance >= minimumDistance) return position;
 
-    const candidate = findNearestCeilingSpeakerClearancePosition(profile, positions, index, micPositions, minimumDistance);
+    const candidate = findNearestCeilingSpeakerClearancePosition(profile, signalAwarePositions, index, micPositions, minimumDistance);
     if (candidate) {
       return {
         ...candidate,
-        forceWithoutLineArrayAfc: usesLineArrayFirstRowException || undefined,
-        ceilingPlacementReason: `与麦克风实际距离不足，吸顶音箱仅做单点中轴移位，自动覆盖数量保持 ${positions.length} 只。`
+        ceilingPlacementReason: `与麦克风实际距离不足，吸顶音箱仅做单点中轴移位，自动覆盖数量保持 ${signalAwarePositions.length} 只。`
       };
     }
     return {
       ...position,
-      ceilingPlacementReason: `中心列覆盖回填点位按已确认例外保留，最近麦箱距离 ${oneDecimal(nearestDistance)}m，自动覆盖数量保持 ${positions.length} 只。`
+      ceilingPlacementReason: `中心列覆盖回填点位按已确认例外保留，最近麦箱距离 ${oneDecimal(nearestDistance)}m，自动覆盖数量保持 ${signalAwarePositions.length} 只。`
     };
   });
+};
+
+const getCeilingSpeakerMinimumMicDistance = (position: WallSpeakerPosition) =>
+  position.forceWithoutLineArrayAfc
+    ? NON_AFC_CEILING_SPEAKER_TO_LINE_ARRAY_DISTANCE
+    : MIN_CEILING_SPEAKER_TO_MIC_DISTANCE;
+
+const hasCeilingSpeakerMicClearance = (position: WallSpeakerPosition, micPositions: Point[]) =>
+  getNearestPointDistance(position, micPositions) >= getCeilingSpeakerMinimumMicDistance(position);
+
+const adjustLineArrayCeilingSpeakerRowsForMicClearance = (
+  profile: ClassroomProfile,
+  positions: WallSpeakerPosition[],
+  micPositions: Point[]
+) => {
+  let adjusted = positions.map((position) => ({ ...position }));
+  const rows = Array.from(
+    positions.reduce((groups, position, index) => {
+      const key = oneDecimal(position.y);
+      const indices = groups.get(key) ?? [];
+      indices.push(index);
+      groups.set(key, indices);
+      return groups;
+    }, new Map<number, number[]>()).values()
+  );
+
+  rows.forEach((rowIndices) => {
+    if (rowIndices.every((index) => hasCeilingSpeakerMicClearance(adjusted[index], micPositions))) return;
+    const paired = findSymmetricCeilingSpeakerPairAdjustment(profile, adjusted, rowIndices, micPositions);
+    if (paired) {
+      adjusted = paired;
+      return;
+    }
+    const shifted = findSymmetricCeilingSpeakerRowAdjustment(profile, adjusted, rowIndices, micPositions);
+    if (shifted) {
+      adjusted = shifted;
+      return;
+    }
+    rowIndices.forEach((index) => {
+      adjusted[index] = {
+        ...adjusted[index],
+        ceilingPlacementReason: "对称布置范围内无法满足麦箱距离，保留规则网格并需现场复核。"
+      };
+    });
+  });
+
+  return adjusted;
+};
+
+const findSymmetricCeilingSpeakerPairAdjustment = (
+  profile: ClassroomProfile,
+  positions: WallSpeakerPosition[],
+  rowIndices: number[],
+  micPositions: Point[]
+) => {
+  const bounds = getCeilingSpeakerWallBounds(profile);
+  const sortedIndices = [...rowIndices].sort((left, right) => positions[left].x - positions[right].x);
+  let candidatePositions = positions.map((position) => ({ ...position }));
+  let moved = false;
+
+  for (let pairIndex = 0; pairIndex < Math.floor(sortedIndices.length / 2); pairIndex += 1) {
+    const leftIndex = sortedIndices[pairIndex];
+    const rightIndex = sortedIndices[sortedIndices.length - pairIndex - 1];
+    if (
+      hasCeilingSpeakerMicClearance(candidatePositions[leftIndex], micPositions) &&
+      hasCeilingSpeakerMicClearance(candidatePositions[rightIndex], micPositions)
+    ) {
+      continue;
+    }
+
+    let pairCandidate: WallSpeakerPosition[] | undefined;
+    for (let offset = 0.1; offset <= MIN_CEILING_SPEAKER_TO_MIC_DISTANCE + 0.5; offset += 0.1) {
+      const left = { ...candidatePositions[leftIndex], x: oneDecimal(candidatePositions[leftIndex].x - offset) };
+      const right = { ...candidatePositions[rightIndex], x: oneDecimal(candidatePositions[rightIndex].x + offset) };
+      if (left.x < bounds.minX || right.x > bounds.maxX) continue;
+      if (!hasCeilingSpeakerMicClearance(left, micPositions) || !hasCeilingSpeakerMicClearance(right, micPositions)) continue;
+      const trial = candidatePositions.map((position, index) => index === leftIndex ? left : index === rightIndex ? right : position);
+      if (!hasValidSymmetricCeilingSpeakerRowSpacing(trial, rowIndices)) continue;
+      pairCandidate = trial;
+      break;
+    }
+    if (!pairCandidate) return undefined;
+    candidatePositions = pairCandidate;
+    moved = true;
+  }
+
+  const centerIndex = sortedIndices.length % 2 === 1 ? sortedIndices[Math.floor(sortedIndices.length / 2)] : undefined;
+  if (centerIndex !== undefined && !hasCeilingSpeakerMicClearance(candidatePositions[centerIndex], micPositions)) return undefined;
+  if (!moved || !rowIndices.every((index) => hasCeilingSpeakerMicClearance(candidatePositions[index], micPositions))) return undefined;
+  return candidatePositions.map((position, index) =>
+    rowIndices.includes(index) && Math.abs(position.x - positions[index].x) > 0.05
+      ? { ...position, ceilingPlacementReason: `麦箱距离不足，吸顶音箱按左右对称成对微移，自动覆盖数量保持 ${positions.length} 只。` }
+      : position
+  );
+};
+
+const hasValidSymmetricCeilingSpeakerRowSpacing = (positions: WallSpeakerPosition[], rowIndices: number[]) => {
+  const xValues = rowIndices.map((index) => positions[index].x).sort((left, right) => left - right);
+  return xValues.slice(1).every((value, index) => {
+    const gap = value - xValues[index];
+    return gap >= 0.8 && gap <= LINE_ARRAY_SYMMETRIC_CEILING_SPEAKER_MAX_SPACING + 0.05;
+  });
+};
+
+const findSymmetricCeilingSpeakerRowAdjustment = (
+  profile: ClassroomProfile,
+  positions: WallSpeakerPosition[],
+  rowIndices: number[],
+  micPositions: Point[]
+) => {
+  const bounds = getCeilingSpeakerWallBounds(profile);
+  const rowIndexSet = new Set(rowIndices);
+  const originalY = positions[rowIndices[0]]?.y;
+  if (originalY === undefined) return undefined;
+
+  for (let offset = 0.1; offset <= MIN_CEILING_SPEAKER_TO_MIC_DISTANCE + 0.5; offset += 0.1) {
+    for (const direction of [1, -1]) {
+      const y = oneDecimal(originalY + offset * direction);
+      if (y < bounds.minY || y > bounds.maxY) continue;
+      const trial = positions.map((position, index) => rowIndexSet.has(index) ? { ...position, y } : position);
+      if (!rowIndices.every((index) => hasCeilingSpeakerMicClearance(trial[index], micPositions))) continue;
+      if (rowIndices.some((index) => positions.some((other, otherIndex) => !rowIndexSet.has(otherIndex) && getDistance(trial[index], other) < 0.8))) continue;
+      const keepsTrackSpacing = rowIndices.every((index) => {
+        const yValues = positions
+          .filter((position, otherIndex) => !rowIndexSet.has(otherIndex) && Math.abs(position.x - trial[index].x) <= 0.15)
+          .map((position) => position.y)
+          .concat(y)
+          .sort((left, right) => left - right);
+        return yValues.slice(1).every((value, valueIndex) => value - yValues[valueIndex] <= CEILING_SPEAKER_MAX_SPACING_M + 0.05);
+      });
+      if (!keepsTrackSpacing) continue;
+      return trial.map((position, index) =>
+        rowIndexSet.has(index)
+          ? { ...position, ceilingPlacementReason: `麦箱距离不足，吸顶音箱按整排对称移位，自动覆盖数量保持 ${positions.length} 只。` }
+          : position
+      );
+    }
+  }
+  return undefined;
 };
 
 const findNearestCeilingSpeakerClearancePosition = (
@@ -1625,7 +1789,12 @@ const getFrontCeilingSpeakerYRatio = (profile: ClassroomProfile, preferredYRatio
   return clamp(depth * preferredYRatio, bounds.minY, frontCoverageLimitY) / depth;
 };
 
-const getTeacherMonitorCeilingSpeakerYRatio = (profile: ClassroomProfile, arrayMics: GeneratedPoint[], columns: number) => {
+const getTeacherMonitorCeilingSpeakerYRatio = (
+  profile: ClassroomProfile,
+  arrayMics: GeneratedPoint[],
+  columns: number,
+  lineArrayContext?: PointQuantityTargets["lineArrayContext"]
+) => {
   const { length: depth, width: roomWidth } = profile.roomGeometry;
   const bounds = getCeilingSpeakerWallBounds(profile);
   const primaryMic = arrayMics.find((point) => point.type === "arrayMic") ?? {
@@ -1640,7 +1809,10 @@ const getTeacherMonitorCeilingSpeakerYRatio = (profile: ClassroomProfile, arrayM
     const speakerX = clamp(roomWidth * xRatio, bounds.minX, bounds.maxX);
     return Math.min(nearest, Math.abs(speakerX - primaryMic.position.x));
   }, Number.POSITIVE_INFINITY);
-  const targetVerticalGap = Math.sqrt(Math.max(0, TEACHER_MONITOR_CEILING_SPEAKER_SOFT_MIC_DISTANCE ** 2 - nearestHorizontalGap ** 2));
+  const minimumDistance = lineArrayContext
+    ? NON_AFC_CEILING_SPEAKER_TO_LINE_ARRAY_DISTANCE
+    : TEACHER_MONITOR_CEILING_SPEAKER_SOFT_MIC_DISTANCE;
+  const targetVerticalGap = Math.sqrt(Math.max(0, minimumDistance ** 2 - nearestHorizontalGap ** 2));
   const softAvoidanceY = primaryMic.position.y - targetVerticalGap;
   return clamp(softAvoidanceY, bounds.minY, baseY) / depth;
 };

@@ -1470,6 +1470,10 @@ textarea:focus {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.solutionSegmentedControl.singleOption {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .solutionSegmentedControl.hasThreeOptions > button {
   grid-template-columns: 38px minmax(0, 1fr);
   padding-inline: 6px;

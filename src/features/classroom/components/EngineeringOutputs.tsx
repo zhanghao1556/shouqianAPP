@@ -4,6 +4,14 @@ import { downloadSvgAsPng } from "../lib/imageExporter";
 import { getCustomerVisibleConnectionLines } from "../lib/customerOutput";
 import { getProcessorTierName, getProcessorTiersForBrand, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
 import { AUDIO_PROCESSOR_HOST_PRODUCT_ID } from "../lib/systemCapabilities";
+import {
+  SMALL_DISC_01_PRODUCT_ID,
+  SMALL_DISC_02_PRODUCT_ID,
+  SMALL_DISC_03_PRODUCT_ID,
+  SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
+  SMALL_DISC_MAX_GENERATED_COUNT,
+  SMALL_DISC_USB_CABLE_PRODUCT_ID
+} from "../lib/yinmanSmallDiscRules";
 import { formatBrandText, getAppBrand } from "../brand";
 import { CustomerSolutionSelector, type SolutionChangeKind } from "./CustomerSolutionSelector";
 import { DrawingCanvas } from "./DrawingCanvas";
@@ -40,7 +48,7 @@ export function EngineeringOutputs({
   const exportDrawingImage = (type: "installation" | "topology") => {
       const selector =
         type === "installation"
-          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦点位图"]`
+          ? `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}阵列麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}线阵麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}吊麦点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}小圆盘阵麦与音箱点位图"], svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}小圆盘阵麦点位图"]`
           : `svg[aria-label="${brand.id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
     const svg = document.querySelector<SVGSVGElement>(selector);
     if (!svg) {
@@ -259,8 +267,15 @@ function QuantityStepper({
   const min = 0;
   const brand = getAppBrand();
   const lockedProcessor = item.category === "processor";
-  const effectiveMin = lockedProcessor ? 1 : min;
-  const max = item.category === "speaker" ? 16 : item.category === "pickup" ? (item.productId === LINE_ARRAY_PRODUCT_ID || brand.id === "yinman" ? 2 : 5) : item.category === "amplifier" || lockedProcessor ? 1 : 4;
+  const lockedSmallDiscAccessory = item.productId === SMALL_DISC_01_PRODUCT_ID || item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID || item.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID;
+  const effectiveMin = lockedProcessor || lockedSmallDiscAccessory ? 1 : min;
+  const max = item.category === "speaker"
+    ? 16
+    : item.productId === SMALL_DISC_02_PRODUCT_ID || item.productId === SMALL_DISC_03_PRODUCT_ID
+      ? SMALL_DISC_MAX_GENERATED_COUNT
+      : item.category === "pickup"
+        ? item.productId === LINE_ARRAY_PRODUCT_ID || brand.id === "yinman" ? 2 : 5
+        : item.category === "amplifier" || lockedProcessor || lockedSmallDiscAccessory ? 1 : 4;
   const decrement = () => onChange(Math.max(effectiveMin, item.quantity - 1));
   const increment = () => onChange(Math.min(max, item.quantity + 1));
 

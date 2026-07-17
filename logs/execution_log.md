@@ -6633,6 +6633,18 @@ Verification:
 - `npm.cmd run build` passed; runtime bundle scan found no `LB102`, `YM-LB102`, `AJ200`, `AJ600` or `AJ350` customer text.
 - Existing development services on ports 5174 and 5180 both returned HTTP 200. No release package was generated and no GitHub push was performed.
 
+## 2026-07-17 RING01 / RING02 / RING03 Agent facts and user calibration
+
+- Read the company Agent product answers, then separated documented facts from the user's final business rules. User-confirmed rules below override conflicting or incomplete Agent material.
+- `RING01` is not automatically recommended. It is a manual customer option positioned as the lowest-cost, high-value plan with relatively weaker results. Its online / interactive pickup radius is `5m`, local-amplification radius is `3m`, and it may perform local amplification and online pickup simultaneously.
+- RING01 may cascade RING02 microphones through its `MIC` interface. The hardware chain is theoretically unlimited; the presales recommendation is at most three cascaded RING02 microphones. More than three remains drawable but must be marked `需专项复核`.
+- RING02 may connect directly to AJ200 `EXTMIC`. RING02 microphones cascade at the microphone side, so microphone count does not consume multiple processor microphone inputs and must not trigger AJ600 by itself. With no other interface demand, any RING02 cascade count defaults to AJ200.
+- RING03 uses a customer drawing pickup radius of `5m`, overriding the ambiguous document statement `>=8m`. It is not a manual customer option and is automatically recommended only for direct recording or patrol-equipment pickup. It is prohibited for local amplification, video conferencing and online interaction because it has no AFC or AEC algorithm.
+- RING01, RING02 and RING03 share the same customer-facing front product image and physical dimensions `diameter 143mm x height 38mm`. The supplied RING01 rear image is internal wiring evidence only and must not be reused as a RING02/RING03 rear image.
+- User overrode the Agent installation wording: all three products require hanging-rod installation and cannot be placed on a table. The exact installation-height rule remains to be confirmed.
+- New wiring evidence: `C:\Users\73921\AppData\Local\Temp\codex-clipboard-b4afc51c-06bd-40c4-ad03-43e60ecdb153.png` shows RING01 `SPK-OUT` feeding either an active speaker or an amplifier plus passive speakers, `MIC` feeding a slave microphone, `LINK` feeding the extender, and USB / Type-C computer connections that must not be connected simultaneously. `C:\Users\73921\AppData\Local\Temp\codex-clipboard-61be7ed4-7fff-4ddb-8174-2bce7de6988a.png` shows the extender with `A IN`, `A OUT`, `DC12V` and `LINK` connections for conferencing / audio input and recording-host output.
+- No RING01/RING02/RING03 production implementation, drawing-rule change, package or release was performed during this question-by-question calibration.
+
 ## 2026-07-17 line-array non-AFC ceiling-speaker clearance defect
 
 - User reported that a `7.2m x 9.5m` Yinman line-array `full360` plan moved the complete first ceiling-speaker row from the regular `y=2.0m` grid to `y=3.8m`, even though that row does not carry line-array AFC.
@@ -6640,3 +6652,39 @@ Verification:
 - Root cause: ceiling placement decides the distance exception from `lineArrayContext.mode === "front"` before final speaker signal modes exist. A `full360` first row that is internally intended not to send line-array AFC therefore has no `withoutLineArrayAfc` state during placement and is incorrectly treated as a normal AFC row.
 - User confirmed the correction boundary: determine AFC participation before microphone clearance; every line-array ceiling speaker marked `withoutLineArrayAfc` uses a `1.2m` minimum, normal AFC speakers remain at `2m`, and symmetric relocation is only a fallback when the applicable distance is genuinely insufficient.
 - Scope guardrail: this correction must not change array-microphone teacher-monitor spacing, wall-speaker placement, speaker selection/count, line-array coordinates or customer AFC visibility before version 4.0.
+- Implemented signal-aware placement: every pre-avoidance first-row ceiling point in a line-array plan retains `withoutLineArrayAfc`; those points use `1.2m`, while all other ceiling speakers continue to use `2m`.
+- Replaced line-array per-point fallback with symmetry-first handling. A genuine conflict first tries mirrored pair movement with a local 4m tangent-spacing ceiling, then a complete-row longitudinal move; if neither fits, the regular grid is retained with an internal review reason instead of producing a one-forward/one-rearward split. Array-microphone point-level behavior remains unchanged.
+- Full360 ceiling outputs now retain internal first-row signal grouping, while customer-visible points and connections continue to remove AFC fields and text. Wall-speaker full360 behavior remains unchanged.
+- Added exact regressions for the live `7.2m x 9.5m` case and the preceding `14.9m x 9.5m` case. They restore the regular `y=2.0m` first row with 6/12 total ceiling speakers respectively; the nearest non-AFC distance remains between 1.2m and 2m.
+- The first point-test run reached the new fixture before the file's `const getOutputSpeakers` helper was initialized. The fixture was changed to read `generatedPoints` directly; no business rule changed for this test-order correction.
+- Verification passed: strict TypeScript with unused checks, complete point-system regression, 636-case speaker-coverage regression, production build and `git diff --check`.
+- Browser reload showed the active 5180 draft had concurrently changed to a `7.4m` hanging-microphone selection, so that user state was preserved rather than overwritten. Exact 7.2m/14.9m verification used deterministic engine regressions.
+# 2026-07-17 音翼阵麦处理器边界与 Codex shell 回退
+
+- 用户确认：音翼智能天花阵列麦克风内置处理器，设备清单不再额外配置音频处理器；音翼智能线阵麦克风仍需要外置处理器。音曼沿用现有外置处理器规则。
+- 根因位于 `syncBrandSystemSelection`：旧逻辑以全部 pickup 数量判断是否生成处理器，未区分音翼天花阵麦与线阵麦。
+- 已改为按品牌和拾音类型判断外置处理器需求，并增加音翼 / 音曼天花阵麦以及音翼线阵麦回归断言。
+- Codex 托管执行器再次把显式 shell 解析到无权限的用户 WindowsApps alias，报 `CreateProcessAsUserW failed: 5`；同时沙箱拒绝直接启动 Store 版真实路径。本轮按兼容边界使用 `cmd.exe`，并将稳定回退规则补入 `AGENTS.md`。
+- 首次误用了项目不存在的 `verify:point-system-rules` 和 `typecheck` 脚本名，npm 立即退出；改用实际的 `test:point-system` 与包含 `tsc` 的 `build` 后完成验证。
+- 验证通过：完整 point-system 规则测试、TypeScript 检查和 Vite 生产构建。沙箱内首次运行被已知 esbuild 目录读取权限阻断，按项目约定以相同命令在授权环境重跑通过。
+
+# 2026-07-17 吊麦处理器自动复位与容量选型
+
+- 页面复现：此前选中过高性能处理器后再选择吊麦，`microphoneSolution` 会切换但 `processorTier` 仍残留为 `highPerformance`，触发“吊麦仅可搭配双麦处理器或六麦处理器”并阻止图纸生成。
+- 用户确认规则：选择吊麦时处理器必须恢复自动选型；按当前MIC输入总需求判断，容量够用优先价格更低的双麦处理器，超过2路时自动选六麦处理器。六麦处理器价格更高、接口更多，并带独立触摸屏，可控制音箱音量和麦克风静音/开音。
+- 修改边界：仅调整吊麦选择动作、客户说明和处理器设备说明，不改变线阵麦、阵麦、音箱选型、点位或数量规则。
+- 环境记录：托管执行器仍将显式PowerShell 7解析为无权限WindowsApps别名，本轮按项目既定兼容边界使用`cmd.exe`执行只读检查与测试。
+- 首轮规则测试中的新增断言在外层模板字符串内使用了带转义斜杠的正则，生成临时测试文件时转义被吞掉并产生语法错误；已改为分别检查三个固定文本。生产构建首轮命中已知esbuild沙箱目录读取限制，业务代码的类型阶段未报告错误。
+- 浏览器定点复核发现客户选型提示中的精确MIC需求数只统计了吊麦和利旧麦克风，没有包含设备清单自动生成的无线接收机；实际处理器选型已正确包含该输入。精确占用数已移到掌握完整清单的处理器设备说明，选型提示改为说明统一计算口径。
+- 最终验证通过：完整`test:point-system`、TypeScript与Vite生产构建均通过；5180现有高性能处理器残留草稿重新点击吊麦后，阻断提示消失，自动生成1只吊麦、双麦处理器、点位图和拓扑图。页面已显示统一MIC占用计算口径。
+
+# 2026-07-17 音曼小圆盘阵麦 01/02/03 正式接入完成
+
+- 完成 01/02/03 的音曼专属产品数据、客户通用命名、自动/手动选型、数量覆写、吊杆点位、设备清单、接口接线、系统拓扑和专项校核接入。音翼运行态与发布隔离脚本继续排除音曼专属资产和文案。
+- 01 仅由客户手动选择，内置处理，只配壁挂音箱；线上连接可选客户自购 USB 音频线或 1 个音频扩展器。02 仅作为 01 从麦级联，不单独出现在客户选择区；推荐不超过 3 只从麦，更多数量继续出图并转专项复核。
+- 03 只在纯录音/巡课需求中自动推荐，统一使用 5m 拾音半径、吊杆安装和 1 个音频扩展器；不生成有效数量的处理器、功放或音箱，不显示音箱选择区。非纯录音/巡课场景强制填写 03 时自动回退到有效推荐方案。
+- 03 数量上限回归最初漏写 `microphoneSolution: "auto"`，而测试工厂默认是大圆盘阵麦，导致 4 只专项复核用例未进入 03 分支。已修正测试输入，并增加“产品清单数量为 4 / 最终点位数量为 4 / 专项复核为 hard”三层断言，没有放宽业务校核。
+- 完整点位回归、严格 TypeScript（含未使用项检查）、`git diff --check` 和生产构建均通过。Vite 构建继续提示主包约 `506.58 kB` 超过 500kB 建议值，本轮不影响运行，按非阻塞构建问题记录，未在产品校准中顺手拆包。
+- 5180 使用隔离的 `localhost` 草稿完成定点检查：01 USB 方案显示 1 条客户自购 USB 音频线；01 扩展器方案显示 1 个音频扩展器并保留 A IN/A OUT 拓扑；03 只显示 1 只录音巡课阵麦和 1 个扩展器，点位标注吊杆安装，拓扑中心无虚构处理器，页面控制台无错误。
+- 非阻塞可见问题：03 无音箱时点位图标题仍沿用“小圆盘阵麦与音箱点位图”，设备清单仍保留“教学模拟功放主机 0”行。二者不代表实际配置，但客户阅读可能产生疑惑；已记录，未在本轮产品规则接入中顺手改通用图纸标题和零数量设备表格行为。
+- Codex 托管执行器仍把显式 `pwsh` 解析到无权限 WindowsApps alias 并报 `CreateProcessAsUserW failed: 5`；本轮按项目约定使用 `cmd.exe`，中文规则和日志按 UTF-8 内容核对，未误判为文件损坏。

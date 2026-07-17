@@ -14,11 +14,16 @@ import {
   getShortestManhattanCascadeRoute
 } from "./systemCapabilities";
 import { getArrayMicCentralAirRequiredClearance, getEffectiveAmplificationScope } from "./drawingEngine";
+import {
+  SMALL_DISC_LINK_SEGMENT_LIMIT_M,
+  SMALL_DISC_RECOMMENDED_SLAVE_COUNT,
+  SMALL_DISC_RECORDING_RECOMMENDED_COUNT
+} from "./yinmanSmallDiscRules";
 
 const ARRAY_MIC_CENTRAL_AIR_RISK_CLEARANCE_M = 1;
 const ARRAY_MIC_BODY_HALF_SIZE_M = 0.3;
 const MIC_SPEAKER_PREFERRED_DISTANCE_M = 2;
-const LINE_ARRAY_FIRST_ROW_DISTANCE_EXCEPTION_M = 1.5;
+const LINE_ARRAY_NON_AFC_SPEAKER_DISTANCE_M = 1.2;
 const HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M = 3.5;
 
 export interface PointValidationInput {
@@ -34,7 +39,8 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount, solutionSelection } = input;
   const capability = getBrandSystemCapability(brandId);
   const mics = generatedPoints.filter((point) => point.type === "arrayMic");
-  const arrayMics = mics.filter((point) => point.pickupKind !== "hangingMic");
+  const smallDiscMics = mics.filter(isSmallDiscPoint);
+  const arrayMics = mics.filter((point) => point.pickupKind !== "hangingMic" && !isSmallDiscPoint(point));
   const hangingMics = mics.filter((point) => point.pickupKind === "hangingMic");
   const speakers = generatedPoints.filter((point) => point.type === "speaker");
   const findings: PointValidationFinding[] = [];
@@ -89,7 +95,9 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
-  if (hangingMics.length > 0) {
+  if (smallDiscMics.length > 0) {
+    addSmallDiscFindings(findings, profile, smallDiscMics);
+  } else if (hangingMics.length > 0) {
     findings.push({
       code: "hanging-mic.coverage-capacity",
       severity: solutionSelection?.microphone.hangingMicCapacityWarning ? "warning" : "info",
@@ -111,7 +119,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
-  if (!hangingMics.length && requiredArrayMicCount > capability.maxArrayMicCount) {
+  if (!hangingMics.length && !smallDiscMics.length && requiredArrayMicCount > capability.maxArrayMicCount) {
     findings.push({
       code: "array.capacity",
       severity: "hard",
@@ -122,7 +130,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
       customerMessage: "房间长度与阵麦覆盖能力需要专项复核。",
       sourceRefs: [brandId === "yinman" ? "音曼阵麦与音频处理主机能力确认" : "音翼一主四从能力确认"]
     });
-  } else if (!hangingMics.length && arrayMics.length > 0) {
+  } else if (!hangingMics.length && !smallDiscMics.length && arrayMics.length > 0) {
     findings.push({
       code: "array.capacity",
       severity: "info",
@@ -138,12 +146,92 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
   addLineArraySpeakerFindings(findings, profile, arrayMics, speakers);
   addWallSpeakerCoverageFinding(findings, speakers);
-  addInstallationHeightFinding(findings, profile, mics);
+  addInstallationHeightFinding(findings, profile, mics.filter((point) => !isSmallDiscPoint(point)));
   addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
   addCentralAirFindings(findings, profile, brandId, mics);
   if (!hangingMics.length) addExistingCalibrationFindings(findings, profile, brandId, arrayMics);
 
   return summarizeFindings(findings);
+}
+
+function isSmallDiscPoint(point: GeneratedPoint) {
+  return point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03";
+}
+
+function addSmallDiscFindings(findings: PointValidationFinding[], profile: ClassroomProfile, mics: GeneratedPoint[]) {
+  const usesBuiltInProcessing = mics.some((mic) => mic.pickupKind === "smallDisc01");
+  const radius = Math.max(...mics.map((mic) => mic.coverageRadius ?? 0));
+  const recommendedCount = usesBuiltInProcessing ? SMALL_DISC_RECOMMENDED_SLAVE_COUNT + 1 : SMALL_DISC_RECORDING_RECOMMENDED_COUNT;
+  findings.push({
+    code: "small-disc.coverage-baseline",
+    severity: "info",
+    title: "小圆盘阵麦覆盖口径",
+    actual: `${mics.length}只 / 半径${radius.toFixed(1)}m`,
+    limit: usesBuiltInProcessing ? "1只主麦 + 推荐不超过3只从麦" : "推荐不超过3只",
+    internalMessage: usesBuiltInProcessing
+      ? "主麦优先布置在核心位置，从麦按主要活动区覆盖需要补充；理论上可继续级联。"
+      : "录音巡课阵麦只覆盖讲台、会议桌等主要区域，整条级联链共用一个音频扩展器。",
+    sourceRefs: ["用户确认的小圆盘阵麦覆盖与级联口径"]
+  });
+
+  if (mics.length > recommendedCount) {
+    findings.push({
+      code: "small-disc.recommended-count",
+      severity: "hard",
+      title: "小圆盘阵麦推荐数量",
+      actual: mics.length,
+      limit: recommendedCount,
+      internalMessage: usesBuiltInProcessing
+        ? `当前包含${mics.length - 1}只从麦，超过推荐的3只从麦边界；继续保留方案并转专项复核。`
+        : `当前包含${mics.length}只录音巡课阵麦，超过推荐的3只边界；继续保留方案并转专项复核。`,
+      customerMessage: "小圆盘阵麦数量超出常规推荐范围，当前方案需专项复核。",
+      sourceRefs: ["用户确认的01主麦加3只从麦与03三只推荐边界"]
+    });
+  }
+
+  if (profile.engineeringConstraints.overheadSpeakerMounting === "unavailable") {
+    findings.push({
+      code: "small-disc.overhead-installation",
+      severity: "hard",
+      title: "小圆盘阵麦顶面安装条件",
+      actual: "顶面不可安装",
+      limit: "需具备吊杆固定条件",
+      internalMessage: "三款小圆盘阵麦均只能采用吊杆安装；当前继续生成点位并转专项复核。",
+      customerMessage: "顶面安装条件会影响小圆盘阵麦吊杆安装，当前方案需专项复核。",
+      sourceRefs: ["用户确认的小圆盘阵麦吊杆安装规则"]
+    });
+  }
+
+  if (profile.engineeringConstraints.ceiling === "suspended" && profile.roomGeometry.height > HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M) {
+    findings.push({
+      code: "small-disc.install-height",
+      severity: "warning",
+      title: "小圆盘阵麦安装高度",
+      actual: `${profile.roomGeometry.height.toFixed(1)}m`,
+      limit: `资料建议 <= ${HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M}m`,
+      internalMessage: "沿用大圆盘阵麦安装高度边界，吊杆长度与拾音高度需要现场复核。",
+      sourceRefs: ["用户确认的小圆盘阵麦沿用大圆盘阵麦安装高度规则"]
+    });
+  }
+
+  if (mics.length <= 1) return;
+  const segments = mics.slice(1).map((mic, index) => ({
+    from: mics[index],
+    to: mic,
+    length: Math.abs(mic.position.x - mics[index].position.x) + Math.abs(mic.position.y - mics[index].position.y)
+  }));
+  const longest = segments.reduce((current, segment) => segment.length > current.length ? segment : current, segments[0]);
+  const overLimit = longest.length > SMALL_DISC_LINK_SEGMENT_LIMIT_M;
+  findings.push({
+    code: "small-disc.link-segment",
+    severity: overLimit ? "hard" : "info",
+    title: "小圆盘阵麦级联网线单段",
+    actual: `${longest.length.toFixed(1)}m`,
+    limit: `${SMALL_DISC_LINK_SEGMENT_LIMIT_M}m`,
+    internalMessage: `按点位顺序估算最长单段为 ${longest.from.label} 至 ${longest.to.label}，施工采用超五类纯铜网线并按T568B制作。`,
+    customerMessage: overLimit ? "小圆盘阵麦级联网线单段长度会影响连接，当前方案需专项复核。" : undefined,
+    sourceRefs: ["用户确认的小圆盘阵麦单段20m级联网线规则"]
+  });
 }
 
 function addLineArraySpeakerFindings(
@@ -339,20 +427,21 @@ function addMicSpeakerDistanceFinding(
 
   const isTeacherMonitor = nearest.speaker.reason.includes("老师区") || nearest.speaker.reason.includes("监听点位");
   const isCenterBackfill = nearest.speaker.reason.includes("中心列覆盖回填") || isApprovedCenterBackfill(profile, nearest.speaker, mics);
-  const isLineArrayFirstRowException =
+  const usesLineArrayNonAfcDistance =
     nearest.mic.pickupKind === "lineArray" &&
-    nearest.speaker.speakerSignalMode === "withoutLineArrayAfc" &&
-    nearest.distance >= LINE_ARRAY_FIRST_ROW_DISTANCE_EXCEPTION_M;
+    nearest.speaker.speakerSignalMode === "withoutLineArrayAfc";
+  const isLineArrayNonAfcDistanceSatisfied =
+    usesLineArrayNonAfcDistance && nearest.distance >= LINE_ARRAY_NON_AFC_SPEAKER_DISTANCE_M;
   const belowPreferred = nearest.distance < MIC_SPEAKER_PREFERRED_DISTANCE_M;
-  const exception = belowPreferred && (isTeacherMonitor || isCenterBackfill || isLineArrayFirstRowException);
+  const exception = belowPreferred && (isTeacherMonitor || isCenterBackfill || isLineArrayNonAfcDistanceSatisfied);
   findings.push({
     code: "speaker.mic-distance",
     severity: belowPreferred && !exception ? "warning" : "info",
     title: "阵麦与吸顶音箱最近距离",
     actual: `${nearest.distance.toFixed(1)}m`,
-    limit: `${MIC_SPEAKER_PREFERRED_DISTANCE_M}m`,
+    limit: `${usesLineArrayNonAfcDistance ? LINE_ARRAY_NON_AFC_SPEAKER_DISTANCE_M : MIC_SPEAKER_PREFERRED_DISTANCE_M}m`,
     internalMessage: exception
-      ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，采用${isLineArrayFirstRowException ? "线阵首排1.5m" : isTeacherMonitor ? "老师区监听" : "中心列覆盖回填"}例外，点位保持不变。`
+      ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，采用${isLineArrayNonAfcDistanceSatisfied ? "线阵非AFC音箱1.2m" : isTeacherMonitor ? "老师区监听" : "中心列覆盖回填"}例外，点位保持不变。`
       : belowPreferred
         ? `${nearest.speaker.label} 与 ${nearest.mic.label} 最近 ${nearest.distance.toFixed(1)}m，未识别到已确认例外，需要现场复核。`
         : `最近设备为 ${nearest.speaker.label} 与 ${nearest.mic.label}，距离 ${nearest.distance.toFixed(1)}m。`,

@@ -27,19 +27,21 @@ export function normalizeProfile(profile: ClassroomProfile): ClassroomProfile {
     .slice(0, 2);
   const normalizedNeeds = hasInteractive && needs.length < 2 ? [...needs, "interactiveClass" as const] : needs;
   const acousticEnvironment = normalizeAcousticEnvironment(profile);
+  const microphoneSolution = profile.engineeringConstraints.microphoneSolution ?? "auto";
   return normalizeProfileForScenario({
     ...profile,
     engineeringConstraints: {
       ...profile.engineeringConstraints,
       centralAirConditionerCount,
       auditoriumRearFillSpeakers: profile.engineeringConstraints.auditoriumRearFillSpeakers ?? "unknown",
-      speakerProductOverride: profile.engineeringConstraints.speakerProductOverride ?? "auto",
-      microphoneSolution: profile.engineeringConstraints.microphoneSolution ?? "auto",
+      speakerProductOverride: microphoneSolution === "smallDisc01" ? "wall" : profile.engineeringConstraints.speakerProductOverride ?? "auto",
+      microphoneSolution,
       overheadSpeakerMounting: profile.engineeringConstraints.overheadSpeakerMounting ?? "unknown",
       hasPodium: profile.engineeringConstraints.podiumPosition === "unknown" ? false : profile.engineeringConstraints.hasPodium ?? true,
       lineArrayMode: profile.engineeringConstraints.lineArrayMode ?? "auto",
       lineArrayInstallation: profile.engineeringConstraints.lineArrayInstallation ?? "auto",
       processorTier: profile.engineeringConstraints.processorTier ?? "auto",
+      smallDiscConnectionMode: profile.engineeringConstraints.smallDiscConnectionMode ?? "auto",
       hasCentralAirConditioner: hasCentralAir,
       stageSize,
       teachingAreaSize,

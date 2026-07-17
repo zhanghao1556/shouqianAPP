@@ -19,6 +19,17 @@ import {
 } from "./systemCapabilities";
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
+import {
+  getSmallDiscConnectionMode,
+  SMALL_DISC_01_PRODUCT_ID,
+  SMALL_DISC_02_PRODUCT_ID,
+  SMALL_DISC_03_PRODUCT_ID,
+  SMALL_DISC_AUDIO_EXTENDER_NAME,
+  SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_RECORDING_NAME,
+  SMALL_DISC_SLAVE_NAME
+} from "./yinmanSmallDiscRules";
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
@@ -32,6 +43,12 @@ export const generateConnectionLines = (
   brandId: AppBrandId = "yinyi",
   generatedPoints: GeneratedPoint[] = []
 ): ConnectionLine[] => {
+  if (selection.some((item) => item.productId === SMALL_DISC_01_PRODUCT_ID && item.quantity > 0)) {
+    return generateSmallDisc01ConnectionLines(profile, selection);
+  }
+  if (selection.some((item) => item.productId === SMALL_DISC_03_PRODUCT_ID && item.quantity > 0)) {
+    return generateSmallDisc03ConnectionLines(profile, selection);
+  }
   if (brandId === "yinman" || selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0)) {
     return generateProcessorDirectConnectionLines(profile, selection, brandId, generatedPoints);
   }
@@ -222,6 +239,148 @@ export const generateConnectionLines = (
 
   return applyAudioLineCapacityRules(lines, dtName);
 };
+
+function generateSmallDisc01ConnectionLines(
+  profile: ClassroomProfile,
+  selection: ProductRecommendation[]
+): ConnectionLine[] {
+  const lines: ConnectionLine[] = [];
+  const slaveCount = selection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity ?? 0;
+  const mainName = `${SMALL_DISC_MAIN_NAME} 主麦`;
+  for (let index = 0; index < slaveCount; index += 1) {
+    lines.push({
+      id: `small-disc-01-cascade-${index + 1}`,
+      fromDevice: index === 0 ? mainName : `${SMALL_DISC_SLAVE_NAME} ${index}`,
+      fromPort: "MIC",
+      toDevice: `${SMALL_DISC_SLAVE_NAME} ${index + 1}`,
+      toPort: "LINK",
+      cableType: "超五类纯铜网线（T568B）",
+      note: "小圆盘阵麦在麦克风端逐级连接；单段超过20m时需专项复核。"
+    });
+  }
+
+  const recordingDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.recordingHost));
+  const computerDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.computer));
+  const connectionMode = getSmallDiscConnectionMode(profile);
+  if (connectionMode === "usb") {
+    const computer = selectPrimaryUsbDevice([...recordingDevices, ...computerDevices], true);
+    lines.push({
+      id: "small-disc-01-usb-host",
+      fromDevice: mainName,
+      fromPort: "USB数字音频接口",
+      toDevice: computer || "电脑",
+      toPort: "USB音频接口",
+      cableType: "USB音频线（客户自购）",
+      note: "USB同时承担供电和数字音频；USB线由客户按安装距离另行采购。"
+    });
+  } else {
+    const extender = selection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.name ?? SMALL_DISC_AUDIO_EXTENDER_NAME;
+    lines.push({
+      id: "small-disc-01-link-extender",
+      fromDevice: mainName,
+      fromPort: "LINK",
+      toDevice: extender,
+      toPort: "LINK",
+      cableType: "超五类纯铜网线（T568B）",
+      note: "音频扩展器为小圆盘阵麦提供模拟音频接入和供电。"
+    });
+    const outputDevices = recordingDevices.length ? recordingDevices : computerDevices.length ? computerDevices : ["录播/会议终端"];
+    outputDevices.forEach((device, index) => {
+      lines.push({
+        id: `small-disc-01-extender-output-${index + 1}`,
+        fromDevice: extender,
+        fromPort: "A OUT",
+        toDevice: device,
+        toPort: "音频输入",
+        cableType: "3.5mm音频线",
+        note: "小圆盘阵麦拾音经扩展器模拟输出接入终端。"
+      });
+    });
+    const hasOnlineAudio = profile.needs.some((need) => need === "videoConference" || need === "interactiveClass" || need === "remoteTeaching");
+    if (hasOnlineAudio) {
+      const inputDevice = computerDevices[0] ?? "电脑/会议终端";
+      lines.push({
+        id: "small-disc-01-extender-input",
+        fromDevice: inputDevice,
+        fromPort: "音频输出",
+        toDevice: extender,
+        toPort: "A IN",
+        cableType: "3.5mm音频线",
+        note: "终端回传音频接入扩展器A IN。"
+      });
+    }
+  }
+
+  const speakerProduct = selection.find((item) => item.category === "speaker" && item.quantity > 0);
+  if (speakerProduct) {
+    const amplifier = selection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0)?.name ?? "教学模拟功放主机";
+    lines.push(
+      {
+        id: "small-disc-01-amplifier",
+        fromDevice: mainName,
+        fromPort: "SPK-OUT",
+        toDevice: amplifier,
+        toPort: "音频输入",
+        cableType: "音频线",
+        note: "小圆盘阵麦内置处理后的本地扩声信号送入功放。"
+      },
+      {
+        id: "small-disc-01-wall-speakers",
+        fromDevice: amplifier,
+        fromPort: "功放输出",
+        toDevice: `${speakerProduct.name} × ${speakerProduct.quantity}`,
+        toPort: "音箱 + / -",
+        cableType: "音箱线",
+        note: "壁挂音箱由教学模拟功放主机驱动，现场复核阻抗、极性和通道负载。"
+      }
+    );
+  }
+  return lines;
+}
+
+function generateSmallDisc03ConnectionLines(
+  profile: ClassroomProfile,
+  selection: ProductRecommendation[]
+): ConnectionLine[] {
+  const count = selection.find((item) => item.productId === SMALL_DISC_03_PRODUCT_ID)?.quantity ?? 0;
+  const extender = selection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.name ?? SMALL_DISC_AUDIO_EXTENDER_NAME;
+  const lines: ConnectionLine[] = [];
+  for (let index = 1; index < count; index += 1) {
+    lines.push({
+      id: `small-disc-03-cascade-${index}`,
+      fromDevice: `${SMALL_DISC_RECORDING_NAME} ${index}`,
+      fromPort: "MIC",
+      toDevice: `${SMALL_DISC_RECORDING_NAME} ${index + 1}`,
+      toPort: "LINK",
+      cableType: "超五类纯铜网线（T568B）",
+      note: "录音巡课阵麦逐级连接；单段超过20m时需专项复核。"
+    });
+  }
+  const firstMicName = count > 1 ? `${SMALL_DISC_RECORDING_NAME} 1` : SMALL_DISC_RECORDING_NAME;
+  lines.push({
+    id: "small-disc-03-link-extender",
+    fromDevice: firstMicName,
+    fromPort: "LINK",
+    toDevice: extender,
+    toPort: "LINK",
+    cableType: "超五类纯铜网线（T568B）",
+    note: "整条麦克风级联系统共用一个音频扩展器。"
+  });
+  const recordingDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.recordingHost));
+  const targets = recordingDevices.length ? recordingDevices : ["录播/巡课设备"];
+  targets.forEach((device, index) => {
+    lines.push({
+      id: `small-disc-03-recording-output-${index + 1}`,
+      fromDevice: extender,
+      fromPort: "A OUT",
+      toDevice: device,
+      toPort: "音频输入",
+      cableType: "3.5mm音频线",
+      note: "录音巡课拾音经扩展器输出到录播或巡课设备。"
+    });
+  });
+  return lines;
+}
 
 function generateProcessorDirectConnectionLines(
   profile: ClassroomProfile,

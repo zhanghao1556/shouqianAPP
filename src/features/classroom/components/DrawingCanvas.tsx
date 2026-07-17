@@ -44,6 +44,14 @@ import yinmanArrayMicPointMapImage from "../../../assets/yinman-array-mic-pointm
 import yinmanArrayMicTopologyImage from "../../../assets/yinman-array-mic-topology.png";
 import lineArrayMicImage from "../../../assets/line-array-mic.png";
 import hangingMicImage from "../../../assets/yinman-hanging-mic.png";
+import smallDiscMicImage from "../../../assets/yinman-small-disc-mic.png";
+import audioExtenderImage from "../../../assets/yinman-audio-extender.png";
+import {
+  SMALL_DISC_AUDIO_EXTENDER_NAME,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_RECORDING_NAME,
+  SMALL_DISC_SLAVE_NAME
+} from "../lib/yinmanSmallDiscRules";
 
 const pointColors: Record<GeneratedPoint["type"], string> = {
   arrayMic: "#00a6a6",
@@ -188,7 +196,8 @@ function InstallationDiagram({
   const height = getInstallationCanvasHeight(profile, width);
   const hasLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
   const hasHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
-  const pickupDrawingName = hasHangingMic ? "吊麦" : hasLineArray ? "线阵麦" : "阵列麦";
+  const hasSmallDiscMic = generatedPoints.some((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03");
+  const pickupDrawingName = hasHangingMic ? "吊麦" : hasLineArray ? "线阵麦" : hasSmallDiscMic ? "小圆盘阵麦" : "阵列麦";
   const hasSpeakerSignalModes = generatedPoints.some((point) => point.speakerSignalMode);
   const room = getCanvasRoomLayout(profile, width, height);
   const arrayMicCanvasPoints = generatedPoints
@@ -643,6 +652,7 @@ function InstallationDiagram({
         hasManualArrayMic={manualArrayMicPoints.length > 0}
         hasLineArray={hasLineArray}
         hasHangingMic={hasHangingMic}
+        hasSmallDiscMic={hasSmallDiscMic}
         hasSpeakerSignalModes={hasSpeakerSignalModes}
       />
     </div>
@@ -1587,7 +1597,17 @@ type TopologyNodeKind =
   | "computer"
   | "legacy"
   | "device";
-type TopologyNode = { key: string; label: string; kind: TopologyNodeKind; quantity?: number; isLegacy?: boolean; isLineArray?: boolean; isHangingMic?: boolean };
+type TopologyNode = {
+  key: string;
+  label: string;
+  kind: TopologyNodeKind;
+  quantity?: number;
+  isLegacy?: boolean;
+  isLineArray?: boolean;
+  isHangingMic?: boolean;
+  isSmallDiscMic?: boolean;
+  isAudioExtender?: boolean;
+};
 type TopologyEdge = { id: string; from: string; to: string; label: string; laneOffset?: number };
 const LEGACY_AUDIO_ROOT_LABELS = ["原有音频系统", "原有扩声系统"];
 const LEGACY_AUDIO_CENTER_PRIORITY = ["legacy-mixer", "legacy-processor", "legacy-amplifier"];
@@ -1605,9 +1625,16 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
 
   const isLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
   const isHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
-  const processorDirect = getAppBrand().id === "yinman" || isLineArray;
-  const topologyRootKey = processorDirect ? "processorHost" : "mainMic";
-  if (processorDirect) {
+  const usesSmallDisc01 = generatedPoints.some((point) => point.pickupKind === "smallDisc01");
+  const usesSmallDisc03 = generatedPoints.some((point) => point.pickupKind === "smallDisc03");
+  const usesSmallDisc = usesSmallDisc01 || usesSmallDisc03;
+  const processorDirect = !usesSmallDisc && (getAppBrand().id === "yinman" || isLineArray);
+  const topologyRootKey = usesSmallDisc03 ? "smallDiscExtender" : usesSmallDisc01 ? "smallDiscMain" : processorDirect ? "processorHost" : "mainMic";
+  if (usesSmallDisc03) {
+    ensureNode({ key: topologyRootKey, label: SMALL_DISC_AUDIO_EXTENDER_NAME, kind: "device", isAudioExtender: true });
+  } else if (usesSmallDisc01) {
+    ensureNode({ key: topologyRootKey, label: `${SMALL_DISC_MAIN_NAME} 主麦`, kind: "mainMic", isSmallDiscMic: true });
+  } else if (processorDirect) {
     const processorLabel = connections.flatMap((line) => [line.fromDevice, line.toDevice]).find((device) => device.includes("处理器")) ?? "智能音频处理主机";
     ensureNode({ key: topologyRootKey, label: processorLabel, kind: "processor" });
     Array.from({ length: arrayMicCount }, (_, index) => index + 1).forEach((index) => {
@@ -1842,6 +1869,16 @@ function getTopologyNodeKey(
   speakerSignalMode?: ConnectionLine["speakerSignalMode"],
   afcSendLevelOffset?: number
 ) {
+  if (device.includes(SMALL_DISC_AUDIO_EXTENDER_NAME)) return "smallDiscExtender";
+  if (device.includes(SMALL_DISC_MAIN_NAME)) return "smallDiscMain";
+  if (device.includes(SMALL_DISC_SLAVE_NAME)) {
+    const match = device.match(/(\d+)\s*$/);
+    return `smallDiscSlave-${match?.[1] ?? "1"}`;
+  }
+  if (device.includes(SMALL_DISC_RECORDING_NAME)) {
+    const match = device.match(/(\d+)\s*$/);
+    return `smallDiscRecording-${match?.[1] ?? "1"}`;
+  }
   if (device.includes("智能音频处理主机") || device.includes("双麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
   if (device.includes("智能线阵麦克风")) {
     const match = device.match(/(\d+)\s*$/);
@@ -1884,6 +1921,16 @@ function getTopologyNodeKey(
 }
 
 function getTopologyNode(device: string, port: string, key: string, speakerCount: number, speakerType: "吸顶" | "壁挂"): TopologyNode {
+  if (key === "smallDiscMain") return { key, label: `${SMALL_DISC_MAIN_NAME} 主麦`, kind: "mainMic", isSmallDiscMic: true };
+  if (key.startsWith("smallDiscSlave-")) {
+    const index = Number(key.slice("smallDiscSlave-".length));
+    return { key, label: Number.isFinite(index) ? `${SMALL_DISC_SLAVE_NAME} ${index}` : SMALL_DISC_SLAVE_NAME, kind: "slaveMic", isSmallDiscMic: true };
+  }
+  if (key.startsWith("smallDiscRecording-")) {
+    const index = Number(key.slice("smallDiscRecording-".length));
+    return { key, label: Number.isFinite(index) ? `${SMALL_DISC_RECORDING_NAME} ${index}` : SMALL_DISC_RECORDING_NAME, kind: "mainMic", isSmallDiscMic: true };
+  }
+  if (key === "smallDiscExtender") return { key, label: SMALL_DISC_AUDIO_EXTENDER_NAME, kind: "device", isAudioExtender: true };
   if (key === "mainMic") return { key, label: "阵麦", kind: "mainMic" };
   if (key.startsWith("arrayMic-")) {
     const index = Number(key.slice("arrayMic-".length));
@@ -2267,6 +2314,8 @@ function getTopologyContentBounds(
 
 function getTopologyMainDevice(devices: string[]) {
   if (devices.includes("processorHost")) return "processorHost";
+  if (devices.includes("smallDiscExtender")) return "smallDiscExtender";
+  if (devices.includes("smallDiscMain")) return "smallDiscMain";
   return devices.includes("mainMic") ? "mainMic" : devices[0] ?? "mainMic";
 }
 
@@ -2510,7 +2559,7 @@ function getTopologySidePenalty(position: { x: number; y: number }, side: "left"
 }
 
 function isTopologySatelliteNode(key: string) {
-  return key === "speaker-amplifier" || key.startsWith("arrayMic-") || isTopologyWirelessMicKey(key);
+  return key === "speaker-amplifier" || key.startsWith("arrayMic-") || key.startsWith("smallDiscSlave-") || key.startsWith("smallDiscRecording-") || isTopologyWirelessMicKey(key);
 }
 
 function isPotentialTopologySatelliteNode(key: string) {
@@ -2543,7 +2592,10 @@ function getTopologySatelliteAnchorKey(key: string, positions: Map<string, { x: 
   if (key === "speaker-amplifier" && positions.has("amplifier")) return "amplifier";
   const receiverKey = getTopologyWirelessReceiverKey(key);
   if (receiverKey && positions.has(receiverKey)) return receiverKey;
-  return positions.has("processorHost") ? "processorHost" : "mainMic";
+  if (positions.has("processorHost")) return "processorHost";
+  if (positions.has("smallDiscExtender")) return "smallDiscExtender";
+  if (positions.has("smallDiscMain")) return "smallDiscMain";
+  return "mainMic";
 }
 
 function getTopologyRequiredSatelliteAnchorKey(key: string, satelliteAnchors: Map<string, string>) {
@@ -2691,6 +2743,8 @@ function isTopologySecondLevelDevice(device: string) {
   return (
     device === "slaveMic" ||
     device.startsWith("arrayMic-") ||
+    device.startsWith("smallDiscSlave-") ||
+    device.startsWith("smallDiscRecording-") ||
     device === "amplifier" ||
     device === "legacy-amplifier" ||
     device === "legacy-feedback" ||
@@ -2999,6 +3053,8 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
 }
 
 function getTopologyImageSize(node: TopologyNode) {
+  if (node.isSmallDiscMic) return { width: 72, height: 72 };
+  if (node.isAudioExtender) return { width: 112, height: 62 };
   if (node.isLineArray) return { width: 116, height: 32 };
   if (node.isHangingMic) return { width: 34, height: 90 };
   if (node.kind === "mainMic") return { width: 88, height: 66 };
@@ -3029,6 +3085,8 @@ function getTopologyImageSize(node: TopologyNode) {
 }
 
 function getTopologyDeviceImage(node: TopologyNode) {
+  if (node.isSmallDiscMic) return smallDiscMicImage;
+  if (node.isAudioExtender) return audioExtenderImage;
   if (node.isLineArray) return lineArrayMicImage;
   if (node.isHangingMic) return hangingMicImage;
   if (node.kind === "mainMic" || node.kind === "slaveMic") return getAppBrand().id === "yinman" ? yinmanArrayMicTopologyImage : topologyArrayMicImage;
@@ -3905,7 +3963,11 @@ function getPointLabelLines(
     getShortPointName(point),
     groupLabel ? `${groupLabel} 分组` : "",
     profile && point.type === "arrayMic"
-      ? point.pickupKind === "hangingMic"
+      ? point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03"
+        ? point.installHeight
+          ? `吊杆安装 ${point.installHeight.toFixed(1)}m`
+          : "吊杆安装"
+      : point.pickupKind === "hangingMic"
         ? "吊装安装"
         : point.pickupKind === "lineArray"
         ? point.installationMode === "podium"
@@ -4004,7 +4066,8 @@ function GeneratedPointMarker({
   const coverageRingOpacity = muted ? 0.28 : 0.46;
   const useLineArrayMicImage = point.type === "arrayMic" && point.pickupKind === "lineArray";
   const useHangingMicImage = point.type === "arrayMic" && point.pickupKind === "hangingMic";
-  const useYinmanArrayMicImage = point.type === "arrayMic" && !useLineArrayMicImage && !useHangingMicImage && getAppBrand().id === "yinman";
+  const useSmallDiscMicImage = point.type === "arrayMic" && (point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03");
+  const useYinmanArrayMicImage = point.type === "arrayMic" && !useLineArrayMicImage && !useHangingMicImage && !useSmallDiscMicImage && getAppBrand().id === "yinman";
   return (
     <g opacity={muted ? 0.62 : 1}>
       {point.type === "arrayMic" ? (
@@ -4030,6 +4093,8 @@ function GeneratedPointMarker({
             <image href={hangingMicImage} x={canvasPoint.x - micSize * 0.22} y={canvasPoint.y - micSize * 0.8} width={micSize * 0.44} height={micSize * 1.6} preserveAspectRatio="xMidYMid meet" />
           ) : useLineArrayMicImage ? (
             <image href={lineArrayMicImage} x={canvasPoint.x - micSize} y={canvasPoint.y - micSize * 0.2} width={micSize * 2} height={micSize * 0.4} preserveAspectRatio="xMidYMid meet" />
+          ) : useSmallDiscMicImage ? (
+            <image href={smallDiscMicImage} x={canvasPoint.x - micSize / 2} y={canvasPoint.y - micSize / 2} width={micSize} height={micSize} preserveAspectRatio="xMidYMid meet" />
           ) : useYinmanArrayMicImage ? (
             <image
               href={yinmanArrayMicPointMapImage}
@@ -4213,7 +4278,12 @@ function PointLabel({
 }
 
 function getShortPointName(point: GeneratedPoint) {
-  if (point.type === "arrayMic") return point.pickupKind === "hangingMic" ? "吊麦" : point.pickupKind === "lineArray" ? "线阵麦" : "阵列麦";
+  if (point.type === "arrayMic") {
+    if (point.pickupKind === "smallDisc01") return "小圆盘阵麦主麦";
+    if (point.pickupKind === "smallDisc02") return "小圆盘阵麦从麦";
+    if (point.pickupKind === "smallDisc03") return "小圆盘阵麦（录音巡课）";
+    return point.pickupKind === "hangingMic" ? "吊麦" : point.pickupKind === "lineArray" ? "线阵麦" : "阵列麦";
+  }
   if (point.label.includes("吸顶音箱")) return "吸顶音箱";
   if (point.label.includes("后墙中置")) return "后墙中置壁挂";
   if (point.label.includes("壁挂音柱")) return "壁挂音箱";
@@ -4596,18 +4666,20 @@ function Legend({
   hasManualArrayMic = false,
   hasLineArray = false,
   hasHangingMic = false,
+  hasSmallDiscMic = false,
   hasSpeakerSignalModes = false
 }: {
   micOnly?: boolean;
   hasManualArrayMic?: boolean;
   hasLineArray?: boolean;
   hasHangingMic?: boolean;
+  hasSmallDiscMic?: boolean;
   hasSpeakerSignalModes?: boolean;
 }) {
   return (
     <div className="canvasLegend">
       <span>
-        <i style={{ background: "#00a6a6" }} /> {hasHangingMic ? "吊麦" : hasLineArray ? "智能线阵麦克风" : "智能天花阵列麦克风"}
+        <i style={{ background: "#00a6a6" }} /> {hasHangingMic ? "吊麦" : hasLineArray ? "智能线阵麦克风" : hasSmallDiscMic ? "小圆盘阵麦" : getAppBrand().id === "yinman" ? "大圆盘阵麦" : "智能天花阵列麦克风"}
       </span>
       {hasManualArrayMic && (
         <span>
@@ -4615,7 +4687,7 @@ function Legend({
         </span>
       )}
       <span>
-        <i style={{ background: "rgba(0, 166, 166, 0.28)", border: "1px dashed #00a6a6" }} /> {hasHangingMic ? "吊麦3m范围" : hasLineArray ? "线阵麦范围" : "阵麦范围"}
+        <i style={{ background: "rgba(0, 166, 166, 0.28)", border: "1px dashed #00a6a6" }} /> {hasHangingMic ? "吊麦3m范围" : hasLineArray ? "线阵麦范围" : hasSmallDiscMic ? "小圆盘阵麦范围" : "阵麦范围"}
       </span>
       {!micOnly && (
         <>

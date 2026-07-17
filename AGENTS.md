@@ -108,6 +108,7 @@
 - 需要手动指定 shell 或启动新终端时，优先用 `pwsh`，不要默认用 Windows PowerShell 5.1。
 - 在本机不得裸调用户目录下的 WindowsApps `pwsh` alias；优先使用真实 PowerShell 7 路径。传统安装路径是 `C:\Program Files\PowerShell\7\pwsh.exe`，当前 Store 版路径是 `C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.exe`。
 - 如果当前环境没有 `pwsh` 或 PowerShell 7 无法启动，才回退到系统默认 PowerShell，并在回复或日志中说明。
+- Codex 托管执行器若在启动命令前把显式 `pwsh` / `powershell` shell 强制解析为用户目录下无权限的 WindowsApps alias，并报 `CreateProcessAsUserW failed: 5`，不要继续重试 `pwsh`、传统安装路径或 Store 路径；本轮显式指定 `cmd.exe` 作为兼容 shell，中文 / JSON / 复杂文本处理改用 Node UTF-8 脚本，并在日志中记录一次回退原因。该情形属于执行器启动限制，不代表项目文件或 PowerShell 7 安装损坏。
 - 涉及中文文件、日志、AGENTS.md、报告文案读取时，仍优先按 UTF-8 读取，避免把终端编码显示问题误判为文件损坏。
 
 ## Git 自动存档与回滚规则

@@ -18,9 +18,10 @@ const presalesDraftStorageKey = "yiou-presales-draft-v1";
 const legacyBrandText = JSON.parse('"\\u7ffc\\u6b27"') as string;
 const oldDefaultProjectName = `${legacyBrandText}大客户普通教室音频方案`;
 const oldDefaultCustomerName = `${legacyBrandText}大客户`;
-const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCESSOR-DEPENDENT", "LINE-ARRAY-MIC", "AUDIO-PROCESSOR-HOST"]);
+const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCESSOR-DEPENDENT", "LINE-ARRAY-MIC", "HANGING-MIC", "YINMAN-SMALL-DISC-01", "YINMAN-SMALL-DISC-02", "YINMAN-SMALL-DISC-03", "YINMAN-AUDIO-EXTENDER", "USB-AUDIO-CABLE", "AUDIO-PROCESSOR-HOST"]);
 const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
 const processorOverrideIds = new Set(["AUDIO-PROCESSOR-HOST"]);
+const connectionOverrideIds = new Set(["YINMAN-AUDIO-EXTENDER", "USB-AUDIO-CABLE"]);
 
 export function ClassroomEngineeringApp() {
   const brand = getAppBrand();
@@ -44,7 +45,13 @@ export function ClassroomEngineeringApp() {
     setProfile(sanitizeHiddenProfileState(normalizeProfile(nextProfile)));
     setQuantityOverrides((current) => {
       const next = { ...current };
-      const affectedIds = kind === "microphone" ? microphoneOverrideIds : kind === "speaker" ? speakerOverrideIds : processorOverrideIds;
+      const affectedIds = kind === "microphone"
+        ? microphoneOverrideIds
+        : kind === "speaker"
+          ? speakerOverrideIds
+          : kind === "connection"
+            ? connectionOverrideIds
+            : processorOverrideIds;
       Object.keys(next).forEach((productId) => {
         if (affectedIds.has(productId)) delete next[productId];
       });

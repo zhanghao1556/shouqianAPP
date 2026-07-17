@@ -1,4 +1,15 @@
 import type { Need, ProductRecommendation } from "../types";
+import {
+  SMALL_DISC_01_PRODUCT_ID,
+  SMALL_DISC_02_PRODUCT_ID,
+  SMALL_DISC_03_PRODUCT_ID,
+  SMALL_DISC_AUDIO_EXTENDER_NAME,
+  SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_RECORDING_NAME,
+  SMALL_DISC_SLAVE_NAME,
+  SMALL_DISC_USB_CABLE_PRODUCT_ID
+} from "../lib/yinmanSmallDiscRules";
 
 export interface ClassroomProductRule {
   productId: string;
@@ -28,6 +39,51 @@ export const classroomProductRules: ClassroomProductRule[] = [
     source: "音曼吊麦产品资料、技术支持确认口径",
     installation: "仅用于讲台区域扩声，按3m拾音与扩声半径布置吊装点位。",
     wiring: "每只吊麦独占一路MIC输入，由MIC口直接供电；仅可接双麦处理器或六麦处理器。"
+  },
+  {
+    productId: SMALL_DISC_01_PRODUCT_ID,
+    name: SMALL_DISC_MAIN_NAME,
+    category: "pickup",
+    applyWhen: ["videoConference", "interactiveClass", "localAmplification", "recording", "remoteTeaching"],
+    source: "小圆盘阵麦主麦产品资料、接线图及技术支持确认口径",
+    installation: "采用吊杆安装，主麦优先布置在主要拾音区的核心位置。",
+    wiring: "内置音频处理；本地扩声由SPK-OUT接功放，线上音频可使用客户自购USB音频线或音频扩展器。"
+  },
+  {
+    productId: SMALL_DISC_02_PRODUCT_ID,
+    name: SMALL_DISC_SLAVE_NAME,
+    category: "pickup",
+    applyWhen: ["videoConference", "interactiveClass", "localAmplification", "recording", "remoteTeaching"],
+    source: "小圆盘阵麦从麦产品资料及技术支持确认口径",
+    installation: "采用吊杆安装，按主要活动区覆盖需要补充主麦未覆盖位置。",
+    wiring: "通过主麦MIC接口逐级连接，单段使用超五类纯铜网线并按T568B制作。"
+  },
+  {
+    productId: SMALL_DISC_03_PRODUCT_ID,
+    name: SMALL_DISC_RECORDING_NAME,
+    category: "pickup",
+    applyWhen: ["recording"],
+    source: "小圆盘录音巡课阵麦产品资料及技术支持确认口径",
+    installation: "采用吊杆安装，只覆盖讲台、会议桌等主要录音或巡课区域。",
+    wiring: "麦克风级联后共用一个音频扩展器，由A OUT连接录播或巡课设备音频输入。"
+  },
+  {
+    productId: SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
+    name: SMALL_DISC_AUDIO_EXTENDER_NAME,
+    category: "accessory",
+    applyWhen: ["videoConference", "interactiveClass", "recording", "remoteTeaching"],
+    source: "音频扩展器接线图及技术支持确认口径",
+    installation: "安装在录播、会议终端或电脑附近，便于模拟音频接入。",
+    wiring: "LINK接小圆盘阵麦，A OUT接录播或终端音频输入，双向音频时A IN接终端音频输出。"
+  },
+  {
+    productId: SMALL_DISC_USB_CABLE_PRODUCT_ID,
+    name: "USB音频线（客户自购）",
+    category: "accessory",
+    applyWhen: ["videoConference", "interactiveClass", "remoteTeaching"],
+    source: "小圆盘阵麦主麦接线图及技术支持确认口径",
+    installation: "由客户按电脑与麦克风安装距离另行采购。",
+    wiring: "小圆盘阵麦USB接口直连电脑USB音频接口，同时承担供电和数字音频。"
   },
   {
     productId: "CEILING-SPEAKER",

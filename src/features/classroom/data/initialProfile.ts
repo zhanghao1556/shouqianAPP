@@ -171,6 +171,7 @@ export const createInitialProfile = (): ClassroomProfile => ({
     lineArrayMode: "auto",
     lineArrayInstallation: "auto",
     processorTier: "auto",
+    smallDiscConnectionMode: "auto",
     notes: ""
   },
   acousticEnvironment: {

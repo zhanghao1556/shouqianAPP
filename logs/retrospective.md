@@ -1929,12 +1929,45 @@ PowerShell reminder:
 - When multiple microphone products share placement logic, share geometry only. Product-specific coverage radius, port consumption, image, customer label and connection topology must remain explicit.
 - `verify-point-system-rules.mjs` embeds TypeScript inside an outer template literal. Avoid unescaped inner backticks in new assertions; use concatenation or escaped delimiters so the harness reaches the business assertions.
 
+### 2026-07-17 RING01 / RING02 / RING03 calibration guardrail
+
+- Product documentation and Agent answers are evidence, but explicit user calibration is the final business contract. Preserve RING01's confirmed hanging-only installation even though the Agent source also mentioned tabletop use.
+- Do not convert a theoretical cascade capability into a hard supported limit. RING01 plus three RING02 microphones is the recommendation boundary; larger chains remain representable with special review.
+- RING02 cascading occurs on the microphone chain. Do not select AJ600 merely from RING02 count; processor selection changes only when other interface requirements exceed AJ200 capability.
+- Keep RING03 out of manual selection and local/remote interactive use. Its missing AFC/AEC is a product-capability boundary, while its customer drawing radius remains the user-confirmed 5m.
+- Share only the confirmed front housing image across RING01/RING02/RING03. Never reuse the RING01 rear-interface image as evidence of RING02 or RING03 connectivity.
+
 ### 2026-07-17 signal-aware line-array ceiling clearance guardrail
 
 - Placement must consume the structured speaker signal responsibility instead of inferring clearance from `front180/full360`. Signal assignment after coordinate generation is too late and caused a non-AFC `full360` first row to receive the normal 2m rule.
 - A line-array ceiling speaker with `speakerSignalMode = withoutLineArrayAfc` uses the user-confirmed `1.2m` minimum; a normal AFC ceiling speaker remains at `2m`. Keep the separate array-microphone teacher-monitor soft distance unchanged unless the user calibrates it explicitly.
 - Preserve the original coverage grid whenever it already satisfies the applicable signal-aware distance. Only then may symmetric pair/row relocation run as a fallback; never move a complete row rearward solely because its no-AFC state was unavailable during placement.
 - First-row identity must be preserved structurally from the pre-avoidance grid so a moved point cannot lose its non-AFC role and a `full360` point cannot be omitted merely because the older branch only handled `front180`.
+- Customer sanitization must be asserted whenever a new internal full360 signal group is introduced. Internal `speakerSignalMode` and split connections may change without exposing AFC, gain, delay or the 1.2m threshold before version 4.0.
+- In the embedded point-system harness, fixtures placed before a `const` helper cannot call that helper. Either place the fixture after initialization or read the output structure directly; a temporal-dead-zone failure is a test-order defect, not a business-rule result.
 - An esbuild module-resolution `Access is denied` failure inside the managed filesystem sandbox is an environment failure. Rerun the unchanged test with the established elevated test command before diagnosing application rules.
 - Responsibility-zone inputs matter for coverage fixtures. An 8m room does not imply an 8m podium responsibility width; use the existing teacher/stage zone when asserting hanging-microphone quantity.
 - Keep product capacity findings product-specific. A six-input hanging-microphone plan must not inherit the Yinman two-array-microphone limit merely because both products share the `arrayMic` drawing point type.
+# 2026-07-17 音翼内置处理器规则与 shell 解析复盘
+
+- “音翼阵麦不需要处理器”不能泛化为音翼所有麦克风都不需要处理器；必须以产品类型区分：天花阵麦不需要，线阵麦需要。
+- 系统设备派生不能仅按通用 `pickup` 分类汇总，应同时考虑品牌能力和具体产品 ID，否则会把不同硬件架构错误合并。
+- 当 Codex 执行器在进程启动前命中 WindowsApps alias 并报访问拒绝时，重复填写 `shell` 或直调 Store 路径不会解决沙箱限制。应立即固定回退到 `cmd.exe`，并用 Node UTF-8 处理中文和结构化文本，避免每次重复排障。
+- 自检前先从 `package.json` 核对脚本名；本项目目标规则脚本是 `test:point-system`，类型检查包含在 `build` 的 `tsc` 阶段，不要凭通用命名猜测脚本别名。
+
+### 2026-07-17 hanging-microphone processor reset guardrail
+
+- A microphone-family change must clear an incompatible persisted processor override when the destination family owns a different processor boundary. For hanging microphones, set the processor tier back to automatic at the same UI action that selects the microphone.
+- Hanging-microphone automatic processor selection is capacity-driven: prefer the lower-cost two-input processor at total MIC demand up to two; select the six-input processor above that boundary.
+- Keep the six-input product distinction customer-readable: more interfaces and higher cost, plus its independent touchscreen for speaker volume and microphone mute/unmute control.
+- The point-system harness embeds tests in an outer template literal. Avoid escaped regex delimiters there; fixed-string checks are clearer for customer copy and do not lose escaping during temporary-file generation.
+- Exact interface-demand copy must be produced where the final equipment selection is available. A pre-selection customer-choice helper cannot safely report a number when acoustic rules may add a wireless receiver later in the pipeline.
+
+### 2026-07-17 small-disc production integration guardrail
+
+- A recording-only microphone must suppress amplification consistently at every layer: generated speaker points, positive-quantity speaker/amplifier products, required-speaker validation and the customer speaker selector. Fixing only one layer leaves contradictory drawings or controls.
+- Zero-quantity equipment rows are not active configuration, but customer-visible zero rows can still look like included hardware. Keep the current quantity semantics separate from a later table-visibility cleanup, and do not weaken regression assertions that require all positive processor/amplifier/speaker quantities to be absent for 03.
+- Test factories with a non-auto microphone default must state `microphoneSolution: "auto"` explicitly in automatic-recommendation fixtures. Otherwise a quantity override for another family is correctly ignored and the test diagnoses the wrong layer.
+- Preserve three independent checks for over-recommended 03 quantities: the product quantity override, the final generated point count and the structured special-review finding. This catches selection, drawing and validation drift separately.
+- When browser-testing a need set that normalizes an empty list back to local amplification, add the destination need before removing the current need. Temporarily clearing all needs can silently recreate the default and make a valid rule look stale.
+- Generic drawing titles and zero-quantity table rows are presentation contracts, not product-capability rules. Record them when they become misleading, then clean them in a dedicated UI pass rather than changing microphone or speaker generation during product calibration.

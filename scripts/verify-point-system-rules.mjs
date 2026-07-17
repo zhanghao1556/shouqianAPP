@@ -14,13 +14,21 @@ import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./s
 import { buildReport } from "./src/features/classroom/lib/reportBuilder.ts";
 import { HANGING_MIC_PRODUCT_ID, HANGING_MIC_RADIUS_M } from "./src/features/classroom/lib/hangingMicRules.ts";
 import {
+  SMALL_DISC_01_PRODUCT_ID,
+  SMALL_DISC_02_PRODUCT_ID,
+  SMALL_DISC_03_PRODUCT_ID,
+  SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
+  SMALL_DISC_LINK_SEGMENT_LIMIT_M,
+  SMALL_DISC_USB_CABLE_PRODUCT_ID
+} from "./src/features/classroom/lib/yinmanSmallDiscRules.ts";
+import {
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
   getRequiredArrayMicCount,
   getShortestManhattanCascadeRoute
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
-function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", legacyWirelessMic = "", recordingHost = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", processorTier = "auto", measuredRt60 } = {}) {
+function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", legacyWirelessMic = "", recordingHost = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", processorTier = "auto", smallDiscConnectionMode = "auto", measuredRt60 } = {}) {
   const base = createInitialProfile();
   return normalizeProfile({
     ...base,
@@ -34,6 +42,7 @@ function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, h
       ...base.engineeringConstraints,
       microphoneSolution,
       processorTier,
+      smallDiscConnectionMode,
       speakerProductOverride,
       overheadSpeakerMounting,
       teachingAreaSize: { width: teachingWidth, depth: teachingDepth },
@@ -248,6 +257,47 @@ assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code 
 assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended"), undefined);
 assert.ok(forcedOnlineLine.riskItems.includes("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。"), "forced online line-array selection must expose the customer coverage warning");
 
+const narrowOnlineCeiling = generateEngineeringOutputs(makeProfile({
+  length: 9.5,
+  width: 7.2,
+  scope: "podium",
+  needs: ["interactiveClass"],
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "ceiling"
+}), {}, "yinman");
+const narrowOnlineCeilingSpeakers = narrowOnlineCeiling.generatedPoints.filter((point) => point.type === "speaker");
+const narrowOnlineCeilingMic = narrowOnlineCeiling.generatedPoints.find((point) => point.pickupKind === "lineArray");
+const narrowOnlineFirstRow = narrowOnlineCeilingSpeakers.filter((point) => Math.abs(point.position.y - 2) <= 0.05);
+assert.equal(narrowOnlineCeilingSpeakers.length, 6);
+assert.deepEqual(narrowOnlineFirstRow.map((point) => point.position), [{ x: 2.05, y: 2 }, { x: 5.15, y: 2 }]);
+assert.ok(narrowOnlineFirstRow.every((point) => point.speakerSignalMode === "withoutLineArrayAfc"));
+assert.ok(narrowOnlineCeilingSpeakers.filter((point) => point.position.y > 2.05).every((point) => point.speakerSignalMode === "afc"));
+assert.ok(narrowOnlineCeilingMic);
+const narrowOnlineNearest = Math.min(...narrowOnlineFirstRow.map((point) => Math.hypot(point.position.x - narrowOnlineCeilingMic.position.x, point.position.y - narrowOnlineCeilingMic.position.y)));
+assert.ok(narrowOnlineNearest >= 1.2 && narrowOnlineNearest < 2);
+const narrowOnlineDistanceFinding = narrowOnlineCeiling.pointValidation.findings.find((item) => item.code === "speaker.mic-distance");
+assert.equal(narrowOnlineDistanceFinding?.severity, "info");
+assert.equal(narrowOnlineDistanceFinding?.limit, "1.2m");
+
+const wideOnlineCeiling = generateEngineeringOutputs(makeProfile({
+  length: 9.5,
+  width: 14.9,
+  scope: "podium",
+  needs: ["interactiveClass"],
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "ceiling"
+}), {}, "yinman");
+const wideOnlineCeilingSpeakers = wideOnlineCeiling.generatedPoints.filter((point) => point.type === "speaker");
+const wideOnlineFirstRow = wideOnlineCeilingSpeakers.filter((point) => Math.abs(point.position.y - 2) <= 0.05);
+assert.equal(wideOnlineCeilingSpeakers.length, 12);
+assert.deepEqual(wideOnlineFirstRow.map((point) => Math.round(point.position.x * 10) / 10), [2.2, 5.7, 9.2, 12.7]);
+assert.ok(wideOnlineFirstRow.every((point) => point.speakerSignalMode === "withoutLineArrayAfc"));
+assert.ok(wideOnlineCeilingSpeakers.filter((point) => point.position.y > 2.05).every((point) => point.speakerSignalMode === "afc"));
+assert.ok(getCustomerVisiblePoints(wideOnlineCeiling.generatedPoints).every((point) => point.speakerSignalMode === undefined));
+assert.ok(getCustomerVisibleConnectionLines(wideOnlineCeiling.connectionLines).every((line) => line.speakerSignalMode === undefined));
+assert.doesNotMatch(JSON.stringify(getCustomerVisibleConnectionLines(wideOnlineCeiling.connectionLines)), /AFC|1\.2m/);
+console.log("PASS full360 non-AFC first-row 1.2m clearance restores 7.2m and 14.9m regular ceiling grids");
+
 const lectureFit = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5, microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(lectureFit.solutionSelection.microphone.recommended, "lineArray");
 const lectureTooDeep = generateEngineeringOutputs(makeProfile({ scenario: "lectureClassroom", length: 10, width: 10, teachingDepth: 5.1, microphoneSolution: "lineArray" }), {}, "yinyi");
@@ -298,6 +348,12 @@ const yinmanSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, wid
 const yinyiSingleLine = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(yinmanSingleLine.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
 assert.equal(yinyiSingleLine.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+const yinyiExistingArray = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, microphoneSolution: "existingArray" }), {}, "yinyi");
+const yinmanExistingArray = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, microphoneSolution: "existingArray" }), {}, "yinman");
+assert.equal(yinyiExistingArray.productSelection.some((item) => item.category === "processor"), false);
+assert.equal(yinmanExistingArray.productSelection.find((item) => item.category === "processor")?.quantity, 1);
+assert.match(yinmanExistingArray.audioPlan.summary, /大圆盘阵麦/);
+assert.doesNotMatch(yinmanExistingArray.audioPlan.summary, /智能天花阵列麦克风/);
 assert.deepEqual(getProcessorTiersForBrand("yinyi"), ["twoMic", "sixMic"]);
 assert.deepEqual(getProcessorTiersForBrand("yinman"), ["twoMic", "sixMic", "highPerformance"]);
 const yinyiRejectsYinmanProcessor = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", processorTier: "highPerformance" }), twoSpeakerOverrides, "yinyi");
@@ -398,6 +454,131 @@ assert.notEqual(yinyiHangingDraft.solutionSelection.microphone.selected, "hangin
 assert.equal(yinyiHangingDraft.productSelection.some((item) => item.productId === HANGING_MIC_PRODUCT_ID || item.name === "吊麦"), false);
 assert.equal(yinyiHangingDraft.generatedPoints.some((point) => point.pickupKind === "hangingMic"), false);
 console.log("PASS Yinman-only hanging microphone coverage, powered MIC capacity and processor boundaries");
+
+const smallDisc01Profile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "讲台电脑",
+  overheadSpeakerMounting: "available",
+  smallDiscConnectionMode: "usb"
+});
+const smallDisc01 = generateEngineeringOutputs(smallDisc01Profile, {}, "yinman");
+const smallDisc01Points = smallDisc01.generatedPoints.filter((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02");
+assert.equal(smallDisc01.solutionSelection.microphone.selected, "smallDisc01");
+assert.notEqual(smallDisc01.solutionSelection.microphone.recommended, "smallDisc01");
+assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_01_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity, 3);
+assert.equal(smallDisc01.productSelection.find((item) => item.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc01.productSelection.some((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID), false);
+assert.equal(smallDisc01.productSelection.some((item) => item.category === "processor" && item.quantity > 0), false);
+assert.equal(smallDisc01.productSelection.some((item) => item.productId === "CEILING-SPEAKER" && item.quantity > 0), false);
+assert.equal(smallDisc01.productSelection.some((item) => item.productId === "COLUMN-SPEAKER" && item.quantity > 0), true);
+assert.equal(smallDisc01.productSelection.find((item) => item.category === "amplifier")?.quantity, 1);
+assert.equal(smallDisc01Points.length, 4);
+assert.equal(smallDisc01Points.filter((point) => point.pickupKind === "smallDisc01").length, 1, JSON.stringify(smallDisc01Points.map((point) => ({ id: point.id, pickupKind: point.pickupKind }))));
+assert.equal(smallDisc01Points.filter((point) => point.pickupKind === "smallDisc02").length, 3);
+assert.ok(smallDisc01Points.every((point) => point.coverageRadius === 3 && point.installationMode === "hanging"));
+assert.equal(smallDisc01.connectionLines.filter((line) => line.id.startsWith("small-disc-01-cascade-")).length, 3);
+assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-usb-host" && line.cableType.includes("客户自购")));
+assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-amplifier" && line.fromPort === "SPK-OUT"));
+assert.equal(smallDisc01.pointValidation.findings.some((finding) => finding.code === "array.capacity" && finding.severity === "hard"), false);
+
+const smallDisc01Extender = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "讲台电脑",
+  recordingHost: "录播主机",
+  overheadSpeakerMounting: "available",
+  smallDiscConnectionMode: "extender"
+}), {}, "yinman");
+assert.equal(smallDisc01Extender.productSelection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc01Extender.productSelection.some((item) => item.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID), false);
+assert.ok(smallDisc01Extender.connectionLines.some((line) => line.id === "small-disc-01-link-extender"));
+assert.ok(smallDisc01Extender.connectionLines.some((line) => line.fromPort === "A OUT"));
+assert.ok(smallDisc01Extender.connectionLines.some((line) => line.toPort === "A IN"));
+
+const smallDisc03 = generateEngineeringOutputs(makeProfile({
+  length: 10,
+  width: 10,
+  needs: ["recording"],
+  scope: "podium",
+  microphoneSolution: "auto",
+  recordingHost: "录播主机",
+  overheadSpeakerMounting: "available"
+}), {}, "yinman");
+assert.equal(smallDisc03.solutionSelection.microphone.recommended, "smallDisc03");
+assert.equal(smallDisc03.solutionSelection.microphone.selected, "smallDisc03");
+assert.equal(smallDisc03.productSelection.find((item) => item.productId === SMALL_DISC_03_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc03.productSelection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.quantity, 1);
+assert.equal(
+  smallDisc03.productSelection.some((item) => item.quantity > 0 && (item.category === "processor" || item.category === "amplifier" || item.category === "speaker")),
+  false,
+  JSON.stringify(smallDisc03.productSelection.filter((item) => item.quantity > 0 && (item.category === "processor" || item.category === "amplifier" || item.category === "speaker")))
+);
+assert.ok(smallDisc03.generatedPoints.filter((point) => point.pickupKind === "smallDisc03").every((point) => point.coverageRadius === 5 && point.installationMode === "hanging"));
+assert.ok(smallDisc03.connectionLines.some((line) => line.id === "small-disc-03-link-extender"));
+assert.doesNotMatch([smallDisc03.audioPlan.summary, smallDisc03.audioPlan.pickupGoal, smallDisc03.audioPlan.amplificationGoal].join(" "), /AFC|AEC/);
+
+const rejectedSmallDisc03 = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  microphoneSolution: "smallDisc03"
+}), {}, "yinman");
+assert.notEqual(rejectedSmallDisc03.solutionSelection.microphone.selected, "smallDisc03");
+assert.equal(rejectedSmallDisc03.productSelection.some((item) => item.productId === SMALL_DISC_03_PRODUCT_ID), false);
+
+const smallDisc01OverLimit = generateEngineeringOutputs(smallDisc01Profile, { [SMALL_DISC_02_PRODUCT_ID]: 4 }, "yinman");
+assert.equal(smallDisc01OverLimit.generatedPoints.filter((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02").length, 5);
+assert.equal(smallDisc01OverLimit.pointValidation.findings.find((finding) => finding.code === "small-disc.recommended-count")?.severity, "hard");
+assert.equal(smallDisc01OverLimit.pointValidation.findings.some((finding) => finding.code === "array.capacity" && finding.severity === "hard"), false);
+
+const smallDisc03OverLimit = generateEngineeringOutputs(makeProfile({
+  length: 10,
+  width: 10,
+  needs: ["recording"],
+  scope: "podium",
+  microphoneSolution: "auto",
+  recordingHost: "录播主机",
+  overheadSpeakerMounting: "available"
+}), { [SMALL_DISC_03_PRODUCT_ID]: 4 }, "yinman");
+assert.equal(smallDisc03OverLimit.productSelection.find((item) => item.productId === SMALL_DISC_03_PRODUCT_ID)?.quantity, 4);
+assert.equal(smallDisc03OverLimit.generatedPoints.filter((point) => point.pickupKind === "smallDisc03").length, 4);
+assert.equal(smallDisc03OverLimit.pointValidation.findings.find((finding) => finding.code === "small-disc.recommended-count")?.severity, "hard");
+
+const smallDiscNoTopMount = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  microphoneSolution: "smallDisc01",
+  overheadSpeakerMounting: "unavailable"
+}), {}, "yinman");
+assert.equal(smallDiscNoTopMount.pointValidation.findings.find((finding) => finding.code === "small-disc.overhead-installation")?.severity, "hard");
+
+const segmentProfile = makeProfile({ length: 8, width: 30, needs: ["recording"], microphoneSolution: "smallDisc03", overheadSpeakerMounting: "available" });
+const longSegmentValidation = validatePointPlan({
+  profile: segmentProfile,
+  brandId: "yinman",
+  generatedPoints: [
+    { id: "segment-main", type: "arrayMic", label: "小圆盘阵麦（录音巡课） 1", position: { x: 1, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" },
+    { id: "segment-slave", type: "arrayMic", label: "小圆盘阵麦（录音巡课） 2", position: { x: 22, y: 2 }, coverageRadius: 5, pickupKind: "smallDisc03", pickupPattern: "full360", installationMode: "hanging", reason: "测试单段" }
+  ],
+  requiredArrayMicCount: 2,
+  requiredSpeakerCount: 0
+});
+assert.equal(SMALL_DISC_LINK_SEGMENT_LIMIT_M, 20);
+assert.equal(longSegmentValidation.findings.find((finding) => finding.code === "small-disc.link-segment")?.severity, "hard");
+
+const yinyiSmallDiscDraft = generateEngineeringOutputs(smallDisc01Profile, {}, "yinyi");
+assert.equal(yinyiSmallDiscDraft.productSelection.some((item) => [SMALL_DISC_01_PRODUCT_ID, SMALL_DISC_02_PRODUCT_ID, SMALL_DISC_03_PRODUCT_ID, SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID].includes(item.productId)), false);
+assert.equal(yinyiSmallDiscDraft.generatedPoints.some((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03"), false);
+console.log("PASS Yinman small-disc automatic/manual selection, wall-only output, USB/extender topology, recommendation and review boundaries");
 
 const getOutputSpeakers = (outputs) => outputs.generatedPoints.filter((point) => point.type === "speaker");
 const getOutputLineMic = (outputs) => outputs.generatedPoints.find((point) => point.pickupKind === "lineArray");
@@ -573,9 +754,9 @@ const horizontalOddAxisSpeakers = getOutputSpeakers(horizontalOddAxisOutputs);
 const horizontalOddAxisMic = getOutputLineMic(horizontalOddAxisOutputs);
 assert.equal(horizontalOddAxisSpeakers.length, 15);
 assert.ok(horizontalOddAxisMic);
-assert.ok(Math.min(...horizontalOddAxisSpeakers.map((point) => Math.hypot(point.position.x - horizontalOddAxisMic.position.x, point.position.y - horizontalOddAxisMic.position.y))) >= 1.5);
+assert.ok(Math.min(...horizontalOddAxisSpeakers.map((point) => Math.hypot(point.position.x - horizontalOddAxisMic.position.x, point.position.y - horizontalOddAxisMic.position.y))) >= 1.2);
 assert.equal(horizontalOddAxisSpeakers.filter((point) => point.speakerSignalMode === "withoutLineArrayAfc").length, 5);
-console.log("PASS ceiling odd-axis full-grid preservation, point-level clearance, 1.5m line-array first-row exception and brand parity");
+console.log("PASS ceiling odd-axis full-grid preservation, point-level clearance, 1.2m line-array non-AFC exception and brand parity");
 
 const fullLine = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 6, width: 6, scope: "full", microphoneSolution: "lineArray", speakerProductOverride: "wall" }), { "COLUMN-SPEAKER": 4 }, "yinyi");
 assert.equal(getOutputLineMic(fullLine)?.pickupPattern, "full360");
@@ -845,6 +1026,34 @@ const distanceFinding = teacherMonitorResult.findings.find((finding) => finding.
 assert.equal(distanceFinding?.severity, "info");
 assert.match(distanceFinding?.internalMessage ?? "", /老师区监听/);
 console.log("PASS approved 1.5m teacher-monitor distance exception");
+
+const lineArrayNonAfcResult = validatePointPlan({
+  profile: makeProfile(),
+  brandId: "yinyi",
+  generatedPoints: [
+    { id: "line-mic", type: "arrayMic", label: "线阵麦", position: { x: 4, y: 3 }, reason: "测试", pickupKind: "lineArray" },
+    { id: "speaker", type: "speaker", label: "吸顶音箱", position: { x: 5.2, y: 3 }, reason: "普通点位", speakerSignalMode: "withoutLineArrayAfc" }
+  ],
+  requiredArrayMicCount: 1,
+  requiredSpeakerCount: 1
+});
+const lineArrayNonAfcFinding = lineArrayNonAfcResult.findings.find((finding) => finding.code === "speaker.mic-distance");
+assert.equal(lineArrayNonAfcFinding?.severity, "info");
+assert.equal(lineArrayNonAfcFinding?.limit, "1.2m");
+assert.match(lineArrayNonAfcFinding?.internalMessage ?? "", /非AFC音箱1.2m/);
+
+const lineArrayNonAfcTooClose = validatePointPlan({
+  profile: makeProfile(),
+  brandId: "yinyi",
+  generatedPoints: [
+    { id: "line-mic", type: "arrayMic", label: "线阵麦", position: { x: 4, y: 3 }, reason: "测试", pickupKind: "lineArray" },
+    { id: "speaker", type: "speaker", label: "吸顶音箱", position: { x: 5.1, y: 3 }, reason: "普通点位", speakerSignalMode: "withoutLineArrayAfc" }
+  ],
+  requiredArrayMicCount: 1,
+  requiredSpeakerCount: 1
+});
+assert.equal(lineArrayNonAfcTooClose.findings.find((finding) => finding.code === "speaker.mic-distance")?.severity, "warning");
+console.log("PASS line-array non-AFC 1.2m validation boundary and normal-AFC 2m separation");
 
 const centerBackfillResult = validatePointPlan({
   profile: makeProfile({ length: 10, width: 8 }),

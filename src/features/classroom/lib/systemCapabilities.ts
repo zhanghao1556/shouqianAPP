@@ -13,6 +13,15 @@ import {
   getHangingMicSupport,
   HANGING_MIC_RADIUS_M
 } from "./hangingMicRules";
+import {
+  getEffectiveYinmanMicrophoneSolution,
+  getSmallDiscCoverageRadius,
+  getSmallDiscRequiredCount,
+  SMALL_DISC_MAIN_NAME,
+  SMALL_DISC_MAX_GENERATED_COUNT,
+  SMALL_DISC_RECORDING_NAME,
+  SMALL_DISC_SLAVE_NAME
+} from "./yinmanSmallDiscRules";
 
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
@@ -58,6 +67,10 @@ export function getBrandSystemCapability(brandId: AppBrandId): BrandSystemCapabi
 }
 
 export function getRequiredArrayMicCount(profile: ClassroomProfile, brandId: AppBrandId = "yinyi"): number {
+  const effectiveMicrophone = getEffectiveYinmanMicrophoneSolution(profile, brandId);
+  if (effectiveMicrophone === "smallDisc01" || effectiveMicrophone === "smallDisc03") {
+    return getSmallDiscRequiredCount(profile, effectiveMicrophone);
+  }
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.selected) return lineArray.count;
   const currentAlgorithmCount = getCurrentArrayMicCount(profile);
@@ -77,6 +90,66 @@ export function generateBrandEngineeringPoints(
   brandId: AppBrandId
 ): GeneratedPoint[] {
   const requestedMicrophone = profile.engineeringConstraints.microphoneSolution ?? "auto";
+  const effectiveMicrophone = getEffectiveYinmanMicrophoneSolution(profile, brandId);
+  if ((requestedMicrophone === "smallDisc01" || requestedMicrophone === "smallDisc03") && brandId !== "yinman") {
+    return generateBrandEngineeringPoints({
+      ...profile,
+      engineeringConstraints: { ...profile.engineeringConstraints, microphoneSolution: "auto" }
+    }, targets, brandId);
+  }
+  if (effectiveMicrophone === "smallDisc01" || effectiveMicrophone === "smallDisc03") {
+    const count = Math.max(1, Math.round(targets.arrayMicCount ?? getSmallDiscRequiredCount(profile, effectiveMicrophone)));
+    const smallDiscProfile: ClassroomProfile = effectiveMicrophone === "smallDisc01"
+      ? {
+          ...profile,
+          engineeringConstraints: {
+            ...profile.engineeringConstraints,
+            speakerProductOverride: "wall"
+          }
+        }
+      : profile;
+    const generated = generateEngineeringPoints(smallDiscProfile, {
+      ...targets,
+      arrayMicCount: count,
+      arrayMicMaxCount: SMALL_DISC_MAX_GENERATED_COUNT,
+      speakerProductId: effectiveMicrophone === "smallDisc01" ? "COLUMN-SPEAKER" : targets.speakerProductId
+    });
+    const generatedForSolution = effectiveMicrophone === "smallDisc03"
+      ? generated.filter((point) => point.type !== "speaker")
+      : generated;
+    const radius = getSmallDiscCoverageRadius(profile, effectiveMicrophone);
+    let micIndex = 0;
+    return generatedForSolution.map((point) => {
+      if (point.type !== "arrayMic") return point;
+      const index = micIndex;
+      micIndex += 1;
+      if (effectiveMicrophone === "smallDisc03") {
+        return {
+          ...point,
+          id: `small-disc-03-${index + 1}`,
+          label: count > 1 ? `${SMALL_DISC_RECORDING_NAME} ${index + 1}` : SMALL_DISC_RECORDING_NAME,
+          coverageRadius: radius,
+          pickupKind: "smallDisc03" as const,
+          pickupPattern: "full360" as const,
+          installationMode: "hanging" as const,
+          reason: `按${radius}m拾音半径覆盖讲台、会议桌等主要录音巡课区域。`
+        };
+      }
+      const isMain = index === 0;
+      return {
+        ...point,
+        id: isMain ? "small-disc-01-main" : `small-disc-02-slave-${index}`,
+        label: isMain ? `${SMALL_DISC_MAIN_NAME} 主麦` : `${SMALL_DISC_SLAVE_NAME} ${index}`,
+        coverageRadius: radius,
+        pickupKind: isMain ? "smallDisc01" as const : "smallDisc02" as const,
+        pickupPattern: "full360" as const,
+        installationMode: "hanging" as const,
+        reason: isMain
+          ? `主麦优先服务核心拾音位置，按${radius}m半径承担主要拾音。`
+          : `从麦按${radius}m半径补充主麦未覆盖的主要活动区。`
+      };
+    });
+  }
   if (requestedMicrophone === "hangingMic" && brandId !== "yinman") {
     return generateBrandEngineeringPoints({
       ...profile,

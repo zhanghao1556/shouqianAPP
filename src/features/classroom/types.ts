@@ -23,13 +23,14 @@ export type ReverberationRisk = "low" | "medium" | "high";
 export type AcousticAssessmentSource = "measured" | "estimated";
 export type AcousticAssessmentConfidence = "high" | "medium" | "low";
 export type GeneratedPointType = "arrayMic" | "speaker";
-export type ProductCategory = "pickup" | "speaker" | "wireless" | "processor" | "amplifier";
+export type ProductCategory = "pickup" | "speaker" | "wireless" | "processor" | "amplifier" | "accessory";
 export type ReportSectionType = "cover" | "summary" | "table" | "drawing" | "list";
 export type DrawingType = "installation" | "wiring" | "topology" | "system";
 export type LegacySpeakerType = "ceiling" | "wall";
 export type LegacyWallAdjustability = "universal" | "fixed" | "unknown";
 export type SpeakerProductOverride = "auto" | "ceiling" | "wall";
-export type MicrophoneSolution = "auto" | "existingArray" | "lineArray" | "hangingMic";
+export type MicrophoneSolution = "auto" | "existingArray" | "lineArray" | "hangingMic" | "smallDisc01" | "smallDisc03";
+export type SmallDiscConnectionMode = "auto" | "usb" | "extender";
 export type OverheadSpeakerMounting = "available" | "unavailable" | "unknown";
 export type LineArrayMode = "auto" | "front" | "full";
 export type LineArrayInstallation = "auto" | "podium" | "hanging";
@@ -78,6 +79,7 @@ export interface EngineeringConstraints {
   lineArrayMode?: LineArrayMode;
   lineArrayInstallation?: LineArrayInstallation;
   processorTier?: ProcessorTier;
+  smallDiscConnectionMode?: SmallDiscConnectionMode;
   notes: string;
 }
 
@@ -128,7 +130,7 @@ export interface GeneratedPoint {
   horizontalAngle?: number;
   downTiltAngle?: number;
   coverageRadius?: number;
-  pickupKind?: "existingArray" | "lineArray" | "hangingMic";
+  pickupKind?: "existingArray" | "lineArray" | "hangingMic" | "smallDisc01" | "smallDisc02" | "smallDisc03";
   pickupPattern?: "front180" | "full360";
   installationMode?: "podium" | "hanging" | "tabletop";
   speakerSignalMode?: SpeakerSignalMode;
@@ -299,6 +301,7 @@ export interface CustomerSolutionSelection {
     lineArraySupported: boolean;
     lineArrayCoverageWarning?: string;
     hangingMicCapacityWarning?: string;
+    smallDiscReviewWarning?: string;
   };
   speaker: CustomerSolutionChoice<Exclude<SpeakerProductOverride, "auto">> & {
     requiresSpecialReview: boolean;
