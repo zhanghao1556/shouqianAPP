@@ -6831,3 +6831,13 @@ Verification:
 - 5180当前真实页面视觉复核通过：小圆盘阵麦01位于中心，功放、讲台电脑、01拓展器三组直属设备按120度均匀分布；录播主机和壁挂音箱分别围绕拓展器与功放，实物图完整显示。
 - 7月17日修正前生成的四个 `260717-1` 目录/zip 已移入Git忽略目录 `work/invalid-releases`，不会进入发布checkpoint。
 - 备份兼容性补充：Windows PowerShell 5.1执行快照脚本时需要同时加载 `System.IO.Compression` 与 `System.IO.Compression.FileSystem`；忽略目录中的兼容辅助脚本为 `work/run-daily-snapshot.ps1`。
+
+# 2026-07-18 双品牌260718-1发布
+
+- 每日收工流程已完成：规则与发布日志已更新；新快照 `.codex-backups/snapshot-20260718-004304-780.zip` 验证124个文件并只保留最新一份；完整点位规则测试、TypeScript生产构建和 `git diff --check` 通过；每日存档提交为 `b6ec328`。
+- 从当前源码执行完整 `release:all`，分别按 `build -> build-single-file-release -> build-universal-release` 生成音翼和音曼发布包，未复用7月17日无效中间产物。
+- 新发布目录与zip为 `音翼AI售前工具-1.1-内部测试版-260718-1` 和 `音曼AI售前工具-1.1-内部测试版-260718-1`；旧 `260717-1` 错误包继续保留在忽略目录 `work/invalid-releases`，不进入交付提交。
+- `verify:release-current` 通过：两品牌最终HTML和单文件均为当前源码新产物，标题、品牌、header CSS、发布标记、必需文案、禁止文案和禁止资产哈希全部通过，未发现品牌交叉资产。
+- `verify:release-behavior` 使用全新浏览器上下文通过：音翼、音曼最终HTML的设备清单和点位图业务输出均与当前 `dist` 一致。
+- 两品牌移动兼容验证通过：Pixel 7/Android Chrome和iPhone 14/iOS WebKit均正确显示对应标题、工作台和发布标记；脚本/样式/图片全部内联，无已知乱码、无外部资源依赖、无横向滚动。
+- 生产构建保留既有主包约 `519.53kB` 超过Vite 500kB建议值提示；属于已记录的非阻塞拆包建议，本次接口与拓扑发布未顺手重构。
