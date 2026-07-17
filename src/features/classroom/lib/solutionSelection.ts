@@ -7,6 +7,7 @@ import type {
   SpeakerProductOverride
 } from "../types";
 import type { AppBrandId } from "../brand";
+import { hasExistingWirelessHandheld } from "./connectionRules";
 import {
   getLineArrayDecision,
   getProcessorAlternativeTier,
@@ -28,6 +29,13 @@ import {
   SMALL_DISC_MAIN_NAME,
   SMALL_DISC_RECORDING_NAME
 } from "./yinmanSmallDiscRules";
+import {
+  getYinmanHybridProcessorInputDemand,
+  getYinmanHybridProcessorTier,
+  hasYinmanLineArraySupplements,
+  isYinmanLineArrayOnlineCoverageComplete
+} from "./systemCapabilities";
+import { getReverberationRisk } from "./reverberationRules";
 
 const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
   existingArray: "智能天花阵列麦克风",
@@ -57,6 +65,11 @@ export function getCustomerSolutionSelection(
   const selectedMicrophone = requestedMicrophone === "auto" ? recommendedMicrophone : requestedMicrophone;
   const selectedLineArrayDecision = getLineArrayDecision(profile, generatedPoints);
   const lineArraySupported = selectedMicrophone !== "lineArray" || selectedLineArrayDecision.selected;
+  const usesHybridLineArray = hasYinmanLineArraySupplements(generatedPoints);
+  const hybridCoverageComplete = isYinmanLineArrayOnlineCoverageComplete(profile, generatedPoints);
+  const lineArrayCoverageWarning = selectedMicrophone === "lineArray" && !hybridCoverageComplete
+    ? selectedLineArrayDecision.coverageWarning
+    : undefined;
 
   const automaticSpeakerProfile = withSpeakerOverride(profile, "auto");
   const recommendedSpeaker = selectedMicrophone === "smallDisc01"
@@ -81,7 +94,7 @@ export function getCustomerSolutionSelection(
   const lineArrayCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
   const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
   const processor = brandId === "yinman" && lineArrayCount === 1
-    ? getYinmanSingleLineProcessorSelection(profile, speakerCount)
+    ? getYinmanSingleLineProcessorSelection(profile, speakerCount, usesHybridLineArray)
     : undefined;
 
   return {
@@ -117,7 +130,7 @@ export function getCustomerSolutionSelection(
         ? ["功能：只承担主要区域录音或巡课拾音", "成本：低于内置处理型和大圆盘阵麦方案"]
         : automaticLineArrayDecision.decisionFactors,
       lineArraySupported,
-      lineArrayCoverageWarning: selectedMicrophone === "lineArray" ? selectedLineArrayDecision.coverageWarning : undefined,
+      lineArrayCoverageWarning,
       hangingMicCapacityWarning,
       smallDiscReviewWarning
     },
@@ -152,8 +165,38 @@ export function getCustomerSolutionSelection(
 
 function getYinmanSingleLineProcessorSelection(
   profile: ClassroomProfile,
-  speakerCount: number
+  speakerCount: number,
+  usesHybridLineArray: boolean
 ): NonNullable<CustomerSolutionSelection["processor"]> {
+  if (usesHybridLineArray) {
+    const newWirelessInputDemand = !hasExistingWirelessHandheld(profile) && getReverberationRisk(profile) === "high" ? 1 : 0;
+    const selected = getYinmanHybridProcessorTier(profile, newWirelessInputDemand);
+    const alternative = selected === "twoMic" ? "sixMic" : "twoMic";
+    const interfaceDemand = getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand);
+    const selectedLabel = getProcessorTierName(selected);
+    const alternativeLabel = getProcessorTierName(alternative);
+    return {
+      recommended: selected,
+      selected,
+      userSelected: false,
+      isNonRecommended: false,
+      selectedLabel,
+      recommendedLabel: selectedLabel,
+      advantages: selected === "twoMic"
+        ? "满足线阵麦与后场补充拾音接入，优先控制整套成本。"
+        : "为线阵麦、后场补充拾音和其他麦克风输入保留足够接口。",
+      cautions: "后场补充拾音阵麦采用麦克风端级联，共用一个扩展麦克风接口。",
+      recommendationReason: `系统按接口需求自动配置${selectedLabel}；线阵麦使用双MIC输入，补充拾音阵麦级联后使用扩展麦克风接口。`,
+      decisionFactors: [
+        `接口：当前MIC输入需求为${interfaceDemand}路，补充拾音阵麦数量不重复占用处理器MIC口`,
+        "成本：接口满足时优先采用成本较低的处理器",
+        "连接：线阵麦经信号转换器接入，后场补充拾音阵麦共用扩展麦克风接口"
+      ],
+      alternative,
+      alternativeLabel,
+      interfaceDemand
+    };
+  }
   const recommended = "highPerformance" as const;
   const selected = getProcessorTier(profile, "yinman", 1, speakerCount);
   const alternative = getProcessorAlternativeTier(profile, speakerCount);

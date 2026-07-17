@@ -15,6 +15,8 @@ import {
 import {
   AUDIO_PROCESSOR_HOST_PRODUCT_ID,
   getBrandSystemCapability,
+  LINE_ARRAY_MIC_CONVERTER_NAME,
+  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
@@ -413,8 +415,65 @@ function generateProcessorDirectConnectionLines(
   const existingMicrophoneDevices = splitDeviceText(profile.existingDevices.legacyWirelessMic);
   const legacyAudioInputDevice = getLegacyAudioInputDevice(profile);
   const shouldRouteExternalToLegacyAudio = Boolean(legacySound && legacyAudioInputDevice);
+  const hybridSupplements = isLineArray
+    ? generatedPoints.filter((point) => point.pickupKind === "smallDisc02")
+    : [];
+
+  if (isLineArray && hybridSupplements.length) {
+    const converterName = selection.find((item) => item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID)?.name ?? LINE_ARRAY_MIC_CONVERTER_NAME;
+    const linePoints = generatedPoints.filter((point) => point.pickupKind === "lineArray");
+    linePoints.forEach((point, index) => {
+      lines.push({
+        id: `line-array-converter-${index + 1}`,
+        fromDevice: point.label,
+        fromPort: "RJ45 模拟麦克风信号接口",
+        toDevice: converterName,
+        toPort: "线阵麦输入",
+        cableType: "网线",
+        note: "线阵麦使用独立网线接入信号转换器；8m内使用常规网线，8-20m使用超六类屏蔽线，禁止接PoE网口。"
+      });
+    });
+    lines.push({
+      id: "line-array-converter-processor",
+      fromDevice: converterName,
+      fromPort: "双路麦克风输出",
+      toDevice: coreName,
+      toPort: "MIC1 + MIC2",
+      cableType: "两路麦克风音频线",
+      note: "线阵麦经信号转换后占用处理器MIC1与MIC2。"
+    });
+
+    const farToNearSupplements = [...hybridSupplements].sort(
+      (a, b) => b.position.y - a.position.y || a.position.x - b.position.x
+    );
+    farToNearSupplements.slice(0, -1).forEach((point, index) => {
+      const nextPoint = farToNearSupplements[index + 1];
+      lines.push({
+        id: `line-array-supplement-cascade-${index + 1}`,
+        fromDevice: point.label,
+        fromPort: "MIC",
+        toDevice: nextPoint.label,
+        toPort: "LINK",
+        cableType: "超五类纯铜网线（T568B）",
+        note: "后场补充拾音阵麦从远端向处理器方向逐级连接，单段超过20m时需专项复核。"
+      });
+    });
+    const nearestSupplement = farToNearSupplements.at(-1);
+    if (nearestSupplement) {
+      lines.push({
+        id: "line-array-supplement-extmic",
+        fromDevice: nearestSupplement.label,
+        fromPort: "MIC",
+        toDevice: coreName,
+        toPort: "EXTMIC",
+        cableType: "超五类纯铜网线（T568B）",
+        note: "整条后场补充拾音阵麦级联链共用处理器一个EXTMIC接口。"
+      });
+    }
+  }
 
   Array.from({ length: arrayMic.quantity }, (_, index) => index + 1).forEach((index) => {
+    if (isLineArray && hybridSupplements.length) return;
     if (isHangingMic) {
       lines.push({
         id: `hanging-mic-processor-${index}`,

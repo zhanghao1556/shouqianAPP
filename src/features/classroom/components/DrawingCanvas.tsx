@@ -18,6 +18,7 @@ import {
 } from "../lib/speakerRules";
 import { formatBrandText, getAppBrand } from "../brand";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "../lib/customerOutput";
+import { LINE_ARRAY_MIC_CONVERTER_NAME } from "../lib/systemCapabilities";
 import topologyArrayMicImage from "../../../assets/topology-array-mic.png";
 import topologyAllInOneImage from "../../../assets/topology-all-in-one.png";
 import topologyAmplifierImage from "../../../assets/topology-amplifier.png";
@@ -1607,6 +1608,7 @@ type TopologyNode = {
   isHangingMic?: boolean;
   isSmallDiscMic?: boolean;
   isAudioExtender?: boolean;
+  isSignalConverter?: boolean;
 };
 type TopologyEdge = { id: string; from: string; to: string; label: string; laneOffset?: number };
 const LEGACY_AUDIO_ROOT_LABELS = ["原有音频系统", "原有扩声系统"];
@@ -1624,6 +1626,8 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   };
 
   const isLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
+  const lineArrayMicCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
+  const usesHybridLineArray = isLineArray && generatedPoints.some((point) => point.pickupKind === "smallDisc02");
   const isHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
   const usesSmallDisc01 = generatedPoints.some((point) => point.pickupKind === "smallDisc01");
   const usesSmallDisc03 = generatedPoints.some((point) => point.pickupKind === "smallDisc03");
@@ -1637,7 +1641,8 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   } else if (processorDirect) {
     const processorLabel = connections.flatMap((line) => [line.fromDevice, line.toDevice]).find((device) => device.includes("处理器")) ?? "智能音频处理主机";
     ensureNode({ key: topologyRootKey, label: processorLabel, kind: "processor" });
-    Array.from({ length: arrayMicCount }, (_, index) => index + 1).forEach((index) => {
+    Array.from({ length: isLineArray ? lineArrayMicCount : arrayMicCount }, (_, index) => index + 1).forEach((index) => {
+      if (usesHybridLineArray) return;
       const key = `arrayMic-${index}`;
       ensureNode({
         key,
@@ -1869,6 +1874,7 @@ function getTopologyNodeKey(
   speakerSignalMode?: ConnectionLine["speakerSignalMode"],
   afcSendLevelOffset?: number
 ) {
+  if (device.includes(LINE_ARRAY_MIC_CONVERTER_NAME)) return "lineArrayConverter";
   if (device.includes(SMALL_DISC_AUDIO_EXTENDER_NAME)) return "smallDiscExtender";
   if (device.includes(SMALL_DISC_MAIN_NAME)) return "smallDiscMain";
   if (device.includes(SMALL_DISC_SLAVE_NAME)) {
@@ -1921,6 +1927,7 @@ function getTopologyNodeKey(
 }
 
 function getTopologyNode(device: string, port: string, key: string, speakerCount: number, speakerType: "吸顶" | "壁挂"): TopologyNode {
+  if (key === "lineArrayConverter") return { key, label: LINE_ARRAY_MIC_CONVERTER_NAME, kind: "device", isSignalConverter: true };
   if (key === "smallDiscMain") return { key, label: `${SMALL_DISC_MAIN_NAME} 主麦`, kind: "mainMic", isSmallDiscMic: true };
   if (key.startsWith("smallDiscSlave-")) {
     const index = Number(key.slice("smallDiscSlave-".length));
@@ -1935,7 +1942,18 @@ function getTopologyNode(device: string, port: string, key: string, speakerCount
   if (key.startsWith("arrayMic-")) {
     const index = Number(key.slice("arrayMic-".length));
     const isHangingMic = device.includes("吊麦");
-    return { key, label: isHangingMic ? `吊麦 ${index}` : Number.isFinite(index) ? `阵麦 ${index}` : "阵麦", kind: "mainMic", isHangingMic };
+    const isLineArray = device.includes("线阵麦");
+    return {
+      key,
+      label: isHangingMic
+        ? `吊麦 ${index}`
+        : isLineArray
+          ? Number.isFinite(index) ? `智能线阵麦克风 ${index}` : "智能线阵麦克风"
+          : Number.isFinite(index) ? `阵麦 ${index}` : "阵麦",
+      kind: "mainMic",
+      isHangingMic,
+      isLineArray
+    };
   }
   if (key === "processorHost") return { key, label: "智能音频处理主机", kind: "processor" };
   if (isTopologySpeakerKey(key)) return {
@@ -2742,6 +2760,7 @@ function isTopologyFirstLevelDevice(device: string, firstLevelDevices?: Set<stri
 function isTopologySecondLevelDevice(device: string) {
   return (
     device === "slaveMic" ||
+    device === "lineArrayConverter" ||
     device.startsWith("arrayMic-") ||
     device.startsWith("smallDiscSlave-") ||
     device.startsWith("smallDiscRecording-") ||
@@ -3041,7 +3060,16 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
       <text x={x + w / 2} y={y + 18} textAnchor="middle" className="cadLabel">
         {label}
       </text>
-      {image ? (
+      {node.isSignalConverter ? (
+        <g>
+          <rect x={imageX} y={imageY} width={imageSize.width} height={imageSize.height} rx={4} fill="#f8fafc" stroke="#475569" strokeWidth={1.5} />
+          <circle cx={imageX + 12} cy={imageY + imageSize.height / 2} r={3} fill="#0f766e" />
+          <circle cx={imageX + imageSize.width - 12} cy={imageY + imageSize.height / 2} r={3} fill="#0f766e" />
+          <text x={imageX + imageSize.width / 2} y={imageY + imageSize.height / 2 + 4} textAnchor="middle" className="cadSmall" fill="#334155">
+            MIC1 / MIC2
+          </text>
+        </g>
+      ) : image ? (
         <image href={image} x={imageX} y={imageY} width={imageSize.width} height={imageSize.height} preserveAspectRatio="xMidYMid meet" />
       ) : (
         <text x={x + w / 2} y={imageY + imageSize.height / 2 + 4} textAnchor="middle" className="cadSmall" fill="#64748b">
@@ -3053,6 +3081,7 @@ function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: numbe
 }
 
 function getTopologyImageSize(node: TopologyNode) {
+  if (node.isSignalConverter) return { width: 112, height: 48 };
   if (node.isSmallDiscMic) return { width: 72, height: 72 };
   if (node.isAudioExtender) return { width: 112, height: 62 };
   if (node.isLineArray) return { width: 116, height: 32 };

@@ -748,7 +748,8 @@ const getArrayMicPositions = (
   profile: ClassroomProfile,
   teacherMicY: number,
   targetArrayMicCount: number,
-  maxCount = ARRAY_MIC_MAX_COUNT
+  maxCount = ARRAY_MIC_MAX_COUNT,
+  forceWideRows = false
 ) => {
   const targetCount = clamp(Math.round(targetArrayMicCount), 1, maxCount);
   if (shouldUseMeetingWidthAsArrayMicAxis(profile)) {
@@ -765,7 +766,7 @@ const getArrayMicPositions = (
     return keepSameAxisArrayMicsApart(profile, positions, teacherMicY);
   }
 
-  const rowCounts = getArrayMicRowCounts(profile, targetCount, maxCount);
+  const rowCounts = getArrayMicRowCounts(profile, targetCount, maxCount, forceWideRows);
   const rowYs = getArrayMicRowYs(profile, teacherMicY, rowCounts.length);
   const teacherMicX = getTeacherArrayMicX(profile);
   const centerX = profile.roomGeometry.width / 2;
@@ -1060,7 +1061,8 @@ const shouldUseWideClassroomFrontArrayMicPair = (profile: ClassroomProfile) =>
 const getArrayMicRowCounts = (
   profile: ClassroomProfile,
   targetArrayMicCount: number,
-  maxCount = ARRAY_MIC_MAX_COUNT
+  maxCount = ARRAY_MIC_MAX_COUNT,
+  forceWideRows = false
 ) => {
   const targetCount = clamp(Math.round(targetArrayMicCount), 1, maxCount);
   if (shouldUseWideAuditoriumStageArrayMics(profile)) {
@@ -1069,6 +1071,7 @@ const getArrayMicRowCounts = (
   }
   if (targetCount === 1) return [1];
   if (isMeetingScenario(profile.scenario)) return Array.from({ length: targetCount }, () => 1);
+  if (forceWideRows) return Array.from({ length: Math.ceil(targetCount / 2) }, () => 2);
 
   if (!isWideArrayMicRoom(profile)) return Array.from({ length: targetCount }, () => 1);
 
@@ -1149,6 +1152,19 @@ const getRearSpeechZoneY = (profile: ClassroomProfile, teacherMicY: number) => {
   if (profile.scenario === "combinedClassroom") return getCombinedClassroomTeachingRearTargetY(profile, teacherMicY);
   return oneDecimal(clamp(depth - rearAisleDepth - 0.55, teacherMicY + 2.2, depth - 0.9));
 };
+
+export const getArrayMicReferencePositions = (
+  profile: ClassroomProfile,
+  targetArrayMicCount: number,
+  forceWideRows = false
+) => {
+  const teacherMicY = getPrimaryArrayMicY(profile);
+  const maxCount = Math.max(ARRAY_MIC_MAX_COUNT, Math.round(targetArrayMicCount));
+  return getArrayMicPositions(profile, teacherMicY, targetArrayMicCount, maxCount, forceWideRows);
+};
+
+export const getOccupiedRearSpeechTargetY = (profile: ClassroomProfile, teacherMicY: number) =>
+  getRearSpeechZoneY(profile, teacherMicY);
 
 const getCombinedClassroomTeachingRearTargetY = (profile: ClassroomProfile, teacherMicY: number) => {
   const { length: depth } = profile.roomGeometry;

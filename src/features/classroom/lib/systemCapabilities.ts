@@ -2,13 +2,16 @@ import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, GeneratedPoint, Point } from "../types";
 import {
   generateEngineeringPoints,
+  getArrayMicReferencePositions,
   getEffectiveAmplificationScope,
+  getOccupiedRearSpeechTargetY,
   getRequiredArrayMicCountForFullRoomAmplification,
   type PointQuantityTargets
 } from "./drawingEngine";
 import { getLineArrayDecision, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./lineArrayRules";
 import {
   getDefaultHangingMicCount,
+  getExistingMicInputDemand,
   getHangingMicPositions,
   getHangingMicSupport,
   HANGING_MIC_RADIUS_M
@@ -19,12 +22,27 @@ import {
   getSmallDiscRequiredCount,
   SMALL_DISC_MAIN_NAME,
   SMALL_DISC_MAX_GENERATED_COUNT,
+  SMALL_DISC_ONLINE_RADIUS_M,
   SMALL_DISC_RECORDING_NAME,
   SMALL_DISC_SLAVE_NAME
 } from "./yinmanSmallDiscRules";
 
 export const PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID = "ARRAY-MIC-PROCESSOR-DEPENDENT";
 export const AUDIO_PROCESSOR_HOST_PRODUCT_ID = "AUDIO-PROCESSOR-HOST";
+export const LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID = "LINE-ARRAY-MIC-CONVERTER";
+export const LINE_ARRAY_MIC_CONVERTER_NAME = "线阵麦克风信号转换器";
+export const LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M = 4;
+export const LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M = 6;
+export const LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT = 3;
+
+const LINE_ARRAY_SUPPLEMENT_SIDE_MARGIN_M = 0.8;
+const LINE_ARRAY_SUPPLEMENT_GRID_STEP_M = 0.5;
+const LINE_ARRAY_PROCESSOR_MIC_INPUT_DEMAND = 2;
+const hybridLineArrayScenarios = new Set<ClassroomProfile["scenario"]>([
+  "standardClassroom",
+  "lectureClassroom",
+  "combinedClassroom"
+]);
 
 export interface BrandSystemCapability {
   brandId: AppBrandId;
@@ -212,13 +230,135 @@ export function generateBrandEngineeringPoints(
         ? `线阵麦按${LINE_ARRAY_ONLINE_RADIUS_M}m线上拾音半径覆盖全场发言区。`
         : `正面180度声幕覆盖${activityZone.label}，屏蔽背向区域声音。`
     }));
-    return [...lineMics, ...generated.filter((point) => point.type !== "arrayMic")];
+    const supplements = getYinmanLineArraySupplementPoints(profile, brandId, lineMics, baseMic);
+    return [...lineMics, ...supplements, ...generated.filter((point) => point.type !== "arrayMic")];
   }
   const requestedArrayMicCount = targets.arrayMicCount ?? getCurrentArrayMicCount(profile);
   return generateEngineeringPoints(profile, {
     ...targets,
     arrayMicCount: clampArrayMicCountForBrand(requestedArrayMicCount, brandId)
   }).map((point) => point.type === "arrayMic" ? { ...point, pickupKind: "existingArray" as const } : point);
+}
+
+export function hasYinmanLineArraySupplements(points: GeneratedPoint[]) {
+  return points.some((point) => point.pickupKind === "lineArray") &&
+    points.some((point) => point.pickupKind === "smallDisc02");
+}
+
+export function isYinmanLineArrayOnlineCoverageComplete(profile: ClassroomProfile, points: GeneratedPoint[]) {
+  if (!hasYinmanLineArraySupplements(points)) return false;
+  const pickupPoints = points.filter((point) => point.pickupKind === "lineArray" || point.pickupKind === "smallDisc02");
+  return isOccupiedOnlineZoneCovered(profile, pickupPoints);
+}
+
+export function getYinmanHybridProcessorInputDemand(profile: ClassroomProfile, newWirelessInputDemand = 0) {
+  return LINE_ARRAY_PROCESSOR_MIC_INPUT_DEMAND + getExistingMicInputDemand(profile) + Math.max(0, newWirelessInputDemand);
+}
+
+export function getYinmanHybridProcessorTier(profile: ClassroomProfile, newWirelessInputDemand = 0): "twoMic" | "sixMic" {
+  return getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand) > 2 ? "sixMic" : "twoMic";
+}
+
+function getYinmanLineArraySupplementPoints(
+  profile: ClassroomProfile,
+  brandId: AppBrandId,
+  lineMics: GeneratedPoint[],
+  baseMic?: GeneratedPoint
+): GeneratedPoint[] {
+  const decision = getLineArrayDecision(profile);
+  if (
+    brandId !== "yinman" ||
+    !hybridLineArrayScenarios.has(profile.scenario) ||
+    !decision.selected ||
+    decision.mode !== "full" ||
+    !lineMics.length
+  ) return [];
+
+  let lastCandidate: GeneratedPoint[] = [];
+  for (let referenceCount = 1; referenceCount <= SMALL_DISC_MAX_GENERATED_COUNT; referenceCount += 1) {
+    const referencePositions = getArrayMicReferencePositions(
+      profile,
+      referenceCount,
+      profile.roomGeometry.width > LINE_ARRAY_ONLINE_RADIUS_M * 2
+    );
+    const positions = getSupplementPositionsFromArrayReference(profile, lineMics, referencePositions);
+    lastCandidate = positions.map((position, index): GeneratedPoint => ({
+      ...(baseMic ?? lineMics[0]),
+      id: `line-array-online-supplement-${index + 1}`,
+      label: `${SMALL_DISC_SLAVE_NAME} ${index + 1}`,
+      position,
+      coverageRadius: SMALL_DISC_ONLINE_RADIUS_M,
+      pickupKind: "smallDisc02",
+      pickupPattern: "full360",
+      installationMode: "hanging",
+      reason: `按${SMALL_DISC_ONLINE_RADIUS_M}m线上拾音半径补充线阵麦未覆盖的后场发言区，不参与本地扩声。`
+    }));
+    if (isOccupiedOnlineZoneCovered(profile, [...lineMics, ...lastCandidate])) return lastCandidate;
+  }
+  return lastCandidate;
+}
+
+function getSupplementPositionsFromArrayReference(
+  profile: ClassroomProfile,
+  lineMics: GeneratedPoint[],
+  referencePositions: Array<{ x: number; y: number; rowIndex: number }>
+): Point[] {
+  const rowGroups = Array.from(referencePositions.reduce((groups, position) => {
+    groups.set(position.rowIndex, [...(groups.get(position.rowIndex) ?? []), position]);
+    return groups;
+  }, new Map<number, Array<{ x: number; y: number; rowIndex: number }>>()).values());
+  let previousRowY = average(lineMics.map((mic) => mic.position.y));
+  return rowGroups.flatMap((row, rowIndex) => {
+    if (rowIndex === 0 && row.length === 1 && lineMics.length === 1) return [];
+    const referenceY = average(row.map((position) => position.y));
+    const adjustedY = rowIndex === 0
+      ? referenceY
+      : clamp(
+          referenceY,
+          previousRowY + LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M,
+          previousRowY + LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M
+        );
+    previousRowY = adjustedY;
+    return row.map((position) => ({
+      x: oneDecimal(position.x),
+      y: oneDecimal(clamp(position.y + adjustedY - referenceY, 0.8, profile.roomGeometry.length - 0.8))
+    }));
+  });
+}
+
+function isOccupiedOnlineZoneCovered(profile: ClassroomProfile, points: GeneratedPoint[]) {
+  if (!points.length) return false;
+  const firstLineY = Math.min(...points.filter((point) => point.pickupKind === "lineArray").map((point) => point.position.y));
+  if (!Number.isFinite(firstLineY)) return false;
+  const sideMargin = Math.min(LINE_ARRAY_SUPPLEMENT_SIDE_MARGIN_M, profile.roomGeometry.width / 2);
+  const rearTargetY = getOccupiedRearSpeechTargetY(profile, firstLineY);
+  const xValues = getAuditAxisValues(sideMargin, profile.roomGeometry.width - sideMargin);
+  const yValues = getAuditAxisValues(firstLineY, rearTargetY);
+  return xValues.every((x) => yValues.every((y) => points.some((point) =>
+    Math.hypot(point.position.x - x, point.position.y - y) <= (point.coverageRadius ?? LINE_ARRAY_ONLINE_RADIUS_M) + 0.001
+  )));
+}
+
+function getAuditAxisValues(start: number, end: number) {
+  if (end <= start) return [oneDecimal(start)];
+  const values = Array.from(
+    { length: Math.floor((end - start) / LINE_ARRAY_SUPPLEMENT_GRID_STEP_M) + 1 },
+    (_, index) => start + index * LINE_ARRAY_SUPPLEMENT_GRID_STEP_M
+  );
+  if ((values.at(-1) ?? start) < end - 0.01) values.push(end);
+  return values.map(oneDecimal);
+}
+
+function average(values: number[]) {
+  return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function oneDecimal(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
 export function getBrandExternalAmplifierCount(speakerCount: number, brandId: AppBrandId): number {

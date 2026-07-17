@@ -11,11 +11,16 @@ import type {
 import {
   generateBrandEngineeringPoints,
   getBrandSystemCapability,
-  getShortestManhattanCascadeRoute
+  getShortestManhattanCascadeRoute,
+  isYinmanLineArrayOnlineCoverageComplete,
+  LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M,
+  LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M,
+  LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT
 } from "./systemCapabilities";
 import { getArrayMicCentralAirRequiredClearance, getEffectiveAmplificationScope } from "./drawingEngine";
 import {
   SMALL_DISC_LINK_SEGMENT_LIMIT_M,
+  SMALL_DISC_ONLINE_RADIUS_M,
   SMALL_DISC_RECOMMENDED_SLAVE_COUNT,
   SMALL_DISC_RECORDING_RECOMMENDED_COUNT
 } from "./yinmanSmallDiscRules";
@@ -39,8 +44,14 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   const { profile, brandId, generatedPoints, requiredArrayMicCount, requiredSpeakerCount, solutionSelection } = input;
   const capability = getBrandSystemCapability(brandId);
   const mics = generatedPoints.filter((point) => point.type === "arrayMic");
-  const smallDiscMics = mics.filter(isSmallDiscPoint);
+  const allSmallDiscMics = mics.filter(isSmallDiscPoint);
   const arrayMics = mics.filter((point) => point.pickupKind !== "hangingMic" && !isSmallDiscPoint(point));
+  const hasLineArray = arrayMics.some((point) => point.pickupKind === "lineArray");
+  const hybridSupplements = hasLineArray
+    ? allSmallDiscMics.filter((point) => point.pickupKind === "smallDisc02")
+    : [];
+  const smallDiscMics = allSmallDiscMics.filter((point) => !hybridSupplements.includes(point));
+  const effectiveArrayPickupChain = [...arrayMics, ...hybridSupplements];
   const hangingMics = mics.filter((point) => point.pickupKind === "hangingMic");
   const speakers = generatedPoints.filter((point) => point.type === "speaker");
   const findings: PointValidationFinding[] = [];
@@ -63,7 +74,7 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
       title: "线阵麦线上拾音覆盖",
       internalMessage: `${solutionSelection.microphone.lineArrayCoverageWarning} 当前继续生成方案，线上拾音无法全覆盖。`,
       customerMessage: "线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。",
-      sourceRefs: ["用户确认的线阵麦8m线上拾音与非阻断规则"]
+      sourceRefs: ["用户确认的线阵麦5m线上拾音与非阻断规则"]
     });
   }
 
@@ -97,6 +108,8 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
 
   if (smallDiscMics.length > 0) {
     addSmallDiscFindings(findings, profile, smallDiscMics);
+  } else if (hybridSupplements.length > 0) {
+    addHybridLineArraySupplementFindings(findings, profile, arrayMics, hybridSupplements, generatedPoints);
   } else if (hangingMics.length > 0) {
     findings.push({
       code: "hanging-mic.coverage-capacity",
@@ -142,16 +155,124 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
     });
   }
 
-  addCascadeRouteFinding(findings, brandId, arrayMics);
+  addCascadeRouteFinding(findings, brandId, effectiveArrayPickupChain);
   addSpeakerCapacityFinding(findings, brandId, requiredSpeakerCount, speakers.length);
   addLineArraySpeakerFindings(findings, profile, arrayMics, speakers);
   addWallSpeakerCoverageFinding(findings, speakers);
   addInstallationHeightFinding(findings, profile, mics.filter((point) => !isSmallDiscPoint(point)));
   addMicSpeakerDistanceFinding(findings, profile, mics, speakers);
   addCentralAirFindings(findings, profile, brandId, mics);
-  if (!hangingMics.length) addExistingCalibrationFindings(findings, profile, brandId, arrayMics);
+  if (!hangingMics.length) addExistingCalibrationFindings(findings, profile, brandId, effectiveArrayPickupChain, hybridSupplements.length > 0);
 
   return summarizeFindings(findings);
+}
+
+function addHybridLineArraySupplementFindings(
+  findings: PointValidationFinding[],
+  profile: ClassroomProfile,
+  lineMics: GeneratedPoint[],
+  supplements: GeneratedPoint[],
+  allPoints: GeneratedPoint[]
+) {
+  findings.push({
+    code: "line-array-supplement.coverage-baseline",
+    severity: "info",
+    title: "线阵麦后场补充拾音",
+    actual: `${lineMics.length}只线阵麦 + ${supplements.length}只补充拾音阵麦 / 半径${SMALL_DISC_ONLINE_RADIUS_M}m`,
+    limit: `补充拾音阵麦推荐不超过${LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT}只`,
+    internalMessage: "线阵麦和补充拾音阵麦均按5m线上拾音半径计算；补充拾音阵麦不参与本地扩声。",
+    sourceRefs: ["用户确认的线阵麦加后场补充拾音规则"]
+  });
+
+  if (supplements.length > LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT) {
+    findings.push({
+      code: "line-array-supplement.recommended-count",
+      severity: "hard",
+      title: "后场补充拾音阵麦推荐数量",
+      actual: supplements.length,
+      limit: LINE_ARRAY_SUPPLEMENT_RECOMMENDED_MAX_COUNT,
+      internalMessage: `当前需要${supplements.length}只补充拾音阵麦，超过推荐边界；继续保留方案并转专项复核。`,
+      customerMessage: "补充拾音阵麦数量超出常规推荐范围，当前方案需专项复核。",
+      sourceRefs: ["用户确认的补充拾音阵麦三只推荐边界"]
+    });
+  }
+
+  if (profile.engineeringConstraints.overheadSpeakerMounting === "unavailable") {
+    findings.push({
+      code: "line-array-supplement.overhead-installation",
+      severity: "hard",
+      title: "后场补充拾音阵麦安装条件",
+      actual: "顶面不可安装",
+      limit: "需具备吊杆固定条件",
+      internalMessage: "后场补充拾音阵麦只能采用吊杆安装；当前继续生成点位并转专项复核。",
+      customerMessage: "顶面安装条件会影响补充拾音阵麦吊杆安装，当前方案需专项复核。",
+      sourceRefs: ["用户确认的小圆盘阵麦吊杆安装规则"]
+    });
+  }
+
+  if (profile.engineeringConstraints.ceiling === "suspended" && profile.roomGeometry.height > HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M) {
+    findings.push({
+      code: "line-array-supplement.install-height",
+      severity: "warning",
+      title: "后场补充拾音阵麦安装高度",
+      actual: `${profile.roomGeometry.height.toFixed(1)}m`,
+      limit: `资料建议 <= ${HIGH_SUSPENDED_CEILING_REVIEW_HEIGHT_M}m`,
+      internalMessage: "补充拾音阵麦采用吊杆安装，吊杆长度与最终拾音高度需要现场复核。",
+      sourceRefs: ["用户确认的小圆盘阵麦沿用大圆盘阵麦安装高度规则"]
+    });
+  }
+
+  const firstLineY = Math.min(...lineMics.map((mic) => mic.position.y));
+  const supplementalRows = Array.from(new Set(supplements
+    .map((mic) => roundOne(mic.position.y))
+    .filter((y) => y - firstLineY >= 2)))
+    .sort((a, b) => a - b);
+  const longitudinalRows = [roundOne(firstLineY), ...supplementalRows];
+  const rowGaps = longitudinalRows.slice(1).map((y, index) => roundOne(y - longitudinalRows[index]));
+  const invalidGap = rowGaps.find((gap) =>
+    gap < LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M - 0.05 || gap > LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M + 0.05
+  );
+  if (invalidGap !== undefined) {
+    findings.push({
+      code: "line-array-supplement.row-spacing",
+      severity: "hard",
+      title: "线上拾音相邻排间距",
+      actual: `${invalidGap.toFixed(1)}m`,
+      limit: `${LINE_ARRAY_SUPPLEMENT_MIN_ROW_SPACING_M}-${LINE_ARRAY_SUPPLEMENT_MAX_ROW_SPACING_M}m`,
+      internalMessage: "补充拾音阵麦纵向排距超出确认边界，点位需专项复核。",
+      customerMessage: "补充拾音阵麦点位间距需要专项复核。",
+      sourceRefs: ["用户确认的线上拾音相邻两麦4-6m间距"]
+    });
+  }
+
+  const ordered = [...supplements].sort((a, b) => b.position.y - a.position.y || a.position.x - b.position.x);
+  const longestSegment = ordered.slice(1).reduce((longest, point, index) => {
+    const previous = ordered[index];
+    return Math.max(longest, Math.abs(point.position.x - previous.position.x) + Math.abs(point.position.y - previous.position.y));
+  }, 0);
+  if (longestSegment > SMALL_DISC_LINK_SEGMENT_LIMIT_M) {
+    findings.push({
+      code: "line-array-supplement.link-segment",
+      severity: "hard",
+      title: "补充拾音阵麦级联网线单段",
+      actual: `${longestSegment.toFixed(1)}m`,
+      limit: `${SMALL_DISC_LINK_SEGMENT_LIMIT_M}m`,
+      internalMessage: "后场补充拾音阵麦按远端到近端顺序级联，最长单段超过产品边界。",
+      customerMessage: "补充拾音阵麦级联网线单段长度会影响连接，当前方案需专项复核。",
+      sourceRefs: ["用户确认的小圆盘阵麦单段20m级联网线规则"]
+    });
+  }
+
+  if (!isYinmanLineArrayOnlineCoverageComplete(profile, allPoints)) {
+    findings.push({
+      code: "line-array-supplement.coverage-review",
+      severity: "warning",
+      title: "混合线上拾音覆盖",
+      internalMessage: "达到自动补充数量上限后，主要线上发言区仍存在5m名义覆盖缺口。",
+      customerMessage: "线上拾音覆盖范围需要专项复核。",
+      sourceRefs: ["用户确认的主要听音区覆盖与边缘软边界口径"]
+    });
+  }
 }
 
 function isSmallDiscPoint(point: GeneratedPoint) {
@@ -508,12 +629,13 @@ function addExistingCalibrationFindings(
   findings: PointValidationFinding[],
   profile: ClassroomProfile,
   _brandId: AppBrandId,
-  mics: GeneratedPoint[]
+  mics: GeneratedPoint[],
+  skipBackWallDistance = false
 ) {
   const scope = getEffectiveAmplificationScope(profile);
   const hasOnline = hasOnlinePickupNeed(profile);
   const length = profile.roomGeometry.length;
-  const lastMicBackWallIssue = getLastMicBackWallIssue(profile, mics);
+  const lastMicBackWallIssue = skipBackWallDistance ? "" : getLastMicBackWallIssue(profile, mics);
   if (lastMicBackWallIssue) {
     findings.push({
       code: "array.back-wall-distance",

@@ -1,5 +1,9 @@
 import type { Need, ProductRecommendation } from "../types";
 import {
+  LINE_ARRAY_MIC_CONVERTER_NAME,
+  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID
+} from "../lib/systemCapabilities";
+import {
   SMALL_DISC_01_PRODUCT_ID,
   SMALL_DISC_02_PRODUCT_ID,
   SMALL_DISC_03_PRODUCT_ID,
@@ -84,6 +88,15 @@ export const classroomProductRules: ClassroomProductRule[] = [
     source: "小圆盘阵麦主麦接线图及技术支持确认口径",
     installation: "由客户按电脑与麦克风安装距离另行采购。",
     wiring: "小圆盘阵麦USB接口直连电脑USB音频接口，同时承担供电和数字音频。"
+  },
+  {
+    productId: LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
+    name: LINE_ARRAY_MIC_CONVERTER_NAME,
+    category: "accessory",
+    applyWhen: ["videoConference", "interactiveClass", "remoteTeaching"],
+    source: "线阵麦与补充拾音阵麦接口接线确认口径",
+    installation: "安装在智能音频处理主机附近，用于把线阵麦信号转换为双MIC输入。",
+    wiring: "线阵麦接入转换器，转换器占用处理器MIC1与MIC2；后场补充拾音阵麦级联后接EXTMIC。"
   },
   {
     productId: "CEILING-SPEAKER",

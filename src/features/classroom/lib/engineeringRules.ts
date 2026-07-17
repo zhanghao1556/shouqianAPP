@@ -55,6 +55,11 @@ import {
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
   getRequiredArrayMicCount,
+  getYinmanHybridProcessorInputDemand,
+  getYinmanHybridProcessorTier,
+  hasYinmanLineArraySupplements,
+  isYinmanLineArrayOnlineCoverageComplete,
+  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
 import { validatePointPlan } from "./pointValidation";
@@ -480,6 +485,7 @@ const getProductSelection = (
   const requestedMicrophoneSolution = profile.engineeringConstraints.microphoneSolution ?? "auto";
   const microphoneSolution = requestedMicrophoneSolution === "hangingMic" && brandId !== "yinman" ? "auto" : requestedMicrophoneSolution;
   const effectiveMicrophoneSolution = getEffectiveYinmanMicrophoneSolution(profile, brandId);
+  const usesHybridLineArray = hasYinmanLineArraySupplements(points);
   const smallDiscConnectionMode = getSmallDiscConnectionMode(profile);
   const hasLegacySound = Boolean(profile.existingDevices.legacySoundSystem.trim());
   const needsAuditoriumRearFill = needsAuditoriumRearFillSpeakers(profile);
@@ -488,7 +494,7 @@ const getProductSelection = (
     .filter((rule) => {
       if (effectiveMicrophoneSolution === "smallDisc03" && (rule.category === "speaker" || rule.category === "amplifier")) return false;
       if (rule.productId === SMALL_DISC_01_PRODUCT_ID) return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc01";
-      if (rule.productId === SMALL_DISC_02_PRODUCT_ID) return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc01";
+      if (rule.productId === SMALL_DISC_02_PRODUCT_ID) return brandId === "yinman" && (effectiveMicrophoneSolution === "smallDisc01" || usesHybridLineArray);
       if (rule.productId === SMALL_DISC_03_PRODUCT_ID) return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc03";
       if (rule.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID) {
         return brandId === "yinman" && (effectiveMicrophoneSolution === "smallDisc03" || (effectiveMicrophoneSolution === "smallDisc01" && smallDiscConnectionMode === "extender"));
@@ -496,6 +502,7 @@ const getProductSelection = (
       if (rule.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID) {
         return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc01" && smallDiscConnectionMode === "usb" && profile.needs.some((need) => need === "videoConference" || need === "interactiveClass" || need === "remoteTeaching");
       }
+      if (rule.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID) return brandId === "yinman" && usesHybridLineArray;
       if (rule.productId === HANGING_MIC_PRODUCT_ID) return brandId === "yinman" && microphoneSolution === "hangingMic";
       if (rule.productId === "DT2-Pro" && (microphoneSolution === "hangingMic" || isSmallDiscSolution(effectiveMicrophoneSolution))) return false;
       if (rule.productId === "WIRELESS-HANDHELD") return true;
@@ -505,14 +512,16 @@ const getProductSelection = (
     .map((rule) => {
       let quantity = 1;
       const arrayCount = points.filter((item) => item.type === "arrayMic").length;
+      const lineArrayCount = points.filter((item) => item.pickupKind === "lineArray").length;
+      const smallDisc02Count = points.filter((item) => item.pickupKind === "smallDisc02").length;
       const speakerCount = points.filter((item) => item.type === "speaker").length;
 
-      if (rule.productId === "DT2-Pro") quantity = lineArray.requested && !lineArray.selected ? 0 : Math.max(1, arrayCount);
+      if (rule.productId === "DT2-Pro") quantity = lineArray.requested && !lineArray.selected ? 0 : Math.max(1, useLineArrayProduct ? lineArrayCount : arrayCount);
       if (rule.productId === HANGING_MIC_PRODUCT_ID) quantity = arrayCount;
       if (rule.productId === SMALL_DISC_01_PRODUCT_ID) quantity = 1;
-      if (rule.productId === SMALL_DISC_02_PRODUCT_ID) quantity = Math.max(0, arrayCount - 1);
+      if (rule.productId === SMALL_DISC_02_PRODUCT_ID) quantity = usesHybridLineArray ? smallDisc02Count : Math.max(0, arrayCount - 1);
       if (rule.productId === SMALL_DISC_03_PRODUCT_ID) quantity = arrayCount;
-      if (rule.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID || rule.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID) quantity = 1;
+      if (rule.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID || rule.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID || rule.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID) quantity = 1;
       if (rule.productId === "CEILING-SPEAKER" || rule.productId === "COLUMN-SPEAKER") {
         quantity = (hasLegacySound && profile.scenario === "auditorium" && !needsAuditoriumRearFill) || rule.productId !== speakerProductId ? 0 : clampSpeakerQuantity(speakerCount);
       }
@@ -573,10 +582,14 @@ const applyQuantityOverrides = (
   selection: ProductRecommendation[],
   overrides: QuantityOverrides,
   brandId: AppBrandId
-): ProductRecommendation[] =>
-  selection.map((item) => {
+): ProductRecommendation[] => {
+  const usesLineArray = selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0);
+  return selection.map((item) => {
     const override = overrides[item.productId];
-    if (override === undefined) return item;
+    if (
+      override === undefined ||
+      (usesLineArray && (item.productId === SMALL_DISC_02_PRODUCT_ID || item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID))
+    ) return item;
     const quantity = item.category === "speaker"
       ? clampSpeakerQuantity(override)
       : item.category === "pickup"
@@ -595,6 +608,7 @@ const applyQuantityOverrides = (
       quantity
     };
   });
+};
 
 const syncBrandSystemSelection = (
   profile: ClassroomProfile,
@@ -612,9 +626,13 @@ const syncBrandSystemSelection = (
     (item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID && item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID
   );
   const lineArrayCount = selectionWithoutSystemDevices.find((item) => item.productId === LINE_ARRAY_PRODUCT_ID)?.quantity ?? 0;
+  const hybridSupplementCount = selectionWithoutSystemDevices.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity ?? 0;
+  const usesHybridLineArray = lineArrayCount > 0 && hybridSupplementCount > 0;
   const hangingMic = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID);
   const newWirelessInputDemand = selectionWithoutSystemDevices.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
-  const processorTier = hangingMic
+  const processorTier = usesHybridLineArray
+    ? getYinmanHybridProcessorTier(profile, newWirelessInputDemand)
+    : hangingMic
     ? getHangingMicProcessorTier(profile, hangingMic.quantity, newWirelessInputDemand)
     : getProcessorTier(profile, brandId, lineArrayCount, speakerCount);
   const processorCapacity = getProcessorCapacity(processorTier);
@@ -651,7 +669,9 @@ const syncBrandSystemSelection = (
         quantity: 1,
         why: "",
         where: "安装在讲台设备区或弱电机柜，集中完成阵麦接入、音频处理和无源音箱驱动。",
-        wiring: lineArrayCount > 0
+        wiring: usesHybridLineArray
+          ? `线阵麦经信号转换器占用MIC1与MIC2；${hybridSupplementCount}只补充拾音阵麦在麦克风端级联后共用EXTMIC。当前MIC输入总需求为${getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand)}路，处理器MIC容量为${processorCapacity}路。`
+          : lineArrayCount > 0
           ? `每只线阵麦使用独立网线接入阵麦接口，禁止接PoE；当前处理器接口容量为${processorCapacity}路。`
           : hangingMic
             ? `每只吊麦独占一路MIC输入并由MIC口直接供电；吊麦、利旧麦克风和新增无线接收机当前合计占用${totalHangingMicInputDemand}路MIC输入，处理器MIC容量为${processorCapacity}路。${processorTier === "sixMic" ? "六麦处理器带独立触摸屏，可控制音箱音量及麦克风静音/开音。" : "MIC接口够用时优先采用价格更低的双麦处理器。"}`
@@ -681,16 +701,24 @@ const getWhereText = (profile: ClassroomProfile, defaultText: string) => {
 
 const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAssessment, points: GeneratedPoint[], brandId: AppBrandId) => {
   const risks: string[] = [];
-  const usesSmallDisc = points.some((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03");
+  const usesStandaloneSmallDisc = points.some((point) => point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc03");
+  const usesHybridLineArray = hasYinmanLineArraySupplements(points);
+  const usesAlternativePickupChain = usesStandaloneSmallDisc || usesHybridLineArray;
+  const hybridCoverageComplete = isYinmanLineArrayOnlineCoverageComplete(profile, points);
+  const hybridNewWirelessInputDemand = !hasExistingWirelessHandheld(profile) && acousticAssessment.risk === "high" ? 1 : 0;
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.requested && !lineArray.selected) risks.push("该方案无法完整覆盖，建议改选阵麦");
-  else if (lineArray.requested && lineArray.coverageWarning) risks.push("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。");
+  else if (lineArray.requested && lineArray.coverageWarning && !hybridCoverageComplete) risks.push("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。");
   else if (lineArray.requested && !lineArray.recommended) risks.push("当前线阵麦为非推荐选择，建议阵麦。");
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
-    const tier = getProcessorTier(profile, brandId, lineArray.count, speakerCount);
+    const tier = usesHybridLineArray
+      ? getYinmanHybridProcessorTier(profile, hybridNewWirelessInputDemand)
+      : getProcessorTier(profile, brandId, lineArray.count, speakerCount);
     const capacity = getProcessorCapacity(tier);
-    const demand = getProcessorInterfaceDemand(profile, speakerCount);
+    const demand = usesHybridLineArray
+      ? getYinmanHybridProcessorInputDemand(profile, hybridNewWirelessInputDemand)
+      : getProcessorInterfaceDemand(profile, speakerCount);
     if (tier !== "highPerformance" && demand > capacity) {
       risks.push(`处理器接口需求超过${capacity}路，需外扩或现场复勘。`);
     }
@@ -725,15 +753,15 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   }
   if (profile.needs.includes("recording") && !profile.existingDevices.recordingHost) risks.push("录播主机信息会影响阵麦音频接入方式。");
   if (profile.existingDevices.legacySoundSystem.trim()) risks.push(`已填写${getLegacySoundSystemText(profile)}会影响接口、电平、功率和负载匹配。`);
-  if (!usesSmallDisc && isOversizedForFullRoomAmplification(profile)) {
+  if (!usesAlternativePickupChain && isOversizedForFullRoomAmplification(profile)) {
     risks.push(`房间尺寸会影响阵麦全场扩声能力，约需 ${getRequiredArrayMicCountForFullRoomAmplification(profile)} 只阵麦。`);
   }
   const effectiveArrayMicRadius = getArrayMicEffectiveAmplificationRadius(profile);
-  if (!usesSmallDisc && points.filter((point) => point.type === "arrayMic").some((point) => profile.roomGeometry.length - point.position.y > effectiveArrayMicRadius * 1.6)) {
+  if (!usesAlternativePickupChain && points.filter((point) => point.type === "arrayMic").some((point) => profile.roomGeometry.length - point.position.y > effectiveArrayMicRadius * 1.6)) {
     risks.push("后场距离会影响阵麦扩声清晰度和语音还原度。");
   }
   const arrayMicCount = points.filter((point) => point.type === "arrayMic").length;
-  if (!usesSmallDisc && arrayMicCount <= 2 && profile.roomGeometry.length > 16 && getUsableArrayMicDepth(profile, points) > effectiveArrayMicRadius * 2.4) {
+  if (!usesAlternativePickupChain && arrayMicCount <= 2 && profile.roomGeometry.length > 16 && getUsableArrayMicDepth(profile, points) > effectiveArrayMicRadius * 2.4) {
     risks.push("房间纵深会影响中后区阵麦拾音覆盖。");
   }
   if ((profile.existingDevices.legacySpeakerPoints ?? []).length) {

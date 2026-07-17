@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs, getCompleteness } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M, LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
@@ -22,10 +22,12 @@ import {
   SMALL_DISC_USB_CABLE_PRODUCT_ID
 } from "./src/features/classroom/lib/yinmanSmallDiscRules.ts";
 import {
+  AUDIO_PROCESSOR_HOST_PRODUCT_ID,
   getBrandExternalAmplifierCount,
   getBrandSystemCapability,
   getRequiredArrayMicCount,
-  getShortestManhattanCascadeRoute
+  getShortestManhattanCascadeRoute,
+  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID
 } from "./src/features/classroom/lib/systemCapabilities.ts";
 
 function makeProfile({ scenario = "standardClassroom", length = 10, width = 8, height = 3, needs = ["localAmplification"], scope = "full", ceiling = "suspended", centralAir = [], microphoneSolution = "existingArray", teachingWidth = width, teachingDepth = 4, stageWidth = width, stageDepth = 3, computer = "", legacyWirelessMic = "", recordingHost = "", notes = "", podiumPosition = "frontCenter", hasPodium = true, speakerProductOverride = "auto", overheadSpeakerMounting = "unknown", processorTier = "auto", smallDiscConnectionMode = "auto", measuredRt60 } = {}) {
@@ -68,6 +70,18 @@ function pointSnapshot(points) {
     horizontalAngle: point.horizontalAngle,
     downTiltAngle: point.downTiltAngle
   }));
+}
+
+function getLineArraySpeakerBaseline(profile) {
+  const decision = getLineArrayDecision(profile);
+  const positions = Array.from({ length: decision.count }, (_, index) => ({
+    x: decision.count === 1 ? decision.position.x : decision.activityZone.left + decision.activityZone.width * (index === 0 ? 0.25 : 0.75),
+    y: decision.position.y
+  }));
+  return generateEngineeringPoints(profile, {
+    arrayMicCount: decision.count,
+    lineArrayContext: { mode: decision.mode, position: decision.position, positions }
+  }).filter((point) => point.type === "speaker");
 }
 
 function wallMountingAngle(point, profile) {
@@ -240,22 +254,23 @@ const interactiveClassroom = generateEngineeringOutputs(makeProfile({ length: 8,
 assert.equal(interactiveClassroom.solutionSelection.microphone.recommended, "existingArray");
 
 assert.equal(LINE_ARRAY_LOCAL_RADIUS_M, 5);
-assert.equal(LINE_ARRAY_ONLINE_RADIUS_M, 8);
+assert.equal(LINE_ARRAY_ONLINE_RADIUS_M, 5);
 const onlineBoundaryLine = generateEngineeringOutputs(makeProfile({ length: 9.6, width: 12.8, scope: "podium", needs: ["interactiveClass"], microphoneSolution: "lineArray" }), {}, "yinman");
-assert.equal(onlineBoundaryLine.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 8);
+assert.equal(onlineBoundaryLine.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 5);
 assert.equal(onlineBoundaryLine.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
 const forcedOnlineLine = generateEngineeringOutputs(makeProfile({ length: 9.5, width: 14.9, scope: "podium", needs: ["interactiveClass"], microphoneSolution: "lineArray" }), {}, "yinman");
 const forcedOnlineLinePoint = forcedOnlineLine.generatedPoints.find((point) => point.pickupKind === "lineArray");
 assert.equal(forcedOnlineLine.solutionSelection.drawingBlocked, false);
 assert.equal(forcedOnlineLine.solutionSelection.microphone.recommended, "existingArray");
-assert.equal(forcedOnlineLinePoint?.coverageRadius, 8);
+assert.equal(forcedOnlineLinePoint?.coverageRadius, 5);
 assert.equal(forcedOnlineLinePoint?.pickupPattern, "full360");
 assert.ok(forcedOnlineLine.productSelection.length > 0, "forced online line-array selection must retain its equipment list");
 assert.ok(forcedOnlineLine.drawings.length > 0, "forced online line-array selection must generate drawings");
-assert.match(forcedOnlineLine.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /8m线上拾音半径/);
-assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-online-coverage")?.severity, "warning");
-assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended"), undefined);
-assert.ok(forcedOnlineLine.riskItems.includes("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。"), "forced online line-array selection must expose the customer coverage warning");
+assert.equal(forcedOnlineLine.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
+assert.equal(forcedOnlineLine.generatedPoints.filter((point) => point.pickupKind === "smallDisc02").length, 4);
+assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-online-coverage"), undefined);
+assert.equal(forcedOnlineLine.pointValidation.findings.find((item) => item.code === "selection.line-array-non-recommended")?.severity, "warning");
+assert.equal(forcedOnlineLine.riskItems.includes("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。"), false);
 
 const narrowOnlineCeiling = generateEngineeringOutputs(makeProfile({
   length: 9.5,
@@ -326,12 +341,12 @@ assert.equal(meetingFiveMeter.solutionSelection.microphone.recommended, "lineArr
 assert.equal(meetingFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
 const meetingOverFiveMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 8.1, width: 6, microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(meetingOverFiveMeter.solutionSelection.drawingBlocked, false);
-assert.equal(meetingOverFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 8);
-assert.equal(meetingOverFiveMeter.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
+assert.equal(meetingOverFiveMeter.generatedPoints.find((point) => point.pickupKind === "lineArray")?.coverageRadius, 5);
+assert.match(meetingOverFiveMeter.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /5m线上拾音半径/);
 const meetingOverEightMeter = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 9.5, width: 14.9, microphoneSolution: "lineArray" }), {}, "yinyi");
 assert.equal(meetingOverEightMeter.solutionSelection.drawingBlocked, false);
 assert.ok(meetingOverEightMeter.generatedPoints.some((point) => point.pickupKind === "lineArray"));
-assert.match(meetingOverEightMeter.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /8m线上拾音半径/);
+assert.match(meetingOverEightMeter.solutionSelection.microphone.lineArrayCoverageWarning ?? "", /5m线上拾音半径/);
 const meetingLeader = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 20, width: 10, notes: "主位扩声", microphoneSolution: "auto" }), {}, "yinyi");
 assert.equal(meetingLeader.solutionSelection.microphone.recommended, "lineArray");
 assert.equal(meetingLeader.generatedPoints.find((point) => point.pickupKind === "lineArray")?.installationMode, "tabletop");
@@ -373,6 +388,140 @@ const yinmanDoubleLine = generateEngineeringOutputs(makeProfile({ scenario: "com
 assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanEconomyLine, yinmanInterfaceRichLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
+
+const hybridProfile12 = makeProfile({
+  length: 12.4,
+  width: 7.4,
+  height: 3.1,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available"
+});
+const hybrid12 = generateEngineeringOutputs(hybridProfile12, {}, "yinman");
+const hybrid12Mics = hybrid12.generatedPoints.filter((point) => point.type === "arrayMic");
+assert.deepEqual(hybrid12Mics.map((point) => ({ kind: point.pickupKind, x: point.position.x, y: point.position.y, radius: point.coverageRadius })), [
+  { kind: "lineArray", x: 3.7, y: 2.5, radius: 5 },
+  { kind: "smallDisc02", x: 3.7, y: 7.3, radius: 5 }
+]);
+assert.deepEqual(pointSnapshot(hybrid12.generatedPoints.filter((point) => point.type === "speaker")), pointSnapshot(getLineArraySpeakerBaseline(hybridProfile12)));
+assert.equal(hybrid12.productSelection.find((item) => item.productId === LINE_ARRAY_PRODUCT_ID)?.quantity, 1);
+assert.equal(hybrid12.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity, 1);
+assert.equal(hybrid12.productSelection.find((item) => item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID)?.quantity, 1);
+assert.equal(hybrid12.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "六麦处理器");
+assert.equal(hybrid12.solutionSelection.processor?.selected, "sixMic");
+assert.equal(hybrid12.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
+assert.equal(hybrid12.pointValidation.findings.some((finding) => finding.code === "selection.line-array-online-coverage"), false);
+assert.ok(hybrid12.connectionLines.some((line) => line.id === "line-array-converter-processor" && line.toPort === "MIC1 + MIC2"));
+assert.ok(hybrid12.connectionLines.some((line) => line.id === "line-array-supplement-extmic" && line.toPort === "EXTMIC"));
+
+const hybridEconomyProfile12 = makeProfile({
+  length: 12.4,
+  width: 7.4,
+  height: 3.1,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+});
+const hybridEconomy12 = generateEngineeringOutputs(hybridEconomyProfile12, {}, "yinman");
+assert.equal(hybridEconomy12.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+assert.equal(hybridEconomy12.solutionSelection.processor?.selected, "twoMic");
+
+const hybrid12IgnoredOverride = generateEngineeringOutputs(hybridEconomyProfile12, { [SMALL_DISC_02_PRODUCT_ID]: 0 }, "yinman");
+assert.equal(hybrid12IgnoredOverride.generatedPoints.filter((point) => point.pickupKind === "smallDisc02").length, 1);
+assert.equal(hybrid12IgnoredOverride.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity, 1);
+
+const hybridProfile17 = makeProfile({
+  length: 17,
+  width: 7.4,
+  height: 3.1,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available"
+});
+const hybrid17 = generateEngineeringOutputs(hybridProfile17, {}, "yinman");
+assert.deepEqual(hybrid17.generatedPoints.filter((point) => point.type === "arrayMic").map((point) => ({ kind: point.pickupKind, x: point.position.x, y: point.position.y })), [
+  { kind: "lineArray", x: 3.7, y: 2.5 },
+  { kind: "smallDisc02", x: 3.7, y: 7.5 },
+  { kind: "smallDisc02", x: 3.7, y: 11.7 }
+]);
+assert.deepEqual(pointSnapshot(hybrid17.generatedPoints.filter((point) => point.type === "speaker")), pointSnapshot(getLineArraySpeakerBaseline(hybridProfile17)));
+assert.equal(hybrid17.connectionLines.filter((line) => line.id.startsWith("line-array-supplement-cascade-")).length, 1);
+assert.equal(hybrid17.connectionLines.filter((line) => line.toPort === "EXTMIC").length, 1);
+assert.equal(hybrid17.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+
+const hybridWithExtraMic = generateEngineeringOutputs({
+  ...hybridEconomyProfile12,
+  existingDevices: { ...hybridEconomyProfile12.existingDevices, legacyWirelessMic: "有线麦克风" },
+  engineeringConstraints: { ...hybridEconomyProfile12.engineeringConstraints, processorTier: "highPerformance" }
+}, {}, "yinman");
+assert.equal(hybridWithExtraMic.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "六麦处理器");
+assert.equal(hybridWithExtraMic.solutionSelection.processor?.selected, "sixMic");
+assert.equal(hybridWithExtraMic.solutionSelection.processor?.userSelected, false);
+
+const hybridWide = generateEngineeringOutputs(makeProfile({
+  length: 9.5,
+  width: 14.9,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+}), {}, "yinman");
+assert.deepEqual(hybridWide.generatedPoints.filter((point) => point.pickupKind === "smallDisc02").map((point) => point.position), [
+  { x: 4.9, y: 3.2 },
+  { x: 10, y: 3.2 },
+  { x: 4.9, y: 7.2 },
+  { x: 10, y: 7.2 }
+]);
+assert.equal(hybridWide.pointValidation.findings.find((finding) => finding.code === "line-array-supplement.recommended-count")?.severity, "hard");
+
+const hybridLecture = generateEngineeringOutputs(makeProfile({
+  scenario: "lectureClassroom",
+  length: 17,
+  width: 9,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+}), {}, "yinman");
+assert.equal(hybridLecture.generatedPoints.filter((point) => point.pickupKind === "smallDisc02").length, 3);
+assert.equal(hybridLecture.pointValidation.findings.some((finding) => finding.code === "array.back-wall-distance"), false);
+
+const hybridCombined = generateEngineeringOutputs(makeProfile({
+  scenario: "combinedClassroom",
+  length: 18,
+  width: 14,
+  teachingWidth: 14,
+  teachingDepth: 16,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "lineArray",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+}), {}, "yinman");
+const hybridCombinedSupplements = hybridCombined.generatedPoints.filter((point) => point.pickupKind === "smallDisc02");
+assert.equal(hybridCombinedSupplements.length, 8);
+assert.deepEqual(Array.from(new Set(hybridCombinedSupplements.map((point) => point.position.y))), [3.2, 7.2, 11.2, 15.2]);
+assert.ok(Array.from(new Set(hybridCombinedSupplements.map((point) => point.position.y))).every((y) => hybridCombinedSupplements.filter((point) => point.position.y === y).length === 2));
+assert.equal(hybridCombined.pointValidation.findings.some((finding) => finding.code === "array.back-wall-distance"), false);
+assert.equal(hybridCombined.riskItems.some((item) => item.includes("阵麦全场扩声能力")), false);
+
+const yinyiNoHybrid = generateEngineeringOutputs(hybridProfile17, {}, "yinyi");
+assert.equal(yinyiNoHybrid.generatedPoints.some((point) => point.pickupKind === "smallDisc02"), false);
+assert.equal(yinyiNoHybrid.productSelection.some((item) => item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID), false);
+const meetingNoHybrid = generateEngineeringOutputs(makeProfile({ scenario: "meetingRoom", length: 17, width: 8, needs: ["interactiveClass"], microphoneSolution: "lineArray" }), {}, "yinman");
+assert.equal(meetingNoHybrid.generatedPoints.some((point) => point.pickupKind === "smallDisc02"), false);
+assert.doesNotMatch(JSON.stringify([hybrid12, hybrid17, hybridWide, hybridLecture, hybridCombined]), /RING02|AJ200|AJ350|AJ600/);
+console.log("PASS Yinman classroom hybrid line-array online pickup uses 5m array references, symmetric columns, automatic processor capacity and one EXTMIC chain");
 
 const yinmanHanging = generateEngineeringOutputs(makeProfile({
   length: 8,

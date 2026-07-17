@@ -3,7 +3,7 @@ import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType
 import { downloadSvgAsPng } from "../lib/imageExporter";
 import { getCustomerVisibleConnectionLines } from "../lib/customerOutput";
 import { getProcessorTierName, getProcessorTiersForBrand, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
-import { AUDIO_PROCESSOR_HOST_PRODUCT_ID } from "../lib/systemCapabilities";
+import { AUDIO_PROCESSOR_HOST_PRODUCT_ID, LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID } from "../lib/systemCapabilities";
 import {
   SMALL_DISC_01_PRODUCT_ID,
   SMALL_DISC_02_PRODUCT_ID,
@@ -88,13 +88,14 @@ export function EngineeringOutputs({
                 </tr>
               </thead>
               <tbody>
-                {equipmentRows.map(({ item, processorTier }, index) => (
+                {equipmentRows.map(({ item, processorTier, lockedAutomatic }, index) => (
                   <tr key={item.productId}>
                     <td>{index + 1}</td>
                     <td>{formatBrandText(item.name)}</td>
                     <td>
                       <QuantityStepper
                         item={item}
+                        lockedAutomatic={lockedAutomatic}
                         isOverridden={processorTier
                           ? item.quantity === 1 && (profile.engineeringConstraints.processorTier ?? "auto") !== "auto"
                           : quantityOverrides[item.productId] !== undefined}
@@ -158,13 +159,21 @@ function getEquipmentRows(
   brandId: "yinyi" | "yinman",
   selectedSpeakerProductId: "CEILING-SPEAKER" | "COLUMN-SPEAKER",
   selectedMicrophone: GeneratedOutputs["solutionSelection"]["microphone"]["selected"]
-): Array<{ item: ProductRecommendation; processorTier?: Exclude<ProcessorTier, "auto"> }> {
+): Array<{ item: ProductRecommendation; processorTier?: Exclude<ProcessorTier, "auto">; lockedAutomatic?: boolean }> {
+  const usesHybridLineArray = selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0) &&
+    selection.some((item) => item.productId === SMALL_DISC_02_PRODUCT_ID && item.quantity > 0);
   return selection.flatMap((item) => {
     if (item.category === "speaker" && item.productId !== selectedSpeakerProductId) return [];
-    if (item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID) return [{ item }];
-    const processorTiers = selectedMicrophone === "hangingMic" ? getProcessorTiersForBrand(brandId).filter((tier) => tier !== "highPerformance") : getProcessorTiersForBrand(brandId);
+    if (item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID) return [{
+      item,
+      lockedAutomatic: item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID || (usesHybridLineArray && item.productId === SMALL_DISC_02_PRODUCT_ID)
+    }];
+    const processorTiers = selectedMicrophone === "hangingMic" || usesHybridLineArray
+      ? getProcessorTiersForBrand(brandId).filter((tier) => tier !== "highPerformance")
+      : getProcessorTiersForBrand(brandId);
     return processorTiers.map((processorTier) => ({
       processorTier,
+      lockedAutomatic: usesHybridLineArray,
       item: {
         ...item,
         productId: `${AUDIO_PROCESSOR_HOST_PRODUCT_ID}-${processorTier}`,
@@ -257,10 +266,12 @@ function EmptyState({ text }: { text: string }) {
 
 function QuantityStepper({
   item,
+  lockedAutomatic = false,
   isOverridden,
   onChange
 }: {
   item: ProductRecommendation;
+  lockedAutomatic?: boolean;
   isOverridden: boolean;
   onChange: (quantity: number) => void;
 }) {
@@ -268,7 +279,7 @@ function QuantityStepper({
   const brand = getAppBrand();
   const lockedProcessor = item.category === "processor";
   const lockedSmallDiscAccessory = item.productId === SMALL_DISC_01_PRODUCT_ID || item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID || item.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID;
-  const effectiveMin = lockedProcessor || lockedSmallDiscAccessory ? 1 : min;
+  const effectiveMin = lockedProcessor || lockedSmallDiscAccessory || lockedAutomatic ? 1 : min;
   const max = item.category === "speaker"
     ? 16
     : item.productId === SMALL_DISC_02_PRODUCT_ID || item.productId === SMALL_DISC_03_PRODUCT_ID
@@ -281,11 +292,11 @@ function QuantityStepper({
 
   return (
     <div className="quantityStepper">
-      <button type="button" onClick={decrement} disabled={item.quantity <= effectiveMin} aria-label={`${formatBrandText(item.name)} 减少数量`}>
+      <button type="button" onClick={decrement} disabled={lockedAutomatic || item.quantity <= effectiveMin} aria-label={`${formatBrandText(item.name)} 减少数量`}>
         -
       </button>
       <strong>{item.quantity}</strong>
-      <button type="button" onClick={increment} disabled={item.quantity >= max} aria-label={`${formatBrandText(item.name)} 增加数量`}>
+      <button type="button" onClick={increment} disabled={lockedAutomatic || item.quantity >= max} aria-label={`${formatBrandText(item.name)} 增加数量`}>
         +
       </button>
       {isOverridden && <span>手动</span>}
