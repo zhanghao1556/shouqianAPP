@@ -1613,6 +1613,7 @@ type TopologyNode = {
 type TopologyEdge = { id: string; from: string; to: string; label: string; laneOffset?: number };
 const LEGACY_AUDIO_ROOT_LABELS = ["原有音频系统", "原有扩声系统"];
 const LEGACY_AUDIO_CENTER_PRIORITY = ["legacy-mixer", "legacy-processor", "legacy-amplifier"];
+const LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY = "lineArraySupplementGroup";
 
 function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine[], generatedPoints: GeneratedPoint[]) {
   const arrayMicCount = generatedPoints.filter((point) => point.type === "arrayMic").length;
@@ -1628,6 +1629,7 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   const isLineArray = generatedPoints.some((point) => point.pickupKind === "lineArray");
   const lineArrayMicCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
   const usesHybridLineArray = isLineArray && generatedPoints.some((point) => point.pickupKind === "smallDisc02");
+  const hybridSupplementCount = generatedPoints.filter((point) => point.pickupKind === "smallDisc02").length;
   const isHangingMic = generatedPoints.some((point) => point.pickupKind === "hangingMic");
   const usesSmallDisc01 = generatedPoints.some((point) => point.pickupKind === "smallDisc01");
   const usesSmallDisc03 = generatedPoints.some((point) => point.pickupKind === "smallDisc03");
@@ -1663,9 +1665,25 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
     }
   }
 
+  if (usesHybridLineArray) {
+    ensureNode({
+      key: LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY,
+      label: SMALL_DISC_SLAVE_NAME,
+      kind: "slaveMic",
+      quantity: hybridSupplementCount,
+      isSmallDiscMic: true
+    });
+  }
+
   connections.forEach((connection) => {
-    const fromKey = getTopologyNodeKey(connection.fromDevice, connection.fromPort, connection.speakerSignalMode, connection.afcSendLevelOffset);
-    const toKey = getTopologyNodeKey(connection.toDevice, connection.toPort, connection.speakerSignalMode, connection.afcSendLevelOffset);
+    const fromKey = getHybridTopologyNodeKey(
+      getTopologyNodeKey(connection.fromDevice, connection.fromPort, connection.speakerSignalMode, connection.afcSendLevelOffset),
+      usesHybridLineArray
+    );
+    const toKey = getHybridTopologyNodeKey(
+      getTopologyNodeKey(connection.toDevice, connection.toPort, connection.speakerSignalMode, connection.afcSendLevelOffset),
+      usesHybridLineArray
+    );
     if (isUnknownTopologyNodeKey(fromKey) || isUnknownTopologyNodeKey(toKey)) return;
     if (shouldSkipTopologyConnection(connection, fromKey, toKey)) return;
     ensureNode(getTopologyNode(connection.fromDevice, connection.fromPort, fromKey, speakerCount, topologySpeakerType));
@@ -1679,7 +1697,9 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
       if (!edges.some((edge) => edge.from === inboundEdge.from && edge.to === inboundEdge.to && edge.label === inboundEdge.label)) edges.push(inboundEdge);
       return;
     }
-    const edgeLabel = getTopologyCableLabel(connection, fromKey, toKey, speakerCount);
+    const edgeLabel = usesHybridLineArray && (fromKey === LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY || toKey === LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY)
+      ? formatTopologyCableLabel("网线", 1)
+      : getTopologyCableLabel(connection, fromKey, toKey, speakerCount);
     if (edges.some((edge) => edge.from === fromKey && edge.to === toKey && edge.label === edgeLabel)) return;
     edges.push({ id: connection.id, from: fromKey, to: toKey, label: edgeLabel });
   });
@@ -1694,6 +1714,50 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   });
 
   return { nodes: Array.from(nodes.values()), edges };
+}
+
+function getHybridTopologyNodeKey(key: string, usesHybridLineArray: boolean) {
+  if (usesHybridLineArray && key.startsWith("smallDiscSlave-")) return LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY;
+  return key;
+}
+
+export function getTopologyLayoutSnapshot(profile: ClassroomProfile, connections: ConnectionLine[], generatedPoints: GeneratedPoint[]) {
+  const topologyConnections = getVisibleTopologyConnections(profile, connections);
+  const topology = getTopologyModel(profile, topologyConnections, generatedPoints);
+  const devices = topology.nodes.map((node) => node.key);
+  const blockWidth = 190;
+  const blockHeight = 96;
+  const layout = getTopologyLayout(devices, blockWidth, blockHeight, 980, 620);
+  const positions = getRadialTopologyPositions(devices, topology.edges, topology.nodes, {
+    centerX: layout.centerX,
+    centerY: layout.centerY,
+    blockWidth,
+    blockHeight,
+    radiusX: layout.radiusX,
+    radiusY: layout.radiusY,
+    minX: layout.minX,
+    maxX: layout.maxX,
+    minY: layout.minY,
+    maxY: layout.maxY,
+    preferredMinX: layout.preferredMinX,
+    preferredMaxX: layout.preferredMaxX,
+    preferredMinY: layout.preferredMinY,
+    preferredMaxY: layout.preferredMaxY
+  });
+  const mainDevice = getTopologyMainDevice(devices);
+  const firstLevelDevices = new Set([mainDevice, ...getLegacyAudioCenterKeys(devices)]);
+  return {
+    mainDevice,
+    nodes: topology.nodes,
+    edges: topology.edges.map((edge) => ({
+      ...edge,
+      visibleCableLength: getTopologyVisibleCableLengthForLink(edge.from, edge.to, firstLevelDevices)
+    })),
+    imageCenters: Object.fromEntries(topology.nodes.map((node) => {
+      const position = positions.get(node.key);
+      return [node.key, position ? getTopologyImageCenter(position, blockWidth, node, blockHeight) : undefined];
+    }))
+  };
 }
 
 function getVisibleTopologyConnections(profile: ClassroomProfile, connections: ConnectionLine[]) {
@@ -1790,7 +1854,8 @@ function shouldSkipTopologyConnection(connection: ConnectionLine, fromKey: strin
 function getTopologyCableLabel(connection: ConnectionLine, fromKey: string, toKey: string, speakerCount: number) {
   if (connection.cableType.includes("无线信号")) return "无线信号";
   const quantity = getTopologyCableQuantity(connection, fromKey, toKey, speakerCount);
-  return formatTopologyCableLabel(connection.cableType, quantity);
+  const displayLabel = connection.cableType.includes("网线") ? "网线" : connection.cableType;
+  return formatTopologyCableLabel(displayLabel, quantity);
 }
 
 function isTwoInTwoOutAudioConnection(connection: ConnectionLine) {
@@ -1928,6 +1993,7 @@ function getTopologyNodeKey(
 
 function getTopologyNode(device: string, port: string, key: string, speakerCount: number, speakerType: "吸顶" | "壁挂"): TopologyNode {
   if (key === "lineArrayConverter") return { key, label: LINE_ARRAY_MIC_CONVERTER_NAME, kind: "device", isSignalConverter: true };
+  if (key === LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY) return { key, label: SMALL_DISC_SLAVE_NAME, kind: "slaveMic", isSmallDiscMic: true };
   if (key === "smallDiscMain") return { key, label: `${SMALL_DISC_MAIN_NAME} 主麦`, kind: "mainMic", isSmallDiscMic: true };
   if (key.startsWith("smallDiscSlave-")) {
     const index = Number(key.slice("smallDiscSlave-".length));
@@ -2478,7 +2544,11 @@ function placeSinglePrimaryExternalDevices(
       y: options.centerY - options.blockHeight / 2
     };
   const mainNode = nodeMap.get(mainDevice);
-  const orderedDevices = [...devices].sort((a, b) => getTopologySinglePrimaryAnglePriority(a, nodeMap) - getTopologySinglePrimaryAnglePriority(b, nodeMap));
+  const usesHybridLineArray = devices.includes("lineArrayConverter") && devices.includes(LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY);
+  const orderedDevices = [...devices].sort((a, b) => {
+    const getPriority = usesHybridLineArray ? getHybridTopologySinglePrimaryAnglePriority : getTopologySinglePrimaryAnglePriority;
+    return getPriority(a, nodeMap) - getPriority(b, nodeMap);
+  });
   orderedDevices.forEach((device, index) => {
     const angle = -Math.PI / 2 + (index * Math.PI * 2) / Math.max(1, orderedDevices.length);
     const position = getTopologyPositionFromVisibleCable(
@@ -2492,6 +2562,16 @@ function placeSinglePrimaryExternalDevices(
     );
     positions.set(device, position);
   });
+}
+
+function getHybridTopologySinglePrimaryAnglePriority(device: string, nodeMap: Map<string, TopologyNode>) {
+  const label = nodeMap.get(device)?.label ?? device;
+  if (device === "lineArrayConverter") return 0;
+  if (isTopologySpeakerKey(device)) return 1;
+  if (device === LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY) return 2;
+  if (label.includes("电脑")) return 3;
+  if (isTopologyWirelessReceiverKey(device)) return 4;
+  return 10 + getTopologySinglePrimaryAnglePriority(device, nodeMap);
 }
 
 function getTopologySinglePrimaryAnglePriority(device: string, nodeMap: Map<string, TopologyNode>) {
@@ -2587,6 +2667,10 @@ function isPotentialTopologySatelliteNode(key: string) {
 function getTopologySatelliteAnchorMap(edges: TopologyEdge[], mainDevice: string, legacyCenterDevices: Set<string>) {
   const anchors = new Map<string, string>();
   edges.forEach((edge) => {
+    if (edge.from.startsWith("arrayMic-") && edge.to === "lineArrayConverter") {
+      anchors.set(edge.from, edge.to);
+      return;
+    }
     if (isTopologyWirelessMicKey(edge.from) && isTopologyWirelessReceiverKey(edge.to)) {
       anchors.set(edge.from, edge.to);
       return;
@@ -2748,7 +2832,7 @@ function getTopologySatelliteOffset(
 }
 
 function isTopologyThirdLevelDevice(device: string) {
-  if (isTopologyWirelessMicKey(device)) return true;
+  if (isTopologyWirelessMicKey(device) || device.startsWith("arrayMic-")) return true;
   return device === "speaker-amplifier" || device === "legacy-passive-speaker" || device === "legacy-active-speaker";
 }
 
@@ -2761,7 +2845,7 @@ function isTopologySecondLevelDevice(device: string) {
   return (
     device === "slaveMic" ||
     device === "lineArrayConverter" ||
-    device.startsWith("arrayMic-") ||
+    device === LINE_ARRAY_SUPPLEMENT_TOPOLOGY_KEY ||
     device.startsWith("smallDiscSlave-") ||
     device.startsWith("smallDiscRecording-") ||
     device === "amplifier" ||

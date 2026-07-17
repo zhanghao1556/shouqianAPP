@@ -12,6 +12,7 @@ import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./sr
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
 import { buildReport } from "./src/features/classroom/lib/reportBuilder.ts";
+import { getTopologyLayoutSnapshot } from "./src/features/classroom/components/DrawingCanvas.tsx";
 import { HANGING_MIC_PRODUCT_ID, HANGING_MIC_RADIUS_M } from "./src/features/classroom/lib/hangingMicRules.ts";
 import {
   SMALL_DISC_01_PRODUCT_ID,
@@ -522,6 +523,62 @@ const meetingNoHybrid = generateEngineeringOutputs(makeProfile({ scenario: "meet
 assert.equal(meetingNoHybrid.generatedPoints.some((point) => point.pickupKind === "smallDisc02"), false);
 assert.doesNotMatch(JSON.stringify([hybrid12, hybrid17, hybridWide, hybridLecture, hybridCombined]), /RING02|AJ200|AJ350|AJ600/);
 console.log("PASS Yinman classroom hybrid line-array online pickup uses 5m array references, symmetric columns, automatic processor capacity and one EXTMIC chain");
+
+const hybridTopologyProfile = makeProfile({
+  length: 14.3,
+  width: 7.4,
+  height: 3.1,
+  needs: ["localAmplification", "interactiveClass"],
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  computer: "讲台电脑"
+});
+const hybridTopologyOutputs = generateEngineeringOutputs(hybridTopologyProfile, {}, "yinman");
+const hybridTopology = getTopologyLayoutSnapshot(
+  hybridTopologyProfile,
+  getCustomerVisibleConnectionLines(hybridTopologyOutputs.connectionLines),
+  getCustomerVisiblePoints(hybridTopologyOutputs.generatedPoints)
+);
+const supplementTopologyNodes = hybridTopology.nodes.filter((node) => node.key === "lineArraySupplementGroup" || node.key.startsWith("smallDiscSlave-"));
+assert.equal(supplementTopologyNodes.length, 1);
+assert.equal(supplementTopologyNodes[0]?.key, "lineArraySupplementGroup");
+assert.equal(supplementTopologyNodes[0]?.quantity, 2);
+const findTopologyEdge = (left, right) => hybridTopology.edges.find((edge) =>
+  (edge.from === left && edge.to === right) || (edge.from === right && edge.to === left)
+);
+const converterProcessorTopologyEdge = findTopologyEdge("lineArrayConverter", "processorHost");
+const lineArrayConverterTopologyEdge = findTopologyEdge("arrayMic-1", "lineArrayConverter");
+const supplementProcessorTopologyEdge = findTopologyEdge("lineArraySupplementGroup", "processorHost");
+assert.equal(converterProcessorTopologyEdge?.visibleCableLength, 170);
+assert.equal(lineArrayConverterTopologyEdge?.visibleCableLength, 120);
+assert.equal(supplementProcessorTopologyEdge?.visibleCableLength, 170);
+assert.equal(lineArrayConverterTopologyEdge?.label, "网线 ×1");
+assert.equal(supplementProcessorTopologyEdge?.label, "网线 ×1");
+assert.equal(hybridTopologyOutputs.connectionLines.filter((line) => line.id.startsWith("line-array-supplement-cascade-")).length, 1);
+assert.doesNotMatch(JSON.stringify(hybridTopology.edges.map((edge) => edge.label)), /超五类|T568B/);
+assert.match(JSON.stringify(hybridTopologyOutputs.connectionLines), /T568B/);
+const directTopologyKeys = Array.from(new Set(hybridTopology.edges.flatMap((edge) => {
+  if (edge.from === hybridTopology.mainDevice) return [edge.to];
+  if (edge.to === hybridTopology.mainDevice) return [edge.from];
+  return [];
+})));
+assert.ok(directTopologyKeys.length >= 4);
+const mainTopologyCenter = hybridTopology.imageCenters[hybridTopology.mainDevice];
+assert.ok(mainTopologyCenter);
+const directTopologyAngles = directTopologyKeys.map((key) => {
+  const center = hybridTopology.imageCenters[key];
+  assert.ok(center, "Missing topology center for " + key);
+  const angle = Math.atan2(center.y - mainTopologyCenter.y, center.x - mainTopologyCenter.x);
+  return (angle + Math.PI * 2) % (Math.PI * 2);
+}).sort((a, b) => a - b);
+const expectedTopologyAngleGap = (Math.PI * 2) / directTopologyAngles.length;
+const topologyAngleGaps = directTopologyAngles.map((angle, index) =>
+  (directTopologyAngles[(index + 1) % directTopologyAngles.length] - angle + Math.PI * 2) % (Math.PI * 2)
+);
+assert.ok(topologyAngleGaps.every((gap) => Math.abs(gap - expectedTopologyAngleGap) < 0.000001));
+console.log("PASS hybrid topology keeps fixed hierarchy lengths, aggregated supplements, generic network labels and even primary distribution");
 
 const yinmanHanging = generateEngineeringOutputs(makeProfile({
   length: 8,
@@ -1239,6 +1296,7 @@ const result = await build({
   platform: "node",
   target: "node20",
   write: false,
+  loader: { ".png": "dataurl" },
   logLevel: "silent"
 });
 

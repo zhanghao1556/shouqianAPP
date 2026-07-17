@@ -2027,3 +2027,10 @@ PowerShell reminder:
 - The single-primary radial layout must distribute direct child groups evenly around the main device. Third-level children orbit their own second-level parent and do not participate in the main-device angle count.
 - Normalize customer topology cable labels separately from engineering cable specifications. Any Ethernet construction specification may remain in connection notes and wiring detail, while the topology label uses only `网线` plus the aggregated quantity.
 - Regression coverage for a new topology device must assert node presence, parent-child chain, fixed visible line-length class, direct-child angular distribution, repeated-device aggregation and customer label normalization. Presence-only browser checks are insufficient.
+
+### 2026-07-17 hybrid topology cable-quantity guardrail
+
+- A grouped device quantity is not automatically the cable quantity to its parent. For a cascaded supplemental microphone group, the customer node is `xN`, the single processor uplink remains `network cable x1`, and the engineering connection list retains the `N-1` microphone-to-microphone cascade segments.
+- Do not expose an internal cascade-count annotation merely because the engineering model can calculate it. The latest customer-topology contract shows the grouped microphone quantity and the single processor cable only; detailed cascade steps stay in wiring data and installation notes.
+- Even-distribution tests must derive the expected angular gap from the direct groups actually present in the fixture. Optional computers, receivers or media devices must not be hard-coded into every scenario's group count; verify the real five-group page separately when that exact profile is the acceptance case.
+- Visual hierarchy must follow confirmed equipment ownership rather than raw signal-record direction: processor -> converter -> line array, while the underlying connection may still be emitted from microphone toward processor.
