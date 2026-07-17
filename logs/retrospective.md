@@ -2018,3 +2018,12 @@ PowerShell reminder:
 - Product selection, processor selection and the customer equipment table must derive the same hybrid state. Otherwise the equipment list can select a six-input processor while the customer selector still describes a two-input processor.
 - Topology filters need an explicit key for every new intermediate device. A correct connection list can still render an incomplete topology when a generic `device-*` node is discarded. When no product image exists, render an honest engineering symbol instead of borrowing another product image or exposing a “pending confirmation” placeholder.
 - Generic large-array validation does not automatically apply to supplemental pickup hardware. Keep the effective mixed chain for long-room count checks, but use hybrid-specific 5m coverage, 4-6m spacing, hanging installation and 20m segment checks instead of large-array back-wall and capacity messages.
+
+### 2026-07-17 hybrid topology hierarchy guardrail
+
+- Registering a new topology key is not enough. Every intermediate device must also declare its parent, level and child relationship so the layout cannot infer an inverted chain from raw connection direction.
+- Keep topology hierarchy distinct from electrical signal direction. The confirmed visual chain is processor level one, converter level two and line array level three even when the connection record is emitted from the microphone toward the processor.
+- Repeated homogeneous downstream devices should remain detailed in engineering connection data but aggregate into one customer topology node with `quantity`, matching the existing speaker-stack contract. One cascade must not consume one radial slot per physical microphone.
+- The single-primary radial layout must distribute direct child groups evenly around the main device. Third-level children orbit their own second-level parent and do not participate in the main-device angle count.
+- Normalize customer topology cable labels separately from engineering cable specifications. Any Ethernet construction specification may remain in connection notes and wiring detail, while the topology label uses only `网线` plus the aggregated quantity.
+- Regression coverage for a new topology device must assert node presence, parent-child chain, fixed visible line-length class, direct-child angular distribution, repeated-device aggregation and customer label normalization. Presence-only browser checks are insufficient.
