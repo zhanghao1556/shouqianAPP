@@ -155,6 +155,7 @@ async function buildRootCauseResults(result, runner, previewDir) {
         remainingCaseIds: transitions.filter((item) => item.candidateStatus !== "pass").map((item) => item.caseId),
         priceRejectedCaseIds: transitions.filter((item) => item.candidateStatus === "pass" && !item.priceGatePassed).map((item) => item.caseId),
         previewAddedSpeakerCount: previewTransition?.addedSpeakerCount ?? 0,
+        previewContext: getComparisonContext(comparison),
         currentCoverage: comparison.current.coverage,
         candidateCoverage: comparison.candidate.coverage,
         svgPath,
@@ -200,7 +201,7 @@ function buildRootCauseMarkdown(result, rootCauses) {
       `- 模拟转为覆盖通过：${item.convertedCaseIds.length}/${item.caseCount}例；${item.convertedCaseIds.join("、") || "无"}`,
       `- 因增配收益不足不建议改：${item.priceRejectedCaseIds.length}例；${item.priceRejectedCaseIds.join("、") || "无"}`,
       `- 仍需下一轮处理：${item.remainingCaseIds.length}例；${item.remainingCaseIds.join("、") || "无"}`,
-      `- 代表预览：${item.previewCaseId}；当前未覆盖${formatPercent(item.currentCoverage.primaryListeningArea.uncoveredRatio)}、漏覆盖坐席${item.currentCoverage.seatChecks.filter((seat) => !seat.covered).length}个；拟调整未覆盖${formatPercent(item.candidateCoverage.primaryListeningArea.uncoveredRatio)}、漏覆盖坐席${item.candidateCoverage.seatChecks.filter((seat) => !seat.covered).length}个；新增音箱${item.previewAddedSpeakerCount}只`,
+      `- 代表预览：${item.previewCaseId}；${item.previewContext}；当前未覆盖${formatPercent(item.currentCoverage.primaryListeningArea.uncoveredRatio)}、漏覆盖坐席${item.currentCoverage.seatChecks.filter((seat) => !seat.covered).length}个；拟调整未覆盖${formatPercent(item.candidateCoverage.primaryListeningArea.uncoveredRatio)}、漏覆盖坐席${item.candidateCoverage.seatChecks.filter((seat) => !seat.covered).length}个；新增音箱${item.previewAddedSpeakerCount}只`,
       `- 图片：${item.pngPath}`,
       ""
     );
@@ -225,8 +226,9 @@ function renderComparisonSvg(definition, comparison) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
     <rect width="1600" height="920" fill="#f8fafc"/>
     <text x="40" y="48" font-size="27" font-weight="800" fill="#111827">${escapeXml(definition.title)}</text>
-    <text x="40" y="82" font-size="16" fill="#334155">代表用例 ${comparison.caseId} · 房间 ${comparison.profile.roomGeometry.length}m × ${comparison.profile.roomGeometry.width}m × ${comparison.profile.roomGeometry.height}m</text>
-    <text x="40" y="112" font-size="15" fill="#475569">建议：${escapeXml(definition.proposal)}</text>
+    <text x="40" y="82" font-size="16" fill="#334155">代表用例 ${comparison.caseId} · ${escapeXml(getComparisonContext(comparison))}</text>
+    <text x="40" y="106" font-size="15" fill="#334155">房间 长${comparison.profile.roomGeometry.length}m × 宽${comparison.profile.roomGeometry.width}m × 高${comparison.profile.roomGeometry.height}m</text>
+    <text x="40" y="132" font-size="15" fill="#475569">建议：${escapeXml(definition.proposal)}</text>
     ${currentPanel}
     ${candidatePanel}
     <g transform="translate(40 880)" font-size="14" fill="#334155">
@@ -289,6 +291,27 @@ function renderMeetingFurniture(layout, roomX, roomY, scale) {
 
 function unique(values) {
   return [...new Set(values)];
+}
+
+function getComparisonContext(comparison) {
+  const pickupPattern = comparison.current.points.find((point) => point.type === "arrayMic" && point.pickupKind === "lineArray")?.pickupPattern;
+  const microphone = comparison.microphoneSolution === "lineArray"
+    ? `线阵麦 ${pickupPattern ?? ""}`.trim()
+    : "阵列麦";
+  return [
+    comparison.brandId === "yinman" ? "音曼" : "音翼",
+    {
+      meetingRoom: "会议室",
+      standardClassroom: "普通教室",
+      lectureClassroom: "阶梯教室",
+      combinedClassroom: "合班教室",
+      auditorium: "报告厅",
+      other: "其他场景"
+    }[comparison.scenario] ?? comparison.scenario,
+    comparison.effectiveScope === "full" ? "全场扩声" : "讲台/区域扩声",
+    microphone,
+    comparison.speakerProductOverride === "ceiling" ? "吸顶音箱" : "壁挂音箱"
+  ].join(" · ");
 }
 
 function minimum(values) {

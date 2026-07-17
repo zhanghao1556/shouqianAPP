@@ -229,6 +229,11 @@ export function getCoveragePreviewComparisonForCase(source: SpeakerCoverageSweep
   if (!candidate) throw new Error(`Unknown candidate pattern ${patternId} for ${source.id}`);
   return {
     caseId: source.id,
+    brandId: source.brandId,
+    scenario: source.scenario,
+    effectiveScope: source.effectiveScope,
+    microphoneSolution: source.microphoneSolution,
+    speakerProductOverride: source.speakerProductOverride,
     profile: source.profile,
     meetingFurniture: source.scenario === "meetingRoom" ? getMeetingFurnitureLayout(source.profile) : undefined,
     current: {
