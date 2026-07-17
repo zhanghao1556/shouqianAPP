@@ -57,14 +57,25 @@ export function validatePointPlan(input: PointValidationInput): PointValidationR
   const findings: PointValidationFinding[] = [];
 
   if (solutionSelection?.drawingBlocked) {
-    findings.push({
-      code: "selection.line-array-coverage",
-      severity: "hard",
-      title: "线阵麦覆盖能力",
-      internalMessage: solutionSelection.blockingMessage ?? "客户选择的线阵麦方案无法完整覆盖当前责任区，点位和拓扑已停止生成。",
-      customerMessage: "该方案无法完整覆盖，建议改选阵麦。",
-      sourceRefs: ["用户确认的线阵麦硬能力阻断规则"]
-    });
+    if (solutionSelection.blockingCode === "smallDisc01Interfaces") {
+      findings.push({
+        code: "selection.small-disc-01-interfaces",
+        severity: "hard",
+        title: "小圆盘阵麦01接口能力",
+        internalMessage: "当前外接设备需求超出小圆盘阵麦01已确认的USB/Type-C、SPK-OUT、MIC和LINK接口能力，点位、接线和拓扑已停止生成。",
+        customerMessage: "小圆盘阵麦01接口数量超过上限，无法生成方案，建议更换设备。",
+        sourceRefs: ["用户确认的小圆盘阵麦01接口硬阻断规则"]
+      });
+    } else {
+      findings.push({
+        code: "selection.line-array-coverage",
+        severity: "hard",
+        title: "线阵麦覆盖能力",
+        internalMessage: solutionSelection.blockingMessage ?? "客户选择的线阵麦方案无法完整覆盖当前责任区，点位和拓扑已停止生成。",
+        customerMessage: "该方案无法完整覆盖，建议改选阵麦。",
+        sourceRefs: ["用户确认的线阵麦硬能力阻断规则"]
+      });
+    }
   }
 
   if (solutionSelection?.microphone.lineArrayCoverageWarning) {

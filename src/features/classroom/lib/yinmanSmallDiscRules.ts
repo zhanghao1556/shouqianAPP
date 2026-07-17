@@ -12,7 +12,7 @@ export const SMALL_DISC_USB_CABLE_PRODUCT_ID = "USB-AUDIO-CABLE";
 export const SMALL_DISC_MAIN_NAME = "小圆盘阵麦01";
 export const SMALL_DISC_SLAVE_NAME = "小圆盘阵麦02";
 export const SMALL_DISC_RECORDING_NAME = "小圆盘阵麦03";
-export const SMALL_DISC_AUDIO_EXTENDER_NAME = "音频扩展器";
+export const SMALL_DISC_AUDIO_EXTENDER_NAME = "01拓展器";
 
 export const SMALL_DISC_ONLINE_RADIUS_M = 5;
 export const SMALL_DISC_LOCAL_RADIUS_M = 3;
@@ -69,6 +69,43 @@ export function getSmallDiscConnectionMode(profile: ClassroomProfile): Exclude<S
   return profile.needs.includes("recording") ? "extender" : "usb";
 }
 
+export function getSmallDisc01AudioRouting(profile: ClassroomProfile) {
+  const mode = getSmallDiscConnectionMode(profile);
+  const computerDevices = splitAudioDevices(profile.existingDevices.computer);
+  const recordingInputDevices = splitAudioDevices(profile.existingDevices.recordingHost)
+    .filter((device) => device.includes("录播主机"));
+  const hasOnlineAudio = profile.needs.some(
+    (need) => need === "videoConference" || need === "interactiveClass" || need === "remoteTeaching"
+  );
+  const hasRecordingNeed = profile.needs.includes("recording");
+  const hasLocalSpeakerOutput = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
+  const usbDevice = mode === "usb" ? computerDevices[0] : undefined;
+  const analogComputerDevices = usbDevice ? computerDevices.slice(1) : computerDevices;
+  const extenderInputSources = hasOnlineAudio ? analogComputerDevices : [];
+  const externalOutputTargets = hasOnlineAudio && analogComputerDevices.length > 0
+    ? [analogComputerDevices[0], ...(hasRecordingNeed ? recordingInputDevices : [])]
+    : recordingInputDevices.length > 0
+      ? recordingInputDevices
+      : analogComputerDevices.slice(0, 1);
+  const directOutputTarget = hasLocalSpeakerOutput || mode === "extender" ? undefined : externalOutputTargets[0];
+  const extenderOutputTargets = externalOutputTargets.slice(directOutputTarget ? 1 : 0);
+  const needsExtender = mode === "extender" || extenderInputSources.length > 0 || extenderOutputTargets.length > 0;
+  const needsUsbComputer = mode === "usb" && (hasOnlineAudio || computerDevices.length > 0);
+
+  return {
+    mode,
+    usbDevice,
+    directOutputTarget,
+    extenderInputSources,
+    extenderOutputTargets,
+    needsExtender,
+    supported:
+      (!needsUsbComputer || Boolean(usbDevice)) &&
+      extenderInputSources.length <= 1 &&
+      extenderOutputTargets.length <= 1
+  };
+}
+
 export function shouldShowSmallDiscConnectionChoice(profile: ClassroomProfile) {
   if (getEffectiveYinmanMicrophoneSolution(profile, "yinman") !== "smallDisc01") return false;
   if (isPureRecordingOrPatrolNeed(profile)) return false;
@@ -110,4 +147,11 @@ function getSmallDiscCoverageZone(profile: ClassroomProfile, solution: "smallDis
 
 function getEffectiveAmplificationScope(profile: ClassroomProfile) {
   return profile.scenario === "lectureClassroom" ? "podium" : profile.amplificationScope;
+}
+
+function splitAudioDevices(value: string) {
+  return Array.from(new Set(value
+    .split(/[、,，;；]/)
+    .map((item) => item.trim())
+    .filter(Boolean)));
 }

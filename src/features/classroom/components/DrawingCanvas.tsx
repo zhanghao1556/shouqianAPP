@@ -1636,9 +1636,9 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   const usesSmallDisc03 = generatedPoints.some((point) => point.pickupKind === "smallDisc03");
   const usesSmallDisc = usesSmallDisc01 || usesSmallDisc03;
   const processorDirect = !usesSmallDisc && (getAppBrand().id === "yinman" || isLineArray);
-  const topologyRootKey = usesSmallDisc03 ? "smallDiscExtender" : usesSmallDisc01 ? "smallDiscMain" : processorDirect ? "processorHost" : "mainMic";
+  const topologyRootKey = usesSmallDisc03 ? "smallDiscRecording-1" : usesSmallDisc01 ? "smallDiscMain" : processorDirect ? "processorHost" : "mainMic";
   if (usesSmallDisc03) {
-    ensureNode({ key: topologyRootKey, label: SMALL_DISC_AUDIO_EXTENDER_NAME, kind: "device", isAudioExtender: true });
+    ensureNode({ key: topologyRootKey, label: SMALL_DISC_RECORDING_NAME, kind: "mainMic", isSmallDiscMic: true });
   } else if (usesSmallDisc01) {
     ensureNode({ key: topologyRootKey, label: SMALL_DISC_MAIN_NAME, kind: "mainMic", isSmallDiscMic: true });
   } else if (processorDirect) {
@@ -1708,8 +1708,10 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
   getSelectedTopologyDevices(profile).forEach((device, index) => {
     const key = getTopologyNodeKey(device);
     if (isUnknownTopologyNodeKey(key) || key === topologyRootKey || key.startsWith("arrayMic-")) return;
+    const hasConfirmedConnection = edges.some((edge) => edge.from === key || edge.to === key);
+    if (usesSmallDisc && !hasConfirmedConnection) return;
     ensureNode(getTopologyNode(device, "", key, speakerCount, topologySpeakerType));
-    if (edges.some((edge) => edge.from === key || edge.to === key)) return;
+    if (hasConfirmedConnection) return;
     if (isLegacyFeedbackSuppressorWithoutChain(device)) return;
     edges.push({ id: `pending-external-${index + 1}-${key}`, from: topologyRootKey, to: key, label: getPendingTopologyCableLabel(device) });
   });
@@ -1944,11 +1946,11 @@ function getTopologyNodeKey(
   if (device.includes(SMALL_DISC_AUDIO_EXTENDER_NAME)) return "smallDiscExtender";
   if (device.includes(SMALL_DISC_MAIN_NAME)) return "smallDiscMain";
   if (device.includes(SMALL_DISC_SLAVE_NAME)) {
-    const match = device.match(/(\d+)\s*$/);
+    const match = device.slice(device.indexOf(SMALL_DISC_SLAVE_NAME) + SMALL_DISC_SLAVE_NAME.length).match(/^\s*(\d+)\s*$/);
     return `smallDiscSlave-${match?.[1] ?? "1"}`;
   }
   if (device.includes(SMALL_DISC_RECORDING_NAME)) {
-    const match = device.match(/(\d+)\s*$/);
+    const match = device.slice(device.indexOf(SMALL_DISC_RECORDING_NAME) + SMALL_DISC_RECORDING_NAME.length).match(/^\s*(\d+)\s*$/);
     return `smallDiscRecording-${match?.[1] ?? "1"}`;
   }
   if (device.includes("智能音频处理主机") || device.includes("双麦处理器") || device.includes("六麦处理器") || device.includes("高性能处理器")) return "processorHost";
@@ -2273,10 +2275,16 @@ function getRadialTopologyPositions(
   const legacyCenterDevices = getLegacyAudioCenterKeys(devices);
   const firstLevelDevices = new Set([mainDevice, ...legacyCenterDevices]);
   const satelliteAnchors = getTopologySatelliteAnchorMap(edges, mainDevice, new Set(legacyCenterDevices));
+  const directPrimaryDevices = new Set(edges.flatMap((edge) => {
+    if (edge.from === mainDevice) return [edge.to];
+    if (edge.to === mainDevice) return [edge.from];
+    return [];
+  }));
   placeLegacyAudioCenters(legacyCenterDevices, positions, mainDevice, nodeMap, firstLevelDevices, options);
 
   const externalDevices = devices.filter(
-    (device) => device !== mainDevice && !legacyCenterDevices.includes(device) && !isTopologySatelliteNode(device) && !satelliteAnchors.has(device)
+    (device) => device !== mainDevice && !legacyCenterDevices.includes(device) &&
+      (directPrimaryDevices.has(device) || (!isTopologySatelliteNode(device) && !satelliteAnchors.has(device)))
   );
   if (firstLevelDevices.size === 1) {
     placeSinglePrimaryExternalDevices(externalDevices, positions, mainDevice, nodeMap, firstLevelDevices, options);
@@ -2288,7 +2296,7 @@ function getRadialTopologyPositions(
     });
   }
   placeTopologySatelliteDevices(
-    devices.filter((device) => isTopologySatelliteNode(device) || satelliteAnchors.has(device)),
+    devices.filter((device) => device !== mainDevice && !directPrimaryDevices.has(device) && (isTopologySatelliteNode(device) || satelliteAnchors.has(device))),
     positions,
     satelliteAnchors,
     legacySideDevices,
@@ -2399,8 +2407,9 @@ function getTopologyContentBounds(
 
 function getTopologyMainDevice(devices: string[]) {
   if (devices.includes("processorHost")) return "processorHost";
-  if (devices.includes("smallDiscExtender")) return "smallDiscExtender";
   if (devices.includes("smallDiscMain")) return "smallDiscMain";
+  if (devices.includes("smallDiscRecording-1")) return "smallDiscRecording-1";
+  if (devices.includes("smallDiscExtender")) return "smallDiscExtender";
   return devices.includes("mainMic") ? "mainMic" : devices[0] ?? "mainMic";
 }
 
@@ -2668,6 +2677,10 @@ function isPotentialTopologySatelliteNode(key: string) {
 function getTopologySatelliteAnchorMap(edges: TopologyEdge[], mainDevice: string, legacyCenterDevices: Set<string>) {
   const anchors = new Map<string, string>();
   edges.forEach((edge) => {
+    if (edge.from.startsWith("smallDiscRecording-") && edge.to.startsWith("smallDiscRecording-")) {
+      anchors.set(edge.to, edge.from);
+      return;
+    }
     if (edge.from.startsWith("arrayMic-") && edge.to === "lineArrayConverter") {
       anchors.set(edge.from, edge.to);
       return;

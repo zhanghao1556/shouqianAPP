@@ -312,6 +312,7 @@ export interface CustomerSolutionSelection {
     interfaceDemand: number;
   };
   drawingBlocked: boolean;
+  blockingCode?: "smallDisc01Interfaces";
   blockingMessage?: string;
 }
 

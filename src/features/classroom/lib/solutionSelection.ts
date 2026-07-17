@@ -24,6 +24,7 @@ import {
 } from "./hangingMicRules";
 import {
   getEffectiveYinmanMicrophoneSolution,
+  getSmallDisc01AudioRouting,
   getSmallDiscReviewMessage,
   isPureRecordingOrPatrolNeed,
   SMALL_DISC_MAIN_NAME,
@@ -89,8 +90,10 @@ export function getCustomerSolutionSelection(
   const smallDiscReviewWarning = selectedMicrophone === "smallDisc01" || selectedMicrophone === "smallDisc03"
     ? getSmallDiscReviewMessage(selectedMicrophone, smallDiscCount)
     : undefined;
+  const smallDisc01InterfaceSupported = selectedMicrophone !== "smallDisc01" || isSmallDisc01InterfaceSupported(profile);
   const drawingBlocked = (requestedMicrophone === "lineArray" && !lineArraySupported) ||
-    (selectedMicrophone === "hangingMic" && (!hangingMicSupport.supported || hangingMicCapacity === 0));
+    (selectedMicrophone === "hangingMic" && (!hangingMicSupport.supported || hangingMicCapacity === 0)) ||
+    !smallDisc01InterfaceSupported;
   const lineArrayCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
   const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
   const processor = brandId === "yinman" && lineArrayCount === 1
@@ -155,12 +158,28 @@ export function getCustomerSolutionSelection(
     },
     processor,
     drawingBlocked,
+    blockingCode: !smallDisc01InterfaceSupported ? "smallDisc01Interfaces" : undefined,
     blockingMessage: drawingBlocked
-      ? selectedMicrophone === "hangingMic"
+      ? !smallDisc01InterfaceSupported
+        ? "小圆盘阵麦01接口数量超过上限，无法生成方案，建议更换设备。"
+        : selectedMicrophone === "hangingMic"
         ? !hangingMicSupport.supported ? hangingMicSupport.reason : "处理器没有可用MIC输入，无法生成吊麦方案"
         : "该方案无法完整覆盖，建议改选阵麦"
       : undefined
   };
+}
+
+function isSmallDisc01InterfaceSupported(profile: ClassroomProfile) {
+  const existingMicrophoneDevices = splitInterfaceDevices(profile.existingDevices.legacyWirelessMic);
+  if (existingMicrophoneDevices.length > 0) return false;
+  return getSmallDisc01AudioRouting(profile).supported;
+}
+
+function splitInterfaceDevices(value: string) {
+  return Array.from(new Set(value
+    .split(/[、,，;；]/)
+    .map((item) => item.trim())
+    .filter(Boolean)));
 }
 
 function getYinmanSingleLineProcessorSelection(

@@ -114,7 +114,7 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
             title="连接方式"
             options={[
               { value: "usb", label: "USB直连", imageSrc: computerImage },
-              { value: "extender", label: "音频扩展器", imageSrc: audioExtenderImage }
+              { value: "extender", label: "01拓展器", imageSrc: audioExtenderImage }
             ]}
             selected={selectedConnectionMode}
             recommended={recommendedConnectionMode}

@@ -73,6 +73,7 @@ import {
 } from "./hangingMicRules";
 import {
   getEffectiveYinmanMicrophoneSolution,
+  getSmallDisc01AudioRouting,
   getSmallDiscConnectionMode,
   isSmallDiscSolution,
   SMALL_DISC_01_PRODUCT_ID,
@@ -487,6 +488,7 @@ const getProductSelection = (
   const effectiveMicrophoneSolution = getEffectiveYinmanMicrophoneSolution(profile, brandId);
   const usesHybridLineArray = hasYinmanLineArraySupplements(points);
   const smallDiscConnectionMode = getSmallDiscConnectionMode(profile);
+  const smallDisc01AudioRouting = getSmallDisc01AudioRouting(profile);
   const hasLegacySound = Boolean(profile.existingDevices.legacySoundSystem.trim());
   const needsAuditoriumRearFill = needsAuditoriumRearFillSpeakers(profile);
   const speakerProductId = getSpeakerProductId(profile);
@@ -497,7 +499,10 @@ const getProductSelection = (
       if (rule.productId === SMALL_DISC_02_PRODUCT_ID) return brandId === "yinman" && (effectiveMicrophoneSolution === "smallDisc01" || usesHybridLineArray);
       if (rule.productId === SMALL_DISC_03_PRODUCT_ID) return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc03";
       if (rule.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID) {
-        return brandId === "yinman" && (effectiveMicrophoneSolution === "smallDisc03" || (effectiveMicrophoneSolution === "smallDisc01" && smallDiscConnectionMode === "extender"));
+        return brandId === "yinman" && (
+          effectiveMicrophoneSolution === "smallDisc03" ||
+          (effectiveMicrophoneSolution === "smallDisc01" && smallDisc01AudioRouting.needsExtender)
+        );
       }
       if (rule.productId === SMALL_DISC_USB_CABLE_PRODUCT_ID) {
         return brandId === "yinman" && effectiveMicrophoneSolution === "smallDisc01" && smallDiscConnectionMode === "usb" && profile.needs.some((need) => need === "videoConference" || need === "interactiveClass" || need === "remoteTeaching");

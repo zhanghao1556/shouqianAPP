@@ -22,7 +22,7 @@ import {
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 import {
-  getSmallDiscConnectionMode,
+  getSmallDisc01AudioRouting,
   SMALL_DISC_01_PRODUCT_ID,
   SMALL_DISC_02_PRODUCT_ID,
   SMALL_DISC_03_PRODUCT_ID,
@@ -261,56 +261,36 @@ function generateSmallDisc01ConnectionLines(
     });
   }
 
-  const recordingDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.recordingHost));
-  const computerDevices = uniqueDeviceList(splitDeviceText(profile.existingDevices.computer));
-  const connectionMode = getSmallDiscConnectionMode(profile);
-  if (connectionMode === "usb") {
-    const computer = selectPrimaryUsbDevice([...recordingDevices, ...computerDevices], true);
+  const audioRouting = getSmallDisc01AudioRouting(profile);
+  if (audioRouting.usbDevice) {
     lines.push({
       id: "small-disc-01-usb-host",
       fromDevice: mainName,
       fromPort: "USB数字音频接口",
-      toDevice: computer || "电脑",
+      toDevice: audioRouting.usbDevice,
       toPort: "USB音频接口",
       cableType: "USB音频线（客户自购）",
-      note: "USB同时承担供电和数字音频；USB线由客户按安装距离另行采购。"
+      note: "USB只连接电脑或一体机，同时承担供电和数字音频；USB线由客户按安装距离另行采购。"
     });
-  } else {
-    const extender = selection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.name ?? SMALL_DISC_AUDIO_EXTENDER_NAME;
+  }
+  if (audioRouting.directOutputTarget) {
     lines.push({
-      id: "small-disc-01-link-extender",
+      id: "small-disc-01-direct-audio-output",
       fromDevice: mainName,
-      fromPort: "LINK",
-      toDevice: extender,
-      toPort: "LINK",
-      cableType: "超五类纯铜网线（T568B）",
-      note: "音频扩展器为小圆盘阵麦提供模拟音频接入和供电。"
+      fromPort: "AUDIO OUT / SPK-OUT",
+      toDevice: audioRouting.directOutputTarget,
+      toPort: "音频输入",
+      cableType: "音频线",
+      note: "小圆盘阵麦01本体音频输出可在软件中配置并连接带音频输入的设备。"
     });
-    const outputDevices = recordingDevices.length ? recordingDevices : computerDevices.length ? computerDevices : ["录播/会议终端"];
-    outputDevices.forEach((device, index) => {
-      lines.push({
-        id: `small-disc-01-extender-output-${index + 1}`,
-        fromDevice: extender,
-        fromPort: "A OUT",
-        toDevice: device,
-        toPort: "音频输入",
-        cableType: "3.5mm音频线",
-        note: "小圆盘阵麦拾音经扩展器模拟输出接入终端。"
-      });
-    });
-    const hasOnlineAudio = profile.needs.some((need) => need === "videoConference" || need === "interactiveClass" || need === "remoteTeaching");
-    if (hasOnlineAudio) {
-      const inputDevice = computerDevices[0] ?? "电脑/会议终端";
-      lines.push({
-        id: "small-disc-01-extender-input",
-        fromDevice: inputDevice,
-        fromPort: "音频输出",
-        toDevice: extender,
-        toPort: "A IN",
-        cableType: "3.5mm音频线",
-        note: "终端回传音频接入扩展器A IN。"
-      });
-    }
+  }
+  if (audioRouting.needsExtender) {
+    appendSmallDisc01ExtenderLines(
+      lines,
+      selection,
+      audioRouting.extenderOutputTargets,
+      audioRouting.extenderInputSources
+    );
   }
 
   const speakerProduct = selection.find((item) => item.category === "speaker" && item.quantity > 0);
@@ -320,11 +300,11 @@ function generateSmallDisc01ConnectionLines(
       {
         id: "small-disc-01-amplifier",
         fromDevice: mainName,
-        fromPort: "SPK-OUT",
+        fromPort: "AUDIO OUT / SPK-OUT",
         toDevice: amplifier,
         toPort: "音频输入",
         cableType: "音频线",
-        note: "小圆盘阵麦01的本地扩声信号送入功放。"
+        note: "小圆盘阵麦01本体音频输出在软件中配置为本地扩声并送入功放。"
       },
       {
         id: "small-disc-01-wall-speakers",
@@ -338,6 +318,48 @@ function generateSmallDisc01ConnectionLines(
     );
   }
   return lines;
+}
+
+function appendSmallDisc01ExtenderLines(
+  lines: ConnectionLine[],
+  selection: ProductRecommendation[],
+  outputTargets: string[],
+  inputSources: string[]
+) {
+    const extender = selection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.name ?? SMALL_DISC_AUDIO_EXTENDER_NAME;
+    lines.push({
+      id: "small-disc-01-link-extender",
+      fromDevice: SMALL_DISC_MAIN_NAME,
+      fromPort: "LINK",
+      toDevice: extender,
+      toPort: "LINK",
+      cableType: "超五类纯铜网线（T568B）",
+      note: "01拓展器通过LINK为小圆盘阵麦01扩展模拟音频输入和输出。"
+    });
+    const outputDevices = outputTargets.length ? outputTargets : ["录播/会议终端"];
+    outputDevices.forEach((device, index) => {
+      lines.push({
+        id: `small-disc-01-extender-output-${index + 1}`,
+        fromDevice: extender,
+        fromPort: "A OUT",
+        toDevice: device,
+        toPort: "音频输入",
+        cableType: "3.5mm音频线",
+        note: "小圆盘阵麦拾音经扩展器模拟输出接入终端。"
+      });
+    });
+    if (inputSources.length > 0) {
+      const inputDevice = inputSources[0];
+      lines.push({
+        id: "small-disc-01-extender-input",
+        fromDevice: inputDevice,
+        fromPort: "音频输出",
+        toDevice: extender,
+        toPort: "A IN",
+        cableType: "3.5mm音频线",
+        note: "终端回传音频接入扩展器A IN。"
+      });
+    }
 }
 
 function generateSmallDisc03ConnectionLines(

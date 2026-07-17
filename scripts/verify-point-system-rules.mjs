@@ -695,8 +695,80 @@ assert.ok(smallDisc01Points.every((point) => point.label.startsWith(point.pickup
 assert.ok(smallDisc01Points.every((point) => point.coverageRadius === 3 && point.installationMode === "hanging"));
 assert.equal(smallDisc01.connectionLines.filter((line) => line.id.startsWith("small-disc-01-cascade-")).length, 3);
 assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-usb-host" && line.cableType.includes("客户自购")));
-assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-amplifier" && line.fromPort === "SPK-OUT"));
+assert.ok(smallDisc01.connectionLines.some((line) => line.id === "small-disc-01-amplifier" && line.fromPort === "AUDIO OUT / SPK-OUT"));
 assert.equal(smallDisc01.pointValidation.findings.some((finding) => finding.code === "array.capacity" && finding.severity === "hard"), false);
+
+const smallDisc01UsbRoutingProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "讲台电脑",
+  recordingHost: "录播主机、录播摄像机、中控主机",
+  overheadSpeakerMounting: "available",
+  smallDiscConnectionMode: "usb"
+});
+const smallDisc01UsbRouting = generateEngineeringOutputs(smallDisc01UsbRoutingProfile, {}, "yinman");
+const smallDisc01UsbLine = smallDisc01UsbRouting.connectionLines.find((line) => line.id === "small-disc-01-usb-host");
+assert.equal(smallDisc01UsbLine?.toDevice, "讲台电脑");
+assert.equal(smallDisc01UsbRouting.solutionSelection.drawingBlocked, false);
+assert.equal(smallDisc01UsbRouting.productSelection.find((item) => item.productId === SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID)?.quantity, 1);
+assert.equal(smallDisc01UsbRouting.connectionLines.find((line) => line.id === "small-disc-01-link-extender")?.fromPort, "LINK");
+assert.equal(smallDisc01UsbRouting.connectionLines.find((line) => line.id === "small-disc-01-extender-output-1")?.toDevice, "录播主机");
+assert.equal(
+  smallDisc01UsbRouting.connectionLines.some((line) =>
+    line.cableType.includes("USB") && (line.toDevice.includes("录播") || line.toDevice.includes("摄像机") || line.toDevice.includes("中控"))
+  ),
+  false
+);
+const smallDisc01UsbTopology = getTopologyLayoutSnapshot(
+  smallDisc01UsbRoutingProfile,
+  smallDisc01UsbRouting.connectionLines,
+  smallDisc01UsbRouting.generatedPoints
+);
+assert.equal(smallDisc01UsbTopology.mainDevice, "smallDiscMain");
+assert.equal(smallDisc01UsbTopology.nodes.some((node) => node.label.includes("01拓展器")), true);
+assert.equal(smallDisc01UsbTopology.nodes.some((node) => node.label.includes("录播主机")), true);
+assert.equal(smallDisc01UsbTopology.nodes.some((node) => node.label.includes("录播摄像机") || node.label.includes("中控主机")), false);
+const smallDisc01DirectKeys = Array.from(new Set(smallDisc01UsbTopology.edges.flatMap((edge) => {
+  if (edge.from === smallDisc01UsbTopology.mainDevice) return [edge.to];
+  if (edge.to === smallDisc01UsbTopology.mainDevice) return [edge.from];
+  return [];
+})));
+const smallDisc01MainCenter = smallDisc01UsbTopology.imageCenters[smallDisc01UsbTopology.mainDevice];
+assert.ok(smallDisc01MainCenter);
+const smallDisc01DirectAngles = smallDisc01DirectKeys.map((key) => {
+  const center = smallDisc01UsbTopology.imageCenters[key];
+  assert.ok(center, "Missing small-disc topology center for " + key);
+  return (Math.atan2(center.y - smallDisc01MainCenter.y, center.x - smallDisc01MainCenter.x) + Math.PI * 2) % (Math.PI * 2);
+}).sort((a, b) => a - b);
+const smallDisc01ExpectedAngleGap = (Math.PI * 2) / smallDisc01DirectAngles.length;
+const smallDisc01AngleGaps = smallDisc01DirectAngles.map((angle, index) =>
+  (smallDisc01DirectAngles[(index + 1) % smallDisc01DirectAngles.length] - angle + Math.PI * 2) % (Math.PI * 2)
+);
+assert.ok(
+  smallDisc01AngleGaps.every((gap) => Math.abs(gap - smallDisc01ExpectedAngleGap) < 0.000001),
+  JSON.stringify({ smallDisc01DirectKeys, smallDisc01DirectAngles, smallDisc01AngleGaps, smallDisc01ExpectedAngleGap })
+);
+
+const smallDisc01InterfaceBlocked = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass", "recording"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "讲台电脑、笔记本电脑",
+  recordingHost: "录播主机、录播摄像机、中控主机",
+  overheadSpeakerMounting: "available",
+  smallDiscConnectionMode: "usb"
+}), {}, "yinman");
+assert.equal(smallDisc01InterfaceBlocked.solutionSelection.drawingBlocked, true);
+assert.equal(smallDisc01InterfaceBlocked.solutionSelection.blockingCode, "smallDisc01Interfaces");
+assert.match(smallDisc01InterfaceBlocked.solutionSelection.blockingMessage ?? "", /接口数量超过上限/);
+assert.equal(smallDisc01InterfaceBlocked.generatedPoints.length, 0);
+assert.equal(smallDisc01InterfaceBlocked.connectionLines.length, 0);
+assert.equal(smallDisc01InterfaceBlocked.pointValidation.findings.find((finding) => finding.code === "selection.small-disc-01-interfaces")?.severity, "hard");
 
 const smallDisc01Extender = generateEngineeringOutputs(makeProfile({
   length: 8,
@@ -738,6 +810,27 @@ assert.ok(smallDisc03.generatedPoints.filter((point) => point.pickupKind === "sm
 assert.ok(smallDisc03.generatedPoints.filter((point) => point.pickupKind === "smallDisc03").every((point) => point.label.startsWith(SMALL_DISC_RECORDING_NAME)));
 assert.ok(smallDisc03.connectionLines.some((line) => line.id === "small-disc-03-link-extender"));
 assert.doesNotMatch([smallDisc03.audioPlan.summary, smallDisc03.audioPlan.pickupGoal, smallDisc03.audioPlan.amplificationGoal].join(" "), /AFC|AEC/);
+const smallDisc03Topology = getTopologyLayoutSnapshot(
+  makeProfile({
+    length: 10,
+    width: 10,
+    needs: ["recording"],
+    scope: "podium",
+    microphoneSolution: "auto",
+    recordingHost: "录播主机",
+    overheadSpeakerMounting: "available"
+  }),
+  smallDisc03.connectionLines,
+  smallDisc03.generatedPoints
+);
+assert.equal(smallDisc03Topology.mainDevice, "smallDiscRecording-1");
+assert.ok(
+  smallDisc03Topology.edges.some((edge) =>
+    (edge.from === "smallDiscRecording-1" && edge.to === "smallDiscExtender") ||
+    (edge.to === "smallDiscRecording-1" && edge.from === "smallDiscExtender")
+  ),
+  JSON.stringify(smallDisc03Topology.edges)
+);
 
 const rejectedSmallDisc03 = generateEngineeringOutputs(makeProfile({
   length: 8,
@@ -771,6 +864,7 @@ const smallDiscNoTopMount = generateEngineeringOutputs(makeProfile({
   width: 8,
   needs: ["interactiveClass"],
   microphoneSolution: "smallDisc01",
+  computer: "讲台电脑",
   overheadSpeakerMounting: "unavailable"
 }), {}, "yinman");
 assert.equal(smallDiscNoTopMount.pointValidation.findings.find((finding) => finding.code === "small-disc.overhead-installation")?.severity, "hard");

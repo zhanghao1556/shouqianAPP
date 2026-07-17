@@ -2047,3 +2047,29 @@ PowerShell reminder:
 - On Windows `cmd`, do not combine spaced search alternatives into an unquoted `rg` expression. Run one fixed-string query per pattern and always include an explicit project path; an accidental root scan should be terminated immediately and recorded.
 - Every new brand-specific static asset must be added to both the opposite-brand replacement map and the release verifier's forbidden-asset hash list before packaging. Runtime feature gating does not prevent Vite from bundling an unconditional import into a single-file release.
 - The daily snapshot script requires PowerShell 7's compression runtime on this machine. Windows PowerShell 5.1 can start the script but may not expose `System.IO.Compression.ZipFile`; treat that as a compatibility failure, verify no partial archive remains, then run the reviewed script with the installed PowerShell 7 executable.
+
+### 2026-07-17 topology image loading and USB-target guardrail
+
+- A visible broken SVG image does not prove the source asset or topology mapping is missing. Check the asset file, the generated `href`, the local server status and a fresh-page reload separately. SVG image elements that failed while the dev server was down do not automatically retry when the server returns.
+- After restarting a local Vite entry, reload the acceptance tab before judging image completeness. Cached images can make only some devices look healthy and create the false impression that specific assets were deleted.
+- Audit every topology node in the affected fixture, not only the first broken icon. The small-disc fixture exposed four uncached failures at once: amplifier, recording host, recording camera and control host.
+- USB Audio capability must be selected from a typed computer/all-in-one device list. Do not merge recording, camera, control or generic media devices into a USB-target candidate list merely because they appear in the same topology.
+- When no confirmed computer/all-in-one exists, emit an explicit required-device placeholder instead of connecting USB to an arbitrary installed device. Analog extender output remains the path for recording or meeting terminals that expose confirmed audio input.
+- A package generated before a confirmed topology correction is not a release candidate even if prior automated checks passed. Keep it out of the release checkpoint and generate a new incremental package after the corrected fixture is covered by regression tests.
+
+### 2026-07-18 small-disc 01 extender routing guardrail
+
+- The small-disc 01 extender and the line-array extender are different products. The former belongs to the RING01 `LINK` port and exposes `A IN/A OUT`; the latter converts a line-array microphone to two processor MIC inputs. Never share their names, capacity checks or topology roles.
+- USB target typing and computer routing flexibility are separate rules: USB may target only a computer/all-in-one, while a computer may instead use analog `A IN` and/or `A OUT` through the 01 extender.
+- Allocate routes by signal direction and remaining ports, not by a fixed device-name map. A device audio output consumes extender `A IN`; a device audio input consumes extender `A OUT`; a computer already using bidirectional USB consumes neither analog port.
+- Capacity validation must inspect the final necessary route demand. Merely selecting a recording host beside a USB-connected podium computer is supported by adding one 01 extender; block only when necessary same-direction analog routes exceed the single confirmed input or output.
+- Keep unconfirmed camera and control-host audio edges out of small-disc topology. Device selection alone is not evidence that those products expose a compatible RING01 audio interface.
+- Treat RING01 `SPK-OUT` as one software-assignable general audio output, not a permanently reserved speaker port. Local amplification normally consumes it first; without that demand it may serve any confirmed device audio input. The 01 extender contributes one additional `A OUT`.
+- Capacity checks must count output responsibilities across both the onboard audio output and extender output before blocking. A local amplifier plus one recording feed is valid; a third necessary same-direction output is the first unsupported case unless USB removes one computer from the analog demand.
+
+### 2026-07-18 small-disc topology-root guardrail
+
+- Product ownership determines the topology root. Small-disc 01 and 03 are first-level center devices; their LINK extender is a second-level child and must never outrank the microphone merely because it has downstream media connections.
+- Direct graph adjacency outranks generic node-type classification. Every node directly connected to the selected root participates in the same evenly spaced primary ring, including the first cascaded microphone; only its descendants use satellite placement around that node.
+- A product identifier ending in digits is not a cascade index. Parse a microphone sequence number only from an additional suffix after the complete customer product name, otherwise default to the first device.
+- Protect topology hierarchy with assertions for the selected root, parent-child edges and exact angular gaps across all real direct neighbors. A screenshot alone can look centered while the layout engine is still using the wrong root.
