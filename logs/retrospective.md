@@ -1985,3 +1985,9 @@ PowerShell reminder:
 - Rear online-pickup completeness takes precedence over the single-line-array AJ350 default: when RING02 is required, automatically select AJ200, and move to AJ600 only when other interface demand exceeds AJ200 capacity.
 - Do not count cascaded or supplemental RING02 microphone quantity as multiple processor MIC inputs. RING02 uses the microphone-side chain / `EXTMIC` contract, while the converted line array owns the two MIC inputs.
 - Preserve the existing line-array and speaker quantities, coordinates, angles and coverage when adding rear pickup. The supplemental point is responsible only for the continuous occupied rear zone, not empty walls or room corners.
+
+### 2026-07-17 proportional supplemental-pickup spacing guardrail
+
+- When borrowing an established two-microphone layout for a product with a different pickup radius, scale the longitudinal center spacing, not the microphones' absolute room coordinates. Absolute-coordinate scaling would incorrectly move the whole layout toward the front wall.
+- For the live `7.4m x 12.4m` case, the formal large-disc pair is approximately `3.2m / 7.3m`; its `4.1m` spacing becomes `2.6m` at the confirmed `5/8` capability ratio. Anchoring that spacing after the existing line array yields the proposed RING02 point at `y=5.1m`.
+- Do not push a supplemental microphone to the center of the uncovered polygon when that breaks the established product-spacing rhythm. Preserve a small rear soft-edge gap rather than adding or moving hardware solely to make nominal coverage shapes touch every boundary.
