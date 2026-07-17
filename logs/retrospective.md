@@ -1991,3 +1991,9 @@ PowerShell reminder:
 - When borrowing an established two-microphone layout for a product with a different pickup radius, scale the longitudinal center spacing, not the microphones' absolute room coordinates. Absolute-coordinate scaling would incorrectly move the whole layout toward the front wall.
 - For the live `7.4m x 12.4m` case, the formal large-disc pair is approximately `3.2m / 7.3m`; its `4.1m` spacing becomes `2.6m` at the confirmed `5/8` capability ratio. Anchoring that spacing after the existing line array yields the proposed RING02 point at `y=5.1m`.
 - Do not push a supplemental microphone to the center of the uncovered polygon when that breaks the established product-spacing rhythm. Preserve a small rear soft-edge gap rather than adding or moving hardware solely to make nominal coverage shapes touch every boundary.
+
+### 2026-07-17 array-reference hybrid spacing guardrail
+
+- The user superseded the `5/8` proportional-spacing candidate. For line-array plus RING02 online pickup, use the equivalent formal large-disc supplemental coordinate as the first candidate, then enforce an inclusive `4–6m` longitudinal spacing from the previous online-pickup microphone.
+- Preserve the reference candidate whenever it already satisfies the spacing window. Clamp only its longitudinal coordinate to the nearest boundary; keep the center axis / array-reference lateral coordinate instead of inventing an unrelated point.
+- This hybrid constraint does not recalibrate the large-disc array's own formal coordinates. It controls only supplemental RING02 placement after an existing line-array point.
