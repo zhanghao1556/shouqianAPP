@@ -52,7 +52,10 @@ export function CustomerSolutionSelector({ profile, selection, onChange }: Custo
           selected={selection.microphone.selected}
           recommended={selection.microphone.recommended}
           userSelected={selection.microphone.userSelected}
-          onSelect={(value) => setConstraints({ microphoneSolution: value as MicrophoneSolution }, "microphone")}
+          onSelect={(value) => setConstraints({
+            microphoneSolution: value as MicrophoneSolution,
+            ...(value === "hangingMic" ? { processorTier: "auto" as const } : {})
+          }, "microphone")}
           onRestore={() => setConstraints({ microphoneSolution: "auto" }, "microphone")}
         />
 

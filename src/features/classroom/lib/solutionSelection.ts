@@ -76,12 +76,12 @@ export function getCustomerSolutionSelection(
       selectedLabel: microphoneLabels[selectedMicrophone],
       recommendedLabel: microphoneLabels[recommendedMicrophone],
       advantages: selectedMicrophone === "hangingMic"
-        ? "成本低于线阵麦加处理器方案，适合预算优先的讲台区域扩声。"
+        ? "成本低于线阵麦加处理器方案；MIC接口够用时优先配置价格更低的双麦处理器。"
         : selectedMicrophone === "lineArray"
           ? "含处理器的整套价格更低；短距摆放或定向声幕有利于抑制背向噪声。"
           : "覆盖范围和扩展能力更适合全场拾音及较大空间。",
       cautions: selectedMicrophone === "hangingMic"
-        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入，仅可搭配双麦或六麦处理器。"
+        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入；系统按吊麦、利旧麦克风和新增无线接收机合计MIC占用，超过2路时自动配置六麦处理器。六麦处理器接口更多、价格较高，带独立触摸屏，可控制音箱音量及麦克风静音/开音。"
         : selectedMicrophone === "lineArray"
           ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
           : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",

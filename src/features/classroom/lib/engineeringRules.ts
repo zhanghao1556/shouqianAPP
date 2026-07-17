@@ -61,6 +61,7 @@ import { validatePointPlan } from "./pointValidation";
 import { getLineArrayDecision, getProcessorCapacity, getProcessorInterfaceDemand, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { getCustomerSolutionSelection } from "./solutionSelection";
 import {
+  getExistingMicInputDemand,
   getHangingMicProcessorTier,
   getHangingMicRemainingCapacity,
   HANGING_MIC_PRODUCT_ID
@@ -544,6 +545,8 @@ const syncBrandSystemSelection = (
       ? { ...item, quantity: Math.min(item.quantity, remainingCapacity) }
       : item);
   }
+  const hangingMicInputDemand = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.quantity ?? 0;
+  const totalHangingMicInputDemand = getExistingMicInputDemand(profile) + newWirelessInputDemand + hangingMicInputDemand;
 
   const rule = classroomProductRules.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
   const amplifierSelection = rule
@@ -569,8 +572,8 @@ const syncBrandSystemSelection = (
         wiring: lineArrayCount > 0
           ? `每只线阵麦使用独立网线接入阵麦接口，禁止接PoE；当前处理器接口容量为${processorCapacity}路。`
           : hangingMic
-            ? `每只吊麦独占一路MIC输入并由MIC口直接供电；当前处理器MIC容量为${processorCapacity}路。`
-          : "每只阵麦使用独立网线直连主机；主机直接驱动前 8 只无源音箱，9-16 只时通过教学模拟功放主机扩展。",
+            ? `每只吊麦独占一路MIC输入并由MIC口直接供电；吊麦、利旧麦克风和新增无线接收机当前合计占用${totalHangingMicInputDemand}路MIC输入，处理器MIC容量为${processorCapacity}路。${processorTier === "sixMic" ? "六麦处理器带独立触摸屏，可控制音箱音量及麦克风静音/开音。" : "MIC接口够用时优先采用价格更低的双麦处理器。"}`
+            : "每只阵麦使用独立网线直连主机；主机直接驱动前 8 只无源音箱，9-16 只时通过教学模拟功放主机扩展。",
         basis: ""
       } satisfies ProductRecommendation]
     : [];

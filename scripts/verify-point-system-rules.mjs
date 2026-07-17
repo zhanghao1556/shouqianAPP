@@ -335,6 +335,25 @@ assert.equal(hangingPoints.length, 2);
 assert.ok(hangingPoints.every((point) => point.coverageRadius === HANGING_MIC_RADIUS_M && point.label.startsWith("吊麦")));
 assert.equal(hangingConnections.length, 2);
 assert.ok(hangingConnections.every((line, index) => line.toPort === "MIC " + (index + 1) && line.note.includes("MIC口直接供电")));
+assert.match(yinmanHanging.solutionSelection.microphone.advantages, /价格更低的双麦处理器/);
+assert.match(yinmanHanging.solutionSelection.microphone.cautions, /利旧麦克风和新增无线接收机合计MIC占用/);
+
+const yinmanHangingAfterHighPerformanceReset = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 10,
+  scope: "podium",
+  podiumPosition: "frontLeft",
+  microphoneSolution: "hangingMic",
+  processorTier: "auto",
+  legacyWirelessMic: "有线麦克风"
+}), twoSpeakerOverrides, "yinman");
+const resetHangingProcessor = yinmanHangingAfterHighPerformanceReset.productSelection.find((item) => item.category === "processor");
+assert.equal(resetHangingProcessor?.name, "六麦处理器");
+assert.ok((resetHangingProcessor?.wiring ?? "").includes("独立触摸屏"));
+assert.ok((resetHangingProcessor?.wiring ?? "").includes("音箱音量"));
+assert.ok((resetHangingProcessor?.wiring ?? "").includes("麦克风静音/开音"));
+assert.match(resetHangingProcessor?.wiring ?? "", /当前合计占用3路MIC输入/);
+assert.match(yinmanHangingAfterHighPerformanceReset.solutionSelection.microphone.cautions, /超过2路时自动配置六麦处理器/);
 
 const yinmanHangingMicLimited = generateEngineeringOutputs(makeProfile({
   length: 8,
