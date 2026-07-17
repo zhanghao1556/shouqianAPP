@@ -1997,3 +1997,10 @@ PowerShell reminder:
 - The user superseded the `5/8` proportional-spacing candidate. For line-array plus RING02 online pickup, use the equivalent formal large-disc supplemental coordinate as the first candidate, then enforce an inclusive `4–6m` longitudinal spacing from the previous online-pickup microphone.
 - Preserve the reference candidate whenever it already satisfies the spacing window. Clamp only its longitudinal coordinate to the nearest boundary; keep the center axis / array-reference lateral coordinate instead of inventing an unrelated point.
 - This hybrid constraint does not recalibrate the large-disc array's own formal coordinates. It controls only supplemental RING02 placement after an existing line-array point.
+
+### 2026-07-17 long-room hybrid pickup guardrail
+
+- A longer room may require more than one supplemental RING02 even when the equivalent 8m large-disc plan needs fewer microphones. Determine the hybrid count from the confirmed 5m responsibility and the `4–6m` adjacent-spacing window, then use the formal array layout at that resulting total point count as the coordinate reference.
+- In the `7.4m x 17m` example, the three-point array reference is `3.2 / 7.5 / 11.7m`. Replacing only the first reference with the existing line array at `2.5m` leaves valid `5.0m / 4.2m` gaps and keeps both supplemental points on the center axis.
+- Multiple RING02 microphones remain a microphone-side cascade on one `EXTMIC`. Do not consume one processor input per supplemental point or select AJ600 solely from the RING02 count.
+- Stop adding hardware once the last 5m pickup range reaches the occupied rear zone. A remaining wall-edge strip such as `0.3m` is not another microphone responsibility.
