@@ -1978,3 +1978,10 @@ PowerShell reminder:
 - Online-pickup completeness and processor quality can conflict. A one-line-array AJ350 default cannot automatically coexist with RING02, so do not add a rear point until the user decides whether functional rear coverage may switch the processor to AJ200/AJ600 or whether AJ350 quality keeps priority with a visible coverage warning.
 - A future candidate must preserve the line-array and speaker coordinates, calculate the uncovered occupied student zone rather than the back wall, assign RING02 only the 5m online responsibility, and keep it out of local amplification.
 - Do not share the array-microphone online radius with the line-array online radius. The latest user contract is 8m online for the large-disc array microphone and 5m online for the line array; interactive-class online pickup uses the selected product's own radius.
+
+### 2026-07-17 line-array plus rear RING02 processor guardrail
+
+- The confirmed hybrid topology is converter-fed line array on `MIC1 + MIC2` plus rear RING02 on `EXTMIC`. Keep those interface roles explicit in products, connections, topology and capacity tests.
+- Rear online-pickup completeness takes precedence over the single-line-array AJ350 default: when RING02 is required, automatically select AJ200, and move to AJ600 only when other interface demand exceeds AJ200 capacity.
+- Do not count cascaded or supplemental RING02 microphone quantity as multiple processor MIC inputs. RING02 uses the microphone-side chain / `EXTMIC` contract, while the converted line array owns the two MIC inputs.
+- Preserve the existing line-array and speaker quantities, coordinates, angles and coverage when adding rear pickup. The supplemental point is responsible only for the continuous occupied rear zone, not empty walls or room corners.
