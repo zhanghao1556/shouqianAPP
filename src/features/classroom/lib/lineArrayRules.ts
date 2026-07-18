@@ -1,5 +1,5 @@
 import type { AppBrandId } from "../brand";
-import type { ClassroomProfile, GeneratedPoint, ProcessorTier } from "../types";
+import type { ClassroomProfile, GeneratedPoint, MicrophoneSolution, ProcessorTier } from "../types";
 import { getEffectiveAmplificationScope } from "./drawingEngine";
 import { getPodiumAudienceEdgeY } from "./podiumGeometry";
 import { getReverberationRisk } from "./reverberationRules";
@@ -16,6 +16,7 @@ export const LINE_ARRAY_HANGING_MIN_FRONT_DISTANCE_M = 2.5;
 export const LINE_ARRAY_HANGING_MAX_FRONT_DISTANCE_M = 3;
 export const LINE_ARRAY_HANGING_MIN_WIDTH_M = 6;
 export const LINE_ARRAY_HANGING_MAX_WIDTH_M = 10;
+export const YINMAN_LARGE_ARRAY_PROCESSOR_TIER = "highPerformance" as const;
 
 export interface LineArrayActivityZone {
   left: number;
@@ -143,6 +144,20 @@ export function getProcessorTier(profile: ClassroomProfile, brandId: AppBrandId,
 
 export function getProcessorTiersForBrand(brandId: AppBrandId): Array<Exclude<ProcessorTier, "auto">> {
   return brandId === "yinman" ? ["twoMic", "sixMic", "highPerformance"] : ["twoMic", "sixMic"];
+}
+
+export function getProcessorTiersForSelection(
+  brandId: AppBrandId,
+  selectedMicrophone: Exclude<MicrophoneSolution, "auto">,
+  usesHybridLineArray: boolean
+): Array<Exclude<ProcessorTier, "auto">> {
+  if (brandId === "yinman" && selectedMicrophone === "existingArray") {
+    return [YINMAN_LARGE_ARRAY_PROCESSOR_TIER];
+  }
+  if (selectedMicrophone === "hangingMic" || usesHybridLineArray) {
+    return getProcessorTiersForBrand(brandId).filter((tier) => tier !== "highPerformance");
+  }
+  return getProcessorTiersForBrand(brandId);
 }
 
 export function getProcessorAlternativeTier(profile: ClassroomProfile, speakerCount: number): "twoMic" | "sixMic" {

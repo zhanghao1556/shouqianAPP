@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Upload } from "lucide-react";
 import { createInitialProfile } from "./data/initialProfile";
 import { EngineeringOutputs } from "./components/EngineeringOutputs";
@@ -22,6 +22,9 @@ const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCE
 const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
 const processorOverrideIds = new Set(["AUDIO-PROCESSOR-HOST"]);
 const connectionOverrideIds = new Set(["YINMAN-AUDIO-EXTENDER", "USB-AUDIO-CABLE"]);
+const InternalInterfaceWiringPreview = __ENABLE_CALIBRATION_WORKBENCHES__
+  ? lazy(() => import("./components/InterfaceWiringPreview").then((module) => ({ default: module.InterfaceWiringPreview })))
+  : null;
 
 export function ClassroomEngineeringApp() {
   const brand = getAppBrand();
@@ -194,6 +197,11 @@ export function ClassroomEngineeringApp() {
             onLegacySpeakerPointRemoveLast={removeLastLegacySpeakerPoint}
             onLegacySpeakerPointTargetChange={updateLegacySpeakerPointTarget}
           />
+          {brand.id === "yinman" && !isReleaseBuild() && InternalInterfaceWiringPreview && (
+            <Suspense fallback={<div className="interfaceWiringLoading">正在生成接口接线预览...</div>}>
+              <InternalInterfaceWiringPreview profile={profile} outputs={outputs} brandId={brand.id} />
+            </Suspense>
+          )}
         </section>
       </section>
       <div className="referenceNotice">方案仅供参考，如有拿捏不准或者 BUG 请联系张灏</div>

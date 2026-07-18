@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs, getCompleteness } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M, LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getProcessorTiersForSelection, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M, LINE_ARRAY_PRODUCT_ID, YINMAN_LARGE_ARRAY_PROCESSOR_TIER } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
@@ -371,10 +371,37 @@ const yinyiExistingArray = generateEngineeringOutputs(makeProfile({ length: 8, w
 const yinmanExistingArray = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, microphoneSolution: "existingArray" }), {}, "yinman");
 assert.equal(yinyiExistingArray.productSelection.some((item) => item.category === "processor"), false);
 assert.equal(yinmanExistingArray.productSelection.find((item) => item.category === "processor")?.quantity, 1);
+assert.equal(yinmanExistingArray.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
 assert.match(yinmanExistingArray.audioPlan.summary, /大圆盘阵麦/);
 assert.doesNotMatch(yinmanExistingArray.audioPlan.summary, /智能天花阵列麦克风/);
 assert.deepEqual(getProcessorTiersForBrand("yinyi"), ["twoMic", "sixMic"]);
 assert.deepEqual(getProcessorTiersForBrand("yinman"), ["twoMic", "sixMic", "highPerformance"]);
+assert.equal(YINMAN_LARGE_ARRAY_PROCESSOR_TIER, "highPerformance");
+assert.deepEqual(getProcessorTiersForSelection("yinman", "existingArray", false), ["highPerformance"]);
+assert.deepEqual(getProcessorTiersForSelection("yinman", "lineArray", false), ["twoMic", "sixMic", "highPerformance"]);
+const yinmanLargeArrayHardRuleProfile = makeProfile({
+  length: 8,
+  width: 8,
+  microphoneSolution: "existingArray",
+  processorTier: "twoMic",
+  computer: "讲台电脑",
+  recordingHost: "录播主机"
+});
+const yinmanLargeArrayHardRule = generateEngineeringOutputs(yinmanLargeArrayHardRuleProfile, {}, "yinman");
+assert.equal(yinmanLargeArrayHardRule.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
+assert.doesNotMatch(JSON.stringify(yinmanLargeArrayHardRule.connectionLines), /双麦处理器|六麦处理器/);
+assert.deepEqual(
+  Array.from(new Set(yinmanLargeArrayHardRule.connectionLines
+    .flatMap((line) => [line.fromDevice, line.toDevice])
+    .filter((device) => device.includes("处理器")))),
+  ["高性能处理器"]
+);
+const yinmanLargeArrayHardRuleTopology = getTopologyLayoutSnapshot(
+  yinmanLargeArrayHardRuleProfile,
+  yinmanLargeArrayHardRule.connectionLines,
+  yinmanLargeArrayHardRule.generatedPoints
+);
+assert.equal(yinmanLargeArrayHardRuleTopology.nodes.some((node) => /双麦处理器|六麦处理器/.test(node.label)), false);
 const yinyiRejectsYinmanProcessor = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", processorTier: "highPerformance" }), twoSpeakerOverrides, "yinyi");
 assert.equal(yinyiRejectsYinmanProcessor.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
 assert.equal(yinmanSingleLine.solutionSelection.processor?.recommended, "highPerformance");
@@ -1267,14 +1294,14 @@ for (const [expectedRequired, profile] of [[1, oneMicProfile], [2, twoMicProfile
   const generatedMicCount = outputs.generatedPoints.filter((point) => point.type === "arrayMic").length;
   assert.equal(generatedMicCount, Math.min(required, 2));
   const processor = outputs.productSelection.find((item) => item.category === "processor");
-  assert.equal(processor?.name, "六麦处理器");
+  assert.equal(processor?.name, "高性能处理器");
   assert.equal(processor?.quantity, 1);
   const directNetworkLines = outputs.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-"));
   assert.equal(directNetworkLines.length, generatedMicCount);
   if (required > 2) assert.equal(outputs.pointValidation.status, "hard");
   assert.doesNotMatch(JSON.stringify(outputs), /RING08|AJ350/);
 }
-console.log("PASS Yinman 1/2/3 theoretical mic demand, two-mic cap and independent network links");
+console.log("PASS Yinman 1/2/3 theoretical mic demand, AJ350-only hard rule, two-mic cap and independent network links");
 
 assert.equal(getBrandExternalAmplifierCount(8, "yinman"), 0);
 assert.equal(getBrandExternalAmplifierCount(9, "yinman"), 1);

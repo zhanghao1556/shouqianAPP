@@ -2,7 +2,7 @@
 import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProcessorTier, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
 import { getCustomerVisibleConnectionLines } from "../lib/customerOutput";
-import { getProcessorTierName, getProcessorTiersForBrand, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
+import { getProcessorTierName, getProcessorTiersForSelection, LINE_ARRAY_PRODUCT_ID } from "../lib/lineArrayRules";
 import { AUDIO_PROCESSOR_HOST_PRODUCT_ID, LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID } from "../lib/systemCapabilities";
 import {
   SMALL_DISC_01_PRODUCT_ID,
@@ -168,12 +168,11 @@ function getEquipmentRows(
       item,
       lockedAutomatic: item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID || (usesHybridLineArray && item.productId === SMALL_DISC_02_PRODUCT_ID)
     }];
-    const processorTiers = selectedMicrophone === "hangingMic" || usesHybridLineArray
-      ? getProcessorTiersForBrand(brandId).filter((tier) => tier !== "highPerformance")
-      : getProcessorTiersForBrand(brandId);
+    const hardLockedLargeArray = brandId === "yinman" && selectedMicrophone === "existingArray";
+    const processorTiers = getProcessorTiersForSelection(brandId, selectedMicrophone, usesHybridLineArray);
     return processorTiers.map((processorTier) => ({
-      processorTier,
-      lockedAutomatic: usesHybridLineArray,
+      processorTier: hardLockedLargeArray ? undefined : processorTier,
+      lockedAutomatic: hardLockedLargeArray || usesHybridLineArray,
       item: {
         ...item,
         productId: `${AUDIO_PROCESSOR_HOST_PRODUCT_ID}-${processorTier}`,

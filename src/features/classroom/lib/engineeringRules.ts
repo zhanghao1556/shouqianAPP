@@ -63,7 +63,15 @@ import {
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
 import { validatePointPlan } from "./pointValidation";
-import { getLineArrayDecision, getProcessorCapacity, getProcessorInterfaceDemand, getProcessorTier, getProcessorTierName, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
+import {
+  getLineArrayDecision,
+  getProcessorCapacity,
+  getProcessorInterfaceDemand,
+  getProcessorTier,
+  getProcessorTierName,
+  LINE_ARRAY_PRODUCT_ID,
+  YINMAN_LARGE_ARRAY_PROCESSOR_TIER
+} from "./lineArrayRules";
 import { getCustomerSolutionSelection } from "./solutionSelection";
 import {
   getExistingMicInputDemand,
@@ -631,11 +639,16 @@ const syncBrandSystemSelection = (
     (item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID && item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID
   );
   const lineArrayCount = selectionWithoutSystemDevices.find((item) => item.productId === LINE_ARRAY_PRODUCT_ID)?.quantity ?? 0;
+  const usesYinmanLargeArray = brandId === "yinman" && selectionWithoutSystemDevices.some(
+    (item) => item.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID && item.quantity > 0
+  );
   const hybridSupplementCount = selectionWithoutSystemDevices.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity ?? 0;
   const usesHybridLineArray = lineArrayCount > 0 && hybridSupplementCount > 0;
   const hangingMic = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID);
   const newWirelessInputDemand = selectionWithoutSystemDevices.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
-  const processorTier = usesHybridLineArray
+  const processorTier = usesYinmanLargeArray
+    ? YINMAN_LARGE_ARRAY_PROCESSOR_TIER
+    : usesHybridLineArray
     ? getYinmanHybridProcessorTier(profile, newWirelessInputDemand)
     : hangingMic
     ? getHangingMicProcessorTier(profile, hangingMic.quantity, newWirelessInputDemand)

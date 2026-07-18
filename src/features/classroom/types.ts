@@ -188,6 +188,91 @@ export interface ConnectionLine {
   afcSendLevelOffset?: number;
 }
 
+export type InterfacePortDirection = "input" | "output" | "bidirectional";
+export type InterfaceWiringFindingSeverity = "info" | "review" | "hard";
+
+export interface DevicePortCapability {
+  id: string;
+  panelLabel: string;
+  interfaceType: string;
+  direction: InterfacePortDirection;
+  maxConnections: number;
+  confirmed: boolean;
+  source: string;
+}
+
+export interface DevicePortProfile {
+  productId: string;
+  internalModel?: string;
+  customerName: string;
+  ports: DevicePortCapability[];
+}
+
+export interface InterfaceWiringPort {
+  id: string;
+  capabilityId: string;
+  label: string;
+  interfaceType: string;
+  direction: InterfacePortDirection;
+  peerNodeId: string;
+  peerPortLabel: string;
+  cableType: string;
+  connectionMethod: string;
+  confirmed: boolean;
+}
+
+export interface InterfaceWiringCascade {
+  segments: number;
+  label: string;
+  fromPortLabel: string;
+  toPortLabel: string;
+  cableType: string;
+}
+
+export interface InterfaceWiringNode {
+  id: string;
+  productId: string;
+  label: string;
+  internalModel?: string;
+  category: "microphone" | "processor" | "extender" | "amplifier" | "speaker" | "external";
+  quantity: number;
+  level: 1 | 2 | 3;
+  parentId?: string;
+  ports: InterfaceWiringPort[];
+  cascade?: InterfaceWiringCascade;
+}
+
+export interface InterfaceWiringEdge {
+  id: string;
+  fromNodeId: string;
+  fromPortId: string;
+  toNodeId: string;
+  toPortId: string;
+  cableType: string;
+  connectionMethod: string;
+  signalDirection: "fromTo" | "bidirectional";
+  quantity: number;
+}
+
+export interface InterfaceWiringFinding {
+  code: string;
+  severity: InterfaceWiringFindingSeverity;
+  title: string;
+  message: string;
+  nodeId?: string;
+}
+
+export interface InterfaceWiringModel {
+  title: string;
+  status: "ready" | "review" | "blocked";
+  rootNodeId?: string;
+  nodes: InterfaceWiringNode[];
+  edges: InterfaceWiringEdge[];
+  findings: InterfaceWiringFinding[];
+  candidateProcessor?: "AJ200" | "AJ350" | "AJ600";
+  generatedFrom: "calibrationCandidate";
+}
+
 export interface EngineeringBasis {
   item: string;
   basis: string;

@@ -1,0 +1,403 @@
+.interfaceWiringPreview {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #aebfd2;
+  border-radius: 8px;
+  background: #f8fafc;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.interfaceWiringPreviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.interfaceWiringPreviewHeader h3,
+.interfaceWiringPreviewHeader p,
+.interfaceWiringSubHeader h4 {
+  margin: 0;
+}
+
+.interfaceWiringPreviewHeader h3 {
+  margin-top: 5px;
+  color: #172033;
+  font-size: 20px;
+}
+
+.interfaceWiringPreviewHeader p {
+  margin-top: 4px;
+  color: #9a6700;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.interfaceWiringEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0b5cad;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.interfaceWiringSummary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.interfaceWiringSummary span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid #cad5e2;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.interfaceWiringSummary .ready {
+  border-color: #86c99b;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.interfaceWiringSummary .review {
+  border-color: #e9c46a;
+  background: #fffbeb;
+  color: #854d0e;
+}
+
+.interfaceWiringSummary .hard {
+  border-color: #f1a3a3;
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.interfaceWiringCanvasFrame {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid #c8d3df;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.interfaceWiringCanvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.interfaceWiringNodeObject {
+  overflow: visible;
+}
+
+.interfaceWiringNode {
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #8ca3bc;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172033;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.11);
+}
+
+.interfaceWiringNode.root {
+  border-color: #0b5cad;
+  box-shadow: 0 0 0 2px rgba(11, 92, 173, 0.14), 0 7px 18px rgba(15, 23, 42, 0.13);
+}
+
+.interfaceWiringNodeHeader {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-bottom: 1px solid #b9c8d8;
+  background: #eaf3fb;
+}
+
+.interfaceWiringNode.level2 .interfaceWiringNodeHeader {
+  background: #eef7f2;
+}
+
+.interfaceWiringNode.level3 .interfaceWiringNodeHeader {
+  background: #f4f1fa;
+}
+
+.interfaceWiringNodeHeader > div {
+  min-width: 0;
+}
+
+.interfaceWiringNodeHeader strong,
+.interfaceWiringNodeHeader small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.interfaceWiringNodeHeader strong {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.interfaceWiringNodeHeader small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.interfaceWiringNodeHeader > span {
+  flex: 0 0 29px;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #91a9c1;
+  border-radius: 5px;
+  color: #123c66;
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.interfaceWiringPortList {
+  display: grid;
+}
+
+.interfaceWiringPortRow {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-top: 1px solid #e2e8f0;
+}
+
+.interfaceWiringPortRow:first-child {
+  border-top: 0;
+}
+
+.interfaceWiringPortRow > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 6px 8px;
+}
+
+.interfaceWiringPortRow > div + div {
+  border-left: 1px solid #e2e8f0;
+  background: #f8fafc;
+  text-align: right;
+}
+
+.interfaceWiringPortRow b,
+.interfaceWiringPortRow span,
+.interfaceWiringPortRow small {
+  overflow-wrap: anywhere;
+}
+
+.interfaceWiringPortRow b,
+.interfaceWiringPortRow span {
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.interfaceWiringPortRow small {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.interfaceWiringPortRow.unconfirmed {
+  background: #fff8e6;
+}
+
+.interfaceWiringPortEmpty {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.interfaceWiringCascade {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-top: 1px solid #dcc078;
+  background: #fffbeb;
+  color: #713f12;
+  font-size: 10px;
+}
+
+.interfaceWiringCascade span {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.interfaceWiringDataGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.interfaceWiringTableSection,
+.interfaceWiringFindingSection {
+  min-width: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.interfaceWiringSubHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.interfaceWiringSubHeader h4 {
+  color: #172033;
+  font-size: 15px;
+}
+
+.interfaceWiringSubHeader span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.interfaceWiringPortTable {
+  max-height: 520px;
+  border: 1px solid #c8d3df;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.interfaceWiringPortTable table {
+  min-width: 820px;
+  font-size: 12px;
+}
+
+.interfaceWiringPortTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #edf3f8;
+  color: #475569;
+}
+
+.interfaceWiringPortTable th,
+.interfaceWiringPortTable td {
+  border-color: #dde5ed;
+  padding: 8px;
+}
+
+.interfaceWiringPortTable td small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+}
+
+.interfaceWiringPortTable tr.unconfirmed td {
+  background: #fff8e6;
+}
+
+.interfaceWiringFindingList {
+  display: grid;
+  gap: 8px;
+}
+
+.interfaceWiringFinding {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  padding: 10px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+}
+
+.interfaceWiringFinding.review {
+  border-color: #e9c46a;
+  background: #fffbeb;
+  color: #854d0e;
+}
+
+.interfaceWiringFinding.hard {
+  border-color: #f1a3a3;
+  background: #fff1f2;
+  color: #b42318;
+}
+
+.interfaceWiringFinding.ready {
+  border-color: #86c99b;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.interfaceWiringFinding strong,
+.interfaceWiringFinding p {
+  margin: 0;
+}
+
+.interfaceWiringFinding strong {
+  display: block;
+  font-size: 13px;
+}
+
+.interfaceWiringFinding p {
+  margin-top: 3px;
+  color: currentColor;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.interfaceWiringLoading {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8d3df;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .interfaceWiringDataGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .interfaceWiringPreviewHeader {
+    display: grid;
+  }
+
+  .interfaceWiringSummary {
+    justify-content: flex-start;
+  }
+}
