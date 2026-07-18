@@ -89,6 +89,10 @@ interface ConnectionSeed {
 
 const COMPACT_SPEAKER_NODE_WIDTH = 112;
 const COMPACT_SPEAKER_GAP = 0;
+const LEVEL_TWO_NODE_GAP = 24;
+const LEVEL_TWO_MAX_NODE_WIDTH = 420;
+const LEVEL_TWO_MIN_READABLE_WIDTH = 132;
+const LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW = 3;
 const GENERIC_BALANCED_AUDIO_TERMINALS: DevicePortTerminal[] = [
   { id: "positive", label: "+", role: "positive", color: "#dc2626" },
   { id: "negative", label: "-", role: "negative", color: "#ffffff" },
@@ -1364,43 +1368,120 @@ function placeDirectChildrenInCompactRows(
 ) {
   const sortByRootPort = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
     (horizontalScores.get(left.id) ?? 0.5) - (horizontalScores.get(right.id) ?? 0.5);
-  const speakerGroups = nodes.filter(isCompactSpeakerGroup);
-  const ordinaryNodes = nodes.filter((node) => !isCompactSpeakerGroup(node));
-  const topNodes = ordinaryNodes.filter((_, index) => index % 2 === 0).sort(sortByRootPort);
-  const bottomNodes = ordinaryNodes.filter((_, index) => index % 2 === 1).sort(sortByRootPort);
-  if (speakerGroups.length) {
-    const speakerScore = speakerGroups.reduce((sum, node) => sum + (horizontalScores.get(node.id) ?? 0.5), 0) / speakerGroups.length;
-    const insertionIndex = bottomNodes.findIndex((node) => (horizontalScores.get(node.id) ?? 0.5) > speakerScore);
-    bottomNodes.splice(insertionIndex < 0 ? bottomNodes.length : insertionIndex, 0, ...speakerGroups);
-  }
+  if (!nodes.length) return;
   const usableWidth = width - sidePadding * 2;
   const nodeGap = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
-    isCompactSpeakerGroup(left) && isCompactSpeakerGroup(right) ? COMPACT_SPEAKER_GAP : 32;
+    isCompactSpeakerGroup(left) && isCompactSpeakerGroup(right) ? COMPACT_SPEAKER_GAP : LEVEL_TWO_NODE_GAP;
   const getRowWidth = (row: InterfaceWiringNode[]) => row.reduce((total, node, index) =>
     total + dimensions.get(node.id)!.width + (index ? nodeGap(row[index - 1], node) : 0), 0);
-  const makeRows = (group: InterfaceWiringNode[]) => {
+  const getMinimumNodeWidth = (node: InterfaceWiringNode) => isCompactSpeakerGroup(node)
+    ? dimensions.get(node.id)!.width
+    : Math.min(dimensions.get(node.id)!.width, LEVEL_TWO_MIN_READABLE_WIDTH);
+  const getMinimumRowWidth = (row: InterfaceWiringNode[]) => row.reduce((total, node, index) =>
+    total + getMinimumNodeWidth(node) + (index ? nodeGap(row[index - 1], node) : 0), 0);
+  const orderRowNodes = (group: InterfaceWiringNode[]) => {
+    const speakerNodes = group
+      .filter(isCompactSpeakerGroup)
+      .sort((left, right) => (left.ports[0]?.deviceSequenceRange?.start ?? 0) - (right.ports[0]?.deviceSequenceRange?.start ?? 0));
+    const otherNodes = group.filter((node) => !isCompactSpeakerGroup(node)).sort(sortByRootPort);
+    if (!speakerNodes.length) return otherNodes;
+    const speakerScore = speakerNodes.reduce(
+      (sum, node) => sum + (horizontalScores.get(node.id) ?? 0.5),
+      0
+    ) / speakerNodes.length;
+    const insertionIndex = otherNodes.findIndex((node) => (horizontalScores.get(node.id) ?? 0.5) > speakerScore);
+    otherNodes.splice(insertionIndex < 0 ? otherNodes.length : insertionIndex, 0, ...speakerNodes);
+    return otherNodes;
+  };
+  const makePackedRows = (group: InterfaceWiringNode[]) => {
     const rows: InterfaceWiringNode[][] = [];
     let row: InterfaceWiringNode[] = [];
-    let rowWidth = 0;
     for (const node of group) {
-      const nodeWidth = dimensions.get(node.id)!.width;
-      const candidateWidth = rowWidth + (row.length ? nodeGap(row[row.length - 1], node) : 0) + nodeWidth;
-      if (row.length && candidateWidth > usableWidth) {
+      const candidate = [...row, node];
+      if (row.length && getMinimumRowWidth(candidate) > usableWidth) {
         rows.push(row);
         row = [node];
-        rowWidth = nodeWidth;
       } else {
-        row.push(node);
-        rowWidth = candidateWidth;
+        row = candidate;
       }
     }
     if (row.length) rows.push(row);
     return rows;
   };
-  const placeGroup = (group: InterfaceWiringNode[], direction: -1 | 1) => {
-    const rows = makeRows(group);
+  const makeBalancedRows = (group: InterfaceWiringNode[]) => {
+    if (!group.length) return [];
+    const maxNodesPerRow = Math.max(1, Math.min(
+      LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW,
+      Math.floor((usableWidth + LEVEL_TWO_NODE_GAP) / (LEVEL_TWO_MIN_READABLE_WIDTH + LEVEL_TWO_NODE_GAP))
+    ));
+    const rowCount = Math.max(1, Math.ceil(group.length / maxNodesPerRow));
+    const baseRowSize = Math.floor(group.length / rowCount);
+    const largerRowCount = group.length % rowCount;
+    const rows: InterfaceWiringNode[][] = [];
+    let nodeIndex = 0;
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      const rowSize = baseRowSize + (rowIndex < largerRowCount ? 1 : 0);
+      rows.push(group.slice(nodeIndex, nodeIndex + rowSize));
+      nodeIndex += rowSize;
+    }
+    return rows;
+  };
+  const compactPortraitNodes = orderRowNodes(nodes.filter(isCompactPortraitNode));
+  const ordinaryNodes = orderRowNodes(nodes.filter((node) => !isCompactPortraitNode(node)));
+  const rows = [
+    ...makePackedRows(compactPortraitNodes),
+    ...makeBalancedRows(ordinaryNodes)
+  ];
+
+  // Prefer merging a leftover singleton into an existing row. If width makes that
+  // impossible, borrow from a row of three or more before accepting a singleton.
+  for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+    if (rows[rowIndex].length !== 1 || nodes.length === 1) continue;
+    const singleton = rows[rowIndex][0];
+    const mergeTarget = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row, index }) => index !== rowIndex && getMinimumRowWidth(orderRowNodes([...row, singleton])) <= usableWidth)
+      .sort((left, right) => left.row.length - right.row.length)[0];
+    if (mergeTarget) {
+      mergeTarget.row.push(singleton);
+      mergeTarget.row.splice(0, mergeTarget.row.length, ...orderRowNodes(mergeTarget.row));
+      rows.splice(rowIndex, 1);
+      continue;
+    }
+    const donor = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row, index }) => index !== rowIndex && row.length > 2)
+      .sort((left, right) => left.row.length - right.row.length)[0];
+    if (!donor) continue;
+    const movedNode = donor.row.pop()!;
+    rows[rowIndex].push(movedNode);
+    rows[rowIndex].splice(0, rows[rowIndex].length, ...orderRowNodes(rows[rowIndex]));
+  }
+  rows.sort((left, right) => {
+    const averageScore = (row: InterfaceWiringNode[]) => row.reduce(
+      (sum, node) => sum + (horizontalScores.get(node.id) ?? 0.5),
+      0
+    ) / row.length;
+    return averageScore(left) - averageScore(right);
+  });
+  rows.forEach((row) => row.splice(0, row.length, ...orderRowNodes(row)));
+  rows.forEach((row) => {
+    if (getRowWidth(row) <= usableWidth) return;
+    const gapWidth = row.slice(1).reduce((sum, node, index) => sum + nodeGap(row[index], node), 0);
+    const fixedWidth = row.filter(isCompactSpeakerGroup).reduce((sum, node) => sum + dimensions.get(node.id)!.width, 0);
+    const flexibleNodes = row.filter((node) => !isCompactSpeakerGroup(node));
+    if (!flexibleNodes.length) return;
+    const fittedWidth = Math.max(120, Math.floor((usableWidth - gapWidth - fixedWidth) / flexibleNodes.length));
+    flexibleNodes.forEach((node) => {
+      const current = dimensions.get(node.id)!;
+      if (current.width > fittedWidth) dimensions.set(node.id, getNodeDimensions(node, fittedWidth));
+    });
+  });
+  const topRows = rows.filter((_, index) => index % 2 === 0);
+  const bottomRows = rows.filter((_, index) => index % 2 === 1);
+  const placeRows = (groupRows: InterfaceWiringNode[][], direction: -1 | 1) => {
     let boundary = direction < 0 ? -rootSize.height / 2 - 190 : rootSize.height / 2 + 190;
-    for (const row of rows) {
+    for (const row of groupRows) {
       const rowHeight = Math.max(...row.map((node) => dimensions.get(node.id)!.height));
       const centerY = boundary + direction * rowHeight / 2;
       const rowWidth = getRowWidth(row);
@@ -1414,12 +1495,18 @@ function placeDirectChildrenInCompactRows(
       boundary += direction * (rowHeight + 170);
     }
   };
-  placeGroup(topNodes, -1);
-  placeGroup(bottomNodes, 1);
+  placeRows(topRows, -1);
+  placeRows(bottomRows, 1);
 }
 
 function isCompactSpeakerGroup(node: InterfaceWiringNode) {
   return node.category === "speaker" && node.ports.length === 1 && Boolean(node.ports[0]?.deviceSequenceRange);
+}
+
+function isCompactPortraitNode(node: InterfaceWiringNode) {
+  if (isCompactSpeakerGroup(node)) return true;
+  const aspectRatio = getDevicePortProfile(node.productId)?.interfacePanel?.aspectRatio;
+  return typeof aspectRatio === "number" && aspectRatio < 1;
 }
 
 function placeCompactSpeakerChildRow(input: {
@@ -1609,10 +1696,11 @@ function getPreferredNodeWidth(node: InterfaceWiringNode, isRoot: boolean, canva
     return Math.min(preferred, maxWidth);
   }
   if (isCompactSpeakerGroup(node)) return Math.min(COMPACT_SPEAKER_NODE_WIDTH, maxWidth);
-  if (!interfacePanel) return Math.min(300, maxWidth);
-  if (interfacePanel.aspectRatio >= 3) return Math.min(520, maxWidth);
-  if (interfacePanel.aspectRatio < 0.9) return Math.min(280, maxWidth);
-  return Math.min(340, maxWidth);
+  const levelWidthCap = node.level === 2 ? Math.min(LEVEL_TWO_MAX_NODE_WIDTH, maxWidth) : maxWidth;
+  if (!interfacePanel) return Math.min(300, levelWidthCap);
+  if (interfacePanel.aspectRatio >= 3) return Math.min(520, levelWidthCap);
+  if (interfacePanel.aspectRatio < 0.9) return Math.min(280, levelWidthCap);
+  return Math.min(340, levelWidthCap);
 }
 
 export function getInterfacePanelImageRect(

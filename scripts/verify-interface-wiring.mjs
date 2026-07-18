@@ -391,7 +391,41 @@ assert.equal(
   node(oneLineWith02AndWireless.model, hybridWirelessReceiverEdge.toNodeId).ports.find((port) => port.id === hybridWirelessReceiverEdge.toPortId)?.label,
   "LINE IN 1"
 );
-console.log("PASS wireless wiring shows only the receiver and its physical audio cable");
+for (const width of [520, 993, 1120]) {
+  const levelTwoLayout = getInterfaceWiringLayout(wireless.model, width);
+  const levelTwoNodes = wireless.model.nodes.filter((item) => item.level === 2);
+  const levelTwoRows = new Map();
+  levelTwoNodes.forEach((item) => {
+    const position = levelTwoLayout.positions[item.id];
+    const rowKey = position.centerY.toFixed(3);
+    levelTwoRows.set(rowKey, [...(levelTwoRows.get(rowKey) ?? []), item.id]);
+  });
+  assert.ok(Array.from(levelTwoRows.values()).every((row) => row.length >= 2));
+  const lineArrayPosition = levelTwoLayout.positions["line-array"];
+  const wirelessReceiverPosition = levelTwoLayout.positions["wireless-receiver"];
+  assert.equal(lineArrayPosition.centerY, wirelessReceiverPosition.centerY);
+  assert.ok(lineArrayPosition.width <= 420 && wirelessReceiverPosition.width <= 420);
+  const leftPosition = lineArrayPosition.x < wirelessReceiverPosition.x ? lineArrayPosition : wirelessReceiverPosition;
+  const rightPosition = leftPosition === lineArrayPosition ? wirelessReceiverPosition : lineArrayPosition;
+  assert.equal(rightPosition.x - (leftPosition.x + leftPosition.width), 24);
+  assert.equal(
+    levelTwoNodes.some((item) => levelTwoLayout.positions[item.id].centerY === levelTwoLayout.positions[wireless.model.rootNodeId].centerY),
+    false
+  );
+  const levelTwoSpeakerPositions = levelTwoNodes
+    .filter((item) => item.category === "speaker")
+    .map((item) => levelTwoLayout.positions[item.id]);
+  assert.equal(levelTwoSpeakerPositions.length, levelTwoNodes.filter((item) => item.category === "speaker").length);
+  assert.ok(levelTwoSpeakerPositions.length >= 2);
+  assert.equal(new Set(levelTwoSpeakerPositions.map((item) => item.centerY)).size, 1);
+  for (let index = 1; index < levelTwoSpeakerPositions.length; index += 1) {
+    assert.equal(
+      levelTwoSpeakerPositions[index].x - (levelTwoSpeakerPositions[index - 1].x + levelTwoSpeakerPositions[index - 1].width),
+      0
+    );
+  }
+}
+console.log("PASS wireless wiring keeps the receiver physical-only while level-two rows use at least two devices and compact speakers may exceed two");
 
 const unknownPortProfile = makeProfile({
   length: 8,
@@ -720,10 +754,17 @@ assert.equal(crossingSpeakerGroups.length, 4);
 assert.ok(crossingSpeakerGroups.every((item) => crossingLayout.positions[item.id].centerX < crossingLayout.positions[crossingComputer.id].centerX));
 const crossingSpeakerPositions = crossingSpeakerGroups.map((item) => crossingLayout.positions[item.id]);
 assert.equal(new Set(crossingSpeakerPositions.map((item) => item.centerY)).size, 1);
+assert.equal(crossingLayout.positions[crossingComputer.id].centerY, crossingSpeakerPositions[0].centerY);
+assert.equal(
+  crossingCase.model.nodes.filter((item) =>
+    item.level === 2 && crossingLayout.positions[item.id].centerY === crossingSpeakerPositions[0].centerY
+  ).length,
+  5
+);
 for (let index = 1; index < crossingSpeakerPositions.length; index += 1) {
   assert.equal(crossingSpeakerPositions[index].x - (crossingSpeakerPositions[index - 1].x + crossingSpeakerPositions[index - 1].width), 0);
 }
-console.log("PASS SPK child groups stay compact on the root-port side so speaker and USB routes do not cross by default");
+console.log("PASS portrait level-two devices stay together and SPK child groups remain compact on the root-port side");
 
 const crossingReferences = getInterfaceWiringPortReferenceNumbers(crossingCase.model);
 const crossingPorts = crossingCase.model.nodes.flatMap((item) => item.ports);
