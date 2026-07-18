@@ -2184,3 +2184,9 @@ PowerShell reminder:
 - Removing a vertical max-height is insufficient when a shared table wrapper still sets `overflow: auto`. Override overflow explicitly, remove sticky-header behavior and verify `clientHeight === scrollHeight` plus `clientWidth === scrollWidth` in the rendered page.
 - A white conductor should remain visibly white. Put red/white and red/white/gray swatches on a neutral light background and use only a subtle outline around white; a dark border that dominates the fill misrepresents the conductor color.
 - Protect the combined contract with rendered counts: edge count equals reference-badge count equals usage-row count equals unique table-reference count, every row contains all from/to fields, and neither the table nor the page has internal or horizontal overflow.
+
+### 2026-07-18 cable-name quantity boundary
+
+- Do not concatenate a quantity already embedded in `cableType` with `edge.quantity`; both may describe the same grouped load and produce misleading labels such as `speaker cable x2 x2`.
+- In a one-edge-per-row usage table, the cable column names the material only. Device grouping remains in the destination-device label, while edge quantity remains structured data for load and allocation checks.
+- Strip every trailing `xN` token from the table-specific cable label instead of changing the engineering edge. This preserves calculations and reports while preventing device count or conductor count from leaking into the material name.

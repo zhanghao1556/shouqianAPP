@@ -14,6 +14,7 @@ import {
   getInterfaceWiringLogicalTerminalOffset,
   getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortReferenceNumbers,
+  getInterfaceWiringTableCableLabel,
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
@@ -618,6 +619,11 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker,\s*\.i
 assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker i:first-child,[\s\S]*?background: #dc2626;/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker i:nth-child\(2\),[\s\S]*?background: #ffffff;/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.audio i:nth-child\(3\) \{\s*background: #6b7280;/);
+assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2"), "音箱线");
+assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2 ×2"), "音箱线");
+assert.equal(getInterfaceWiringTableCableLabel("麦克风音频线"), "麦克风音频线");
+assert.match(wiringPreviewSource, /getInterfaceWiringTableCableLabel\(edge\.cableType\)/);
+assert.doesNotMatch(wiringPreviewSource, /edge\.cableType\}\{edge\.quantity/);
 console.log("PASS each cable has one centered reference and one fully expanded from-to usage row");
 console.log("PASS LINE OUT maps +, -, G to three distinct review heads and wiring SVG contains no arrows");
 

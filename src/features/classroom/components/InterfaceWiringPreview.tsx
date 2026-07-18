@@ -19,6 +19,7 @@ import {
   getInterfaceWiringLogicalTerminalOffset,
   getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortReferenceNumbers,
+  getInterfaceWiringTableCableLabel,
   getInterfaceWiringUsageDeviceLabel
 } from "../lib/interfaceWiring";
 import { getDevicePortProfile } from "../lib/devicePortCatalog";
@@ -466,7 +467,7 @@ function InterfacePortUsageTable({
                   <td><FromToCell from={getInterfaceWiringUsageDeviceLabel(fromNode, fromPort)} to={getInterfaceWiringUsageDeviceLabel(toNode, toPort)} /></td>
                   <td><FromToCell from={fromPort.label} to={toPort.label} /></td>
                   <td><FromToCell from={fromPort.interfaceType} to={toPort.interfaceType} /></td>
-                  <td>{edge.cableType}{edge.quantity > 1 ? ` ×${edge.quantity}` : ""}</td>
+                  <td>{getInterfaceWiringTableCableLabel(edge.cableType)}</td>
                   <td>{edge.connectionMethod}</td>
                 </tr>
               ))}

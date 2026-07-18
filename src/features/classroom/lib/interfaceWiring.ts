@@ -1360,6 +1360,10 @@ export function getInterfaceWiringUsageDeviceLabel(node: InterfaceWiringNode, po
   return `${node.label}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`;
 }
 
+export function getInterfaceWiringTableCableLabel(cableType: string) {
+  return cableType.replace(/(?:\s*[×xX]\s*\d+)+\s*$/, "").trim();
+}
+
 function placeDirectChildrenInCompactRows(
   nodes: InterfaceWiringNode[],
   rootSize: { width: number; height: number },
