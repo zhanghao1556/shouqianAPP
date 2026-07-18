@@ -2243,3 +2243,10 @@ PowerShell reminder:
 - A nominal cubic U-route can still look cramped when its visible bulge is only three quarters of the control-point offset. Use the half-ellipse `4/3` control ratio, size the visible bulge explicitly and place the reference at the arc apex outside the terminal block.
 - Automatic hardware behavior should not be phrased as an installer action. When processor MIC phantom supply is automatic, retain the electrical pin map but remove “enable 48V” from customer wiring instructions and interface labels.
 - USB Audio and embedded serial capability must use one stable customer phrase across the edge, usage table, legend and port description. Updating only the table fallback leaves contradictory wording elsewhere.
+
+### 2026-07-18 daily close handoff
+
+- When the company Agent endpoint is unreachable, treat that as missing evidence rather than a negative product answer. Preserve the exact unanswered yes/no question and stop before drawing an invented external-device interface.
+- The next session should resume with only the original-audio-system input direction: confirm whether its `LINE OUT` feeds the processor `LINE IN`. Ask the reverse direction only after the first answer, keeping one concrete question at a time.
+- A finished visual calibration is not the end-of-day boundary. After the user says work is over, still record the handoff, create and verify the single retained snapshot, run cleanup checks and create the required timestamped daily commit.
+- PowerShell 7 can make compression types available implicitly while Windows PowerShell 5.1 does not. A backup script intended as the compatibility fallback must explicitly load both `System.IO.Compression` and `System.IO.Compression.FileSystem` before referencing `ZipArchiveMode` or `ZipFile`.

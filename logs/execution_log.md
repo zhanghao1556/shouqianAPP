@@ -7101,3 +7101,16 @@ Verification:
 - 浏览器首次刷新时长期运行的 5180 HMR 状态仍缓存缺失 `getExternalAudioPortForm` 的旧模块，接线懒加载停在等待态；磁盘源码、Vite 实际模块和自动化测试均确认函数存在。重启 5180 并用同源新标签加载后预览正常、控制台无 warning/error，未为旧 HMR 状态增加业务兜底。
 - 本轮显式 PowerShell 7 再次被托管执行器解析到受限 WindowsApps 别名并拦截复合重启命令；按底层规则停止重试，改用 `cmd.exe`，5180 已重新启动于 `http://127.0.0.1:5180/`。
 - 自动化已通过 `test:interface-wiring`、`test:point-system`、`test:reverberation`、严格 TypeScript 和生产构建；正式 `dist` 未发现候选模块标识、`AJ350` 或“拟调整预览”。Vite 仅保留既有主包约 `521.13kB` 超过 500kB 的非阻塞提示。本轮不打包、不发布、不推送。
+
+# 2026-07-18 每日收工
+
+- 今日完成音曼接口接线候选的处理器容量分档、USB Audio 全局目标优先级、重复大圆盘拆分、吊麦 XLR 接口图、AJ200 HP IN/OUT 优先、功放父子邻接、四通道物理跳线和接线说明校准。
+- 功放最终跳线口径为 `LINE IN 1→2` 左弧、`2→4` 下弧、`4→3` 右弧；图上每跳只显示一根粗圆弧，接口占用表保留 `+/-/G` 一一对应。吊麦 48V 自动供电，不显示“开启48V”；USB 统一说明“内置232串口信号，可用于连接调试软件”。
+- 5180 当前代表场景显示 `12组设备 / 14条接口连线 / AJ200 / 接口校核通过`，画布与容器宽度一致、页面无横向溢出、控制台无 warning/error。
+- 自动化结果：`test:interface-wiring`、`test:point-system`、`test:reverberation`、严格 TypeScript、生产构建和 `git diff --check` 均通过；仅保留既有主包约 `521.13kB` 的非阻塞体积提示。
+- 有效改动已提交到本地 Git：`cb98bc2 calibrate-yinman-interface-wiring-rules`；提交后 `main` 比 `origin/main` 领先 19 个提交，未推送、未打包、未发布。
+- 下次唯一业务续接点：继续补“原有音频系统”外接接口。公司 Agent 页面本次返回 `ERR_CONNECTION_RESET`，没有得到产品结论；不得自行生成接口。待先确认：原系统 `LINE OUT` 是否默认连接我方处理器 `LINE IN`，再逐项确认反向回送接口。
+- 用户明确“下班”，开始执行最新快照、收工清理和 daily Git checkpoint；最终结果在完成后补记。
+- 收工备份首次通过 Windows PowerShell 5.1 兼容运行时失败：现有 `scripts/new-daily-snapshot.ps1` 未显式加载 `System.IO.Compression.FileSystem`，导致找不到 `System.IO.Compression.ZipFile`。异常发生在创建临时 ZIP 前，旧快照未删除；该问题阻断每日备份，已记录并立即补充程序集加载后重跑。
+- 备份脚本补充 `System.IO.Compression` 与 `System.IO.Compression.FileSystem` 显式加载后运行成功；ZIP 文件清单和 `AGENTS.md / package.json / 两份日志` 均通过验证，共归档 251 个文件。旧快照在新快照验证后删除，`.codex-backups` 只保留 1 个最新有效 ZIP。
+- 收工清理通过：严格 TypeScript 与 `git diff --check` 无错误；目标接线组件、模型、USB规则和吊麦 SVG 未发现旧“开启48V / 带供电MIC / RS232软件调试”文案、`debugger` 或 `console.log` 残留。未借清理修改任何音箱、阵麦或接口业务规则。

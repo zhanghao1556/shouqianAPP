@@ -6,6 +6,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if (-not $repoRoot) { throw "Unable to resolve the Git repository root." }
 
