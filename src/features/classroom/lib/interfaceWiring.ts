@@ -1131,7 +1131,11 @@ function getConductorLabel(terminal: DevicePortTerminal, cableType: string) {
   return terminal.label;
 }
 
-export function getInterfaceWiringLayout(model: InterfaceWiringModel, availableWidth = 1120): InterfaceWiringLayout {
+export function getInterfaceWiringLayout(
+  model: InterfaceWiringModel,
+  availableWidth = 1120,
+  bottomPaddingOverride?: number
+): InterfaceWiringLayout {
   const width = Math.max(320, Math.floor(availableWidth));
   if (!model.rootNodeId || !model.nodes.length) return { width, height: 560, positions: {} };
   const sidePadding = width < 720 ? 16 : 24;
@@ -1217,7 +1221,7 @@ export function getInterfaceWiringLayout(model: InterfaceWiringModel, availableW
   const minY = Math.min(...raw.map((item) => item.y));
   const maxY = Math.max(...raw.map((item) => item.y + item.height));
   const titleBand = 104;
-  const bottomPadding = model.edges.length ? 340 : 44;
+  const bottomPadding = bottomPaddingOverride ?? (model.edges.length ? 340 : 44);
   const shiftY = titleBand - minY;
   const positions = Object.fromEntries(raw.map((item) => [item.id, {
     ...item,

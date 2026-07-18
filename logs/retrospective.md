@@ -2108,3 +2108,8 @@ PowerShell reminder:
 - A user-provided product image outranks an Agent “not found” result and any similar-model substitute. Once the actual SA110 rear diagram was supplied, the temporary permission to borrow SA100 no longer justified using the substitute.
 - Agent image references should be acquired through the rendered page asset inventory so authenticated image bytes and source identity remain intact. Record the image reference and originating manual before adding physical anchors.
 - A physical panel is not complete merely because its bitmap renders. Regression coverage must also assert the asset key, normalized connector anchor and terminal order; the browser check should compare the actual cable path endpoint with the connector anchor, then restore any temporary intake option used to expose the device.
+
+### 2026-07-18 compact wiring-legend guardrail
+
+- Shrinking a legend without shrinking its canvas reserve leaves the same empty drawing area. Calculate bottom reserve from the actual legend row count, then verify both the table box and the node-to-legend gap in rendered pixels.
+- Keep conductor meaning legible while compacting: reduce row height, padding, swatch length and overall width together, but preserve the existing text size and verify every cell has no scroll overflow.

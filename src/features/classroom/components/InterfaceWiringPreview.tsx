@@ -32,6 +32,11 @@ import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-pan
 import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.png";
 import "./InterfaceWiringPreview.css";
 
+const CABLE_LEGEND_BASE_HEIGHT = 52;
+const CABLE_LEGEND_ROW_HEIGHT = 28;
+const CABLE_LEGEND_TOP_GAP = 24;
+const CABLE_LEGEND_BOTTOM_GAP = 18;
+
 const interfacePanelImages: Record<string, string> = {
   aj200: aj200InterfacePanel,
   aj350: aj350InterfacePanel,
@@ -91,10 +96,16 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
 function InterfaceWiringDiagram({ model }: { model: InterfaceWiringModel }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(1120);
-  const layout = useMemo(() => getInterfaceWiringLayout(model, availableWidth), [model, availableWidth]);
-  const edgeDrawings = useMemo(() => buildEdgeDrawings(model, layout), [model, layout]);
   const cableLegendRows = useMemo(() => getCableLegendRows(model.edges), [model.edges]);
-  const cableLegendHeight = 80 + cableLegendRows.length * 44;
+  const cableLegendHeight = CABLE_LEGEND_BASE_HEIGHT + cableLegendRows.length * CABLE_LEGEND_ROW_HEIGHT;
+  const bottomPadding = cableLegendRows.length
+    ? cableLegendHeight + CABLE_LEGEND_TOP_GAP + CABLE_LEGEND_BOTTOM_GAP
+    : 44;
+  const layout = useMemo(
+    () => getInterfaceWiringLayout(model, availableWidth, bottomPadding),
+    [model, availableWidth, bottomPadding]
+  );
+  const edgeDrawings = useMemo(() => buildEdgeDrawings(model, layout), [model, layout]);
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
@@ -189,8 +200,8 @@ function InterfaceWiringDiagram({ model }: { model: InterfaceWiringModel }) {
         {cableLegendRows.length > 0 && (
           <foreignObject
             x="34"
-            y={layout.height - cableLegendHeight - 30}
-            width={Math.min(620, layout.width - 68)}
+            y={layout.height - cableLegendHeight - CABLE_LEGEND_BOTTOM_GAP}
+            width={Math.min(500, layout.width - 68)}
             height={cableLegendHeight}
             className="interfaceWiringLegendObject"
           >

@@ -303,13 +303,13 @@
 }
 
 .interfaceWiringLegend > strong {
-  height: 32px;
+  height: 24px;
   display: flex;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 8px;
   border-bottom: 1px solid #c8d3df;
   background: #edf3f8;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .interfaceWiringLegend table {
@@ -321,8 +321,8 @@
 
 .interfaceWiringLegend th,
 .interfaceWiringLegend td {
-  height: 44px;
-  padding: 5px 8px;
+  height: 28px;
+  padding: 2px 6px;
   border-right: 1px solid #dde5ed;
   border-bottom: 1px solid #dde5ed;
   text-align: left;
@@ -331,12 +331,12 @@
 
 .interfaceWiringLegend th:first-child,
 .interfaceWiringLegend td:first-child {
-  width: 112px;
+  width: 84px;
 }
 
 .interfaceWiringLegend th:nth-child(2),
 .interfaceWiringLegend td:nth-child(2) {
-  width: 100px;
+  width: 82px;
 }
 
 .interfaceWiringLegend th:last-child,
@@ -345,16 +345,16 @@
 }
 
 .interfaceWiringLegendSwatch {
-  width: 88px;
-  height: 24px;
+  width: 66px;
+  height: 16px;
   display: grid;
   align-content: center;
-  gap: 3px;
+  gap: 2px;
 }
 
 .interfaceWiringLegendSwatch i {
   display: block;
-  width: 82px;
+  width: 62px;
   height: 2px;
   border-radius: 1px;
   background: #475569;
