@@ -28,27 +28,26 @@ export function getExistingMicInputDemand(profile: ClassroomProfile) {
   return profile.existingDevices.legacyWirelessMic
     .split(/[、,，;；]/)
     .map((item) => item.trim())
-    .filter(Boolean).length;
+    .filter(Boolean)
+    .filter((item) => !/无线|接收机/.test(item)).length;
 }
 
 export function getHangingMicProcessorTier(
   profile: ClassroomProfile,
-  hangingMicDemand = getHangingMicCoverageDemand(profile),
-  extraMicInputDemand = 0
+  hangingMicDemand = getHangingMicCoverageDemand(profile)
 ): Exclude<ProcessorTier, "auto"> {
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
   if (requested !== "auto") return requested;
-  const totalDemand = getExistingMicInputDemand(profile) + extraMicInputDemand + hangingMicDemand;
+  const totalDemand = getExistingMicInputDemand(profile) + hangingMicDemand;
   return totalDemand <= getProcessorCapacity("twoMic") ? "twoMic" : "sixMic";
 }
 
 export function getHangingMicRemainingCapacity(
   profile: ClassroomProfile,
-  processorTier: Exclude<ProcessorTier, "auto">,
-  extraMicInputDemand = 0
+  processorTier: Exclude<ProcessorTier, "auto">
 ) {
   if (processorTier === "highPerformance") return 0;
-  return Math.max(0, getProcessorCapacity(processorTier) - getExistingMicInputDemand(profile) - extraMicInputDemand);
+  return Math.max(0, getProcessorCapacity(processorTier) - getExistingMicInputDemand(profile));
 }
 
 export function getDefaultHangingMicCount(profile: ClassroomProfile) {

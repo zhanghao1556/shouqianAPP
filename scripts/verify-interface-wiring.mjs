@@ -15,6 +15,7 @@ import {
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
+import { getExistingMicInputDemand } from "./src/features/classroom/lib/hangingMicRules.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import {
   PROCESSOR_AJ350_PORT_PROFILE_ID,
@@ -331,6 +332,22 @@ assert.equal(
 assert.ok(wireless.model.edges.some((edge) =>
   (edge.fromNodeId === "wireless-receiver" || edge.toNodeId === "wireless-receiver") && /音频线/.test(edge.cableType)
 ));
+const wirelessReceiverAudioEdge = wireless.model.edges.find((edge) => edge.fromNodeId === "wireless-receiver" && /音频线/.test(edge.cableType));
+assert.ok(wirelessReceiverAudioEdge);
+assert.equal(node(wireless.model, wirelessReceiverAudioEdge.toNodeId).ports.find((port) => port.id === wirelessReceiverAudioEdge.toPortId)?.label, "LINE IN 1");
+assert.equal(wireless.model.findings.some((item) => item.code === "processor.total-mic-capacity"), false);
+assert.equal(getExistingMicInputDemand(makeProfile({ legacyWirelessMic: "无线手持麦" })), 0);
+assert.equal(getExistingMicInputDemand(makeProfile({ legacyWirelessMic: "有线麦克风" })), 1);
+
+const oneLineWith02AndWireless = buildModel(oneLineWith02Profile, { "WIRELESS-HANDHELD": 1 });
+assert.equal(oneLineWith02AndWireless.model.candidateProcessor, "AJ200");
+assert.equal(oneLineWith02AndWireless.model.findings.some((item) => item.code === "processor.total-mic-capacity"), false);
+const hybridWirelessReceiverEdge = oneLineWith02AndWireless.model.edges.find((edge) => edge.fromNodeId === "wireless-receiver" && /音频线/.test(edge.cableType));
+assert.ok(hybridWirelessReceiverEdge);
+assert.equal(
+  node(oneLineWith02AndWireless.model, hybridWirelessReceiverEdge.toNodeId).ports.find((port) => port.id === hybridWirelessReceiverEdge.toPortId)?.label,
+  "LINE IN 1"
+);
 console.log("PASS wireless wiring shows only the receiver and its physical audio cable");
 
 const unknownPortProfile = makeProfile({

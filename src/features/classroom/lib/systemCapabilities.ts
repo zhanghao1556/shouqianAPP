@@ -251,12 +251,12 @@ export function isYinmanLineArrayOnlineCoverageComplete(profile: ClassroomProfil
   return isOccupiedOnlineZoneCovered(profile, pickupPoints);
 }
 
-export function getYinmanHybridProcessorInputDemand(profile: ClassroomProfile, newWirelessInputDemand = 0) {
-  return LINE_ARRAY_PROCESSOR_MIC_INPUT_DEMAND + getExistingMicInputDemand(profile) + Math.max(0, newWirelessInputDemand);
+export function getYinmanHybridProcessorInputDemand(profile: ClassroomProfile) {
+  return LINE_ARRAY_PROCESSOR_MIC_INPUT_DEMAND + getExistingMicInputDemand(profile);
 }
 
-export function getYinmanHybridProcessorTier(profile: ClassroomProfile, newWirelessInputDemand = 0): "twoMic" | "sixMic" {
-  return getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand) > 2 ? "sixMic" : "twoMic";
+export function getYinmanHybridProcessorTier(profile: ClassroomProfile): "twoMic" | "sixMic" {
+  return getYinmanHybridProcessorInputDemand(profile) > 2 ? "sixMic" : "twoMic";
 }
 
 function getYinmanLineArraySupplementPoints(

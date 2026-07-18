@@ -240,8 +240,7 @@ class CandidateWiringBuilder {
     if (state.ring08Count > 0) return "AJ350";
     if (state.lineArrayCount > 1) return "AJ600";
     if (state.lineArrayCount === 1 && state.supplementCount > 0) {
-      const newWirelessDemand = this.outputs.productSelection.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
-      const micDemand = 2 + getExistingMicInputDemand(this.profile) + newWirelessDemand;
+      const micDemand = 2 + getExistingMicInputDemand(this.profile);
       return micDemand > 2 ? "AJ600" : "AJ200";
     }
     if (state.lineArrayCount === 1) return "AJ350";
@@ -423,8 +422,7 @@ class CandidateWiringBuilder {
     }
 
     const micCapacity = getDevicePortsByPrefix(this.processorProductId!, "mic").length;
-    const newWirelessDemand = this.outputs.productSelection.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
-    const totalMicDemand = convertedCount * 2 + getExistingMicInputDemand(this.profile) + newWirelessDemand;
+    const totalMicDemand = convertedCount * 2 + getExistingMicInputDemand(this.profile);
     if (totalMicDemand > micCapacity) {
       this.addFinding({
         code: "processor.total-mic-capacity",

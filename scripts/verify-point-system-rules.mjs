@@ -440,12 +440,13 @@ assert.deepEqual(pointSnapshot(hybrid12.generatedPoints.filter((point) => point.
 assert.equal(hybrid12.productSelection.find((item) => item.productId === LINE_ARRAY_PRODUCT_ID)?.quantity, 1);
 assert.equal(hybrid12.productSelection.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity, 1);
 assert.equal(hybrid12.productSelection.find((item) => item.productId === LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID)?.quantity, 1);
-assert.equal(hybrid12.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "六麦处理器");
-assert.equal(hybrid12.solutionSelection.processor?.selected, "sixMic");
+assert.equal(hybrid12.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+assert.equal(hybrid12.solutionSelection.processor?.selected, "twoMic");
 assert.equal(hybrid12.solutionSelection.microphone.lineArrayCoverageWarning, undefined);
 assert.equal(hybrid12.pointValidation.findings.some((finding) => finding.code === "selection.line-array-online-coverage"), false);
 assert.ok(hybrid12.connectionLines.some((line) => line.id === "line-array-converter-processor" && line.toPort === "MIC1 + MIC2"));
 assert.ok(hybrid12.connectionLines.some((line) => line.id === "line-array-supplement-extmic" && line.toPort === "EXTMIC"));
+assert.ok(hybrid12.connectionLines.some((line) => line.id === "processor-wireless-receiver-audio" && line.toPort === "模拟音频输入"));
 
 const hybridEconomyProfile12 = makeProfile({
   length: 12.4,
@@ -486,6 +487,14 @@ assert.deepEqual(pointSnapshot(hybrid17.generatedPoints.filter((point) => point.
 assert.equal(hybrid17.connectionLines.filter((line) => line.id.startsWith("line-array-supplement-cascade-")).length, 1);
 assert.equal(hybrid17.connectionLines.filter((line) => line.toPort === "EXTMIC").length, 1);
 assert.equal(hybrid17.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+
+const hybridWithExistingWireless = generateEngineeringOutputs({
+  ...hybridEconomyProfile12,
+  existingDevices: { ...hybridEconomyProfile12.existingDevices, legacyWirelessMic: "无线手持麦" }
+}, {}, "yinman");
+assert.equal(hybridWithExistingWireless.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+assert.equal(hybridWithExistingWireless.solutionSelection.processor?.selected, "twoMic");
+assert.ok(hybridWithExistingWireless.connectionLines.some((line) => line.id === "processor-wireless-receiver-audio" && line.toPort === "模拟音频输入"));
 
 const hybridWithExtraMic = generateEngineeringOutputs({
   ...hybridEconomyProfile12,
@@ -628,7 +637,18 @@ assert.ok(hangingPoints.every((point) => point.coverageRadius === HANGING_MIC_RA
 assert.equal(hangingConnections.length, 2);
 assert.ok(hangingConnections.every((line, index) => line.toPort === "MIC " + (index + 1) && line.note.includes("MIC口直接供电")));
 assert.match(yinmanHanging.solutionSelection.microphone.advantages, /价格更低的双麦处理器/);
-assert.match(yinmanHanging.solutionSelection.microphone.cautions, /利旧麦克风和新增无线接收机合计MIC占用/);
+assert.match(yinmanHanging.solutionSelection.microphone.cautions, /吊麦和直连MIC的利旧有线麦克风合计MIC占用/);
+
+const yinmanHangingWithWireless = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 10,
+  scope: "podium",
+  podiumPosition: "frontLeft",
+  microphoneSolution: "hangingMic"
+}), { ...twoSpeakerOverrides, "WIRELESS-HANDHELD": 1 }, "yinman");
+assert.equal(yinmanHangingWithWireless.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+assert.equal(yinmanHangingWithWireless.productSelection.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.quantity, 2);
+assert.ok(yinmanHangingWithWireless.connectionLines.some((line) => line.id === "processor-wireless-receiver-audio" && line.toPort === "模拟音频输入"));
 
 const yinmanHangingAfterHighPerformanceReset = generateEngineeringOutputs(makeProfile({
   length: 8,

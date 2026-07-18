@@ -645,23 +645,22 @@ const syncBrandSystemSelection = (
   const hybridSupplementCount = selectionWithoutSystemDevices.find((item) => item.productId === SMALL_DISC_02_PRODUCT_ID)?.quantity ?? 0;
   const usesHybridLineArray = lineArrayCount > 0 && hybridSupplementCount > 0;
   const hangingMic = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID);
-  const newWirelessInputDemand = selectionWithoutSystemDevices.some((item) => item.productId === "WIRELESS-HANDHELD" && item.quantity > 0) ? 1 : 0;
   const processorTier = usesYinmanLargeArray
     ? YINMAN_LARGE_ARRAY_PROCESSOR_TIER
     : usesHybridLineArray
-    ? getYinmanHybridProcessorTier(profile, newWirelessInputDemand)
+    ? getYinmanHybridProcessorTier(profile)
     : hangingMic
-    ? getHangingMicProcessorTier(profile, hangingMic.quantity, newWirelessInputDemand)
+    ? getHangingMicProcessorTier(profile, hangingMic.quantity)
     : getProcessorTier(profile, brandId, lineArrayCount, speakerCount);
   const processorCapacity = getProcessorCapacity(processorTier);
   if (hangingMic) {
-    const remainingCapacity = getHangingMicRemainingCapacity(profile, processorTier, newWirelessInputDemand);
+    const remainingCapacity = getHangingMicRemainingCapacity(profile, processorTier);
     selectionWithoutSystemDevices = selectionWithoutSystemDevices.map((item) => item.productId === HANGING_MIC_PRODUCT_ID
       ? { ...item, quantity: Math.min(item.quantity, remainingCapacity) }
       : item);
   }
   const hangingMicInputDemand = selectionWithoutSystemDevices.find((item) => item.productId === HANGING_MIC_PRODUCT_ID)?.quantity ?? 0;
-  const totalHangingMicInputDemand = getExistingMicInputDemand(profile) + newWirelessInputDemand + hangingMicInputDemand;
+  const totalHangingMicInputDemand = getExistingMicInputDemand(profile) + hangingMicInputDemand;
 
   const rule = classroomProductRules.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
   const amplifierSelection = rule
@@ -688,11 +687,11 @@ const syncBrandSystemSelection = (
         why: "",
         where: "安装在讲台设备区或弱电机柜，集中完成阵麦接入、音频处理和无源音箱驱动。",
         wiring: usesHybridLineArray
-          ? `线阵麦经信号转换器占用MIC1与MIC2；${hybridSupplementCount}只补充拾音阵麦在麦克风端级联后共用EXTMIC。当前MIC输入总需求为${getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand)}路，处理器MIC容量为${processorCapacity}路。`
+          ? `线阵麦经信号转换器占用MIC1与MIC2；${hybridSupplementCount}只补充拾音阵麦在麦克风端级联后共用EXTMIC。当前MIC输入总需求为${getYinmanHybridProcessorInputDemand(profile)}路，处理器MIC容量为${processorCapacity}路。`
           : lineArrayCount > 0
           ? `每只线阵麦使用独立网线接入阵麦接口，禁止接PoE；当前处理器接口容量为${processorCapacity}路。`
           : hangingMic
-            ? `每只吊麦独占一路MIC输入并由MIC口直接供电；吊麦、利旧麦克风和新增无线接收机当前合计占用${totalHangingMicInputDemand}路MIC输入，处理器MIC容量为${processorCapacity}路。${processorTier === "sixMic" ? "六麦处理器带独立触摸屏，可控制音箱音量及麦克风静音/开音。" : "MIC接口够用时优先采用价格更低的双麦处理器。"}`
+            ? `每只吊麦独占一路MIC输入并由MIC口直接供电；吊麦和直连MIC的利旧有线麦克风当前合计占用${totalHangingMicInputDemand}路MIC输入，处理器MIC容量为${processorCapacity}路。${processorTier === "sixMic" ? "六麦处理器带独立触摸屏，可控制音箱音量及麦克风静音/开音。" : "MIC接口够用时优先采用价格更低的双麦处理器。"}`
             : "每只阵麦使用独立网线直连主机；主机直接驱动前 8 只无源音箱，9-16 只时通过教学模拟功放主机扩展。",
         basis: ""
       } satisfies ProductRecommendation]
@@ -723,7 +722,6 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   const usesHybridLineArray = hasYinmanLineArraySupplements(points);
   const usesAlternativePickupChain = usesStandaloneSmallDisc || usesHybridLineArray;
   const hybridCoverageComplete = isYinmanLineArrayOnlineCoverageComplete(profile, points);
-  const hybridNewWirelessInputDemand = !hasExistingWirelessHandheld(profile) && acousticAssessment.risk === "high" ? 1 : 0;
   const lineArray = getLineArrayDecision(profile);
   if (lineArray.requested && !lineArray.selected) risks.push("该方案无法完整覆盖，建议改选阵麦");
   else if (lineArray.requested && lineArray.coverageWarning && !hybridCoverageComplete) risks.push("线阵麦线上拾音无法全覆盖，需现场复核或补充拾音设备。");
@@ -731,11 +729,11 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = usesHybridLineArray
-      ? getYinmanHybridProcessorTier(profile, hybridNewWirelessInputDemand)
+      ? getYinmanHybridProcessorTier(profile)
       : getProcessorTier(profile, brandId, lineArray.count, speakerCount);
     const capacity = getProcessorCapacity(tier);
     const demand = usesHybridLineArray
-      ? getYinmanHybridProcessorInputDemand(profile, hybridNewWirelessInputDemand)
+      ? getYinmanHybridProcessorInputDemand(profile)
       : getProcessorInterfaceDemand(profile, speakerCount);
     if (tier !== "highPerformance" && demand > capacity) {
       risks.push(`处理器接口需求超过${capacity}路，需外扩或现场复勘。`);

@@ -7,7 +7,6 @@ import type {
   SpeakerProductOverride
 } from "../types";
 import type { AppBrandId } from "../brand";
-import { hasExistingWirelessHandheld } from "./connectionRules";
 import {
   getLineArrayDecision,
   getProcessorAlternativeTier,
@@ -36,7 +35,6 @@ import {
   hasYinmanLineArraySupplements,
   isYinmanLineArrayOnlineCoverageComplete
 } from "./systemCapabilities";
-import { getReverberationRisk } from "./reverberationRules";
 
 const microphoneLabels: Record<Exclude<MicrophoneSolution, "auto">, string> = {
   existingArray: "智能天花阵列麦克风",
@@ -122,7 +120,7 @@ export function getCustomerSolutionSelection(
         : selectedMicrophone === "smallDisc03"
           ? "仅用于直接录音或巡课拾音，不用于本地扩声、视频会议或线上互动。"
           : selectedMicrophone === "hangingMic"
-        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入；系统按吊麦、利旧麦克风和新增无线接收机合计MIC占用，超过2路时自动配置六麦处理器。六麦处理器接口更多、价格较高，带独立触摸屏，可控制音箱音量及麦克风静音/开音。"
+        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入；系统按吊麦和直连MIC的利旧有线麦克风合计MIC占用，超过2路时自动配置六麦处理器。六麦处理器接口更多、价格较高，带独立触摸屏，可控制音箱音量及麦克风静音/开音。"
         : selectedMicrophone === "lineArray"
           ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
           : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
@@ -188,10 +186,9 @@ function getYinmanSingleLineProcessorSelection(
   usesHybridLineArray: boolean
 ): NonNullable<CustomerSolutionSelection["processor"]> {
   if (usesHybridLineArray) {
-    const newWirelessInputDemand = !hasExistingWirelessHandheld(profile) && getReverberationRisk(profile) === "high" ? 1 : 0;
-    const selected = getYinmanHybridProcessorTier(profile, newWirelessInputDemand);
+    const selected = getYinmanHybridProcessorTier(profile);
     const alternative = selected === "twoMic" ? "sixMic" : "twoMic";
-    const interfaceDemand = getYinmanHybridProcessorInputDemand(profile, newWirelessInputDemand);
+    const interfaceDemand = getYinmanHybridProcessorInputDemand(profile);
     const selectedLabel = getProcessorTierName(selected);
     const alternativeLabel = getProcessorTierName(alternative);
     return {
