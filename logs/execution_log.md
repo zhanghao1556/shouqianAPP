@@ -6877,3 +6877,14 @@ Verification:
 - 浏览器日志保留 7 条同一时刻的开发期热更新历史错误：组件先引用 `getInterfacePanelPortAnchor`、模块导出随后才落盘，期间出现短暂的缺失导出和一次旧组件状态读取异常。最终页面截图已正常渲染，接口专项测试和 TypeScript 构建通过；该记录属于分块编辑时的 HMR 中间态，不是当前运行错误。
 - 最终 `test:interface-wiring`、完整 `test:point-system`、严格 TypeScript、Vite 生产构建和 `git diff --check` 通过；`dist` 未发现候选模块标识、预览文案或内部型号。Vite 继续提示主包约 `519.81kB` 超过 500kB 建议值，为既有非阻塞拆包提醒。
 - 本轮继续使用 `cmd.exe` 兼容执行，原因是托管执行器将 PowerShell 7 解析为无权限 WindowsApps alias。未打包、未发布、未推送 GitHub。
+
+# 2026-07-18 接口背面图继续补录
+
+- 用户确认所有产品缺少背面接口图时先直接询问公司 Agent，再把可核实的图片导入候选接线图；问法继续保持单一产品、单一图片目标和明确的“有图 / 没有”。
+- Agent 复查仍称知识库没有 SA110 完整背面接口图。用户先确认 SA100 与 SA110 外观一致、可借用 SA100 图，随后直接提供 `codex-clipboard-441f03f3-e152-4a2c-b445-3d672bf5f44d.png` 作为线阵麦背面接线图。最终证据优先级采用用户提供的 SA110 图，不使用 SA100 替代图。
+- 用户提供的 SA110 图尺寸为 `1482×294`，背面唯一 RJ45 接口位于机身中轴附近；本轮将按该真实位置建立接口锚点，并移除线阵麦“接口图待补充”复核项。
+- Agent 从《手持麦接收机说明书》找到无线接收机完整后面板图 `img_9b36155b6699`，可确认 `BAL OUT` 三针端子、`LINE OUT` RCA、`MIC OUT` 6.35mm 和 `USB` 的面板标识及物理位置；页面资产已成功提取，待导入候选图。
+- 已将用户提供的 SA110 背面图导入 `src/assets/yinman-sa110-rear-panel.png`，接口目录新增真实比例和 RJ45 物理锚点；SA110 接口来源改为用户确认，候选图不再产生 `interface-panel.missing.line-array`。
+- 已将无线接收机后面板图导入 `src/assets/yinman-wireless-receiver-rear-panel.png`；`BAL OUT` 按实图从左到右映射 `+ / - / G`，对应红线 / 白线 / 屏蔽线，另补录 LINE OUT、MIC OUT 和 USB 物理锚点。
+- 页面检查：5180 的 SA110 图片以 `1482×294` 正常加载，`line-array-direct-1` 网线路径起点 `(665, 180.619)` 与图中 RJ45 计算锚点 `(664.999, 180.618)` 重合；临时启用无线手持后接收机图以 `747×190` 正常加载，三芯路径按 `+ / - / G` 从左到右引出，随后恢复原售前参数。画布宽度 `993px` 等于容器宽度且无横向溢出。
+- 验证通过：`test:interface-wiring`、`test:point-system`、严格 TypeScript、Vite 生产构建。两个新增校准资产的 SHA-256 均未出现在 `dist`，内部来源文案和候选标识也未进入正式构建。浏览器控制台仍保留已记录的 06:16 HMR 中间态错误，本轮刷新后的页面无错误覆盖层，当前渲染正常。

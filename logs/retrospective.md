@@ -2101,3 +2101,10 @@ PowerShell reminder:
 - Repeated speaker channels should use a two-dimensional anchor grid instead of tiny offsets along one line. Matching the source channel order to a 2x2 destination grid reduces crossovers without changing electrical allocation.
 - Multi-core cable conductors should join a shared visual trunk near each numbered port, run in parallel through the long route, then split to the real terminal coordinates. Drawing a separate full-length curve from every terminal makes opposite terminal orders look like incorrect wiring even when the logical mapping is right.
 - A drawing reference number and an electrical endpoint must never share the same visual coordinate. Keep the cable anchored to the physical connector, then place its numbered badge opposite the peer direction and slightly outward from the device center so neither the connector nor adjacent dense ports are obscured.
+
+### 2026-07-18 Agent interface-image acquisition guardrail
+
+- Before leaving an equipment panel as missing, ask the company Agent for one concrete product's complete rear-interface image and require visible labels plus physical positions. Preserve a negative answer, but do not treat it as evidence that the product has no such panel outside the Agent knowledge base.
+- A user-provided product image outranks an Agent “not found” result and any similar-model substitute. Once the actual SA110 rear diagram was supplied, the temporary permission to borrow SA100 no longer justified using the substitute.
+- Agent image references should be acquired through the rendered page asset inventory so authenticated image bytes and source identity remain intact. Record the image reference and originating manual before adding physical anchors.
+- A physical panel is not complete merely because its bitmap renders. Regression coverage must also assert the asset key, normalized connector anchor and terminal order; the browser check should compare the actual cable path endpoint with the connector anchor, then restore any temporary intake option used to expose the device.

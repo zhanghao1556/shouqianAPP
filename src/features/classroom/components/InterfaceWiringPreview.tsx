@@ -22,12 +22,14 @@ import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.pn
 import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.png";
 import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.png";
 import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.png";
+import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.png";
 import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter.png";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.png";
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.png";
 import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.png";
 import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.png";
 import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.png";
+import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.png";
 import "./InterfaceWiringPreview.css";
 
 const interfacePanelImages: Record<string, string> = {
@@ -35,12 +37,14 @@ const interfacePanelImages: Record<string, string> = {
   aj350: aj350InterfacePanel,
   aj600: aj600InterfacePanel,
   ap150: ap150RearPanel,
+  lineArray: lineArrayRearPanel,
   lineArrayConverter: lineArrayConverterPanel,
   passiveSpeaker: passiveSpeakerTerminal,
   ring01: ring01InterfacePanel,
   ring03: ring03InterfacePanel,
   ring08: ring08RearPanel,
-  ringOfA: ringOfAInterfacePanel
+  ringOfA: ringOfAInterfacePanel,
+  wirelessReceiver: wirelessReceiverRearPanel
 };
 
 interface InterfaceWiringPreviewProps {

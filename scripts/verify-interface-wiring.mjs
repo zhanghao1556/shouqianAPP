@@ -10,6 +10,7 @@ import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRul
 import {
   PROCESSOR_AJ600_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
+  WIRELESS_RECEIVER_PORT_PROFILE_ID,
   devicePortCatalog,
   getDevicePortProfile
 } from "./src/features/classroom/lib/devicePortCatalog.ts";
@@ -404,9 +405,27 @@ assert.deepEqual(groupedSpeakerAnchors.map((anchor) => [
   [0.44, 0.57],
   [0.66, 0.57]
 ]);
-console.log("PASS interface-panel anchors are normalized, AJ600 MIC ports share one block and grouped speakers use a 2x2 anchor grid");
+const lineArrayPanel = getDevicePortProfile(LINE_ARRAY_PRODUCT_ID)?.interfacePanel;
+assert.ok(lineArrayPanel);
+assert.equal(lineArrayPanel.assetKey, "lineArray");
+assert.deepEqual([
+  Number(lineArrayPanel.portAnchors.rj45.x.toFixed(3)),
+  Number(lineArrayPanel.portAnchors.rj45.y.toFixed(2))
+], [0.505, 0.47]);
+assert.match(lineArrayPanel.source, /用户提供SA110完整背面接线图/);
+const wirelessReceiverPanel = getDevicePortProfile(WIRELESS_RECEIVER_PORT_PROFILE_ID)?.interfacePanel;
+assert.ok(wirelessReceiverPanel);
+assert.equal(wirelessReceiverPanel.assetKey, "wirelessReceiver");
+assert.deepEqual(
+  ["positive", "negative", "ground"].map((terminalId) => [
+    terminalId,
+    Number(wirelessReceiverPanel.portAnchors.balOut.terminalAnchors?.[terminalId].x.toFixed(3))
+  ]),
+  [["positive", 0.391], ["negative", 0.408], ["ground", 0.426]]
+);
+console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
-assert.ok(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"));
+assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
 assert.ok(oneLineWith02.model.findings.some((item) => item.code === "interface-panel.missing.line-array-converter"));
 assert.equal(smallDisc01.model.findings.some((item) => item.code === "interface-panel.missing.small-disc-extender"), false);
 console.log("PASS missing and partial interface images create review findings while confirmed panels do not");

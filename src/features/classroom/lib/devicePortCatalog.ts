@@ -242,7 +242,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     productId: LINE_ARRAY_PRODUCT_ID,
     internalModel: "SA110",
     customerName: "智能线阵麦克风",
-    ports: [port("rj45", "RJ45", "RJ45", "output", agentSource, true, rj45Terminals)]
+    ports: [port("rj45", "RJ45", "RJ45", "output", confirmedSource, true, rj45Terminals)],
+    interfacePanel: panel("lineArray", 1482 / 294, {
+      rj45: anchor(0.505, 0.47)
+    }, "用户提供SA110完整背面接线图")
   },
   [LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID]: {
     productId: LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
@@ -353,7 +356,17 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("lineOut", "LINE OUT", "RCA", "output", agentSource),
       port("micOut", "MIC OUT", "6.35mm", "output", agentSource),
       port("usb", "USB（PPT控制）", "USB-B", "output", agentSource)
-    ]
+    ],
+    interfacePanel: panel("wirelessReceiver", 747 / 190, {
+      balOut: anchor(0.408, 0.48, {
+        positive: { x: 0.391, y: 0.48 },
+        negative: { x: 0.408, y: 0.48 },
+        ground: { x: 0.426, y: 0.48 }
+      }),
+      lineOut: anchor(0.495, 0.48),
+      micOut: anchor(0.586, 0.48),
+      usb: anchor(0.174, 0.46)
+    }, "《手持麦接收机说明书》完整后面板图；公司Agent图像引用 img_9b36155b6699")
   }
 };
 
