@@ -133,6 +133,10 @@
   text-shadow: 0 0 3px #ffffff, 0 0 3px #ffffff, 0 0 3px #ffffff;
 }
 
+.interfaceWiringNode[data-category="speaker"] .interfaceWiringNodeName {
+  font-size: 10px;
+}
+
 .interfaceWiringPanelImage {
   position: absolute;
   z-index: 1;

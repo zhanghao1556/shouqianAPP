@@ -2124,3 +2124,4 @@ PowerShell reminder:
 - Drawing references must be scoped explicitly. A per-node array index is not a diagram-wide identifier; generate one stable global port-reference map and reuse it in both the drawing markers and occupancy table.
 - Confirm the identity represented by a drawing number before enforcing uniqueness. For wiring drawings the reference belongs to the cable edge, so both endpoint ports intentionally share one number while different edges remain unique.
 - Repeated-device grouping should preserve structured unit ranges when the allocation is created. Rendering “device 1-2” from `start/end` metadata is safer than reparsing a localized port-label string later.
+- A grouped equipment count and an electrical branch are different drawing units. When one source exposes four SPK outputs, render four downstream speaker-group nodes with one cable each; aggregate only the physical quantity inside each branch (`x2`, `x2`, `x1`, `x1`), not across all branches.

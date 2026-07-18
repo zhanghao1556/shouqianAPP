@@ -85,6 +85,9 @@ interface ConnectionSeed {
   toDeviceSequenceRange?: InterfaceWiringPort["deviceSequenceRange"];
 }
 
+const COMPACT_SPEAKER_NODE_WIDTH = 112;
+const COMPACT_SPEAKER_GAP = 0;
+
 interface MutableLayoutPosition {
   x: number;
   y: number;
@@ -568,22 +571,21 @@ class CandidateWiringBuilder {
   private addSpeakerRoutes(state: SystemState) {
     const speakerSelection = this.outputs.productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
     if (!speakerSelection) return;
-    const speakers = this.ensureNode({
-      id: "speakers",
-      productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
-      label: speakerSelection.name,
-      category: "speaker",
-      quantity: speakerSelection.quantity
-    });
     const amplifierSelection = this.outputs.productSelection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0);
     const usesSmallDisc01 = state.smallDisc01Count > 0;
     const directCount = usesSmallDisc01 ? 0 : Math.min(8, speakerSelection.quantity);
     const amplifierCount = usesSmallDisc01 ? speakerSelection.quantity : Math.max(0, speakerSelection.quantity - directCount);
+    let nextSpeaker = 1;
     if (directCount > 0) {
       const processor = this.nodes.get("processor");
       if (processor) {
-        this.connectSpeakerOutputs(processor, speakers, directCount, "processor-speakers");
-        this.explicitParents.set(speakers.id, processor.id);
+        nextSpeaker = this.connectSpeakerOutputs(
+          processor,
+          speakerSelection.name,
+          directCount,
+          "processor-speakers",
+          nextSpeaker
+        );
       }
     }
     if (amplifierCount > 0 || (usesSmallDisc01 && amplifierSelection)) {
@@ -613,18 +615,24 @@ class CandidateWiringBuilder {
           });
         }
       }
-      this.connectSpeakerOutputs(amp, speakers, amplifierCount || speakerSelection.quantity, "amplifier-speakers");
-      this.explicitParents.set(speakers.id, amp.id);
+      this.connectSpeakerOutputs(
+        amp,
+        speakerSelection.name,
+        amplifierCount || speakerSelection.quantity,
+        "amplifier-speakers",
+        nextSpeaker
+      );
     }
   }
 
   private connectSpeakerOutputs(
     source: InterfaceWiringNode,
-    speakers: InterfaceWiringNode,
+    speakerName: string,
     quantity: number,
-    idPrefix: string
+    idPrefix: string,
+    firstSpeakerIndex: number
   ) {
-    if (quantity <= 0) return;
+    if (quantity <= 0) return firstSpeakerIndex;
     const available = getDevicePortsByPrefix(source.productId, "spk").filter((port) => !this.isPortOccupied(source.id, port.id));
     if (!available.length) {
       this.addFinding({
@@ -634,12 +642,12 @@ class CandidateWiringBuilder {
         message: "当前设备没有可用功放输出，无法生成音箱连线，建议更换设备。",
         nodeId: source.id
       });
-      return;
+      return firstSpeakerIndex;
     }
     const usedPortCount = Math.min(quantity, available.length);
     const base = Math.floor(quantity / usedPortCount);
     const remainder = quantity % usedPortCount;
-    let firstSpeaker = 1;
+    let firstSpeaker = firstSpeakerIndex;
     for (let index = 0; index < usedPortCount; index += 1) {
       const channelQuantity = base + (index < remainder ? 1 : 0);
       const lastSpeaker = firstSpeaker + channelQuantity - 1;
@@ -654,11 +662,19 @@ class CandidateWiringBuilder {
         true,
         this.requirePort(PASSIVE_SPEAKER_PORT_PROFILE_ID, "terminals").terminals
       );
+      const speakerGroup = this.ensureNode({
+        id: `${idPrefix}-group-${index + 1}`,
+        productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
+        label: speakerName,
+        category: "speaker",
+        quantity: channelQuantity
+      });
+      this.explicitParents.set(speakerGroup.id, source.id);
       this.addConnection({
         id: `${idPrefix}-${index + 1}`,
         fromNode: source,
         fromPort: available[index],
-        toNode: speakers,
+        toNode: speakerGroup,
         toPort: terminal,
         cableType: channelQuantity > 1 ? `音箱线 ×${channelQuantity}` : "音箱线",
         connectionMethod: "保持正负极一致",
@@ -676,6 +692,7 @@ class CandidateWiringBuilder {
       }
       firstSpeaker = lastSpeaker + 1;
     }
+    return firstSpeaker;
   }
 
   private addKnownBlockingFindings() {
@@ -1178,14 +1195,16 @@ export function getInterfaceWiringLayout(
   for (const parent of directChildren) {
     const children = model.nodes.filter((node) => node.parentId === parent.id);
     const parentCenter = centerPositions.get(parent.id)!;
-    children.forEach((node, index) => {
+    const speakerChildren = children.filter(isCompactSpeakerGroup);
+    const regularChildren = children.filter((node) => !isCompactSpeakerGroup(node));
+    regularChildren.forEach((node, index) => {
       const size = dimensions.get(node.id)!;
       const candidate = findOpenChildPosition({
         parentCenter,
         rootCenter: centerPositions.get(root.id)!,
         size,
         siblingIndex: index,
-        siblingCount: children.length,
+        siblingCount: regularChildren.length,
         placedRects,
         width,
         sidePadding
@@ -1193,6 +1212,19 @@ export function getInterfaceWiringLayout(
       centerPositions.set(node.id, candidate);
       placedRects.push({ id: node.id, x: candidate.x - size.width / 2, y: candidate.y - size.height / 2, ...size });
     });
+    if (speakerChildren.length) {
+      placeCompactSpeakerChildRow({
+        nodes: speakerChildren,
+        parentCenter,
+        parentSize: dimensions.get(parent.id)!,
+        rootCenter: centerPositions.get(root.id)!,
+        dimensions,
+        positions: centerPositions,
+        placedRects,
+        width,
+        sidePadding
+      });
+    }
   }
   for (const node of model.nodes.filter((item) => !centerPositions.has(item.id))) {
     const parentCenter = centerPositions.get(node.parentId ?? root.id) ?? centerPositions.get(root.id)!;
@@ -1264,7 +1296,8 @@ export function getInterfaceWiringPortReferenceNumbers(model: InterfaceWiringMod
 export function getInterfaceWiringUsageDeviceLabel(node: InterfaceWiringNode, port: InterfaceWiringPort) {
   if (node.category === "speaker" && port.deviceSequenceRange) {
     const { start, end } = port.deviceSequenceRange;
-    return `${node.label} ${start === end ? start : `${start}-${end}`}`;
+    const sequence = start === end ? `${start}` : `${start}-${end}`;
+    return `${node.label} ${sequence}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`;
   }
   return `${node.label}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`;
 }
@@ -1280,17 +1313,27 @@ function placeDirectChildrenInCompactRows(
 ) {
   const sortByRootPort = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
     (horizontalScores.get(left.id) ?? 0.5) - (horizontalScores.get(right.id) ?? 0.5);
-  const topNodes = nodes.filter((_, index) => index % 2 === 0).sort(sortByRootPort);
-  const bottomNodes = nodes.filter((_, index) => index % 2 === 1).sort(sortByRootPort);
-  const columnGap = 32;
+  const speakerGroups = nodes.filter(isCompactSpeakerGroup);
+  const ordinaryNodes = nodes.filter((node) => !isCompactSpeakerGroup(node));
+  const topNodes = ordinaryNodes.filter((_, index) => index % 2 === 0).sort(sortByRootPort);
+  const bottomNodes = ordinaryNodes.filter((_, index) => index % 2 === 1).sort(sortByRootPort);
+  if (speakerGroups.length) {
+    const speakerScore = speakerGroups.reduce((sum, node) => sum + (horizontalScores.get(node.id) ?? 0.5), 0) / speakerGroups.length;
+    const insertionIndex = bottomNodes.findIndex((node) => (horizontalScores.get(node.id) ?? 0.5) > speakerScore);
+    bottomNodes.splice(insertionIndex < 0 ? bottomNodes.length : insertionIndex, 0, ...speakerGroups);
+  }
   const usableWidth = width - sidePadding * 2;
+  const nodeGap = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
+    isCompactSpeakerGroup(left) && isCompactSpeakerGroup(right) ? COMPACT_SPEAKER_GAP : 32;
+  const getRowWidth = (row: InterfaceWiringNode[]) => row.reduce((total, node, index) =>
+    total + dimensions.get(node.id)!.width + (index ? nodeGap(row[index - 1], node) : 0), 0);
   const makeRows = (group: InterfaceWiringNode[]) => {
     const rows: InterfaceWiringNode[][] = [];
     let row: InterfaceWiringNode[] = [];
     let rowWidth = 0;
     for (const node of group) {
       const nodeWidth = dimensions.get(node.id)!.width;
-      const candidateWidth = rowWidth + (row.length ? columnGap : 0) + nodeWidth;
+      const candidateWidth = rowWidth + (row.length ? nodeGap(row[row.length - 1], node) : 0) + nodeWidth;
       if (row.length && candidateWidth > usableWidth) {
         rows.push(row);
         row = [node];
@@ -1309,19 +1352,96 @@ function placeDirectChildrenInCompactRows(
     for (const row of rows) {
       const rowHeight = Math.max(...row.map((node) => dimensions.get(node.id)!.height));
       const centerY = boundary + direction * rowHeight / 2;
-      const rowWidth = row.reduce((total, node) => total + dimensions.get(node.id)!.width, 0) + columnGap * (row.length - 1);
+      const rowWidth = getRowWidth(row);
       let cursorX = (width - rowWidth) / 2;
-      row.forEach((node) => {
+      row.forEach((node, index) => {
         const nodeWidth = dimensions.get(node.id)!.width;
         const centerX = cursorX + nodeWidth / 2;
         positions.set(node.id, { x: centerX, y: centerY });
-        cursorX += nodeWidth + columnGap;
+        cursorX += nodeWidth + (row[index + 1] ? nodeGap(node, row[index + 1]) : 0);
       });
       boundary += direction * (rowHeight + 170);
     }
   };
   placeGroup(topNodes, -1);
   placeGroup(bottomNodes, 1);
+}
+
+function isCompactSpeakerGroup(node: InterfaceWiringNode) {
+  return node.category === "speaker" && node.ports.length === 1 && Boolean(node.ports[0]?.deviceSequenceRange);
+}
+
+function placeCompactSpeakerChildRow(input: {
+  nodes: InterfaceWiringNode[];
+  parentCenter: { x: number; y: number };
+  parentSize: { width: number; height: number };
+  rootCenter: { x: number; y: number };
+  dimensions: Map<string, { width: number; height: number }>;
+  positions: Map<string, { x: number; y: number }>;
+  placedRects: Array<{ id: string; x: number; y: number; width: number; height: number }>;
+  width: number;
+  sidePadding: number;
+}) {
+  const { nodes, parentCenter, parentSize, rootCenter, dimensions, positions, placedRects, width, sidePadding } = input;
+  const gap = COMPACT_SPEAKER_GAP;
+  const rowGap = 32;
+  const usableWidth = width - sidePadding * 2;
+  const rows: InterfaceWiringNode[][] = [];
+  let row: InterfaceWiringNode[] = [];
+  let rowWidth = 0;
+  nodes.forEach((node) => {
+    const nodeWidth = dimensions.get(node.id)!.width;
+    const candidateWidth = rowWidth + (row.length ? gap : 0) + nodeWidth;
+    if (row.length && candidateWidth > usableWidth) {
+      rows.push(row);
+      row = [node];
+      rowWidth = nodeWidth;
+    } else {
+      row.push(node);
+      rowWidth = candidateWidth;
+    }
+  });
+  if (row.length) rows.push(row);
+  const rowHeights = rows.map((items) => Math.max(...items.map((node) => dimensions.get(node.id)!.height)));
+  const direction = parentCenter.y >= rootCenter.y ? 1 : -1;
+  let distance = parentSize.height / 2 + rowHeights[0] / 2 + 88;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    let centerY = parentCenter.y + direction * distance;
+    const candidates = rows.flatMap((items, rowIndex) => {
+      const currentRowWidth = items.reduce((sum, node) => sum + dimensions.get(node.id)!.width, 0) + gap * (items.length - 1);
+      const centerX = Math.max(
+        sidePadding + currentRowWidth / 2,
+        Math.min(width - sidePadding - currentRowWidth / 2, parentCenter.x)
+      );
+      let cursorX = centerX - currentRowWidth / 2;
+      const rowCandidates = items.map((node) => {
+        const size = dimensions.get(node.id)!;
+        const candidate = {
+          id: node.id,
+          x: cursorX,
+          y: centerY - size.height / 2,
+          width: size.width,
+          height: size.height
+        };
+        cursorX += size.width + gap;
+        return candidate;
+      });
+      const nextHeight = rowHeights[rowIndex + 1];
+      if (nextHeight) centerY += direction * (rowHeights[rowIndex] / 2 + rowGap + nextHeight / 2);
+      return rowCandidates;
+    });
+    if (!candidates.some((candidate) => placedRects.some((placed) => rectanglesOverlap(candidate, placed, 48)))) {
+      candidates.forEach((candidate) => {
+        positions.set(candidate.id, {
+          x: candidate.x + candidate.width / 2,
+          y: candidate.y + candidate.height / 2
+        });
+        placedRects.push(candidate);
+      });
+      return;
+    }
+    distance += rowHeights.reduce((sum, height) => sum + height, 0) + rowGap * (rows.length - 1) + 56;
+  }
 }
 
 function getRootPortHorizontalScore(
@@ -1437,6 +1557,7 @@ function getPreferredNodeWidth(node: InterfaceWiringNode, isRoot: boolean, canva
     const preferred = interfacePanel && interfacePanel.aspectRatio < 2.4 ? 420 : 760;
     return Math.min(preferred, maxWidth);
   }
+  if (isCompactSpeakerGroup(node)) return Math.min(COMPACT_SPEAKER_NODE_WIDTH, maxWidth);
   if (!interfacePanel) return Math.min(300, maxWidth);
   if (interfacePanel.aspectRatio >= 3) return Math.min(520, maxWidth);
   if (interfacePanel.aspectRatio < 0.9) return Math.min(280, maxWidth);

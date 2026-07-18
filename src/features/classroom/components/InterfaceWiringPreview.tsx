@@ -284,9 +284,15 @@ function InterfaceWiringNodeCard({
   });
   const hasUnlocatedPorts = markers.some((marker) => !marker.located);
   return (
-    <div className={`interfaceWiringNode ${imageRect ? "hasInterfacePanel" : "missingInterfacePanel"}`} data-level={node.level}>
+    <div
+      className={`interfaceWiringNode ${imageRect ? "hasInterfacePanel" : "missingInterfacePanel"}`}
+      data-level={node.level}
+      data-category={node.category}
+    >
       <strong className="interfaceWiringNodeName">
-        {node.label}{node.quantity > 1 ? ` ×${node.quantity}` : ""}
+        {node.ports[0]
+          ? getInterfaceWiringUsageDeviceLabel(node, node.ports[0])
+          : `${node.label}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`}
       </strong>
       {imageRect && panelProfile && panelImage && (
         <img

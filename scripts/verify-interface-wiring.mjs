@@ -457,8 +457,15 @@ const crossingCase = buildModel(crossingProfile);
 const crossingLayout = getInterfaceWiringLayout(crossingCase.model, 993);
 const crossingComputer = crossingCase.model.nodes.find((item) => item.label === "讲台电脑");
 assert.ok(crossingComputer);
-assert.ok(crossingLayout.positions.speakers.centerX < crossingLayout.positions[crossingComputer.id].centerX);
-console.log("PASS child devices follow their root-port side so SPK and USB routes do not cross by default");
+const crossingSpeakerGroups = crossingCase.model.nodes.filter((item) => item.category === "speaker");
+assert.equal(crossingSpeakerGroups.length, 4);
+assert.ok(crossingSpeakerGroups.every((item) => crossingLayout.positions[item.id].centerX < crossingLayout.positions[crossingComputer.id].centerX));
+const crossingSpeakerPositions = crossingSpeakerGroups.map((item) => crossingLayout.positions[item.id]);
+assert.equal(new Set(crossingSpeakerPositions.map((item) => item.centerY)).size, 1);
+for (let index = 1; index < crossingSpeakerPositions.length; index += 1) {
+  assert.equal(crossingSpeakerPositions[index].x - (crossingSpeakerPositions[index - 1].x + crossingSpeakerPositions[index - 1].width), 0);
+}
+console.log("PASS SPK child groups stay compact on the root-port side so speaker and USB routes do not cross by default");
 
 const crossingReferences = getInterfaceWiringPortReferenceNumbers(crossingCase.model);
 const crossingPorts = crossingCase.model.nodes.flatMap((item) => item.ports);
@@ -470,20 +477,31 @@ assert.equal(crossingPorts.length, crossingCase.model.edges.length * 2);
 for (let reference = 1; reference <= crossingCase.model.edges.length; reference += 1) {
   assert.equal(crossingPorts.filter((port) => crossingReferences[port.id] === reference).length, 2);
 }
-const crossingSpeakers = node(crossingCase.model, "speakers");
-assert.deepEqual(crossingSpeakers.ports.map((port) => port.deviceSequenceRange), [
+assert.deepEqual(crossingSpeakerGroups.map((item) => item.quantity), [2, 2, 1, 1]);
+assert.ok(crossingSpeakerGroups.every((item) => item.ports.length === 1));
+assert.deepEqual(crossingSpeakerGroups.map((item) => item.ports[0].deviceSequenceRange), [
   { start: 1, end: 2 },
   { start: 3, end: 4 },
   { start: 5, end: 5 },
   { start: 6, end: 6 }
 ]);
-assert.deepEqual(crossingSpeakers.ports.map((port) => getInterfaceWiringUsageDeviceLabel(crossingSpeakers, port)), [
-  "壁挂音箱 1-2",
-  "壁挂音箱 3-4",
+assert.deepEqual(crossingSpeakerGroups.map((item) => getInterfaceWiringUsageDeviceLabel(item, item.ports[0])), [
+  "壁挂音箱 1-2 ×2",
+  "壁挂音箱 3-4 ×2",
   "壁挂音箱 5",
   "壁挂音箱 6"
 ]);
-console.log("PASS each cable has one diagram-wide reference shared by both endpoints and speaker rows expose structured sequence groups");
+const ceilingSpeakerCase = buildModel(makeProfile({
+  length: 10,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "full",
+  speakerProductOverride: "ceiling"
+}));
+const ceilingSpeakerGroups = ceilingSpeakerCase.model.nodes.filter((item) => item.category === "speaker");
+assert.ok(ceilingSpeakerGroups.length > 1);
+assert.ok(ceilingSpeakerGroups.every((item) => item.label.includes("吸顶音箱") && item.ports.length === 1));
+console.log("PASS each cable shares one endpoint reference while wall and ceiling speakers split into compact SPK groups");
 
 const models = [
   ...Array.from(ringCases.values()).map((item) => item.model),
