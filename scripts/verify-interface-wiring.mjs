@@ -209,6 +209,15 @@ assert.equal(twoLine.outputs.generatedPoints.filter((point) => point.pickupKind 
 assert.equal(twoLine.outputs.generatedPoints.filter((point) => point.pickupKind === "smallDisc02").length, 0);
 assert.equal(twoLine.model.candidateProcessor, "AJ600");
 assert.equal(node(twoLine.model, "line-array-converter").quantity, 1);
+const twoLineArrayNodes = twoLine.model.nodes.filter((item) => item.productId === LINE_ARRAY_PRODUCT_ID);
+assert.deepEqual(twoLineArrayNodes.map((item) => [item.id, item.label, item.quantity, item.parentId]), [
+  ["line-array-1", "智能线阵麦克风 1", 1, "processor"],
+  ["line-array-2", "智能线阵麦克风 2", 1, "line-array-converter"]
+]);
+assert.deepEqual(
+  twoLineArrayNodes.map((item) => item.ports.map((port) => port.label)),
+  [["RJ45"], ["RJ45"]]
+);
 assert.deepEqual(
   processorPortLabels(twoLine.model).filter((label) => label === "MIC1" || label === "MIC2" || label === "EXTMIC").sort(),
   ["EXTMIC", "MIC1", "MIC2"]
@@ -252,6 +261,15 @@ assert.equal(twoLineWith02.model.candidateProcessor, "AJ600");
 assert.equal(node(twoLineWith02.model, "line-array-converter").quantity, 2);
 assert.equal(twoLineWith02.model.edges.filter((edge) => edge.id.startsWith("line-array-converter-link-")).length, 2);
 assert.equal(twoLineWith02.model.edges.filter((edge) => edge.id.startsWith("line-array-converter-mic-")).length, 4);
+assert.deepEqual(
+  twoLineWith02.model.nodes
+    .filter((item) => item.productId === LINE_ARRAY_PRODUCT_ID)
+    .map((item) => [item.id, item.label, item.quantity, item.parentId]),
+  [
+    ["line-array-1", "智能线阵麦克风 1", 1, "line-array-converter"],
+    ["line-array-2", "智能线阵麦克风 2", 1, "line-array-converter"]
+  ]
+);
 assert.deepEqual(
   processorPortLabels(twoLineWith02.model).filter((label) => /^MIC[1-4]$/.test(label) || label === "EXTMIC").sort(),
   ["EXTMIC", "MIC1", "MIC2", "MIC3", "MIC4"]
@@ -583,10 +601,24 @@ const recordingTerminalOffsets = recordingLineOutEdge.conductors.map((conductor)
 );
 assert.equal(new Set(recordingTerminalOffsets.map((offset) => offset.x + ":" + offset.y)).size, 3);
 const wiringPreviewSource = readFileSync("src/features/classroom/components/InterfaceWiringPreview.tsx", "utf8");
+const wiringPreviewStyles = readFileSync("src/features/classroom/components/InterfaceWiringPreview.css", "utf8");
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
 assert.match(wiringPreviewSource, /podium-computer-rear-panel\.png/);
 assert.match(wiringPreviewSource, /podiumComputer:\s*podiumComputerRearPanel/);
 assert.match(wiringPreviewSource, /音频双向；RS232调试/);
+assert.match(wiringPreviewSource, /const rows = model\.edges\.flatMap/);
+assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
+assert.match(wiringPreviewSource, /设备（从 \/ 到）/);
+assert.match(wiringPreviewSource, /接口（从 \/ 到）/);
+assert.doesNotMatch(wiringPreviewSource, /data-reference-side/);
+assert.match(wiringPreviewSource, /const progresses = \[0\.5, 0\.46, 0\.54/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringPortTable \{\s*max-height: none;\s*overflow: visible;/);
+assert.doesNotMatch(wiringPreviewStyles, /\.interfaceWiringPortTable \{\s*max-height: 520px/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker,\s*\.interfaceWiringLegendSwatch\.audio \{[\s\S]*?background: #e2e8f0;/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker i:first-child,[\s\S]*?background: #dc2626;/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker i:nth-child\(2\),[\s\S]*?background: #ffffff;/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.audio i:nth-child\(3\) \{\s*background: #6b7280;/);
+console.log("PASS each cable has one centered reference and one fully expanded from-to usage row");
 console.log("PASS LINE OUT maps +, -, G to three distinct review heads and wiring SVG contains no arrows");
 
 const overflowLines = Array.from({ length: 5 }, (_, index) => ({

@@ -250,11 +250,10 @@ function InterfaceWiringDiagram({
             <g key={`${edge.id}-references`} className="interfaceWiringEdgeReferences" data-edge-id={edge.id}>
               {drawing.referenceBadges.map((badge) => (
                 <g
-                  key={`${edge.id}-${badge.side}-reference`}
+                  key={`${edge.id}-reference`}
                   className={`interfaceWiringEdgeReference ${unconfirmed ? "unconfirmed" : ""}`}
                   transform={`translate(${badge.x} ${badge.y})`}
                   data-reference-number={badge.referenceNumber}
-                  data-reference-side={badge.side}
                 >
                   <circle r="9" />
                   <text textAnchor="middle" dy="0.34em">{badge.referenceNumber}</text>
@@ -431,12 +430,21 @@ function InterfacePortUsageTable({
   model: InterfaceWiringModel;
   portReferenceNumbers: Record<string, number>;
 }) {
-  const rows = model.nodes.flatMap((node) => node.ports.map((port) => ({ node, port })));
+  const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
+  const rows = model.edges.flatMap((edge) => {
+    const fromNode = nodeMap.get(edge.fromNodeId);
+    const toNode = nodeMap.get(edge.toNodeId);
+    const fromPort = fromNode?.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = toNode?.ports.find((port) => port.id === edge.toPortId);
+    return fromNode && toNode && fromPort && toPort
+      ? [{ edge, fromNode, toNode, fromPort, toPort }]
+      : [];
+  });
   return (
     <section className="interfaceWiringTableSection">
       <div className="interfaceWiringSubHeader">
         <h4>接口占用表</h4>
-        <span>只列当前方案已用接口</span>
+        <span>每根线一行，只列当前方案已用接口</span>
       </div>
       <div className="tableBox interfaceWiringPortTable">
         {rows.length ? (
@@ -444,20 +452,22 @@ function InterfacePortUsageTable({
             <thead>
               <tr>
                 <th>图中编号</th>
-                <th>设备</th>
-                <th>已用接口</th>
-                <th>接口形式</th>
-                <th>连接到</th>
+                <th>设备（从 / 到）</th>
+                <th>接口（从 / 到）</th>
+                <th>接口形式（从 / 到）</th>
+                <th>线材</th>
+                <th>接线方式</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ node, port }) => (
-                <tr key={port.id} className={port.confirmed ? "" : "unconfirmed"}>
-                  <td><span className="interfaceWiringTablePortPin">{portReferenceNumbers[port.id]}</span></td>
-                  <td>{getInterfaceWiringUsageDeviceLabel(node, port)}</td>
-                  <td>{port.label}</td>
-                  <td>{port.interfaceType}</td>
-                  <td>{model.nodes.find((item) => item.id === port.peerNodeId)?.label ?? "外接设备"} [{port.peerPortLabel}]</td>
+              {rows.map(({ edge, fromNode, toNode, fromPort, toPort }) => (
+                <tr key={edge.id} className={fromPort.confirmed && toPort.confirmed ? "" : "unconfirmed"}>
+                  <td><span className="interfaceWiringTablePortPin">{portReferenceNumbers[edge.fromPortId]}</span></td>
+                  <td><FromToCell from={getInterfaceWiringUsageDeviceLabel(fromNode, fromPort)} to={getInterfaceWiringUsageDeviceLabel(toNode, toPort)} /></td>
+                  <td><FromToCell from={fromPort.label} to={toPort.label} /></td>
+                  <td><FromToCell from={fromPort.interfaceType} to={toPort.interfaceType} /></td>
+                  <td>{edge.cableType}{edge.quantity > 1 ? ` ×${edge.quantity}` : ""}</td>
+                  <td>{edge.connectionMethod}</td>
                 </tr>
               ))}
             </tbody>
@@ -465,6 +475,15 @@ function InterfacePortUsageTable({
         ) : <div className="emptyState">当前方案没有可生成的接口接线。</div>}
       </div>
     </section>
+  );
+}
+
+function FromToCell({ from, to }: { from: string; to: string }) {
+  return (
+    <span className="interfaceWiringFromToCell">
+      <span><b>从</b>{from}</span>
+      <span><b>到</b>{to}</span>
+    </span>
   );
 }
 
@@ -655,7 +674,6 @@ function buildEdgeDrawings(
     referenceBadges: Array<{
       x: number;
       y: number;
-      side: "from" | "to";
       referenceNumber: number;
     }>;
   }>();
@@ -712,13 +730,11 @@ function buildEdgeDrawings(
       };
     });
     const referenceNumber = portReferenceNumbers[edge.fromPortId] ?? portReferenceNumbers[edge.toPortId];
-    const referenceBadges = referenceNumber
-      ? (["from", "to"] as const).map((side) => {
-          const point = findReferenceBadgePoint(route, side, nodeRects, usedReferencePoints);
-          usedReferencePoints.push(point);
-          return { ...point, side, referenceNumber };
-        })
-      : [];
+    const referencePoint = referenceNumber
+      ? findReferenceBadgePoint(route, nodeRects, usedReferencePoints)
+      : undefined;
+    if (referencePoint) usedReferencePoints.push(referencePoint);
+    const referenceBadges = referencePoint ? [{ ...referencePoint, referenceNumber }] : [];
     drawings.set(edge.id, { route, conductorRoutes, referenceBadges });
   });
   return drawings;
@@ -760,19 +776,17 @@ function movePointToward(
 
 function findReferenceBadgePoint(
   route: ReturnType<typeof getEdgeRoute>,
-  side: "from" | "to",
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
   usedReferencePoints: Array<{ x: number; y: number }>
 ) {
-  const progresses = Array.from({ length: 18 }, (_, index) => 0.05 + index * 0.025);
-  const orderedProgresses = side === "from" ? progresses : progresses.map((progress) => 1 - progress);
-  const outsideNodes = orderedProgresses.flatMap((progress) => {
+  const progresses = [0.5, 0.46, 0.54, 0.42, 0.58, 0.38, 0.62, 0.34, 0.66];
+  const outsideNodes = progresses.flatMap((progress) => {
     const point = cubicPoint(route.from, route.control1, route.control2, route.to, progress);
     return nodeRects.some((rect) => pointInsideRect(point, rect, 11)) ? [] : [point];
   });
   return outsideNodes.find((point) => usedReferencePoints.every((used) => Math.hypot(point.x - used.x, point.y - used.y) >= 22))
     ?? outsideNodes[0]
-    ?? cubicPoint(route.from, route.control1, route.control2, route.to, side === "from" ? 0.46 : 0.54);
+    ?? cubicPoint(route.from, route.control1, route.control2, route.to, 0.5);
 }
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {

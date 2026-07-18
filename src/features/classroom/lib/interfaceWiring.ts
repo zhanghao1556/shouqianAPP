@@ -313,13 +313,16 @@ class CandidateWiringBuilder {
 
   private addLineArrayConnections(processor: InterfaceWiringNode, state: SystemState) {
     const lineProfile = getDevicePortProfile(LINE_ARRAY_PRODUCT_ID)!;
-    const lineMic = this.ensureNode({
-      id: "line-array",
-      productId: LINE_ARRAY_PRODUCT_ID,
-      label: lineProfile.customerName,
-      internalModel: lineProfile.internalModel,
-      category: "microphone",
-      quantity: state.lineArrayCount
+    const lineMics = Array.from({ length: state.lineArrayCount }, (_, index) => {
+      const sequence = index + 1;
+      return this.ensureNode({
+        id: state.lineArrayCount === 1 ? "line-array" : `line-array-${sequence}`,
+        productId: LINE_ARRAY_PRODUCT_ID,
+        label: state.lineArrayCount === 1 ? lineProfile.customerName : `${lineProfile.customerName} ${sequence}`,
+        internalModel: lineProfile.internalModel,
+        category: "microphone",
+        quantity: 1
+      });
     });
     const directCount = state.supplementCount > 0 ? 0 : Math.min(1, state.lineArrayCount);
     const convertedCount = Math.max(0, state.lineArrayCount - directCount);
@@ -333,17 +336,16 @@ class CandidateWiringBuilder {
         quantity: convertedCount
       });
       this.explicitParents.set(converter.id, processor.id);
-      this.explicitParents.set(lineMic.id, converter.id);
-    } else {
-      this.explicitParents.set(lineMic.id, processor.id);
     }
 
     if (directCount > 0) {
+      const directLineMic = lineMics[0];
+      this.explicitParents.set(directLineMic.id, processor.id);
       const processorPortId = this.candidateProcessor === "AJ350" ? "amic" : "extmic";
       this.addConnection({
         id: "line-array-direct-1",
-        fromNode: lineMic,
-        fromPort: this.unitPort(LINE_ARRAY_PRODUCT_ID, "rj45", 1, state.lineArrayCount),
+        fromNode: directLineMic,
+        fromPort: this.requirePort(LINE_ARRAY_PRODUCT_ID, "rj45"),
         toNode: processor,
         toPort: this.requirePort(this.processorProductId!, processorPortId),
         cableType: "网线（T568B）",
@@ -355,10 +357,12 @@ class CandidateWiringBuilder {
       const micPorts = getDevicePortsByPrefix(this.processorProductId!, "mic");
       for (let converterIndex = 1; converterIndex <= convertedCount; converterIndex += 1) {
         const lineUnitIndex = directCount + converterIndex;
+        const convertedLineMic = lineMics[lineUnitIndex - 1];
+        this.explicitParents.set(convertedLineMic.id, converter.id);
         this.addConnection({
           id: `line-array-converter-link-${converterIndex}`,
-          fromNode: lineMic,
-          fromPort: this.unitPort(LINE_ARRAY_PRODUCT_ID, "rj45", lineUnitIndex, state.lineArrayCount),
+          fromNode: convertedLineMic,
+          fromPort: this.requirePort(LINE_ARRAY_PRODUCT_ID, "rj45"),
           toNode: converter,
           toPort: this.unitPort(LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID, "link", converterIndex, convertedCount),
           cableType: "网线（T568B）",

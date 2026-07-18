@@ -196,7 +196,7 @@
 
 .interfaceWiringDataGrid {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -227,21 +227,20 @@
 }
 
 .interfaceWiringPortTable {
-  max-height: 520px;
+  max-height: none;
+  overflow: visible;
   border: 1px solid #c8d3df;
   border-radius: 6px;
   background: #ffffff;
 }
 
 .interfaceWiringPortTable table {
-  min-width: 860px;
+  min-width: 0;
+  table-layout: fixed;
   font-size: 12px;
 }
 
 .interfaceWiringPortTable th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   background: #edf3f8;
   color: #475569;
 }
@@ -260,8 +259,44 @@
 
 .interfaceWiringPortTable th:first-child,
 .interfaceWiringPortTable td:first-child {
-  width: 74px;
+  width: 64px;
   text-align: center;
+}
+
+.interfaceWiringPortTable th:nth-child(2),
+.interfaceWiringPortTable td:nth-child(2) {
+  width: 20%;
+}
+
+.interfaceWiringPortTable th:nth-child(3),
+.interfaceWiringPortTable td:nth-child(3) {
+  width: 16%;
+}
+
+.interfaceWiringPortTable th:nth-child(4),
+.interfaceWiringPortTable td:nth-child(4) {
+  width: 21%;
+}
+
+.interfaceWiringPortTable th:nth-child(5),
+.interfaceWiringPortTable td:nth-child(5) {
+  width: 13%;
+}
+
+.interfaceWiringFromToCell {
+  display: grid;
+  gap: 4px;
+}
+
+.interfaceWiringFromToCell span {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 3px;
+}
+
+.interfaceWiringFromToCell b {
+  color: #0b5cad;
+  font-size: 10px;
 }
 
 .interfaceWiringTablePortPin {
@@ -365,17 +400,25 @@
 }
 
 .interfaceWiringLegendSwatch {
+  box-sizing: border-box;
   width: 66px;
-  height: 16px;
+  height: 18px;
   display: grid;
   align-content: center;
   gap: 2px;
 }
 
+.interfaceWiringLegendSwatch.speaker,
+.interfaceWiringLegendSwatch.audio {
+  padding: 2px 3px;
+  border-radius: 2px;
+  background: #e2e8f0;
+}
+
 .interfaceWiringLegendSwatch i {
   display: block;
-  width: 62px;
-  height: 2px;
+  width: 60px;
+  height: 3px;
   border-radius: 1px;
   background: #475569;
 }
@@ -387,13 +430,12 @@
 
 .interfaceWiringLegendSwatch.speaker i:nth-child(2),
 .interfaceWiringLegendSwatch.audio i:nth-child(2) {
-  height: 2px;
-  border: 1px solid #64748b;
   background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.38);
 }
 
 .interfaceWiringLegendSwatch.audio i:nth-child(3) {
-  background: #64748b;
+  background: #6b7280;
 }
 
 .interfaceWiringLegendSwatch.network i {

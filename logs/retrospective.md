@@ -2169,3 +2169,18 @@ PowerShell reminder:
 - Avoidance geometry must not redefine the electrical endpoint. Start every route at the calibrated connector or hole center and preserve the established curved path; a forced node-boundary exit can make a correct connection look disconnected from its physical port.
 - Foreground visibility and collision avoidance are both required. Render device nodes first, then cable trunks, terminal leads and reference numbers, while still rejecting routes through unrelated devices and labels. Moving all wires behind devices hides terminal entry; moving them forward without route avoidance merely trades one obstruction for another.
 - Protect the visual contract with source and rendered assertions: no boundary-exit helper, every trunk remains a curve, nodes precede trunks and terminal leads, references follow all wiring, arrows are absent, reference badges do not intersect device rectangles and the canvas never exceeds its container.
+
+### 2026-07-18 per-unit interface node guardrail
+
+- Equipment-list aggregation and terminal-level wiring are different representations. A BOM may show `device ×2`, but a wiring drawing must split the units when each physical device owns its own connector and cable.
+- One grouped node cannot truthfully represent units with different parents. If one line-array microphone connects directly to the processor and another connects through an extender, create two physical nodes before hierarchy calculation instead of assigning one parent to the aggregate.
+- Once units are split, use the base physical port on each node rather than indexed visual offsets on one shared panel. Node IDs make the ports unique; both cables can then terminate at the real RJ45 center without inventing duplicate sockets.
+- Regression coverage for repeated equipment must assert node count, per-node quantity, visible sequence label, parent assignment and one-port ownership, not only the total product quantity or edge count.
+
+### 2026-07-18 edge-level reference and usage-table guardrail
+
+- A drawing reference identifies one physical cable, not each endpoint port. Render one badge near the route midpoint and reuse that same reference in one table row; two endpoint badges visually imply two cables.
+- An interface usage table should project edges rather than flatten ports. Each row must include both endpoint devices, both endpoint labels, both interface forms, the cable and the connection method so the installer can audit one complete connection without joining duplicate rows mentally.
+- Removing a vertical max-height is insufficient when a shared table wrapper still sets `overflow: auto`. Override overflow explicitly, remove sticky-header behavior and verify `clientHeight === scrollHeight` plus `clientWidth === scrollWidth` in the rendered page.
+- A white conductor should remain visibly white. Put red/white and red/white/gray swatches on a neutral light background and use only a subtle outline around white; a dark border that dominates the fill misrepresents the conductor color.
+- Protect the combined contract with rendered counts: edge count equals reference-badge count equals usage-row count equals unique table-reference count, every row contains all from/to fields, and neither the table nor the page has internal or horizontal overflow.
