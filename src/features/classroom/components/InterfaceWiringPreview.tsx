@@ -35,7 +35,7 @@ import "./InterfaceWiringPreview.css";
 const CABLE_LEGEND_BASE_HEIGHT = 52;
 const CABLE_LEGEND_ROW_HEIGHT = 28;
 const CABLE_LEGEND_TOP_GAP = 24;
-const CABLE_LEGEND_BOTTOM_GAP = 18;
+const CABLE_LEGEND_BOTTOM_GAP = 28;
 
 const interfacePanelImages: Record<string, string> = {
   aj200: aj200InterfacePanel,

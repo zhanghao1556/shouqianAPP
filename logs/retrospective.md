@@ -2113,3 +2113,4 @@ PowerShell reminder:
 
 - Shrinking a legend without shrinking its canvas reserve leaves the same empty drawing area. Calculate bottom reserve from the actual legend row count, then verify both the table box and the node-to-legend gap in rendered pixels.
 - Keep conductor meaning legible while compacting: reduce row height, padding, swatch length and overall width together, but preserve the existing text size and verify every cell has no scroll overflow.
+- SVG canvas bounds and the visible drawing-frame bounds are not interchangeable. Every inset panel must be checked against the inner frame rectangle, including its bottom edge; canvas-relative padding can still place content outside a frame that ends several pixels earlier.
