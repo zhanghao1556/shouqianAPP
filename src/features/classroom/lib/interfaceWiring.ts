@@ -87,6 +87,11 @@ interface ConnectionSeed {
 
 const COMPACT_SPEAKER_NODE_WIDTH = 112;
 const COMPACT_SPEAKER_GAP = 0;
+const GENERIC_BALANCED_AUDIO_TERMINALS: DevicePortTerminal[] = [
+  { id: "positive", label: "+", role: "positive", color: "#dc2626" },
+  { id: "negative", label: "-", role: "negative", color: "#ffffff" },
+  { id: "ground", label: "G", role: "ground", color: "#64748b" }
+];
 
 interface MutableLayoutPosition {
   x: number;
@@ -876,7 +881,14 @@ class CandidateWiringBuilder {
       message: `${node.label}的${direction === "input" ? "输入" : "输出"}接口形式未确认，图中保留通用标注，不阻断方案。`,
       nodeId: node.id
     });
-    return this.syntheticPort(`unconfirmed-${direction}-${edgeId}`, label, "接口形式待复核", direction, false);
+    return this.syntheticPort(
+      `unconfirmed-${direction}-${edgeId}`,
+      label,
+      "接口形式待复核",
+      direction,
+      false,
+      isAudio ? GENERIC_BALANCED_AUDIO_TERMINALS : []
+    );
   }
 
   private allocatePort(node: InterfaceWiringNode, prefix: string, responsibility: string) {
@@ -1111,12 +1123,7 @@ function getConductorMappings(
   });
   if (mappings.length) return mappings;
   if (!/USB/i.test(cableType) && /音频线|话筒线/i.test(cableType)) {
-    const defaultAudioTerminals: DevicePortTerminal[] = [
-      { id: "positive", label: "+", role: "positive", color: "#dc2626" },
-      { id: "negative", label: "-", role: "negative", color: "#ffffff" },
-      { id: "ground", label: "G", role: "ground", color: "#64748b" }
-    ];
-    return defaultAudioTerminals.map((fallbackTerminal) => {
+    return GENERIC_BALANCED_AUDIO_TERMINALS.map((fallbackTerminal) => {
       const fromTerminal = fromPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
       const toTerminal = toPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
       return {
@@ -1141,6 +1148,36 @@ function getConductorMappings(
     toTerminalLabel: toPort.panelLabel,
     confirmed: fromPort.confirmed && toPort.confirmed
   }];
+}
+
+const logicalTerminalRoleOrder: Record<DevicePortTerminal["role"], number> = {
+  positive: 0,
+  negative: 1,
+  ground: 2,
+  signal: 3,
+  pin: 4
+};
+
+export function getInterfaceWiringLogicalTerminals(terminals: DevicePortTerminal[]) {
+  return terminals
+    .filter((terminal) => terminal.role !== "pin")
+    .slice()
+    .sort((left, right) => logicalTerminalRoleOrder[left.role] - logicalTerminalRoleOrder[right.role]);
+}
+
+export function getInterfaceWiringLogicalTerminalOffset(
+  terminals: DevicePortTerminal[],
+  terminalId: string,
+  peerDelta: { x: number; y: number },
+  spacing = 12
+) {
+  const logicalTerminals = getInterfaceWiringLogicalTerminals(terminals);
+  const terminalIndex = logicalTerminals.findIndex((terminal) => terminal.id === terminalId);
+  if (terminalIndex < 0) return { x: 0, y: 0 };
+  const centeredOffset = (terminalIndex - (logicalTerminals.length - 1) / 2) * spacing;
+  return Math.abs(peerDelta.x) >= Math.abs(peerDelta.y)
+    ? { x: 0, y: centeredOffset }
+    : { x: centeredOffset, y: 0 };
 }
 
 function getConductorLabel(terminal: DevicePortTerminal, cableType: string) {

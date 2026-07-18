@@ -67,6 +67,22 @@ const balancedAnchor = (x: number, y: number, spread = 0.012): DevicePortVisualA
   negative: { x: x + spread, y }
 });
 
+const aj350BalancedAnchor = (
+  positiveX: number,
+  negativeX: number,
+  groundX: number,
+  terminalY: number
+): DevicePortVisualAnchor => {
+  const width = 1268;
+  const height = 206;
+  const y = terminalY / height;
+  return anchor(negativeX / width, y, {
+    positive: { x: positiveX / width, y },
+    negative: { x: negativeX / width, y },
+    ground: { x: groundX / width, y }
+  });
+};
+
 const speakerAnchor = (
   x: number,
   y: number,
@@ -174,14 +190,14 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       spk2: speakerAnchor(0.31, 0.35, { x: 0.299, y: 0.31 }, { x: 0.322, y: 0.31 }),
       spk3: speakerAnchor(0.24, 0.67, { x: 0.229, y: 0.64 }, { x: 0.252, y: 0.64 }),
       spk4: speakerAnchor(0.31, 0.67, { x: 0.299, y: 0.64 }, { x: 0.322, y: 0.64 }),
-      lineIn1: balancedAnchor(0.435, 0.36),
-      lineIn2: balancedAnchor(0.47, 0.36),
-      lineIn3: balancedAnchor(0.435, 0.66),
-      lineIn4: balancedAnchor(0.47, 0.66),
-      lineOut1: balancedAnchor(0.535, 0.36),
-      lineOut2: balancedAnchor(0.57, 0.36),
-      lineOut3: balancedAnchor(0.535, 0.66),
-      lineOut4: balancedAnchor(0.57, 0.66),
+      lineIn1: aj350BalancedAnchor(531.5, 551.5, 571, 87.5),
+      lineIn2: aj350BalancedAnchor(591, 611, 631, 87.5),
+      lineIn3: aj350BalancedAnchor(532, 552, 572, 125.5),
+      lineIn4: aj350BalancedAnchor(590.5, 610.5, 631, 125.5),
+      lineOut1: aj350BalancedAnchor(668, 688, 708, 87.5),
+      lineOut2: aj350BalancedAnchor(727.5, 747, 767, 87.5),
+      lineOut3: aj350BalancedAnchor(668, 688, 708, 125.5),
+      lineOut4: aj350BalancedAnchor(727, 747, 767, 125.5),
       amic: anchor(0.66, 0.5),
       a1: anchor(0.72, 0.5),
       a2: anchor(0.78, 0.5),
@@ -252,8 +268,8 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     customerName: "线阵拓展器",
     ports: [
       port("link", "LINK", "RJ45", "input", confirmedSource, true, rj45Terminals),
-      port("micOut1", "麦克风输出1（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false),
-      port("micOut2", "麦克风输出2（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false)
+      port("micOut1", "麦克风输出1（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false, balancedTerminals),
+      port("micOut2", "麦克风输出2（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false, balancedTerminals)
     ],
     interfacePanel: panel("lineArrayConverter", 260 / 139, {
       link: anchor(0.5, 0.5)

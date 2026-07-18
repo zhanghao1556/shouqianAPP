@@ -16,6 +16,8 @@ import {
   getInterfacePanelImageRect,
   getInterfacePanelPortAnchor,
   getInterfaceWiringLayout,
+  getInterfaceWiringLogicalTerminalOffset,
+  getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringUsageDeviceLabel
 } from "../lib/interfaceWiring";
@@ -140,14 +142,6 @@ function InterfaceWiringDiagram({
         role="img"
         aria-label="音曼接口接线图拟调整预览"
       >
-        <defs>
-          <marker id="interface-wiring-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0b5cad" />
-          </marker>
-          <marker id="interface-wiring-arrow-reverse" markerWidth="8" markerHeight="8" refX="1" refY="3" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-            <path d="M0,0 L0,6 L9,3 z" fill="#0b5cad" />
-          </marker>
-        </defs>
         <rect x="18" y="18" width={layout.width - 36} height={layout.height - 40} fill="#ffffff" stroke="#111827" strokeWidth="1" />
         <text x={layout.width / 2} y="48" textAnchor="middle" className="cadTitle">接口接线图</text>
         <text x={layout.width / 2} y="72" textAnchor="middle" className="cadSmall" fill="#9a6700">
@@ -189,20 +183,15 @@ function InterfaceWiringDiagram({
                   stroke={conductor.color}
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
+                  data-conductor-id={conductor.id}
+                  data-from-terminal-id={conductor.fromTerminalId}
+                  data-to-terminal-id={conductor.toTerminalId}
                   className={[
                     conductor.confirmed ? "" : "unconfirmedConductor",
                     needsOutline ? "lightConductor" : ""
                   ].filter(Boolean).join(" ")}
                 />
               ))}
-              <path
-                d={drawing.route.path}
-                fill="none"
-                stroke="transparent"
-                strokeWidth="5"
-                markerEnd="url(#interface-wiring-arrow)"
-                markerStart={edge.signalDirection === "bidirectional" ? "url(#interface-wiring-arrow-reverse)" : undefined}
-              />
             </g>
           );
         })}
@@ -244,42 +233,46 @@ function InterfaceWiringNodeCard({
     const panelAnchor = panelProfile
       ? getInterfacePanelPortAnchor(panelProfile, port.capabilityId, index, node.ports.length)
       : undefined;
-    if (imageRect && panelAnchor) {
-      const anchorLeft = imageRect.x - position.x + panelAnchor.x * imageRect.width;
-      const anchorTop = imageRect.y - position.y + panelAnchor.y * imageRect.height;
-      const badgeOffset = getPortNumberOffset(
-        position.x + anchorLeft,
-        position.y + anchorTop,
-        position,
-        positions[port.peerNodeId]
-      );
-      return {
-        port,
-        index,
-        referenceNumber: portReferenceNumbers[port.id],
-        anchorLeft,
-        anchorTop,
-        left: anchorLeft + badgeOffset.x,
-        top: anchorTop + badgeOffset.y,
-        located: true
-      };
-    }
-    const fallback = getFallbackPortMarker(node, index, position, imageRect, panelProfile);
+    const located = Boolean(imageRect && panelAnchor);
+    const fallback = located
+      ? undefined
+      : getFallbackPortMarker(node, index, position, imageRect, panelProfile);
+    const anchorLeft = imageRect && panelAnchor
+      ? imageRect.x - position.x + panelAnchor.x * imageRect.width
+      : fallback!.left;
+    const anchorTop = imageRect && panelAnchor
+      ? imageRect.y - position.y + panelAnchor.y * imageRect.height
+      : fallback!.top;
+    const peer = positions[port.peerNodeId];
+    const peerDelta = peer
+      ? { x: peer.centerX - (position.x + anchorLeft), y: peer.centerY - (position.y + anchorTop) }
+      : { x: 0, y: -1 };
     const badgeOffset = getPortNumberOffset(
-      position.x + fallback.left,
-      position.y + fallback.top,
+      position.x + anchorLeft,
+      position.y + anchorTop,
       position,
-      positions[port.peerNodeId]
+      peer
     );
+    const terminalHeads = getInterfaceWiringLogicalTerminals(port.terminals)
+      .filter((terminal) => !(imageRect && panelAnchor?.terminalAnchors?.[terminal.id]))
+      .map((terminal) => {
+        const offset = getInterfaceWiringLogicalTerminalOffset(port.terminals, terminal.id, peerDelta);
+        return {
+          ...terminal,
+          left: anchorLeft + offset.x,
+          top: anchorTop + offset.y
+        };
+      });
     return {
       port,
       index,
       referenceNumber: portReferenceNumbers[port.id],
-      anchorLeft: fallback.left,
-      anchorTop: fallback.top,
-      left: fallback.left + badgeOffset.x,
-      top: fallback.top + badgeOffset.y,
-      located: false
+      anchorLeft,
+      anchorTop,
+      left: anchorLeft + badgeOffset.x,
+      top: anchorTop + badgeOffset.y,
+      located,
+      terminalHeads
     };
   });
   const hasUnlocatedPorts = markers.some((marker) => !marker.located);
@@ -316,15 +309,27 @@ function InterfaceWiringNodeCard({
           {imageRect ? "接口位置待补充" : "接口图待补充"}
         </span>
       )}
-      {markers.map(({ port, referenceNumber, anchorLeft, anchorTop, left, top, located }) => (
+      {markers.map(({ port, referenceNumber, anchorLeft, anchorTop, left, top, located, terminalHeads }) => (
         <span className="interfaceWiringPortMarker" key={`${port.id}-pin`}>
-          {!located && (
+          {!located && terminalHeads.length === 0 && (
             <i
               className="interfaceWiringUnlocatedAnchor"
               aria-hidden="true"
               style={{ left: anchorLeft, top: anchorTop }}
             />
           )}
+          {terminalHeads.map((terminal) => (
+            <i
+              key={`${port.id}-${terminal.id}`}
+              className={`interfaceWiringLogicalTerminal ${terminal.role} ${terminal.color === "#ffffff" ? "light" : ""}`}
+              data-port-id={port.id}
+              data-terminal-id={terminal.id}
+              title={`${port.label} ${terminal.label}`}
+              style={{ left: terminal.left, top: terminal.top, backgroundColor: terminal.color }}
+            >
+              {terminal.label}
+            </i>
+          ))}
           <i
             className={`interfaceWiringPortPin ${port.confirmed ? "" : "unconfirmed"} ${located ? "" : "unlocated"}`}
             title={`${port.label} → ${port.peerPortLabel}`}
@@ -536,7 +541,8 @@ function getPortAnchor(
   node: InterfaceWiringNode,
   portId: string,
   position: WiringNodePosition,
-  terminalId?: string
+  terminalId?: string,
+  peer?: WiringNodePosition
 ) {
   const index = Math.max(0, node.ports.findIndex((port) => port.id === portId));
   const port = node.ports[index];
@@ -547,17 +553,42 @@ function getPortAnchor(
     : undefined;
   if (imageRect && visualAnchor) {
     const terminalAnchor = terminalId ? visualAnchor.terminalAnchors?.[terminalId] : undefined;
-    const anchorPoint = terminalAnchor ?? visualAnchor;
+    if (terminalAnchor) {
+      return {
+        x: imageRect.x + terminalAnchor.x * imageRect.width,
+        y: imageRect.y + terminalAnchor.y * imageRect.height
+      };
+    }
+    const basePoint = {
+      x: imageRect.x + visualAnchor.x * imageRect.width,
+      y: imageRect.y + visualAnchor.y * imageRect.height
+    };
+    const offset = terminalId && port
+      ? getInterfaceWiringLogicalTerminalOffset(port.terminals, terminalId, getPeerDelta(basePoint, peer))
+      : { x: 0, y: 0 };
     return {
-      x: imageRect.x + anchorPoint.x * imageRect.width,
-      y: imageRect.y + anchorPoint.y * imageRect.height
+      x: basePoint.x + offset.x,
+      y: basePoint.y + offset.y
     };
   }
   const fallback = getFallbackPortMarker(node, index, position, imageRect, panelProfile);
-  return {
+  const basePoint = {
     x: position.x + fallback.left,
     y: position.y + fallback.top
   };
+  const offset = terminalId && port
+    ? getInterfaceWiringLogicalTerminalOffset(port.terminals, terminalId, getPeerDelta(basePoint, peer))
+    : { x: 0, y: 0 };
+  return {
+    x: basePoint.x + offset.x,
+    y: basePoint.y + offset.y
+  };
+}
+
+function getPeerDelta(point: { x: number; y: number }, peer?: WiringNodePosition) {
+  return peer
+    ? { x: peer.centerX - point.x, y: peer.centerY - point.y }
+    : { x: 0, y: -1 };
 }
 
 function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeof getInterfaceWiringLayout>) {
@@ -591,8 +622,8 @@ function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeo
     const fromPosition = layout.positions[edge.fromNodeId];
     const toPosition = layout.positions[edge.toNodeId];
     if (!fromNode || !toNode || !fromPosition || !toPosition) return;
-    const from = getPortAnchor(fromNode, edge.fromPortId, fromPosition);
-    const to = getPortAnchor(toNode, edge.toPortId, toPosition);
+    const from = getPortAnchor(fromNode, edge.fromPortId, fromPosition, undefined, toPosition);
+    const to = getPortAnchor(toNode, edge.toPortId, toPosition, undefined, fromPosition);
     const pairKey = getPairKey(edge);
     const pairIndex = pairIndexes.get(pairKey) ?? 0;
     pairIndexes.set(pairKey, pairIndex + 1);
@@ -612,18 +643,25 @@ function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeo
         fromNode,
         edge.fromPortId,
         fromPosition,
-        conductor.fromTerminalId
+        conductor.fromTerminalId,
+        toPosition
       );
       const conductorTo = getPortAnchor(
         toNode,
         edge.toPortId,
         toPosition,
-        conductor.toTerminalId
+        conductor.toTerminalId,
+        fromPosition
       );
       const bundledRoute = getEdgeRoute(from, to, route.offset + conductorOffset);
       return {
         conductor,
-        path: getBundledConductorPath(conductorFrom, conductorTo, bundledRoute),
+        path: getBundledConductorPath(
+          conductorFrom,
+          conductorTo,
+          bundledRoute,
+          displayConductors.length > 1 ? 26 : 0
+        ),
         strokeWidth: isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
         needsOutline: conductor.color.toLowerCase() === "#ffffff"
       };
@@ -636,14 +674,33 @@ function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeo
 function getBundledConductorPath(
   terminalFrom: { x: number; y: number },
   terminalTo: { x: number; y: number },
-  route: ReturnType<typeof getEdgeRoute>
+  route: ReturnType<typeof getEdgeRoute>,
+  splitDistance: number
 ) {
+  const fromSplit = movePointToward(route.from, route.control1, splitDistance);
+  const toSplit = movePointToward(route.to, route.control2, splitDistance);
   return [
     `M ${terminalFrom.x} ${terminalFrom.y}`,
-    `L ${route.from.x} ${route.from.y}`,
-    `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${route.to.x} ${route.to.y}`,
+    `L ${fromSplit.x} ${fromSplit.y}`,
+    `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${toSplit.x} ${toSplit.y}`,
     `L ${terminalTo.x} ${terminalTo.y}`
   ].join(" ");
+}
+
+function movePointToward(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  distance: number
+) {
+  if (distance <= 0) return from;
+  const deltaX = to.x - from.x;
+  const deltaY = to.y - from.y;
+  const length = Math.hypot(deltaX, deltaY) || 1;
+  const ratio = Math.min(1, distance / length);
+  return {
+    x: from.x + deltaX * ratio,
+    y: from.y + deltaY * ratio
+  };
 }
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {

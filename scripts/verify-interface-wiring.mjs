@@ -2,18 +2,22 @@ import { build } from "esbuild";
 
 const testModule = String.raw`
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createInitialProfile } from "./src/features/classroom/data/initialProfile.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import {
   buildInterfaceWiringModel,
   getInterfacePanelPortAnchor,
   getInterfaceWiringLayout,
+  getInterfaceWiringLogicalTerminalOffset,
+  getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import {
+  PROCESSOR_AJ350_PORT_PROFILE_ID,
   PROCESSOR_AJ600_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
   WIRELESS_RECEIVER_PORT_PROFILE_ID,
@@ -322,6 +326,58 @@ assert.ok(unknownPort.model.findings.some((item) => item.code.startsWith("extern
 assert.ok(unknownPort.model.nodes.some((item) => item.ports.some((port) => !port.confirmed && port.label.includes("需复核"))));
 console.log("PASS unknown external interfaces stay visible as review items without blocking generation");
 
+const recordingLineOutOutputs = {
+  ...singleLine.outputs,
+  connectionLines: [
+    ...singleLine.outputs.connectionLines,
+    {
+      id: "test-line-out-recording",
+      fromDevice: "智能音频处理主机",
+      fromPort: "LINE OUT / 模拟输出",
+      toDevice: "录播主机",
+      toPort: "音频输入",
+      cableType: "音频线",
+      note: "双端线芯落点测试"
+    }
+  ]
+};
+const recordingLineOutModel = buildInterfaceWiringModel({
+  profile: singleLineProfile,
+  outputs: recordingLineOutOutputs,
+  brandId: "yinman"
+});
+const recordingLineOutEdge = recordingLineOutModel.edges.find((edge) => edge.id === "candidate-test-line-out-recording");
+assert.ok(recordingLineOutEdge);
+const recordingInputPort = recordingLineOutModel.nodes
+  .flatMap((item) => item.ports)
+  .find((port) => port.id === recordingLineOutEdge.toPortId);
+assert.ok(recordingInputPort);
+assert.equal(recordingInputPort.confirmed, false);
+assert.deepEqual(
+  getInterfaceWiringLogicalTerminals(recordingInputPort.terminals).map((terminal) => [terminal.id, terminal.label]),
+  [["positive", "+"], ["negative", "-"], ["ground", "G"]]
+);
+assert.deepEqual(
+  recordingLineOutEdge.conductors.map((conductor) => [
+    conductor.label,
+    conductor.color,
+    conductor.fromTerminalLabel,
+    conductor.toTerminalLabel
+  ]),
+  [
+    ["红线", "#dc2626", "+", "+"],
+    ["白线", "#ffffff", "-", "-"],
+    ["屏蔽线", "#64748b", "G", "G"]
+  ]
+);
+const recordingTerminalOffsets = recordingLineOutEdge.conductors.map((conductor) =>
+  getInterfaceWiringLogicalTerminalOffset(recordingInputPort.terminals, conductor.toTerminalId, { x: -100, y: 0 })
+);
+assert.equal(new Set(recordingTerminalOffsets.map((offset) => offset.x + ":" + offset.y)).size, 3);
+const wiringPreviewSource = readFileSync("src/features/classroom/components/InterfaceWiringPreview.tsx", "utf8");
+assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
+console.log("PASS LINE OUT maps +, -, G to three distinct review heads and wiring SVG contains no arrows");
+
 const overflowLines = Array.from({ length: 5 }, (_, index) => ({
   id: "test-line-out-" + (index + 1),
   fromDevice: "智能音频处理主机",
@@ -397,6 +453,19 @@ assert.match(aj600Profile.interfacePanel.source, /AJ600上面板/);
 const aj600MicPorts = aj600Profile.ports.filter((port) => /^mic\d+$/.test(port.id));
 assert.equal(aj600MicPorts.length, 6);
 assert.deepEqual(new Set(aj600MicPorts.map((port) => port.physicalGroupId)), new Set(["mic-block"]));
+const aj350Panel = getDevicePortProfile(PROCESSOR_AJ350_PORT_PROFILE_ID)?.interfacePanel;
+assert.ok(aj350Panel);
+assert.deepEqual(
+  ["positive", "negative", "ground"].map((terminalId) => {
+    const terminal = aj350Panel.portAnchors.lineOut1.terminalAnchors?.[terminalId];
+    return [terminalId, Number(terminal?.x.toFixed(6)), Number(terminal?.y.toFixed(6))];
+  }),
+  [
+    ["positive", 0.526814, 0.424757],
+    ["negative", 0.542587, 0.424757],
+    ["ground", 0.55836, 0.424757]
+  ]
+);
 const passiveSpeakerPanel = getDevicePortProfile(PASSIVE_SPEAKER_PORT_PROFILE_ID)?.interfacePanel;
 assert.ok(passiveSpeakerPanel);
 assert.equal(passiveSpeakerPanel.aspectRatio, 0.5);
@@ -513,6 +582,7 @@ const models = [
   smallDisc03.model,
   smallDiscUsb.model,
   unknownPort.model,
+  recordingLineOutModel,
   overflowModel,
   hanging.model,
   crossingCase.model
