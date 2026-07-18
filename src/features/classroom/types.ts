@@ -246,6 +246,7 @@ export interface InterfaceWiringPort {
   confirmed: boolean;
   terminals: DevicePortTerminal[];
   physicalGroupId?: string;
+  deviceSequenceRange?: { start: number; end: number };
 }
 
 export interface InterfaceWiringConductor {

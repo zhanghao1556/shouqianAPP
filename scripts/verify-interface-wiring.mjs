@@ -4,7 +4,13 @@ const testModule = String.raw`
 import assert from "node:assert/strict";
 import { createInitialProfile } from "./src/features/classroom/data/initialProfile.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
-import { buildInterfaceWiringModel, getInterfacePanelPortAnchor, getInterfaceWiringLayout } from "./src/features/classroom/lib/interfaceWiring.ts";
+import {
+  buildInterfaceWiringModel,
+  getInterfacePanelPortAnchor,
+  getInterfaceWiringLayout,
+  getInterfaceWiringPortReferenceNumbers,
+  getInterfaceWiringUsageDeviceLabel
+} from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import {
@@ -453,6 +459,31 @@ const crossingComputer = crossingCase.model.nodes.find((item) => item.label === 
 assert.ok(crossingComputer);
 assert.ok(crossingLayout.positions.speakers.centerX < crossingLayout.positions[crossingComputer.id].centerX);
 console.log("PASS child devices follow their root-port side so SPK and USB routes do not cross by default");
+
+const crossingReferences = getInterfaceWiringPortReferenceNumbers(crossingCase.model);
+const crossingPorts = crossingCase.model.nodes.flatMap((item) => item.ports);
+assert.deepEqual(
+  crossingCase.model.edges.map((edge) => [crossingReferences[edge.fromPortId], crossingReferences[edge.toPortId]]),
+  Array.from({ length: crossingCase.model.edges.length }, (_, index) => [index + 1, index + 1])
+);
+assert.equal(crossingPorts.length, crossingCase.model.edges.length * 2);
+for (let reference = 1; reference <= crossingCase.model.edges.length; reference += 1) {
+  assert.equal(crossingPorts.filter((port) => crossingReferences[port.id] === reference).length, 2);
+}
+const crossingSpeakers = node(crossingCase.model, "speakers");
+assert.deepEqual(crossingSpeakers.ports.map((port) => port.deviceSequenceRange), [
+  { start: 1, end: 2 },
+  { start: 3, end: 4 },
+  { start: 5, end: 5 },
+  { start: 6, end: 6 }
+]);
+assert.deepEqual(crossingSpeakers.ports.map((port) => getInterfaceWiringUsageDeviceLabel(crossingSpeakers, port)), [
+  "壁挂音箱 1-2",
+  "壁挂音箱 3-4",
+  "壁挂音箱 5",
+  "壁挂音箱 6"
+]);
+console.log("PASS each cable has one diagram-wide reference shared by both endpoints and speaker rows expose structured sequence groups");
 
 const models = [
   ...Array.from(ringCases.values()).map((item) => item.model),

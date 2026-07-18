@@ -15,7 +15,9 @@ import {
   buildInterfaceWiringModel,
   getInterfacePanelImageRect,
   getInterfacePanelPortAnchor,
-  getInterfaceWiringLayout
+  getInterfaceWiringLayout,
+  getInterfaceWiringPortReferenceNumbers,
+  getInterfaceWiringUsageDeviceLabel
 } from "../lib/interfaceWiring";
 import { getDevicePortProfile } from "../lib/devicePortCatalog";
 import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.png";
@@ -65,6 +67,7 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
   );
   const hardCount = model.findings.filter((item) => item.severity === "hard").length;
   const reviewCount = model.findings.filter((item) => item.severity === "review").length;
+  const portReferenceNumbers = useMemo(() => getInterfaceWiringPortReferenceNumbers(model), [model]);
   return (
     <section className="interfaceWiringPreview" aria-label="接口接线图拟调整预览">
       <header className="interfaceWiringPreviewHeader">
@@ -83,17 +86,23 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
         </div>
       </header>
 
-      <InterfaceWiringDiagram model={model} />
+      <InterfaceWiringDiagram model={model} portReferenceNumbers={portReferenceNumbers} />
 
       <div className="interfaceWiringDataGrid">
-        <InterfacePortUsageTable model={model} />
+        <InterfacePortUsageTable model={model} portReferenceNumbers={portReferenceNumbers} />
         <InterfaceWiringFindings findings={model.findings} />
       </div>
     </section>
   );
 }
 
-function InterfaceWiringDiagram({ model }: { model: InterfaceWiringModel }) {
+function InterfaceWiringDiagram({
+  model,
+  portReferenceNumbers
+}: {
+  model: InterfaceWiringModel;
+  portReferenceNumbers: Record<string, number>;
+}) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(1120);
   const cableLegendRows = useMemo(() => getCableLegendRows(model.edges), [model.edges]);
@@ -161,6 +170,7 @@ function InterfaceWiringDiagram({ model }: { model: InterfaceWiringModel }) {
                 node={node}
                 position={position}
                 positions={layout.positions}
+                portReferenceNumbers={portReferenceNumbers}
               />
             </foreignObject>
           );
@@ -219,11 +229,13 @@ type WiringNodePositions = ReturnType<typeof getInterfaceWiringLayout>["position
 function InterfaceWiringNodeCard({
   node,
   position,
-  positions
+  positions,
+  portReferenceNumbers
 }: {
   node: InterfaceWiringNode;
   position: WiringNodePosition;
   positions: WiringNodePositions;
+  portReferenceNumbers: Record<string, number>;
 }) {
   const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
   const panelImage = panelProfile ? interfacePanelImages[panelProfile.assetKey] : undefined;
@@ -244,6 +256,7 @@ function InterfaceWiringNodeCard({
       return {
         port,
         index,
+        referenceNumber: portReferenceNumbers[port.id],
         anchorLeft,
         anchorTop,
         left: anchorLeft + badgeOffset.x,
@@ -261,6 +274,7 @@ function InterfaceWiringNodeCard({
     return {
       port,
       index,
+      referenceNumber: portReferenceNumbers[port.id],
       anchorLeft: fallback.left,
       anchorTop: fallback.top,
       left: fallback.left + badgeOffset.x,
@@ -296,7 +310,7 @@ function InterfaceWiringNodeCard({
           {imageRect ? "接口位置待补充" : "接口图待补充"}
         </span>
       )}
-      {markers.map(({ port, index, anchorLeft, anchorTop, left, top, located }) => (
+      {markers.map(({ port, referenceNumber, anchorLeft, anchorTop, left, top, located }) => (
         <span className="interfaceWiringPortMarker" key={`${port.id}-pin`}>
           {!located && (
             <i
@@ -310,7 +324,7 @@ function InterfaceWiringNodeCard({
             title={`${port.label} → ${port.peerPortLabel}`}
             style={{ left, top }}
           >
-            {index + 1}
+            {referenceNumber}
           </i>
         </span>
       ))}
@@ -368,8 +382,14 @@ function getPortNumberOffset(
   return { x: outwardX, y: deltaY > 0 ? -distance : distance };
 }
 
-function InterfacePortUsageTable({ model }: { model: InterfaceWiringModel }) {
-  const rows = model.nodes.flatMap((node) => node.ports.map((port, portIndex) => ({ node, port, portIndex })));
+function InterfacePortUsageTable({
+  model,
+  portReferenceNumbers
+}: {
+  model: InterfaceWiringModel;
+  portReferenceNumbers: Record<string, number>;
+}) {
+  const rows = model.nodes.flatMap((node) => node.ports.map((port) => ({ node, port })));
   return (
     <section className="interfaceWiringTableSection">
       <div className="interfaceWiringSubHeader">
@@ -389,10 +409,10 @@ function InterfacePortUsageTable({ model }: { model: InterfaceWiringModel }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ node, port, portIndex }) => (
+              {rows.map(({ node, port }) => (
                 <tr key={port.id} className={port.confirmed ? "" : "unconfirmed"}>
-                  <td><span className="interfaceWiringTablePortPin">{portIndex + 1}</span></td>
-                  <td>{node.label}{node.quantity > 1 ? ` ×${node.quantity}` : ""}</td>
+                  <td><span className="interfaceWiringTablePortPin">{portReferenceNumbers[port.id]}</span></td>
+                  <td>{getInterfaceWiringUsageDeviceLabel(node, port)}</td>
                   <td>{port.label}</td>
                   <td>{port.interfaceType}</td>
                   <td>{model.nodes.find((item) => item.id === port.peerNodeId)?.label ?? "外接设备"} [{port.peerPortLabel}]</td>

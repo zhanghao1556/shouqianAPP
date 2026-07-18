@@ -11,7 +11,8 @@ import type {
   InterfaceWiringEdge,
   InterfaceWiringFinding,
   InterfaceWiringModel,
-  InterfaceWiringNode
+  InterfaceWiringNode,
+  InterfaceWiringPort
 } from "../types";
 import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
@@ -80,6 +81,8 @@ interface ConnectionSeed {
   connectionMethod: string;
   signalDirection?: InterfaceWiringEdge["signalDirection"];
   quantity?: number;
+  fromDeviceSequenceRange?: InterfaceWiringPort["deviceSequenceRange"];
+  toDeviceSequenceRange?: InterfaceWiringPort["deviceSequenceRange"];
 }
 
 interface MutableLayoutPosition {
@@ -659,7 +662,8 @@ class CandidateWiringBuilder {
         toPort: terminal,
         cableType: channelQuantity > 1 ? `音箱线 ×${channelQuantity}` : "音箱线",
         connectionMethod: "保持正负极一致",
-        quantity: channelQuantity
+        quantity: channelQuantity,
+        toDeviceSequenceRange: { start: firstSpeaker, end: lastSpeaker }
       });
       if (channelQuantity > 2) {
         this.addFinding({
@@ -899,7 +903,8 @@ class CandidateWiringBuilder {
       connectionMethod: seed.connectionMethod,
       confirmed: seed.fromPort.confirmed,
       terminals: seed.fromPort.terminals,
-      physicalGroupId: seed.fromPort.physicalGroupId
+      physicalGroupId: seed.fromPort.physicalGroupId,
+      deviceSequenceRange: seed.fromDeviceSequenceRange
     });
     seed.toNode.ports.push({
       id: toPortId,
@@ -913,7 +918,8 @@ class CandidateWiringBuilder {
       connectionMethod: seed.connectionMethod,
       confirmed: seed.toPort.confirmed,
       terminals: seed.toPort.terminals,
-      physicalGroupId: seed.toPort.physicalGroupId
+      physicalGroupId: seed.toPort.physicalGroupId,
+      deviceSequenceRange: seed.toDeviceSequenceRange
     });
     this.occupiedPorts.add(`${seed.fromNode.id}:${seed.fromPort.id}`);
     this.occupiedPorts.add(`${seed.toNode.id}:${seed.toPort.id}`);
@@ -1235,6 +1241,32 @@ export function getInterfaceWiringLayout(
     height: Math.max(620, maxY - minY + titleBand + bottomPadding),
     positions
   };
+}
+
+export function getInterfaceWiringPortReferenceNumbers(model: InterfaceWiringModel) {
+  const references: Record<string, number> = {};
+  model.edges.forEach((edge, index) => {
+    const referenceNumber = index + 1;
+    references[edge.fromPortId] = referenceNumber;
+    references[edge.toPortId] = referenceNumber;
+  });
+  let nextReference = model.edges.length + 1;
+  model.nodes.forEach((node) => {
+    node.ports.forEach((port) => {
+      if (references[port.id]) return;
+      references[port.id] = nextReference;
+      nextReference += 1;
+    });
+  });
+  return references;
+}
+
+export function getInterfaceWiringUsageDeviceLabel(node: InterfaceWiringNode, port: InterfaceWiringPort) {
+  if (node.category === "speaker" && port.deviceSequenceRange) {
+    const { start, end } = port.deviceSequenceRange;
+    return `${node.label} ${start === end ? start : `${start}-${end}`}`;
+  }
+  return `${node.label}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`;
 }
 
 function placeDirectChildrenInCompactRows(
