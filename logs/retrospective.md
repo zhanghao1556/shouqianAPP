@@ -2156,3 +2156,16 @@ PowerShell reminder:
 - When repeated converters are grouped in one wiring node, repeat the confirmed panel image per physical unit. Offsetting several unit ports around one panel invents connector positions and makes otherwise correct wires miss the holes.
 - Indexed capability IDs such as `link-1` and `micOut1-1` identify a physical unit. A single-unit node must resolve them to the exact base anchor without the generic per-port offset used for repeated logical ports.
 - A row fitting mathematically does not make its interface panels readable. Wide, flat rear panels are limited to two level-two devices per row; preserve their useful width and accept an odd singleton instead of shrinking three panels until connector holes become ambiguous.
+
+### 2026-07-18 rear-panel crop guardrail
+
+- Source pixel dimensions do not measure connector readability. Rack ears, callout tails and unused margins can consume most of a wide rear-panel image even when the bitmap is technically high resolution.
+- Crop only confirmed non-interface regions, then remap every physical port anchor through the same crop transform. Replacing the image without transforming anchors produces visually plausible but electrically wrong endpoints.
+
+### 2026-07-18 vector panel and foreground wiring guardrail
+
+- Upscaling a raster rear-panel image does not make connector geometry auditable. When the source is too noisy for terminal-level wiring, rebuild a raster-free engineering SVG from the confirmed panel, retain functional connector colors and assert that it contains no embedded `<image>` element.
+- Keep the original supplied bitmap as source evidence even after the interface preview switches to SVG. Temporary crops and enhancement outputs must not replace the tracked evidence asset once the vector panel is authoritative.
+- Avoidance geometry must not redefine the electrical endpoint. Start every route at the calibrated connector or hole center and preserve the established curved path; a forced node-boundary exit can make a correct connection look disconnected from its physical port.
+- Foreground visibility and collision avoidance are both required. Render device nodes first, then cable trunks, terminal leads and reference numbers, while still rejecting routes through unrelated devices and labels. Moving all wires behind devices hides terminal entry; moving them forward without route avoidance merely trades one obstruction for another.
+- Protect the visual contract with source and rendered assertions: no boundary-exit helper, every trunk remains a curve, nodes precede trunks and terminal leads, references follow all wiring, arrows are absent, reference badges do not intersect device rectangles and the canvas never exceeds its container.

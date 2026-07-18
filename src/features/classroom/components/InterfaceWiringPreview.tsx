@@ -22,19 +22,19 @@ import {
   getInterfaceWiringUsageDeviceLabel
 } from "../lib/interfaceWiring";
 import { getDevicePortProfile } from "../lib/devicePortCatalog";
-import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.png";
-import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.png";
-import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.png";
-import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.png";
-import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.png";
+import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.svg";
+import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.svg";
+import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.svg";
+import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.svg";
+import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.svg";
 import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
-import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.png";
+import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.svg";
 import podiumComputerRearPanel from "../../../assets/podium-computer-rear-panel.png";
-import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.png";
-import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.png";
-import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.png";
-import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.png";
-import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.png";
+import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.svg";
+import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.svg";
+import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
+import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.svg";
+import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.svg";
 import "./InterfaceWiringPreview.css";
 
 const CABLE_LEGEND_BASE_HEIGHT = 52;
@@ -118,7 +118,10 @@ function InterfaceWiringDiagram({
     () => getInterfaceWiringLayout(model, availableWidth, bottomPadding),
     [model, availableWidth, bottomPadding]
   );
-  const edgeDrawings = useMemo(() => buildEdgeDrawings(model, layout), [model, layout]);
+  const edgeDrawings = useMemo(
+    () => buildEdgeDrawings(model, layout, portReferenceNumbers),
+    [model, layout, portReferenceNumbers]
+  );
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
@@ -166,7 +169,6 @@ function InterfaceWiringDiagram({
                 node={node}
                 position={position}
                 positions={layout.positions}
-                portReferenceNumbers={portReferenceNumbers}
               />
             </foreignObject>
           );
@@ -176,23 +178,87 @@ function InterfaceWiringDiagram({
           const drawing = edgeDrawings.get(edge.id);
           if (!drawing) return null;
           return (
-            <g key={edge.id} className="interfaceWiringEdge" data-edge-id={edge.id}>
-              {drawing.conductorRoutes.map(({ conductor, path, strokeWidth, needsOutline }) => (
+            <g key={`${edge.id}-trunks`} className="interfaceWiringEdgeTrunks" data-edge-id={edge.id}>
+              {drawing.conductorRoutes.map(({ conductor, trunkPath, strokeWidth, needsOutline }) => (
                 <path
-                  key={`${edge.id}-${conductor.id}`}
-                  d={path}
+                  key={`${edge.id}-${conductor.id}-trunk`}
+                  d={trunkPath}
                   fill="none"
                   stroke={conductor.color}
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
                   data-conductor-id={conductor.id}
-                  data-from-terminal-id={conductor.fromTerminalId}
-                  data-to-terminal-id={conductor.toTerminalId}
+                  data-segment="trunk"
                   className={[
                     conductor.confirmed ? "" : "unconfirmedConductor",
                     needsOutline ? "lightConductor" : ""
                   ].filter(Boolean).join(" ")}
                 />
+              ))}
+            </g>
+          );
+        })}
+
+        {model.edges.map((edge) => {
+          const drawing = edgeDrawings.get(edge.id);
+          if (!drawing) return null;
+          return (
+            <g key={`${edge.id}-leads`} className="interfaceWiringEdgeLeads" data-edge-id={edge.id}>
+              {drawing.conductorRoutes.flatMap(({ conductor, fromLeadPath, toLeadPath, strokeWidth, needsOutline }) => (
+                [
+                  <path
+                    key={`${edge.id}-${conductor.id}-from-lead`}
+                    d={fromLeadPath}
+                    fill="none"
+                    stroke={conductor.color}
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    data-conductor-id={conductor.id}
+                    data-terminal-id={conductor.fromTerminalId}
+                    data-segment="from-lead"
+                    className={[
+                      conductor.confirmed ? "" : "unconfirmedConductor",
+                      needsOutline ? "lightConductor" : ""
+                    ].filter(Boolean).join(" ")}
+                  />,
+                  <path
+                    key={`${edge.id}-${conductor.id}-to-lead`}
+                    d={toLeadPath}
+                    fill="none"
+                    stroke={conductor.color}
+                    strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    data-conductor-id={conductor.id}
+                    data-terminal-id={conductor.toTerminalId}
+                    data-segment="to-lead"
+                    className={[
+                      conductor.confirmed ? "" : "unconfirmedConductor",
+                      needsOutline ? "lightConductor" : ""
+                    ].filter(Boolean).join(" ")}
+                  />
+                ]
+              ))}
+            </g>
+          );
+        })}
+
+        {model.edges.map((edge) => {
+          const drawing = edgeDrawings.get(edge.id);
+          if (!drawing) return null;
+          const unconfirmed = edge.conductors.some((conductor) => !conductor.confirmed);
+          return (
+            <g key={`${edge.id}-references`} className="interfaceWiringEdgeReferences" data-edge-id={edge.id}>
+              {drawing.referenceBadges.map((badge) => (
+                <g
+                  key={`${edge.id}-${badge.side}-reference`}
+                  className={`interfaceWiringEdgeReference ${unconfirmed ? "unconfirmed" : ""}`}
+                  transform={`translate(${badge.x} ${badge.y})`}
+                  data-reference-number={badge.referenceNumber}
+                  data-reference-side={badge.side}
+                >
+                  <circle r="9" />
+                  <text textAnchor="middle" dy="0.34em">{badge.referenceNumber}</text>
+                </g>
               ))}
             </g>
           );
@@ -220,13 +286,11 @@ type WiringNodePositions = ReturnType<typeof getInterfaceWiringLayout>["position
 function InterfaceWiringNodeCard({
   node,
   position,
-  positions,
-  portReferenceNumbers
+  positions
 }: {
   node: InterfaceWiringNode;
   position: WiringNodePosition;
   positions: WiringNodePositions;
-  portReferenceNumbers: Record<string, number>;
 }) {
   const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
   const panelImage = panelProfile ? interfacePanelImages[panelProfile.assetKey] : undefined;
@@ -249,12 +313,6 @@ function InterfaceWiringNodeCard({
     const peerDelta = peer
       ? { x: peer.centerX - (position.x + anchorLeft), y: peer.centerY - (position.y + anchorTop) }
       : { x: 0, y: -1 };
-    const badgeOffset = getPortNumberOffset(
-      position.x + anchorLeft,
-      position.y + anchorTop,
-      position,
-      peer
-    );
     const terminalHeads = getInterfaceWiringLogicalTerminals(port.terminals)
       .filter((terminal) => !(imageRect && panelAnchor?.terminalAnchors?.[terminal.id]))
       .map((terminal) => {
@@ -267,12 +325,8 @@ function InterfaceWiringNodeCard({
       });
     return {
       port,
-      index,
-      referenceNumber: portReferenceNumbers[port.id],
       anchorLeft,
       anchorTop,
-      left: anchorLeft + badgeOffset.x,
-      top: anchorTop + badgeOffset.y,
       located,
       terminalHeads
     };
@@ -312,7 +366,7 @@ function InterfaceWiringNodeCard({
           {imageRect ? "接口位置待补充" : "接口图待补充"}
         </span>
       )}
-      {markers.map(({ port, referenceNumber, anchorLeft, anchorTop, left, top, located, terminalHeads }) => (
+      {markers.map(({ port, anchorLeft, anchorTop, located, terminalHeads }) => (
         <span className="interfaceWiringPortMarker" key={`${port.id}-pin`}>
           {!located && terminalHeads.length === 0 && (
             <i
@@ -333,13 +387,6 @@ function InterfaceWiringNodeCard({
               {terminal.label}
             </i>
           ))}
-          <i
-            className={`interfaceWiringPortPin ${port.confirmed ? "" : "unconfirmed"} ${located ? "" : "unlocated"}`}
-            title={`${port.label} → ${port.peerPortLabel}`}
-            style={{ left, top }}
-          >
-            {referenceNumber}
-          </i>
         </span>
       ))}
     </div>
@@ -375,25 +422,6 @@ function getFallbackPortLabelTop(
   imageRect: ReturnType<typeof getInterfacePanelImageRect>
 ) {
   return imageRect ? imageRect.y - position.y + imageRect.height + 5 : 28;
-}
-
-function getPortNumberOffset(
-  anchorX: number,
-  anchorY: number,
-  position: WiringNodePosition,
-  peer: WiringNodePosition | undefined
-) {
-  const distance = 18;
-  const outwardOffset = 11;
-  const outwardX = anchorX < position.centerX ? -outwardOffset : outwardOffset;
-  const outwardY = anchorY < position.centerY ? -outwardOffset : outwardOffset;
-  if (!peer) return { x: outwardX, y: -distance };
-  const deltaX = peer.centerX - anchorX;
-  const deltaY = peer.centerY - anchorY;
-  if (Math.abs(deltaX) > Math.abs(deltaY)) {
-    return { x: deltaX > 0 ? -distance : distance, y: outwardY };
-  }
-  return { x: outwardX, y: deltaY > 0 ? -distance : distance };
 }
 
 function InterfacePortUsageTable({
@@ -594,7 +622,11 @@ function getPeerDelta(point: { x: number; y: number }, peer?: WiringNodePosition
     : { x: 0, y: -1 };
 }
 
-function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeof getInterfaceWiringLayout>) {
+function buildEdgeDrawings(
+  model: InterfaceWiringModel,
+  layout: ReturnType<typeof getInterfaceWiringLayout>,
+  portReferenceNumbers: Record<string, number>
+) {
   const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
   const pairCounts = new Map<string, number>();
   model.edges.forEach((edge) => {
@@ -609,13 +641,22 @@ function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeo
     width: position.width,
     height: position.height
   }));
+  const usedReferencePoints: Array<{ x: number; y: number }> = [];
   const drawings = new Map<string, {
     route: ReturnType<typeof getEdgeRoute>;
     conductorRoutes: Array<{
       conductor: InterfaceWiringConductor;
-      path: string;
+      trunkPath: string;
+      fromLeadPath: string;
+      toLeadPath: string;
       strokeWidth: number;
       needsOutline: boolean;
+    }>;
+    referenceBadges: Array<{
+      x: number;
+      y: number;
+      side: "from" | "to";
+      referenceNumber: number;
     }>;
   }>();
 
@@ -657,24 +698,33 @@ function buildEdgeDrawings(model: InterfaceWiringModel, layout: ReturnType<typeo
         fromPosition
       );
       const bundledRoute = getEdgeRoute(from, to, route.offset + conductorOffset);
+      const paths = getBundledConductorSegments(
+        conductorFrom,
+        conductorTo,
+        bundledRoute,
+        displayConductors.length > 1 ? 26 : 18
+      );
       return {
         conductor,
-        path: getBundledConductorPath(
-          conductorFrom,
-          conductorTo,
-          bundledRoute,
-          displayConductors.length > 1 ? 26 : 0
-        ),
+        ...paths,
         strokeWidth: isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
         needsOutline: conductor.color.toLowerCase() === "#ffffff"
       };
     });
-    drawings.set(edge.id, { route, conductorRoutes });
+    const referenceNumber = portReferenceNumbers[edge.fromPortId] ?? portReferenceNumbers[edge.toPortId];
+    const referenceBadges = referenceNumber
+      ? (["from", "to"] as const).map((side) => {
+          const point = findReferenceBadgePoint(route, side, nodeRects, usedReferencePoints);
+          usedReferencePoints.push(point);
+          return { ...point, side, referenceNumber };
+        })
+      : [];
+    drawings.set(edge.id, { route, conductorRoutes, referenceBadges });
   });
   return drawings;
 }
 
-function getBundledConductorPath(
+function getBundledConductorSegments(
   terminalFrom: { x: number; y: number },
   terminalTo: { x: number; y: number },
   route: ReturnType<typeof getEdgeRoute>,
@@ -682,12 +732,14 @@ function getBundledConductorPath(
 ) {
   const fromSplit = movePointToward(route.from, route.control1, splitDistance);
   const toSplit = movePointToward(route.to, route.control2, splitDistance);
-  return [
-    `M ${terminalFrom.x} ${terminalFrom.y}`,
-    `L ${fromSplit.x} ${fromSplit.y}`,
-    `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${toSplit.x} ${toSplit.y}`,
-    `L ${terminalTo.x} ${terminalTo.y}`
-  ].join(" ");
+  return {
+    trunkPath: [
+      `M ${fromSplit.x} ${fromSplit.y}`,
+      `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${toSplit.x} ${toSplit.y}`
+    ].join(" "),
+    fromLeadPath: `M ${terminalFrom.x} ${terminalFrom.y} L ${fromSplit.x} ${fromSplit.y}`,
+    toLeadPath: `M ${toSplit.x} ${toSplit.y} L ${terminalTo.x} ${terminalTo.y}`
+  };
 }
 
 function movePointToward(
@@ -704,6 +756,23 @@ function movePointToward(
     x: from.x + deltaX * ratio,
     y: from.y + deltaY * ratio
   };
+}
+
+function findReferenceBadgePoint(
+  route: ReturnType<typeof getEdgeRoute>,
+  side: "from" | "to",
+  nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
+  usedReferencePoints: Array<{ x: number; y: number }>
+) {
+  const progresses = Array.from({ length: 18 }, (_, index) => 0.05 + index * 0.025);
+  const orderedProgresses = side === "from" ? progresses : progresses.map((progress) => 1 - progress);
+  const outsideNodes = orderedProgresses.flatMap((progress) => {
+    const point = cubicPoint(route.from, route.control1, route.control2, route.to, progress);
+    return nodeRects.some((rect) => pointInsideRect(point, rect, 11)) ? [] : [point];
+  });
+  return outsideNodes.find((point) => usedReferencePoints.every((used) => Math.hypot(point.x - used.x, point.y - used.y) >= 22))
+    ?? outsideNodes[0]
+    ?? cubicPoint(route.from, route.control1, route.control2, route.to, side === "from" ? 0.46 : 0.54);
 }
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {

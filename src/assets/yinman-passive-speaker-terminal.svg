@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 1000" role="img" aria-label="无源音箱背面接线工程图">
+  <style>.body{fill:#f8fafc;stroke:#172033;stroke-width:6}.detail{fill:none;stroke:#64748b;stroke-width:3}.plate{fill:#fff;stroke:#172033;stroke-width:5}.negative{fill:#e2e8f0;stroke:#172033;stroke-width:4}.positive{fill:#fee2e2;stroke:#b91c1c;stroke-width:4}.label{fill:#172033;font:700 26px Arial,"Microsoft YaHei",sans-serif;letter-spacing:0;text-anchor:middle}</style>
+  <path class="body" d="M82 72Q250 28 418 72Q452 88 454 132V862Q449 946 250 968Q51 946 46 862V132Q48 88 82 72z"/>
+  <path class="detail" d="M48 150Q250 118 452 150M48 868Q250 900 452 868"/>
+  <rect class="plate" x="110" y="520" width="280" height="260" rx="12"/>
+  <circle class="negative" cx="210" cy="640" r="38"/><circle fill="#172033" cx="210" cy="640" r="11"/>
+  <circle class="positive" cx="290" cy="640" r="38"/><circle fill="#b91c1c" cx="290" cy="640" r="11"/>
+  <text class="label" x="210" y="585">-</text><text class="label" x="290" y="585">+</text><text class="label" x="250" y="738">INPUT</text>
+</svg>

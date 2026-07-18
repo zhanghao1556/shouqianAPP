@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1482 294" role="img" aria-label="智能线阵麦克风背面接口工程图">
+  <defs><pattern id="vent" width="22" height="18" patternUnits="userSpaceOnUse"><circle cx="5" cy="5" r="2" fill="#64748b"/><circle cx="14" cy="11" r="2" fill="#64748b"/></pattern></defs>
+  <style>.body{fill:#f8fafc;stroke:#172033;stroke-width:4}.detail{fill:none;stroke:#64748b;stroke-width:3}.port{fill:#dbeafe;stroke:#2563eb;stroke-width:4}.hole{fill:#172033}.label{fill:#172033;font:700 18px Arial,"Microsoft YaHei",sans-serif;letter-spacing:0;text-anchor:middle}</style>
+  <rect class="body" x="4" y="4" width="1474" height="286" rx="128"/>
+  <rect x="160" y="20" width="1160" height="58" rx="18" fill="url(#vent)"/>
+  <rect x="160" y="215" width="1160" height="58" rx="18" fill="url(#vent)"/>
+  <rect class="detail" x="104" y="82" width="1274" height="126" rx="58"/>
+  <rect class="detail" x="130" y="104" width="1222" height="82" rx="36"/>
+  <g stroke="#94a3b8" stroke-width="4">
+    <path d="M168 122v48M190 122v48M212 122v48M234 122v48M256 122v48M278 122v48M300 122v48M322 122v48M344 122v48M366 122v48M388 122v48M410 122v48M432 122v48M454 122v48M476 122v48M498 122v48M520 122v48M542 122v48M564 122v48M586 122v48M608 122v48M630 122v48M652 122v48M674 122v48M822 122v48M844 122v48M866 122v48M888 122v48M910 122v48M932 122v48M954 122v48M976 122v48M998 122v48M1020 122v48M1042 122v48M1064 122v48M1086 122v48M1108 122v48M1130 122v48M1152 122v48M1174 122v48M1196 122v48M1218 122v48M1240 122v48M1262 122v48M1284 122v48M1306 122v48"/>
+  </g>
+  <rect class="port" x="710" y="103" width="78" height="72" rx="7"/><path class="hole" d="M724 118h50v32h-9v16h-32v-16h-9z"/>
+  <g stroke="#f8fafc" stroke-width="3"><path d="M734 121v25M744 121v25M754 121v25M764 121v25"/></g>
+  <text class="label" x="749" y="202">RJ45</text>
+</svg>

@@ -160,29 +160,6 @@
   text-align: center;
 }
 
-.interfaceWiringPortPin {
-  position: absolute;
-  z-index: 4;
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  transform: translate(-50%, -50%);
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  background: #0b5cad;
-  color: #ffffff;
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 900;
-  line-height: 1;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.72);
-}
-
-.interfaceWiringPortPin.unconfirmed {
-  background: #b7791f;
-}
-
 .interfaceWiringUnlocatedAnchor {
   position: absolute;
   z-index: 3;
@@ -215,13 +192,6 @@
 .interfaceWiringLogicalTerminal.light {
   border-color: #64748b;
   color: #172033;
-}
-
-.interfaceWiringPortPin.unlocated {
-  border-color: #9a6700;
-  background: #ffffff;
-  color: #9a6700;
-  box-shadow: 0 0 0 1px rgba(154, 103, 0, 0.42);
 }
 
 .interfaceWiringDataGrid {
@@ -312,6 +282,29 @@
 
 .lightConductor {
   filter: drop-shadow(0 0 0.7px #334155) drop-shadow(0 0 0.7px #334155);
+}
+
+.interfaceWiringEdgeReference {
+  pointer-events: none;
+}
+
+.interfaceWiringEdgeReference circle {
+  fill: #0b5cad;
+  stroke: #ffffff;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 0.8px #172033);
+}
+
+.interfaceWiringEdgeReference.unconfirmed circle {
+  fill: #b7791f;
+}
+
+.interfaceWiringEdgeReference text {
+  fill: #ffffff;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .interfaceWiringLegendObject {

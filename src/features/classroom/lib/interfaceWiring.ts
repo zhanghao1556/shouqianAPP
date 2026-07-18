@@ -91,6 +91,7 @@ const COMPACT_SPEAKER_NODE_WIDTH = 112;
 const COMPACT_SPEAKER_GAP = 0;
 const LEVEL_TWO_NODE_GAP = 24;
 const LEVEL_TWO_MAX_NODE_WIDTH = 420;
+const LEVEL_TWO_MAX_WIDE_NODE_WIDTH = 460;
 const LEVEL_TWO_MIN_READABLE_WIDTH = 132;
 const LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW = 3;
 const LEVEL_TWO_MAX_WIDE_NODES_PER_ROW = 2;
@@ -1704,9 +1705,13 @@ function getPreferredNodeWidth(node: InterfaceWiringNode, isRoot: boolean, canva
     return Math.min(preferred, maxWidth);
   }
   if (isCompactSpeakerGroup(node)) return Math.min(COMPACT_SPEAKER_NODE_WIDTH, maxWidth);
-  const levelWidthCap = node.level === 2 ? Math.min(LEVEL_TWO_MAX_NODE_WIDTH, maxWidth) : maxWidth;
+  const wideInterfacePanel = Boolean(interfacePanel && isWideInterfacePanelNode(node));
+  const levelTwoMaxWidth = wideInterfacePanel
+    ? LEVEL_TWO_MAX_WIDE_NODE_WIDTH
+    : LEVEL_TWO_MAX_NODE_WIDTH;
+  const levelWidthCap = node.level === 2 ? Math.min(levelTwoMaxWidth, maxWidth) : maxWidth;
   if (!interfacePanel) return Math.min(300, levelWidthCap);
-  if (interfacePanel.aspectRatio >= 3) return Math.min(520, levelWidthCap);
+  if (wideInterfacePanel) return Math.min(520, levelWidthCap);
   if (interfacePanel.aspectRatio < 0.9) return Math.min(280, levelWidthCap);
   return Math.min(340, levelWidthCap);
 }

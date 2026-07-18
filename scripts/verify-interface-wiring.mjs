@@ -20,6 +20,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { filterUsbExclusiveAudioLines } from "./src/features/classroom/lib/connectionRules.ts";
 import { getExistingMicInputDemand } from "./src/features/classroom/lib/hangingMicRules.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   PROCESSOR_AJ350_PORT_PROFILE_ID,
@@ -426,9 +427,9 @@ for (const width of [520, 993, 1120]) {
   }));
   const lineArrayPosition = levelTwoLayout.positions["line-array"];
   const wirelessReceiverPosition = levelTwoLayout.positions["wireless-receiver"];
-  assert.ok(lineArrayPosition.width <= 420 && wirelessReceiverPosition.width <= 420);
+  assert.ok(lineArrayPosition.width <= 460 && wirelessReceiverPosition.width <= 460);
   if (width >= 993) {
-    assert.ok(lineArrayPosition.width >= 340 && wirelessReceiverPosition.width >= 340);
+    assert.deepEqual([lineArrayPosition.width, wirelessReceiverPosition.width], [460, 460]);
   }
   assert.equal(
     levelTwoNodes.some((item) => levelTwoLayout.positions[item.id].centerY === levelTwoLayout.positions[wireless.model.rootNodeId].centerY),
@@ -659,10 +660,32 @@ for (const profile of Object.values(devicePortCatalog)) {
 const aj600Profile = getDevicePortProfile(PROCESSOR_AJ600_PORT_PROFILE_ID);
 assert.ok(aj600Profile?.interfacePanel);
 assert.equal(aj600Profile.interfacePanel.assetKey, "aj600");
+assert.equal(aj600Profile.interfacePanel.aspectRatio, 724 / 124);
 assert.match(aj600Profile.interfacePanel.source, /AJ600上面板/);
 const aj600MicPorts = aj600Profile.ports.filter((port) => /^mic\d+$/.test(port.id));
 assert.equal(aj600MicPorts.length, 6);
 assert.deepEqual(new Set(aj600MicPorts.map((port) => port.physicalGroupId)), new Set(["mic-block"]));
+assert.deepEqual(
+  ["mic1", "lineIn1", "lineOut1"].flatMap((portId) =>
+    ["positive", "negative", "ground"].map((terminalId) => [
+      portId,
+      terminalId,
+      Number(aj600Profile.interfacePanel.portAnchors[portId].terminalAnchors[terminalId].x.toFixed(6)),
+      Number(aj600Profile.interfacePanel.portAnchors[portId].terminalAnchors[terminalId].y.toFixed(6))
+    ])
+  ),
+  [
+    ["mic1", "positive", 0.143646, 0.451613],
+    ["mic1", "negative", 0.157459, 0.451613],
+    ["mic1", "ground", 0.171271, 0.451613],
+    ["lineIn1", "positive", 0.29558, 0.451613],
+    ["lineIn1", "negative", 0.309392, 0.451613],
+    ["lineIn1", "ground", 0.323204, 0.451613],
+    ["lineOut1", "positive", 0.412983, 0.451613],
+    ["lineOut1", "negative", 0.426796, 0.451613],
+    ["lineOut1", "ground", 0.440608, 0.451613]
+  ]
+);
 const aj350Panel = getDevicePortProfile(PROCESSOR_AJ350_PORT_PROFILE_ID)?.interfacePanel;
 assert.ok(aj350Panel);
 assert.deepEqual(
@@ -719,7 +742,7 @@ assert.deepEqual([
   Number(passiveSpeakerPanel.portAnchors.terminals.terminalAnchors.positive.x.toFixed(2)),
   Number(passiveSpeakerPanel.portAnchors.terminals.terminalAnchors.negative.x.toFixed(2))
 ], [0.5, 0.64, 0.58, 0.42]);
-assert.match(passiveSpeakerPanel.source, /完整背面接线线稿/);
+assert.match(passiveSpeakerPanel.source, /完整背面接口重构工程图/);
 const groupedSpeakerAnchors = Array.from({ length: 4 }, (_, index) =>
   getInterfacePanelPortAnchor(passiveSpeakerPanel, "terminals-direct-speaker-" + (index + 1), index, 4)
 );
@@ -732,6 +755,49 @@ assert.deepEqual(groupedSpeakerAnchors.map((anchor) => [
   [0.44, 0.68],
   [0.56, 0.68]
 ]);
+const amplifierProfile = getDevicePortProfile(EXTERNAL_AMPLIFIER_PRODUCT_ID);
+const amplifierPanel = amplifierProfile?.interfacePanel;
+assert.ok(amplifierProfile);
+assert.ok(amplifierPanel);
+assert.equal(amplifierPanel.assetKey, "ap150");
+assert.equal(amplifierPanel.aspectRatio, 1200 / 500);
+assert.deepEqual(
+  ["lineIn1", "lineIn2", "lineIn3", "lineIn4", "spk1", "spk2", "spk3", "spk4"].map((portId) => [
+    portId,
+    Number(amplifierPanel.portAnchors[portId].x.toFixed(6)),
+    Number(amplifierPanel.portAnchors[portId].y.toFixed(6))
+  ]),
+  [
+    ["lineIn1", 0.153333, 0.588],
+    ["lineIn2", 0.153333, 0.748],
+    ["lineIn3", 0.223333, 0.588],
+    ["lineIn4", 0.223333, 0.748],
+    ["spk1", 0.43, 0.444],
+    ["spk2", 0.556667, 0.444],
+    ["spk3", 0.685, 0.444],
+    ["spk4", 0.811667, 0.444]
+  ]
+);
+assert.deepEqual(
+  ["positive", "negative", "ground"].map((terminalId) => {
+    const terminal = amplifierPanel.portAnchors.lineIn1.terminalAnchors[terminalId];
+    return [terminalId, Number(terminal.x.toFixed(6)), Number(terminal.y.toFixed(6))];
+  }),
+  [["positive", 0.133333, 0.588], ["negative", 0.153333, 0.588], ["ground", 0.173333, 0.588]]
+);
+assert.deepEqual(
+  ["positive", "negative"].map((terminalId) => {
+    const terminal = amplifierPanel.portAnchors.spk1.terminalAnchors[terminalId];
+    return [terminalId, Number(terminal.x.toFixed(3)), Number(terminal.y.toFixed(3))];
+  }),
+  [["positive", 0.43, 0.256], ["negative", 0.43, 0.632]]
+);
+assert.match(amplifierPanel.source, /重构清晰工程图/);
+const amplifierPanelSvg = readFileSync("src/assets/yinman-ap150-rear-panel.svg", "utf8");
+assert.match(amplifierPanelSvg, /viewBox="0 0 1200 500"/);
+assert.match(amplifierPanelSvg, /fill:#bbf7d0/);
+assert.match(amplifierPanelSvg, /class="post positivePost"/);
+assert.match(amplifierPanelSvg, /class="post negativePost"/);
 const lineArrayPanel = getDevicePortProfile(LINE_ARRAY_PRODUCT_ID)?.interfacePanel;
 assert.ok(lineArrayPanel);
 assert.equal(lineArrayPanel.assetKey, "lineArray");
@@ -831,6 +897,35 @@ assert.deepEqual(
   ]),
   [["positive", 0.391], ["negative", 0.408], ["ground", 0.426]]
 );
+const reconstructedPanelFiles = [
+  "yinman-aj200-interface-panel.svg",
+  "yinman-aj350-interface-panel.svg",
+  "yinman-aj600-interface-panel.svg",
+  "yinman-ap150-rear-panel.svg",
+  "yinman-ring08-rear-panel.svg",
+  "yinman-sa110-rear-panel.svg",
+  "yinman-line-array-converter-interface-panel.svg",
+  "yinman-ring01-interface-panel.svg",
+  "yinman-ring03-interface-panel.svg",
+  "yinman-ringof-a-interface-panel.svg",
+  "yinman-passive-speaker-terminal.svg",
+  "yinman-wireless-receiver-rear-panel.svg"
+];
+for (const fileName of reconstructedPanelFiles) {
+  const artwork = readFileSync("src/assets/" + fileName, "utf8");
+  assert.match(artwork, /<svg[\s>]/, fileName + " is not SVG artwork");
+  assert.match(artwork, /viewBox="0 0 [0-9.]+ [0-9.]+"/, fileName + " has no stable viewBox");
+  assert.doesNotMatch(artwork, /<image[\s>]/, fileName + " embeds a blurry raster image");
+}
+for (const fileName of reconstructedPanelFiles) {
+  assert.match(wiringPreviewSource, new RegExp(fileName.replaceAll(".", "\\.")));
+}
+const nodeLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringNodeObject"');
+const trunkLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringEdgeTrunks"');
+const leadLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringEdgeLeads"');
+assert.ok(nodeLayerIndex >= 0 && nodeLayerIndex < trunkLayerIndex && trunkLayerIndex < leadLayerIndex);
+assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortPin|markerEnd=/);
+assert.doesNotMatch(wiringPreviewSource, /getNodeExitPoint/);
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
@@ -848,6 +943,16 @@ const crossingProfile = makeProfile({
   computer: "讲台电脑",
   recordingHost: "录播主机"
 });
+const amplifierLayoutCase = buildModel(makeProfile({
+  length: 10,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "full",
+  microphoneSolution: "smallDisc01"
+}));
+const amplifierLayoutNode = amplifierLayoutCase.model.nodes.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
+assert.ok(amplifierLayoutNode);
+assert.equal(getInterfaceWiringLayout(amplifierLayoutCase.model, 993).positions[amplifierLayoutNode.id].width, 460);
 const crossingCase = buildModel(crossingProfile);
 const crossingLayout = getInterfaceWiringLayout(crossingCase.model, 993);
 const crossingComputer = crossingCase.model.nodes.find((item) => item.label === "讲台电脑");

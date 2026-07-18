@@ -62,20 +62,14 @@ const anchor = (
   terminalAnchors?: DevicePortVisualAnchor["terminalAnchors"]
 ): DevicePortVisualAnchor => ({ x, y, terminalAnchors });
 
-const balancedAnchor = (x: number, y: number, spread = 0.012): DevicePortVisualAnchor => anchor(x, y, {
-  positive: { x: x - spread, y },
-  ground: { x, y },
-  negative: { x: x + spread, y }
-});
-
-const aj350BalancedAnchor = (
+const calibratedBalancedAnchor = (
+  width: number,
+  height: number,
   positiveX: number,
   negativeX: number,
   groundX: number,
   terminalY: number
 ): DevicePortVisualAnchor => {
-  const width = 1268;
-  const height = 206;
   const y = terminalY / height;
   return anchor(negativeX / width, y, {
     positive: { x: positiveX / width, y },
@@ -83,6 +77,13 @@ const aj350BalancedAnchor = (
     ground: { x: groundX / width, y }
   });
 };
+
+const aj350BalancedAnchor = (
+  positiveX: number,
+  negativeX: number,
+  groundX: number,
+  terminalY: number
+) => calibratedBalancedAnchor(1268, 206, positiveX, negativeX, groundX, terminalY);
 
 const speakerAnchor = (
   x: number,
@@ -155,21 +156,21 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       ...numberedPorts("spk", "SPK", 2, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
     interfacePanel: panel("aj200", 750 / 168, {
-      spk1: speakerAnchor(0.058, 0.42, { x: 0.047, y: 0.42 }, { x: 0.064, y: 0.42 }),
-      spk2: speakerAnchor(0.087, 0.42, { x: 0.078, y: 0.42 }, { x: 0.096, y: 0.42 }),
-      mic1: balancedAnchor(0.169, 0.32),
-      mic2: balancedAnchor(0.169, 0.66),
-      lineIn1: balancedAnchor(0.249, 0.32),
-      lineIn2: balancedAnchor(0.249, 0.66),
-      lineOut1: balancedAnchor(0.326, 0.32),
-      lineOut2: balancedAnchor(0.326, 0.66),
-      hpIn: anchor(0.392, 0.5),
-      hpOut: anchor(0.44, 0.5),
-      extmic: anchor(0.518, 0.47),
-      lan: anchor(0.603, 0.47),
-      usb: anchor(0.678, 0.5),
-      rs232: balancedAnchor(0.838, 0.52)
-    }, "AJ200上面板图；MIC两路逻辑口按用户确认口径")
+      spk1: speakerAnchor(41.5 / 750, 71 / 168, { x: 35 / 750, y: 71 / 168 }, { x: 48 / 750, y: 71 / 168 }),
+      spk2: speakerAnchor(65.5 / 750, 71 / 168, { x: 59 / 750, y: 71 / 168 }, { x: 72 / 750, y: 71 / 168 }),
+      mic1: calibratedBalancedAnchor(750, 168, 117, 127, 137, 54),
+      mic2: calibratedBalancedAnchor(750, 168, 117, 127, 137, 111),
+      lineIn1: calibratedBalancedAnchor(750, 168, 177, 187, 197, 54),
+      lineIn2: calibratedBalancedAnchor(750, 168, 177, 187, 197, 111),
+      lineOut1: calibratedBalancedAnchor(750, 168, 235, 245, 255, 54),
+      lineOut2: calibratedBalancedAnchor(750, 168, 235, 245, 255, 111),
+      hpIn: anchor(294 / 750, 84 / 168),
+      hpOut: anchor(330 / 750, 84 / 168),
+      extmic: anchor(388 / 750, 84 / 168),
+      lan: anchor(452 / 750, 84 / 168),
+      usb: anchor(509 / 750, 84 / 168),
+      rs232: calibratedBalancedAnchor(750, 168, 619, 629, 639, 78)
+    }, "用户确认接口能力；按清晰工程面板重构并以孔位中心标定")
   },
   [PROCESSOR_AJ350_PORT_PROFILE_ID]: {
     productId: PROCESSOR_AJ350_PORT_PROFILE_ID,
@@ -187,10 +188,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
     interfacePanel: panel("aj350", 1268 / 206, {
-      spk1: speakerAnchor(0.24, 0.35, { x: 0.229, y: 0.31 }, { x: 0.252, y: 0.31 }),
-      spk2: speakerAnchor(0.31, 0.35, { x: 0.299, y: 0.31 }, { x: 0.322, y: 0.31 }),
-      spk3: speakerAnchor(0.24, 0.67, { x: 0.229, y: 0.64 }, { x: 0.252, y: 0.64 }),
-      spk4: speakerAnchor(0.31, 0.67, { x: 0.299, y: 0.64 }, { x: 0.322, y: 0.64 }),
+      spk1: speakerAnchor(305 / 1268, 64 / 206, { x: 290 / 1268, y: 64 / 206 }, { x: 320 / 1268, y: 64 / 206 }),
+      spk2: speakerAnchor(393.5 / 1268, 64 / 206, { x: 379 / 1268, y: 64 / 206 }, { x: 408 / 1268, y: 64 / 206 }),
+      spk3: speakerAnchor(305 / 1268, 132 / 206, { x: 290 / 1268, y: 132 / 206 }, { x: 320 / 1268, y: 132 / 206 }),
+      spk4: speakerAnchor(393.5 / 1268, 132 / 206, { x: 379 / 1268, y: 132 / 206 }, { x: 408 / 1268, y: 132 / 206 }),
       lineIn1: aj350BalancedAnchor(531.5, 551.5, 571, 87.5),
       lineIn2: aj350BalancedAnchor(591, 611, 631, 87.5),
       lineIn3: aj350BalancedAnchor(532, 552, 572, 125.5),
@@ -199,13 +200,13 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       lineOut2: aj350BalancedAnchor(727.5, 747, 767, 87.5),
       lineOut3: aj350BalancedAnchor(668, 688, 708, 125.5),
       lineOut4: aj350BalancedAnchor(727, 747, 767, 125.5),
-      amic: anchor(0.66, 0.5),
-      a1: anchor(0.72, 0.5),
-      a2: anchor(0.78, 0.5),
-      lan: anchor(0.84, 0.5),
-      rs232: balancedAnchor(0.905, 0.52),
-      usb: anchor(0.95, 0.5)
-    }, "AJ350完整背面接口图")
+      amic: anchor(837 / 1268, 103 / 206),
+      a1: anchor(913 / 1268, 103 / 206),
+      a2: anchor(989 / 1268, 103 / 206),
+      lan: anchor(1065 / 1268, 103 / 206),
+      rs232: calibratedBalancedAnchor(1268, 206, 1138, 1148, 1158, 101),
+      usb: anchor(1205 / 1268, 103 / 206)
+    }, "用户确认接口能力；按清晰工程面板重构并以孔位中心标定")
   },
   [PROCESSOR_AJ600_PORT_PROFILE_ID]: {
     productId: PROCESSOR_AJ600_PORT_PROFILE_ID,
@@ -221,39 +222,39 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("rs232", "RS232", "三芯接线端子（Rx/Tx/G）", "bidirectional", agentSource, true, balancedTerminals),
       ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
-    interfacePanel: panel("aj600", 724 / 174, {
-      spk1: speakerAnchor(0.052, 0.31, { x: 0.043, y: 0.31 }, { x: 0.061, y: 0.31 }),
-      spk2: speakerAnchor(0.088, 0.31, { x: 0.079, y: 0.31 }, { x: 0.097, y: 0.31 }),
-      spk3: speakerAnchor(0.052, 0.64, { x: 0.043, y: 0.64 }, { x: 0.061, y: 0.64 }),
-      spk4: speakerAnchor(0.088, 0.64, { x: 0.079, y: 0.64 }, { x: 0.097, y: 0.64 }),
-      mic1: balancedAnchor(0.155, 0.31),
-      mic2: balancedAnchor(0.155, 0.65),
-      mic3: balancedAnchor(0.198, 0.31),
-      mic4: balancedAnchor(0.198, 0.65),
-      mic5: balancedAnchor(0.24, 0.31),
-      mic6: balancedAnchor(0.24, 0.65),
-      lineIn1: balancedAnchor(0.311, 0.31),
-      lineIn2: balancedAnchor(0.311, 0.65),
-      lineIn3: balancedAnchor(0.362, 0.31),
-      lineIn4: balancedAnchor(0.362, 0.65),
-      lineOut1: balancedAnchor(0.434, 0.31),
-      lineOut2: balancedAnchor(0.434, 0.65),
-      lineOut3: balancedAnchor(0.485, 0.31),
-      lineOut4: balancedAnchor(0.485, 0.65),
-      extmic: anchor(0.551, 0.42),
-      lan: anchor(0.624, 0.42),
-      usb: anchor(0.698, 0.42),
-      rs232: balancedAnchor(0.849, 0.52)
-    }, "用户指定采用AJ600上面板接口图；MIC1-MIC6为同一MIC多针插座内的逻辑通道")
+    interfacePanel: panel("aj600", 724 / 124, {
+      spk1: speakerAnchor(37 / 724, 44 / 124, { x: 32 / 724, y: 44 / 124 }, { x: 42 / 724, y: 44 / 124 }),
+      spk2: speakerAnchor(57 / 724, 44 / 124, { x: 52 / 724, y: 44 / 124 }, { x: 62 / 724, y: 44 / 124 }),
+      spk3: speakerAnchor(37 / 724, 86 / 124, { x: 32 / 724, y: 86 / 124 }, { x: 42 / 724, y: 86 / 124 }),
+      spk4: speakerAnchor(57 / 724, 86 / 124, { x: 52 / 724, y: 86 / 124 }, { x: 62 / 724, y: 86 / 124 }),
+      mic1: calibratedBalancedAnchor(724, 124, 104, 114, 124, 56),
+      mic2: calibratedBalancedAnchor(724, 124, 104, 114, 124, 86),
+      mic3: calibratedBalancedAnchor(724, 124, 134, 144, 154, 56),
+      mic4: calibratedBalancedAnchor(724, 124, 134, 144, 154, 86),
+      mic5: calibratedBalancedAnchor(724, 124, 164, 174, 184, 56),
+      mic6: calibratedBalancedAnchor(724, 124, 164, 174, 184, 86),
+      lineIn1: calibratedBalancedAnchor(724, 124, 214, 224, 234, 56),
+      lineIn2: calibratedBalancedAnchor(724, 124, 214, 224, 234, 86),
+      lineIn3: calibratedBalancedAnchor(724, 124, 244, 254, 264, 56),
+      lineIn4: calibratedBalancedAnchor(724, 124, 244, 254, 264, 86),
+      lineOut1: calibratedBalancedAnchor(724, 124, 299, 309, 319, 56),
+      lineOut2: calibratedBalancedAnchor(724, 124, 299, 309, 319, 86),
+      lineOut3: calibratedBalancedAnchor(724, 124, 329, 339, 349, 56),
+      lineOut4: calibratedBalancedAnchor(724, 124, 329, 339, 349, 86),
+      extmic: anchor(398 / 724, 66 / 124),
+      lan: anchor(454 / 724, 66 / 124),
+      usb: anchor(506 / 724, 67 / 124),
+      rs232: calibratedBalancedAnchor(724, 124, 606, 616, 626, 67)
+    }, "用户指定采用AJ600上面板接口；按清晰工程面板重构并以孔位中心标定；MIC1-MIC6为同一多针插座内逻辑通道")
   },
   [PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID]: {
     productId: PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID,
     internalModel: "RING08",
     customerName: "大圆盘阵麦",
     ports: [port("lan", "RJ45 音频信号接口", "RJ45", "output", confirmedSource, true, rj45Terminals)],
-    interfacePanel: panel("ring08", 923 / 616, {
-      lan: anchor(0.5, 0.51)
-    }, "RING08完整背面接口图")
+    interfacePanel: panel("ring08", 1, {
+      lan: anchor(0.5, 301 / 600)
+    }, "用户确认RJ45接口；按完整圆盘背面重构清晰工程图")
   },
   [LINE_ARRAY_PRODUCT_ID]: {
     productId: LINE_ARRAY_PRODUCT_ID,
@@ -261,8 +262,8 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     customerName: "智能线阵麦克风",
     ports: [port("rj45", "RJ45", "RJ45", "output", confirmedSource, true, rj45Terminals)],
     interfacePanel: panel("lineArray", 1482 / 294, {
-      rj45: anchor(0.505, 0.47)
-    }, "用户提供SA110完整背面接线图")
+      rj45: anchor(749 / 1482, 139 / 294)
+    }, "用户提供SA110完整背面接线图；按原接口位置重构清晰工程图")
   },
   [LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID]: {
     productId: LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
@@ -302,12 +303,12 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("mic", "MIC", "RJ45", "bidirectional", confirmedSource, true, rj45Terminals),
       port("link", "LINK", "RJ45", "bidirectional", confirmedSource, true, rj45Terminals)
     ],
-    interfacePanel: panel("ring01", 582 / 540, {
-      audioOut: anchor(0.285, 0.48),
-      usb: anchor(0.382, 0.715),
-      mic: anchor(0.515, 0.715),
-      link: anchor(0.5, 0.285)
-    }, "RING01完整底面接口图")
+    interfacePanel: panel("ring01", 1, {
+      audioOut: anchor(171 / 600, 288 / 600),
+      usb: anchor(229 / 600, 429 / 600),
+      mic: anchor(309 / 600, 433 / 600),
+      link: anchor(300 / 600, 163 / 600)
+    }, "用户确认RING01底面接口；移除旧红色序号并重构清晰工程图")
   },
   [SMALL_DISC_02_PRODUCT_ID]: {
     productId: SMALL_DISC_02_PRODUCT_ID,
@@ -329,10 +330,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("link", "LINK", "RJ45", "bidirectional", agentSource, true, rj45Terminals)
     ],
     interfacePanel: panel("ring03", 1, {
-      micOut: anchor(0.27, 0.45),
-      mic: anchor(0.51, 0.73),
-      link: anchor(0.5, 0.16)
-    }, "RING03完整底面接口图")
+      micOut: anchor(162 / 600, 270 / 600),
+      mic: anchor(306 / 600, 437 / 600),
+      link: anchor(300 / 600, 92 / 600)
+    }, "用户确认RING03底面接口；移除旧红色序号并重构清晰工程图")
   },
   [SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID]: {
     productId: SMALL_DISC_AUDIO_EXTENDER_PRODUCT_ID,
@@ -343,11 +344,11 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("aIn", "A IN", "3.5mm", "input"),
       port("aOut", "A OUT", "3.5mm", "output")
     ],
-    interfacePanel: panel("ringOfA", 215 / 270, {
-      aOut: anchor(0.245, 0.23),
-      aIn: anchor(0.52, 0.23),
-      link: anchor(0.5, 0.72)
-    }, "用户指定01拓展器；Agent安装手册接口图仅裁切设备面板")
+    interfacePanel: panel("ringOfA", 400 / 500, {
+      aOut: anchor(98 / 400, 115 / 500),
+      aIn: anchor(208 / 400, 115 / 500),
+      link: anchor(200 / 400, 345 / 500)
+    }, "用户指定01拓展器；按A OUT、A IN与LINK实际分面重构清晰工程图")
   },
   [EXTERNAL_AMPLIFIER_PRODUCT_ID]: {
     productId: EXTERNAL_AMPLIFIER_PRODUCT_ID,
@@ -356,16 +357,16 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       ...numberedPorts("lineIn", "LINE IN ", 4, "平衡输入（+/-/G）", "input", agentSource, balancedTerminals),
       ...numberedPorts("spk", "SPK", 4, "扬声器接线柱（+/-）", "output", agentSource, speakerTerminals)
     ],
-    interfacePanel: panel("ap150", 1835 / 420, {
-      lineIn1: balancedAnchor(0.603, 0.53),
-      lineIn2: balancedAnchor(0.63, 0.67),
-      lineIn3: balancedAnchor(0.653, 0.53),
-      lineIn4: balancedAnchor(0.675, 0.67),
-      spk1: speakerAnchor(0.704, 0.49, { x: 0.704, y: 0.28 }, { x: 0.704, y: 0.68 }),
-      spk2: speakerAnchor(0.752, 0.49, { x: 0.752, y: 0.28 }, { x: 0.752, y: 0.68 }),
-      spk3: speakerAnchor(0.8, 0.49, { x: 0.8, y: 0.28 }, { x: 0.8, y: 0.68 }),
-      spk4: speakerAnchor(0.848, 0.49, { x: 0.848, y: 0.28 }, { x: 0.848, y: 0.68 })
-    }, "教学模拟功放主机完整背面接口图")
+    interfacePanel: panel("ap150", 1200 / 500, {
+      lineIn1: calibratedBalancedAnchor(1200, 500, 160, 184, 208, 294),
+      lineIn2: calibratedBalancedAnchor(1200, 500, 160, 184, 208, 374),
+      lineIn3: calibratedBalancedAnchor(1200, 500, 244, 268, 292, 294),
+      lineIn4: calibratedBalancedAnchor(1200, 500, 244, 268, 292, 374),
+      spk1: speakerAnchor(516 / 1200, 222 / 500, { x: 516 / 1200, y: 128 / 500 }, { x: 516 / 1200, y: 316 / 500 }),
+      spk2: speakerAnchor(668 / 1200, 222 / 500, { x: 668 / 1200, y: 128 / 500 }, { x: 668 / 1200, y: 316 / 500 }),
+      spk3: speakerAnchor(822 / 1200, 222 / 500, { x: 822 / 1200, y: 128 / 500 }, { x: 822 / 1200, y: 316 / 500 }),
+      spk4: speakerAnchor(974 / 1200, 222 / 500, { x: 974 / 1200, y: 128 / 500 }, { x: 974 / 1200, y: 316 / 500 })
+    }, "用户提供功放背面资料；只保留LINE IN与SPK接线区并重构清晰工程图")
   },
   [COMPUTER_REAR_PANEL_PORT_PROFILE_ID]: {
     productId: COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
@@ -389,7 +390,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     ports: [port("terminals", "+ / -", "扬声器接线端子", "input", agentSource, true, speakerTerminals)],
     interfacePanel: panel("passiveSpeaker", 1 / 2, {
       terminals: speakerAnchor(0.5, 0.64, { x: 0.58, y: 0.64 }, { x: 0.42, y: 0.64 })
-    }, "无源音箱完整背面接线线稿")
+    }, "无源音箱完整背面接口重构工程图")
   },
   [WIRELESS_RECEIVER_PORT_PROFILE_ID]: {
     productId: WIRELESS_RECEIVER_PORT_PROFILE_ID,
@@ -400,7 +401,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("micOut", "MIC OUT", "6.35mm", "output", agentSource),
       port("usb", "USB（PPT控制）", "USB-B", "output", agentSource)
     ],
-    interfacePanel: panel("wirelessReceiver", 747 / 190, {
+    interfacePanel: panel("wirelessReceiver", 1000 / 250, {
       balOut: anchor(0.408, 0.48, {
         positive: { x: 0.391, y: 0.48 },
         negative: { x: 0.408, y: 0.48 },
@@ -409,7 +410,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       lineOut: anchor(0.495, 0.48),
       micOut: anchor(0.586, 0.48),
       usb: anchor(0.174, 0.46)
-    }, "《手持麦接收机说明书》完整后面板图；公司Agent图像引用 img_9b36155b6699")
+    }, "《手持麦接收机说明书》完整后面板；按已确认接口位置重构清晰工程图")
   }
 };
 

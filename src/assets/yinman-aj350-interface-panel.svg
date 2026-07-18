@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1268 206" role="img" aria-label="高性能处理器接口面板工程图">
+  <style>
+    .body{fill:#f8fafc;stroke:#172033;stroke-width:2}.bank{fill:#bbf7d0;stroke:#047857;stroke-width:1.5}.port{fill:#eff6ff;stroke:#2563eb;stroke-width:1.5}.hole{fill:#172033}.label{fill:#172033;font:700 10px Arial,"Microsoft YaHei",sans-serif;letter-spacing:0;text-anchor:middle}.small{fill:#475569;font:700 8px Arial,"Microsoft YaHei",sans-serif;letter-spacing:0;text-anchor:middle}
+  </style>
+  <rect class="body" x="1" y="1" width="1266" height="204" rx="20"/>
+  <g aria-label="SPK1 SPK2 SPK3 SPK4">
+    <rect class="bank" x="266" y="44" width="162" height="118" rx="7"/><text class="label" x="347" y="29">SPK 1 - 4</text>
+    <rect class="hole" x="285" y="57" width="11" height="14" rx="1"/><rect class="hole" x="314" y="57" width="11" height="14" rx="1"/>
+    <rect class="hole" x="374" y="57" width="11" height="14" rx="1"/><rect class="hole" x="403" y="57" width="11" height="14" rx="1"/>
+    <rect class="hole" x="285" y="125" width="11" height="14" rx="1"/><rect class="hole" x="314" y="125" width="11" height="14" rx="1"/>
+    <rect class="hole" x="374" y="125" width="11" height="14" rx="1"/><rect class="hole" x="403" y="125" width="11" height="14" rx="1"/>
+    <text class="small" x="305" y="88">1</text><text class="small" x="394" y="88">2</text><text class="small" x="305" y="155">3</text><text class="small" x="394" y="155">4</text>
+  </g>
+  <g aria-label="LINE IN 1 2 3 4">
+    <rect class="bank" x="516" y="52" width="132" height="104" rx="7"/><text class="label" x="582" y="37">LINE IN</text>
+    <rect class="hole" x="526" y="81" width="11" height="13" rx="1"/><rect class="hole" x="546" y="81" width="11" height="13" rx="1"/><rect class="hole" x="566" y="81" width="11" height="13" rx="1"/>
+    <rect class="hole" x="585" y="81" width="11" height="13" rx="1"/><rect class="hole" x="605" y="81" width="11" height="13" rx="1"/><rect class="hole" x="625" y="81" width="11" height="13" rx="1"/>
+    <rect class="hole" x="526" y="119" width="11" height="13" rx="1"/><rect class="hole" x="546" y="119" width="11" height="13" rx="1"/><rect class="hole" x="566" y="119" width="11" height="13" rx="1"/>
+    <rect class="hole" x="585" y="119" width="11" height="13" rx="1"/><rect class="hole" x="605" y="119" width="11" height="13" rx="1"/><rect class="hole" x="625" y="119" width="11" height="13" rx="1"/>
+  </g>
+  <g aria-label="LINE OUT 1 2 3 4">
+    <rect class="bank" x="653" y="52" width="132" height="104" rx="7"/><text class="label" x="719" y="37">LINE OUT</text>
+    <rect class="hole" x="663" y="81" width="11" height="13" rx="1"/><rect class="hole" x="683" y="81" width="11" height="13" rx="1"/><rect class="hole" x="703" y="81" width="11" height="13" rx="1"/>
+    <rect class="hole" x="722" y="81" width="11" height="13" rx="1"/><rect class="hole" x="742" y="81" width="11" height="13" rx="1"/><rect class="hole" x="762" y="81" width="11" height="13" rx="1"/>
+    <rect class="hole" x="663" y="119" width="11" height="13" rx="1"/><rect class="hole" x="683" y="119" width="11" height="13" rx="1"/><rect class="hole" x="703" y="119" width="11" height="13" rx="1"/>
+    <rect class="hole" x="722" y="119" width="11" height="13" rx="1"/><rect class="hole" x="742" y="119" width="11" height="13" rx="1"/><rect class="hole" x="762" y="119" width="11" height="13" rx="1"/>
+  </g>
+  <g aria-label="AMIC A1 A2 LAN">
+    <g transform="translate(812 69)"><rect class="port" width="50" height="68" rx="5"/><path class="hole" d="M10 14h30v27h-6v12H16V41h-6z"/><text class="label" x="25" y="82">AMIC</text></g>
+    <g transform="translate(888 69)"><rect class="port" width="50" height="68" rx="5"/><path class="hole" d="M10 14h30v27h-6v12H16V41h-6z"/><text class="label" x="25" y="82">A1</text></g>
+    <g transform="translate(964 69)"><rect class="port" width="50" height="68" rx="5"/><path class="hole" d="M10 14h30v27h-6v12H16V41h-6z"/><text class="label" x="25" y="82">A2</text></g>
+    <g transform="translate(1040 69)"><rect class="port" width="50" height="68" rx="5"/><path class="hole" d="M10 14h30v27h-6v12H16V41h-6z"/><text class="label" x="25" y="82">LAN</text></g>
+  </g>
+  <g aria-label="RS232"><rect class="bank" x="1126" y="81" width="44" height="44" rx="4"/><rect class="hole" x="1134" y="94" width="8" height="14" rx="1"/><rect class="hole" x="1144" y="94" width="8" height="14" rx="1"/><rect class="hole" x="1154" y="94" width="8" height="14" rx="1"/><text class="small" x="1148" y="146">RS232</text></g>
+  <g aria-label="USB"><rect class="port" x="1190" y="86" width="30" height="34" rx="10"/><rect class="hole" x="1198" y="96" width="14" height="14" rx="6"/><text class="small" x="1205" y="146">USB</text></g>
+</svg>
