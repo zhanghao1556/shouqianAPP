@@ -4,13 +4,16 @@ const testModule = String.raw`
 import assert from "node:assert/strict";
 import { createInitialProfile } from "./src/features/classroom/data/initialProfile.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
-import { buildInterfaceWiringModel, getInterfaceWiringLayout } from "./src/features/classroom/lib/interfaceWiring.ts";
+import { buildInterfaceWiringModel, getInterfacePanelPortAnchor, getInterfaceWiringLayout } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import {
-  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
-  PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
-} from "./src/features/classroom/lib/systemCapabilities.ts";
+  PROCESSOR_AJ600_PORT_PROFILE_ID,
+  PASSIVE_SPEAKER_PORT_PROFILE_ID,
+  devicePortCatalog,
+  getDevicePortProfile
+} from "./src/features/classroom/lib/devicePortCatalog.ts";
+import { PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/systemCapabilities.ts";
 import {
   SMALL_DISC_01_PRODUCT_ID,
   SMALL_DISC_02_PRODUCT_ID,
@@ -335,6 +338,95 @@ assert.ok(overflowModel.findings.some((item) => item.code.startsWith("port-capac
 assert.equal(overflowModel.edges.filter((edge) => edge.id.startsWith("candidate-test-line-out-")).length, 4);
 console.log("PASS interface exhaustion stops excess edges and reports a hard capacity finding");
 
+const speakerEdge = smallDisc01.model.edges.find((edge) => edge.cableType.includes("音箱线"));
+assert.ok(speakerEdge, "No field-terminated speaker cable was generated");
+assert.deepEqual(
+  speakerEdge.conductors.map((conductor) => [conductor.label, conductor.fromTerminalLabel, conductor.toTerminalLabel]),
+  [["红线", "+", "+"], ["白线", "-", "-"]]
+);
+console.log("PASS speaker cable maps red + to + and white - to -");
+
+const hangingProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  teachingWidth: 8,
+  teachingDepth: 4
+});
+const hanging = buildModel(hangingProfile);
+const balancedEdge = hanging.model.edges.find((edge) => edge.id.startsWith("hanging-mic-"));
+assert.ok(balancedEdge, "No hanging-microphone balanced cable was generated");
+assert.deepEqual(
+  balancedEdge.conductors.map((conductor) => [conductor.label, conductor.fromTerminalLabel, conductor.toTerminalLabel]),
+  [["红线", "2 (+)", "+"], ["白线", "3 (-)", "-"], ["屏蔽线", "1 (G)", "G"]]
+);
+console.log("PASS balanced microphone cable maps positive, negative and ground conductors");
+
+const rj45Edge = ringCases.get(1).model.edges.find((edge) => edge.conductors.length === 8);
+assert.ok(rj45Edge, "No T568B network cable was generated");
+assert.deepEqual(
+  rj45Edge.conductors.map((conductor, index) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.label, index + 1]),
+  Array.from({ length: 8 }, (_, index) => ["pin" + (index + 1), "pin" + (index + 1), (index + 1) + " " + ["白橙", "橙", "白绿", "蓝", "白蓝", "绿", "白棕", "棕"][index], index + 1])
+);
+console.log("PASS T568B network cable maps pins 1-8 straight through");
+
+for (const profile of Object.values(devicePortCatalog)) {
+  if (!profile.interfacePanel) continue;
+  for (const [portId, portAnchor] of Object.entries(profile.interfacePanel.portAnchors)) {
+    assert.ok(portAnchor.x >= 0 && portAnchor.x <= 1, profile.productId + ":" + portId + " x anchor is outside the panel");
+    assert.ok(portAnchor.y >= 0 && portAnchor.y <= 1, profile.productId + ":" + portId + " y anchor is outside the panel");
+    for (const [terminalId, terminalAnchor] of Object.entries(portAnchor.terminalAnchors ?? {})) {
+      assert.ok(terminalAnchor.x >= 0 && terminalAnchor.x <= 1, profile.productId + ":" + portId + ":" + terminalId + " x anchor is outside the panel");
+      assert.ok(terminalAnchor.y >= 0 && terminalAnchor.y <= 1, profile.productId + ":" + portId + ":" + terminalId + " y anchor is outside the panel");
+    }
+  }
+}
+const aj600Profile = getDevicePortProfile(PROCESSOR_AJ600_PORT_PROFILE_ID);
+assert.ok(aj600Profile?.interfacePanel);
+assert.equal(aj600Profile.interfacePanel.assetKey, "aj600");
+assert.match(aj600Profile.interfacePanel.source, /AJ600上面板/);
+const aj600MicPorts = aj600Profile.ports.filter((port) => /^mic\d+$/.test(port.id));
+assert.equal(aj600MicPorts.length, 6);
+assert.deepEqual(new Set(aj600MicPorts.map((port) => port.physicalGroupId)), new Set(["mic-block"]));
+const passiveSpeakerPanel = getDevicePortProfile(PASSIVE_SPEAKER_PORT_PROFILE_ID)?.interfacePanel;
+assert.ok(passiveSpeakerPanel);
+const groupedSpeakerAnchors = Array.from({ length: 4 }, (_, index) =>
+  getInterfacePanelPortAnchor(passiveSpeakerPanel, "terminals-direct-speaker-" + (index + 1), index, 4)
+);
+assert.deepEqual(groupedSpeakerAnchors.map((anchor) => [
+  Number(anchor?.x.toFixed(2)),
+  Number(anchor?.y.toFixed(2))
+]), [
+  [0.44, 0.39],
+  [0.66, 0.39],
+  [0.44, 0.57],
+  [0.66, 0.57]
+]);
+console.log("PASS interface-panel anchors are normalized, AJ600 MIC ports share one block and grouped speakers use a 2x2 anchor grid");
+
+assert.ok(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"));
+assert.ok(oneLineWith02.model.findings.some((item) => item.code === "interface-panel.missing.line-array-converter"));
+assert.equal(smallDisc01.model.findings.some((item) => item.code === "interface-panel.missing.small-disc-extender"), false);
+console.log("PASS missing and partial interface images create review findings while confirmed panels do not");
+
+const crossingProfile = makeProfile({
+  length: 14.3,
+  width: 7.4,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "existingArray",
+  computer: "讲台电脑",
+  recordingHost: "录播主机"
+});
+const crossingCase = buildModel(crossingProfile);
+const crossingLayout = getInterfaceWiringLayout(crossingCase.model, 993);
+const crossingComputer = crossingCase.model.nodes.find((item) => item.label === "讲台电脑");
+assert.ok(crossingComputer);
+assert.ok(crossingLayout.positions.speakers.centerX < crossingLayout.positions[crossingComputer.id].centerX);
+console.log("PASS child devices follow their root-port side so SPK and USB routes do not cross by default");
+
 const models = [
   ...Array.from(ringCases.values()).map((item) => item.model),
   singleLine.model,
@@ -345,7 +437,9 @@ const models = [
   smallDisc03.model,
   smallDiscUsb.model,
   unknownPort.model,
-  overflowModel
+  overflowModel,
+  hanging.model,
+  crossingCase.model
 ];
 for (const model of models) {
   assertNoDuplicatePortOccupancy(model);

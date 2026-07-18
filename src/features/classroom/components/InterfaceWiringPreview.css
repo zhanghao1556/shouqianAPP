@@ -107,150 +107,94 @@
 }
 
 .interfaceWiringNode {
+  position: relative;
   height: 100%;
-  overflow: hidden;
-  border: 1px solid #8ca3bc;
-  border-radius: 6px;
-  background: #ffffff;
+  overflow: visible;
   color: #172033;
   font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
-  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.11);
 }
 
-.interfaceWiringNode.root {
-  border-color: #0b5cad;
-  box-shadow: 0 0 0 2px rgba(11, 92, 173, 0.14), 0 7px 18px rgba(15, 23, 42, 0.13);
-}
-
-.interfaceWiringNodeHeader {
-  min-height: 62px;
+.interfaceWiringNodeName {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 4px;
+  left: 4px;
+  min-height: 22px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 11px;
-  border-bottom: 1px solid #b9c8d8;
-  background: #eaf3fb;
-}
-
-.interfaceWiringNode.level2 .interfaceWiringNodeHeader {
-  background: #eef7f2;
-}
-
-.interfaceWiringNode.level3 .interfaceWiringNodeHeader {
-  background: #f4f1fa;
-}
-
-.interfaceWiringNodeHeader > div {
-  min-width: 0;
-}
-
-.interfaceWiringNodeHeader strong,
-.interfaceWiringNodeHeader small {
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.interfaceWiringNodeHeader strong {
+  justify-content: center;
+  color: #172033;
   font-size: 14px;
-  line-height: 1.3;
-}
-
-.interfaceWiringNodeHeader small {
-  margin-top: 3px;
-  color: #64748b;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.interfaceWiringNodeHeader > span {
-  flex: 0 0 29px;
-  min-height: 24px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #91a9c1;
-  border-radius: 5px;
-  color: #123c66;
-  background: #ffffff;
-  font-size: 11px;
   font-weight: 900;
-}
-
-.interfaceWiringPortList {
-  display: grid;
-}
-
-.interfaceWiringPortRow {
-  min-height: 48px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  border-top: 1px solid #e2e8f0;
-}
-
-.interfaceWiringPortRow:first-child {
-  border-top: 0;
-}
-
-.interfaceWiringPortRow > div {
-  min-width: 0;
-  display: grid;
-  align-content: center;
-  gap: 2px;
-  padding: 6px 8px;
-}
-
-.interfaceWiringPortRow > div + div {
-  border-left: 1px solid #e2e8f0;
-  background: #f8fafc;
-  text-align: right;
-}
-
-.interfaceWiringPortRow b,
-.interfaceWiringPortRow span,
-.interfaceWiringPortRow small {
+  line-height: 1.25;
+  text-align: center;
   overflow-wrap: anywhere;
+  text-shadow: 0 0 3px #ffffff, 0 0 3px #ffffff, 0 0 3px #ffffff;
 }
 
-.interfaceWiringPortRow b,
-.interfaceWiringPortRow span {
+.interfaceWiringPanelImage {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  object-fit: contain;
+}
+
+.interfaceWiringPanelImage.unconfirmed {
+  opacity: 0.94;
+}
+
+.interfaceWiringMissingPanelLabel {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  left: 8px;
+  color: #9a6700;
   font-size: 10px;
-  line-height: 1.25;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
 }
 
-.interfaceWiringPortRow small {
-  color: #64748b;
-  font-size: 9px;
-  line-height: 1.25;
-}
-
-.interfaceWiringPortRow.unconfirmed {
-  background: #fff8e6;
-}
-
-.interfaceWiringPortEmpty {
-  min-height: 48px;
+.interfaceWiringPortPin {
+  position: absolute;
+  z-index: 4;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
-  color: #64748b;
-  font-size: 10px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: #0b5cad;
+  color: #ffffff;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.72);
 }
 
-.interfaceWiringCascade {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 9px;
-  border-top: 1px solid #dcc078;
-  background: #fffbeb;
-  color: #713f12;
-  font-size: 10px;
+.interfaceWiringPortPin.unconfirmed {
+  background: #b7791f;
 }
 
-.interfaceWiringCascade span {
-  text-align: right;
-  overflow-wrap: anywhere;
+.interfaceWiringUnlocatedAnchor {
+  position: absolute;
+  z-index: 3;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #9a6700;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.interfaceWiringPortPin.unlocated {
+  border-color: #9a6700;
+  background: #ffffff;
+  color: #9a6700;
+  box-shadow: 0 0 0 1px rgba(154, 103, 0, 0.42);
 }
 
 .interfaceWiringDataGrid {
@@ -293,7 +237,7 @@
 }
 
 .interfaceWiringPortTable table {
-  min-width: 820px;
+  min-width: 860px;
   font-size: 12px;
 }
 
@@ -315,6 +259,131 @@
   display: block;
   margin-top: 3px;
   color: #64748b;
+}
+
+.interfaceWiringPortTable th:first-child,
+.interfaceWiringPortTable td:first-child {
+  width: 74px;
+  text-align: center;
+}
+
+.interfaceWiringTablePortPin {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b5cad;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.unconfirmedConductor {
+  stroke-dasharray: 5 4;
+}
+
+.lightConductor {
+  filter: drop-shadow(0 0 0.7px #334155) drop-shadow(0 0 0.7px #334155);
+}
+
+.interfaceWiringLegendObject {
+  overflow: visible;
+}
+
+.interfaceWiringLegend {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #8297ad;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #172033;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+.interfaceWiringLegend > strong {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-bottom: 1px solid #c8d3df;
+  background: #edf3f8;
+  font-size: 12px;
+}
+
+.interfaceWiringLegend table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 10px;
+}
+
+.interfaceWiringLegend th,
+.interfaceWiringLegend td {
+  height: 44px;
+  padding: 5px 8px;
+  border-right: 1px solid #dde5ed;
+  border-bottom: 1px solid #dde5ed;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.interfaceWiringLegend th:first-child,
+.interfaceWiringLegend td:first-child {
+  width: 112px;
+}
+
+.interfaceWiringLegend th:nth-child(2),
+.interfaceWiringLegend td:nth-child(2) {
+  width: 100px;
+}
+
+.interfaceWiringLegend th:last-child,
+.interfaceWiringLegend td:last-child {
+  border-right: 0;
+}
+
+.interfaceWiringLegendSwatch {
+  width: 88px;
+  height: 24px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
+.interfaceWiringLegendSwatch i {
+  display: block;
+  width: 82px;
+  height: 2px;
+  border-radius: 1px;
+  background: #475569;
+}
+
+.interfaceWiringLegendSwatch.speaker i:first-child,
+.interfaceWiringLegendSwatch.audio i:first-child {
+  background: #dc2626;
+}
+
+.interfaceWiringLegendSwatch.speaker i:nth-child(2),
+.interfaceWiringLegendSwatch.audio i:nth-child(2) {
+  height: 2px;
+  border: 1px solid #64748b;
+  background: #ffffff;
+}
+
+.interfaceWiringLegendSwatch.audio i:nth-child(3) {
+  background: #64748b;
+}
+
+.interfaceWiringLegendSwatch.network i {
+  height: 5px;
+  background: #2563eb;
+}
+
+.interfaceWiringLegendSwatch.usb i {
+  height: 5px;
+  background: #eab308;
 }
 
 .interfaceWiringPortTable tr.unconfirmed td {

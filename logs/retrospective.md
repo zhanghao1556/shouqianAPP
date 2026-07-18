@@ -2089,3 +2089,15 @@ PowerShell reminder:
 - A Node topology snapshot that reads the ambient application brand is not sufficient evidence for a Yinman-only label assertion. Protect processor compatibility through product selection and connection endpoint assertions, then verify the actual 5180 topology in the Yinman browser context.
 - A hard product compatibility rule is complete only when stale form state, product selection, connection endpoints, equipment-table alternatives and the rendered brand topology all agree. Testing only one layer can leave an impossible processor visible in another layer.
 - Keep internal-model assertions in source tests while separately searching the production bundle for those same identifiers. This proves the rule without exposing the internal model to customers.
+
+### 2026-07-18 physical-panel wiring display guardrail
+
+- An interface wiring node is an equipment panel, not a dashboard card. Show only the customer-facing device name above the confirmed interface image and numbered physical anchors on the image; move port names, interface forms and peers into the occupancy table.
+- The number on an image is a drawing reference, not an interface identity. Generate it deterministically from the node port order and repeat the same number in a dedicated occupancy-table column so the panel and table remain auditable after responsive layout changes.
+- Never expose internal model names or visual hierarchy labels inside customer-facing device nodes. Hierarchy remains structural in the layout model; it does not need `L1/L2/L3` badges to work.
+- Removing a node card also requires recalculating node height and image origin. Leaving the old header and port-row allowance in geometry creates empty obstacles, longer routes and false collision avoidance even when CSS hides the content.
+- A missing interface image must remain visibly honest: keep the device name, numbered logical anchors and an explicit interface-image pending note, then create a review finding. Do not substitute a front photo or another product's rear panel.
+- A cable legend needs explicit allowance for its title row, table header and every body row. Reserve bottom canvas space from the measured legend contract so the last row is not clipped and the legend cannot overlap device geometry.
+- Repeated speaker channels should use a two-dimensional anchor grid instead of tiny offsets along one line. Matching the source channel order to a 2x2 destination grid reduces crossovers without changing electrical allocation.
+- Multi-core cable conductors should join a shared visual trunk near each numbered port, run in parallel through the long route, then split to the real terminal coordinates. Drawing a separate full-length curve from every terminal makes opposite terminal orders look like incorrect wiring even when the logical mapping is right.
+- A drawing reference number and an electrical endpoint must never share the same visual coordinate. Keep the cable anchored to the physical connector, then place its numbered badge opposite the peer direction and slightly outward from the device center so neither the connector nor adjacent dense ports are obscured.

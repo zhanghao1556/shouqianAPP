@@ -190,6 +190,28 @@ export interface ConnectionLine {
 
 export type InterfacePortDirection = "input" | "output" | "bidirectional";
 export type InterfaceWiringFindingSeverity = "info" | "review" | "hard";
+export type InterfaceTerminalRole = "positive" | "negative" | "ground" | "pin" | "signal";
+
+export interface DevicePortTerminal {
+  id: string;
+  label: string;
+  role: InterfaceTerminalRole;
+  color: string;
+}
+
+export interface DevicePortVisualAnchor {
+  x: number;
+  y: number;
+  terminalAnchors?: Record<string, { x: number; y: number }>;
+}
+
+export interface DeviceInterfacePanel {
+  assetKey: string;
+  aspectRatio: number;
+  confirmed: boolean;
+  source: string;
+  portAnchors: Record<string, DevicePortVisualAnchor>;
+}
 
 export interface DevicePortCapability {
   id: string;
@@ -199,6 +221,8 @@ export interface DevicePortCapability {
   maxConnections: number;
   confirmed: boolean;
   source: string;
+  terminals: DevicePortTerminal[];
+  physicalGroupId?: string;
 }
 
 export interface DevicePortProfile {
@@ -206,6 +230,7 @@ export interface DevicePortProfile {
   internalModel?: string;
   customerName: string;
   ports: DevicePortCapability[];
+  interfacePanel?: DeviceInterfacePanel;
 }
 
 export interface InterfaceWiringPort {
@@ -218,6 +243,19 @@ export interface InterfaceWiringPort {
   peerPortLabel: string;
   cableType: string;
   connectionMethod: string;
+  confirmed: boolean;
+  terminals: DevicePortTerminal[];
+  physicalGroupId?: string;
+}
+
+export interface InterfaceWiringConductor {
+  id: string;
+  label: string;
+  color: string;
+  fromTerminalId: string;
+  fromTerminalLabel: string;
+  toTerminalId: string;
+  toTerminalLabel: string;
   confirmed: boolean;
 }
 
@@ -252,6 +290,7 @@ export interface InterfaceWiringEdge {
   connectionMethod: string;
   signalDirection: "fromTo" | "bidirectional";
   quantity: number;
+  conductors: InterfaceWiringConductor[];
 }
 
 export interface InterfaceWiringFinding {

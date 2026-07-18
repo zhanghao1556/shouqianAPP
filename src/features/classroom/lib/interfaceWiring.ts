@@ -2,9 +2,12 @@ import type { AppBrandId } from "../brand";
 import type {
   ClassroomProfile,
   ConnectionLine,
+  DeviceInterfacePanel,
   DevicePortCapability,
+  DevicePortTerminal,
   GeneratedOutputs,
   InterfacePortDirection,
+  InterfaceWiringConductor,
   InterfaceWiringEdge,
   InterfaceWiringFinding,
   InterfaceWiringModel,
@@ -94,6 +97,13 @@ export interface InterfaceWiringLayout {
   positions: Record<string, MutableLayoutPosition>;
 }
 
+export interface InterfacePanelImageRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 const processorProductIds: Record<CandidateProcessor, string> = {
   AJ200: PROCESSOR_AJ200_PORT_PROFILE_ID,
   AJ350: PROCESSOR_AJ350_PORT_PROFILE_ID,
@@ -160,6 +170,7 @@ class CandidateWiringBuilder {
     this.addSpeakerRoutes(state);
     this.addKnownBlockingFindings();
     const rootNodeId = this.finalizeHierarchy();
+    this.addMissingInterfacePanelFindings();
     const status = this.findings.some((item) => item.severity === "hard")
       ? "blocked"
       : this.findings.some((item) => item.severity === "review")
@@ -636,7 +647,9 @@ class CandidateWiringBuilder {
         `terminals-${idPrefix}-${index + 1}`,
         terminalLabel,
         "扬声器接线端子",
-        "input"
+        "input",
+        true,
+        this.requirePort(PASSIVE_SPEAKER_PORT_PROFILE_ID, "terminals").terminals
       );
       this.addConnection({
         id: `${idPrefix}-${index + 1}`,
@@ -884,7 +897,9 @@ class CandidateWiringBuilder {
       peerPortLabel: seed.toPort.panelLabel,
       cableType: seed.cableType,
       connectionMethod: seed.connectionMethod,
-      confirmed: seed.fromPort.confirmed
+      confirmed: seed.fromPort.confirmed,
+      terminals: seed.fromPort.terminals,
+      physicalGroupId: seed.fromPort.physicalGroupId
     });
     seed.toNode.ports.push({
       id: toPortId,
@@ -896,7 +911,9 @@ class CandidateWiringBuilder {
       peerPortLabel: seed.fromPort.panelLabel,
       cableType: seed.cableType,
       connectionMethod: seed.connectionMethod,
-      confirmed: seed.toPort.confirmed
+      confirmed: seed.toPort.confirmed,
+      terminals: seed.toPort.terminals,
+      physicalGroupId: seed.toPort.physicalGroupId
     });
     this.occupiedPorts.add(`${seed.fromNode.id}:${seed.fromPort.id}`);
     this.occupiedPorts.add(`${seed.toNode.id}:${seed.toPort.id}`);
@@ -909,7 +926,8 @@ class CandidateWiringBuilder {
       cableType: seed.cableType,
       connectionMethod: seed.connectionMethod,
       signalDirection: seed.signalDirection ?? (seed.fromPort.direction === "bidirectional" || seed.toPort.direction === "bidirectional" ? "bidirectional" : "fromTo"),
-      quantity: seed.quantity ?? 1
+      quantity: seed.quantity ?? 1,
+      conductors: getConductorMappings(seed.fromPort, seed.toPort, seed.cableType)
     });
     if (!seed.fromPort.confirmed || !seed.toPort.confirmed) {
       this.addFinding({
@@ -945,7 +963,8 @@ class CandidateWiringBuilder {
     panelLabel: string,
     interfaceType: string,
     direction: InterfacePortDirection,
-    confirmed = true
+    confirmed = true,
+    terminals: DevicePortTerminal[] = []
   ): DevicePortCapability {
     return {
       id,
@@ -954,8 +973,27 @@ class CandidateWiringBuilder {
       direction,
       maxConnections: 1,
       confirmed,
-      source: confirmed ? "当前方案连接关系" : "接口资料待用户补录"
+      source: confirmed ? "当前方案连接关系" : "接口资料待用户补录",
+      terminals
     };
+  }
+
+  private addMissingInterfacePanelFindings() {
+    this.nodes.forEach((node) => {
+      if (!node.ports.length) return;
+      const profile = getDevicePortProfile(node.productId);
+      if (profile?.interfacePanel?.confirmed) return;
+      const hasPartialPanel = Boolean(profile?.interfacePanel);
+      this.addFinding({
+        code: `interface-panel.missing.${node.id}`,
+        severity: "review",
+        title: hasPartialPanel ? "完整接口图待补充" : "设备接口图待补充",
+        message: hasPartialPanel
+          ? `${node.label}当前资料只确认了部分接口面，未确认位置继续使用文字标注，不伪造接口位置。`
+          : `${node.label}尚无已确认的完整背面或接口面板图，候选图仅保留接口文字，不借用正面实物图。`,
+        nodeId: node.id
+      });
+    });
   }
 
   private isPortOccupied(nodeId: string, portId: string) {
@@ -1026,38 +1064,100 @@ class CandidateWiringBuilder {
   }
 }
 
+function getConductorMappings(
+  fromPort: DevicePortCapability,
+  toPort: DevicePortCapability,
+  cableType: string
+): InterfaceWiringConductor[] {
+  const mappings = fromPort.terminals.flatMap((fromTerminal) => {
+    const toTerminal = toPort.terminals.find((candidate) => candidate.id === fromTerminal.id) ??
+      (fromTerminal.role !== "pin"
+        ? toPort.terminals.find((candidate) => candidate.role === fromTerminal.role)
+        : undefined);
+    if (!toTerminal) return [];
+    return [{
+      id: `${fromTerminal.id}-${toTerminal.id}`,
+      label: getConductorLabel(fromTerminal, cableType),
+      color: fromTerminal.color,
+      fromTerminalId: fromTerminal.id,
+      fromTerminalLabel: fromTerminal.label,
+      toTerminalId: toTerminal.id,
+      toTerminalLabel: toTerminal.label,
+      confirmed: fromPort.confirmed && toPort.confirmed
+    } satisfies InterfaceWiringConductor];
+  });
+  if (mappings.length) return mappings;
+  if (!/USB/i.test(cableType) && /音频线|话筒线/i.test(cableType)) {
+    const defaultAudioTerminals: DevicePortTerminal[] = [
+      { id: "positive", label: "+", role: "positive", color: "#dc2626" },
+      { id: "negative", label: "-", role: "negative", color: "#ffffff" },
+      { id: "ground", label: "G", role: "ground", color: "#64748b" }
+    ];
+    return defaultAudioTerminals.map((fallbackTerminal) => {
+      const fromTerminal = fromPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
+      const toTerminal = toPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
+      return {
+        id: `${fromTerminal.id}-${toTerminal.id}`,
+        label: getConductorLabel(fromTerminal, cableType),
+        color: fallbackTerminal.color,
+        fromTerminalId: fromTerminal.id,
+        fromTerminalLabel: fromTerminal.label,
+        toTerminalId: toTerminal.id,
+        toTerminalLabel: toTerminal.label,
+        confirmed: fromPort.confirmed && toPort.confirmed
+      };
+    });
+  }
+  return [{
+    id: "assembled-cable",
+    label: "成品线",
+    color: "#0b5cad",
+    fromTerminalId: "connector",
+    fromTerminalLabel: fromPort.panelLabel,
+    toTerminalId: "connector",
+    toTerminalLabel: toPort.panelLabel,
+    confirmed: fromPort.confirmed && toPort.confirmed
+  }];
+}
+
+function getConductorLabel(terminal: DevicePortTerminal, cableType: string) {
+  if (cableType.includes("音箱线")) {
+    if (terminal.role === "positive") return "红线";
+    if (terminal.role === "negative") return "白线";
+  }
+  if (terminal.role === "positive") return "红线";
+  if (terminal.role === "negative") return "白线";
+  if (terminal.role === "ground") return "屏蔽线";
+  return terminal.label;
+}
+
 export function getInterfaceWiringLayout(model: InterfaceWiringModel, availableWidth = 1120): InterfaceWiringLayout {
   const width = Math.max(320, Math.floor(availableWidth));
   if (!model.rootNodeId || !model.nodes.length) return { width, height: 560, positions: {} };
   const sidePadding = width < 720 ? 16 : 24;
-  const nodeWidth = Math.min(260, width - sidePadding * 2);
   const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
-  const dimensions = new Map(model.nodes.map((node) => [node.id, getNodeDimensions(node, nodeWidth)]));
-  const centerPositions = new Map<string, { x: number; y: number }>();
   const root = nodeMap.get(model.rootNodeId)!;
+  const dimensions = new Map(model.nodes.map((node) => {
+    const nodeWidth = getPreferredNodeWidth(node, node.id === root.id, width, sidePadding);
+    return [node.id, getNodeDimensions(node, nodeWidth)];
+  }));
+  const centerPositions = new Map<string, { x: number; y: number }>();
   centerPositions.set(root.id, { x: width / 2, y: 0 });
   const directChildren = model.nodes.filter((node) => node.parentId === root.id);
+  const directChildHorizontalScores = new Map(directChildren.map((node) => [
+    node.id,
+    getRootPortHorizontalScore(model, root, node)
+  ]));
   const rootDimensions = dimensions.get(root.id)!;
-  if (width >= 840) {
-    placeDirectChildrenOnConstrainedRing(
-      directChildren,
-      rootDimensions,
-      dimensions,
-      centerPositions,
-      width,
-      sidePadding
-    );
-  } else {
-    placeDirectChildrenInCompactRows(
-      directChildren,
-      rootDimensions,
-      dimensions,
-      centerPositions,
-      width,
-      sidePadding,
-      nodeWidth
-    );
-  }
+  placeDirectChildrenInCompactRows(
+    directChildren,
+    rootDimensions,
+    dimensions,
+    centerPositions,
+    width,
+    sidePadding,
+    directChildHorizontalScores
+  );
 
   const placedRects: Array<{ id: string; x: number; y: number; width: number; height: number }> = [];
   for (const node of [root, ...directChildren]) {
@@ -1117,7 +1217,7 @@ export function getInterfaceWiringLayout(model: InterfaceWiringModel, availableW
   const minY = Math.min(...raw.map((item) => item.y));
   const maxY = Math.max(...raw.map((item) => item.y + item.height));
   const titleBand = 104;
-  const bottomPadding = 44;
+  const bottomPadding = model.edges.length ? 340 : 44;
   const shiftY = titleBand - minY;
   const positions = Object.fromEntries(raw.map((item) => [item.id, {
     ...item,
@@ -1133,64 +1233,6 @@ export function getInterfaceWiringLayout(model: InterfaceWiringModel, availableW
   };
 }
 
-function placeDirectChildrenOnConstrainedRing(
-  nodes: InterfaceWiringNode[],
-  rootSize: { width: number; height: number },
-  dimensions: Map<string, { width: number; height: number }>,
-  positions: Map<string, { x: number; y: number }>,
-  width: number,
-  sidePadding: number
-) {
-  if (!nodes.length) return;
-  const horizontalRadius = width / 2 - sidePadding - rootSize.width / 2;
-  const angles = nodes.map((_, index) => -Math.PI / 2 + (Math.PI * 2 * index) / nodes.length);
-  let verticalRadius = Math.max(300, rootSize.height / 2 + 190);
-  for (const [index, node] of nodes.entries()) {
-    const size = dimensions.get(node.id)!;
-    const angle = angles[index];
-    const horizontalSeparation = Math.abs(Math.cos(angle) * horizontalRadius);
-    const requiredHorizontal = (rootSize.width + size.width) / 2 + 34;
-    if (horizontalSeparation >= requiredHorizontal) continue;
-    const verticalFactor = Math.max(0.18, Math.abs(Math.sin(angle)));
-    const requiredVertical = (rootSize.height + size.height) / 2 + 76;
-    verticalRadius = Math.max(verticalRadius, requiredVertical / verticalFactor);
-  }
-
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const rects = nodes.map((node, index) => {
-      const size = dimensions.get(node.id)!;
-      const angle = angles[index];
-      const center = {
-        x: width / 2 + Math.cos(angle) * horizontalRadius,
-        y: Math.sin(angle) * verticalRadius
-      };
-      return { id: node.id, center, x: center.x - size.width / 2, y: center.y - size.height / 2, ...size };
-    });
-    const rootRect = {
-      x: width / 2 - rootSize.width / 2,
-      y: -rootSize.height / 2,
-      ...rootSize
-    };
-    const hasOverlap = rects.some((rect, index) =>
-      rectanglesOverlap(rect, rootRect, 34) ||
-      rects.slice(index + 1).some((other) => rectanglesOverlap(rect, other, 34))
-    );
-    if (!hasOverlap) {
-      rects.forEach((rect) => positions.set(rect.id, rect.center));
-      return;
-    }
-    verticalRadius += 60;
-  }
-
-  nodes.forEach((node, index) => {
-    const angle = angles[index];
-    positions.set(node.id, {
-      x: width / 2 + Math.cos(angle) * horizontalRadius,
-      y: Math.sin(angle) * verticalRadius
-    });
-  });
-}
-
 function placeDirectChildrenInCompactRows(
   nodes: InterfaceWiringNode[],
   rootSize: { width: number; height: number },
@@ -1198,31 +1240,76 @@ function placeDirectChildrenInCompactRows(
   positions: Map<string, { x: number; y: number }>,
   width: number,
   sidePadding: number,
-  nodeWidth: number
+  horizontalScores: Map<string, number>
 ) {
-  const topNodes = nodes.filter((_, index) => index % 2 === 0);
-  const bottomNodes = nodes.filter((_, index) => index % 2 === 1);
+  const sortByRootPort = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
+    (horizontalScores.get(left.id) ?? 0.5) - (horizontalScores.get(right.id) ?? 0.5);
+  const topNodes = nodes.filter((_, index) => index % 2 === 0).sort(sortByRootPort);
+  const bottomNodes = nodes.filter((_, index) => index % 2 === 1).sort(sortByRootPort);
   const columnGap = 32;
-  const maxColumns = Math.max(1, Math.floor((width - sidePadding * 2 + columnGap) / (nodeWidth + columnGap)));
-  const placeGroup = (group: InterfaceWiringNode[], direction: -1 | 1) => {
+  const usableWidth = width - sidePadding * 2;
+  const makeRows = (group: InterfaceWiringNode[]) => {
     const rows: InterfaceWiringNode[][] = [];
-    for (let index = 0; index < group.length; index += maxColumns) rows.push(group.slice(index, index + maxColumns));
-    let boundary = direction < 0 ? -rootSize.height / 2 - 96 : rootSize.height / 2 + 96;
+    let row: InterfaceWiringNode[] = [];
+    let rowWidth = 0;
+    for (const node of group) {
+      const nodeWidth = dimensions.get(node.id)!.width;
+      const candidateWidth = rowWidth + (row.length ? columnGap : 0) + nodeWidth;
+      if (row.length && candidateWidth > usableWidth) {
+        rows.push(row);
+        row = [node];
+        rowWidth = nodeWidth;
+      } else {
+        row.push(node);
+        rowWidth = candidateWidth;
+      }
+    }
+    if (row.length) rows.push(row);
+    return rows;
+  };
+  const placeGroup = (group: InterfaceWiringNode[], direction: -1 | 1) => {
+    const rows = makeRows(group);
+    let boundary = direction < 0 ? -rootSize.height / 2 - 190 : rootSize.height / 2 + 190;
     for (const row of rows) {
       const rowHeight = Math.max(...row.map((node) => dimensions.get(node.id)!.height));
       const centerY = boundary + direction * rowHeight / 2;
-      const usableWidth = width - sidePadding * 2;
-      row.forEach((node, index) => {
-        const centerX = row.length === 1
-          ? width / 2
-          : sidePadding + nodeWidth / 2 + index * ((usableWidth - nodeWidth) / (row.length - 1));
+      const rowWidth = row.reduce((total, node) => total + dimensions.get(node.id)!.width, 0) + columnGap * (row.length - 1);
+      let cursorX = (width - rowWidth) / 2;
+      row.forEach((node) => {
+        const nodeWidth = dimensions.get(node.id)!.width;
+        const centerX = cursorX + nodeWidth / 2;
         positions.set(node.id, { x: centerX, y: centerY });
+        cursorX += nodeWidth + columnGap;
       });
-      boundary += direction * (rowHeight + 86);
+      boundary += direction * (rowHeight + 170);
     }
   };
   placeGroup(topNodes, -1);
   placeGroup(bottomNodes, 1);
+}
+
+function getRootPortHorizontalScore(
+  model: InterfaceWiringModel,
+  root: InterfaceWiringNode,
+  child: InterfaceWiringNode
+) {
+  const panel = getDevicePortProfile(root.productId)?.interfacePanel;
+  const scores = model.edges.flatMap((edge) => {
+    const rootPortId = edge.fromNodeId === root.id && edge.toNodeId === child.id
+      ? edge.fromPortId
+      : edge.toNodeId === root.id && edge.fromNodeId === child.id
+        ? edge.toPortId
+        : undefined;
+    if (!rootPortId) return [];
+    const rootPortIndex = root.ports.findIndex((port) => port.id === rootPortId);
+    const rootPort = root.ports[rootPortIndex];
+    if (!rootPort) return [];
+    const baseCapabilityId = rootPort.capabilityId.replace(/-\d+$/, "");
+    const panelAnchor = panel?.portAnchors[rootPort.capabilityId] ?? panel?.portAnchors[baseCapabilityId];
+    if (panelAnchor) return [panelAnchor.x];
+    return [(rootPortIndex + 1) / (root.ports.length + 1)];
+  });
+  return scores.length ? scores.reduce((sum, value) => sum + value, 0) / scores.length : 0.5;
 }
 
 function findOpenChildPosition(input: {
@@ -1255,7 +1342,7 @@ function findOpenChildPosition(input: {
     siblingSpread - Math.PI / 4,
     siblingSpread + Math.PI
   ];
-  const distances = [360, 440, 520, 620];
+  const distances = [420, 500, 600, 720];
   for (const distance of distances) {
     for (const angleOffset of angleOffsets) {
       const angle = outwardAngle + angleOffset;
@@ -1269,7 +1356,7 @@ function findOpenChildPosition(input: {
         ...size
       };
       if (rect.x < sidePadding || rect.x + rect.width > width - sidePadding) continue;
-      if (!placedRects.some((placed) => rectanglesOverlap(rect, placed, 34))) return candidate;
+      if (!placedRects.some((placed) => rectanglesOverlap(rect, placed, 72))) return candidate;
     }
   }
 
@@ -1278,12 +1365,12 @@ function findOpenChildPosition(input: {
     sidePadding + size.width / 2,
     width - sidePadding - size.width / 2
   ];
-  let y = Math.max(...placedRects.map((rect) => rect.y + rect.height), parentCenter.y) + 110 + size.height / 2;
+  let y = Math.max(...placedRects.map((rect) => rect.y + rect.height), parentCenter.y) + 190 + size.height / 2;
   for (let row = 0; row < 40; row += 1) {
     for (const x of xCandidates) {
       const candidate = { x, y };
       const rect = { x: x - size.width / 2, y: y - size.height / 2, ...size };
-      if (!placedRects.some((placed) => rectanglesOverlap(rect, placed, 34))) return candidate;
+      if (!placedRects.some((placed) => rectanglesOverlap(rect, placed, 72))) return candidate;
     }
     y += size.height + 64;
   }
@@ -1291,10 +1378,98 @@ function findOpenChildPosition(input: {
 }
 
 function getNodeDimensions(node: InterfaceWiringNode, width: number) {
-  const portRows = Math.max(1, node.ports.length);
+  const interfacePanel = getDevicePortProfile(node.productId)?.interfacePanel;
+  const unlocatedPortCount = node.ports.filter((port, index) => !(
+    interfacePanel && getInterfacePanelPortAnchor(interfacePanel, port.capabilityId, index, node.ports.length)
+  )).length;
+  const fallbackRows = Math.ceil(unlocatedPortCount / 4);
+  const imageHeight = interfacePanel ? getInterfacePanelImageSize(interfacePanel.aspectRatio, width).height : 0;
   return {
     width,
-    height: 62 + portRows * 48 + (node.cascade ? 42 : 0)
+    height: interfacePanel
+      ? 30 + imageHeight + (fallbackRows ? 64 + (fallbackRows - 1) * 22 : 30)
+      : node.ports.length
+        ? 88 + Math.max(0, fallbackRows - 1) * 22
+        : 48
+  };
+}
+
+function getPreferredNodeWidth(node: InterfaceWiringNode, isRoot: boolean, canvasWidth: number, sidePadding: number) {
+  const maxWidth = canvasWidth - sidePadding * 2;
+  const interfacePanel = getDevicePortProfile(node.productId)?.interfacePanel;
+  if (isRoot) {
+    const preferred = interfacePanel && interfacePanel.aspectRatio < 2.4 ? 420 : 760;
+    return Math.min(preferred, maxWidth);
+  }
+  if (!interfacePanel) return Math.min(300, maxWidth);
+  if (interfacePanel.aspectRatio >= 3) return Math.min(520, maxWidth);
+  if (interfacePanel.aspectRatio < 0.9) return Math.min(280, maxWidth);
+  return Math.min(340, maxWidth);
+}
+
+export function getInterfacePanelImageRect(
+  node: InterfaceWiringNode,
+  position: MutableLayoutPosition
+): InterfacePanelImageRect | undefined {
+  const interfacePanel = getDevicePortProfile(node.productId)?.interfacePanel;
+  if (!interfacePanel) return undefined;
+  const size = getInterfacePanelImageSize(interfacePanel.aspectRatio, position.width);
+  return {
+    x: position.x + (position.width - size.width) / 2,
+    y: position.y + 30,
+    width: size.width,
+    height: size.height
+  };
+}
+
+export function getInterfacePanelPortAnchor(
+  panelProfile: DeviceInterfacePanel,
+  capabilityId: string,
+  portIndex: number,
+  portCount: number
+) {
+  const exact = panelProfile.portAnchors[capabilityId];
+  if (exact) return exact;
+  const baseId = capabilityId.startsWith("terminals-")
+    ? "terminals"
+    : capabilityId.replace(/-\d+$/, "");
+  const base = panelProfile.portAnchors[baseId];
+  if (!base) return undefined;
+  if (panelProfile.assetKey === "passiveSpeaker" && baseId === "terminals" && portCount > 1) {
+    const rowCount = Math.ceil(portCount / 2);
+    const column = portIndex % 2;
+    const row = Math.floor(portIndex / 2);
+    const x = column === 0 ? 0.44 : 0.66;
+    const y = rowCount === 1 ? 0.47 : 0.39 + (row / (rowCount - 1)) * 0.18;
+    return {
+      ...base,
+      x,
+      y,
+      terminalAnchors: {
+        positive: { x: x + 0.035, y },
+        negative: { x: x - 0.035, y }
+      }
+    };
+  }
+  const repeatedOffset = portCount > 1 ? (portIndex - (portCount - 1) / 2) * 0.012 : 0;
+  return {
+    ...base,
+    x: Math.max(0.02, Math.min(0.98, base.x + repeatedOffset)),
+    terminalAnchors: base.terminalAnchors
+      ? Object.fromEntries(Object.entries(base.terminalAnchors).map(([id, point]) => [id, {
+          x: Math.max(0.02, Math.min(0.98, point.x + repeatedOffset)),
+          y: point.y
+        }]))
+      : undefined
+  };
+}
+
+function getInterfacePanelImageSize(aspectRatio: number, nodeWidth: number) {
+  const availableWidth = Math.max(120, nodeWidth - 20);
+  const width = Math.min(availableWidth, 220 * aspectRatio);
+  return {
+    width,
+    height: width / aspectRatio
   };
 }
 
