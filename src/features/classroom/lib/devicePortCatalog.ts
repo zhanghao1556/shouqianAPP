@@ -269,12 +269,22 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     customerName: "线阵拓展器",
     ports: [
       port("link", "LINK", "RJ45", "input", confirmedSource, true, rj45Terminals),
-      port("micOut1", "麦克风输出1（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false, balancedTerminals),
-      port("micOut2", "麦克风输出2（面板标识待补录）", "接口形式待补录", "output", "用户提供实物图仅确认LINK侧", false, balancedTerminals)
+      port("micOut1", "麦克风输出1", "6Pin凤凰端子（前3针：+/-/G）", "output", confirmedSource, true, balancedTerminals, "mic-output-block"),
+      port("micOut2", "麦克风输出2", "6Pin凤凰端子（后3针：+/-/G）", "output", confirmedSource, true, balancedTerminals, "mic-output-block")
     ],
-    interfacePanel: panel("lineArrayConverter", 260 / 139, {
-      link: anchor(0.5, 0.5)
-    }, "用户提供实物图仅确认LINK侧", false)
+    interfacePanel: panel("lineArrayConverter", 760 / 280, {
+      link: anchor(175 / 760, 137 / 280),
+      micOut1: anchor(449 / 760, 133 / 280, {
+        positive: { x: 396 / 760, y: 133 / 280 },
+        negative: { x: 449 / 760, y: 133 / 280 },
+        ground: { x: 502 / 760, y: 133 / 280 }
+      }),
+      micOut2: anchor(608 / 760, 133 / 280, {
+        positive: { x: 555 / 760, y: 133 / 280 },
+        negative: { x: 608 / 760, y: 133 / 280 },
+        ground: { x: 661 / 760, y: 133 / 280 }
+      })
+    }, "用户提供线阵拓展器两端实物照片并确认6Pin顺序为+/-/G/+/-/G")
   },
   [HANGING_MIC_PRODUCT_ID]: {
     productId: HANGING_MIC_PRODUCT_ID,

@@ -27,7 +27,7 @@ import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.pn
 import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.png";
 import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.png";
 import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.png";
-import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter.png";
+import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.png";
 import podiumComputerRearPanel from "../../../assets/podium-computer-rear-panel.png";
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.png";
@@ -289,20 +289,21 @@ function InterfaceWiringNodeCard({
           ? getInterfaceWiringUsageDeviceLabel(node, node.ports[0])
           : `${node.label}${node.quantity > 1 ? ` ×${node.quantity}` : ""}`}
       </strong>
-      {imageRect && panelProfile && panelImage && (
+      {imageRect && panelProfile && panelImage && (imageRect.unitRects ?? [imageRect]).map((unitRect, index) => (
         <img
           className={`interfaceWiringPanelImage ${panelProfile.confirmed ? "" : "unconfirmed"}`}
           src={panelImage}
-          alt={`${node.label}接口面板`}
+          alt={index === 0 ? `${node.label}接口面板` : ""}
           title={panelProfile.source}
+          key={`${panelProfile.assetKey}-${index + 1}`}
           style={{
-            left: imageRect.x - position.x,
-            top: imageRect.y - position.y,
-            width: imageRect.width,
-            height: imageRect.height
+            left: unitRect.x - position.x,
+            top: unitRect.y - position.y,
+            width: unitRect.width,
+            height: unitRect.height
           }}
         />
-      )}
+      ))}
       {(!imageRect || hasUnlocatedPorts) && (
         <span
           className="interfaceWiringMissingPanelLabel"

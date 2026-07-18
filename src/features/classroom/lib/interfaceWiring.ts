@@ -93,6 +93,7 @@ const LEVEL_TWO_NODE_GAP = 24;
 const LEVEL_TWO_MAX_NODE_WIDTH = 420;
 const LEVEL_TWO_MIN_READABLE_WIDTH = 132;
 const LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW = 3;
+const LEVEL_TWO_MAX_WIDE_NODES_PER_ROW = 2;
 const GENERIC_BALANCED_AUDIO_TERMINALS: DevicePortTerminal[] = [
   { id: "positive", label: "+", role: "positive", color: "#dc2626" },
   { id: "negative", label: "-", role: "negative", color: "#ffffff" },
@@ -119,7 +120,11 @@ export interface InterfacePanelImageRect {
   y: number;
   width: number;
   height: number;
+  unitRects?: Array<{ x: number; y: number; width: number; height: number }>;
 }
+
+const LINE_ARRAY_CONVERTER_PORTS_PER_UNIT = 3;
+const REPEATED_INTERFACE_PANEL_GAP_RATIO = 0.08;
 
 const processorProductIds: Record<CandidateProcessor, string> = {
   AJ200: PROCESSOR_AJ200_PORT_PROFILE_ID,
@@ -328,13 +333,6 @@ class CandidateWiringBuilder {
       });
       this.explicitParents.set(converter.id, processor.id);
       this.explicitParents.set(lineMic.id, converter.id);
-      this.addFinding({
-        code: "line-array-converter.output-labels",
-        severity: "review",
-        title: "线阵拓展器接口待补录",
-        message: "当前实物图只确认LINK，两个输出接口的面板原始名称和物理形式需用户手工补充。",
-        nodeId: converter.id
-      });
     } else {
       this.explicitParents.set(lineMic.id, processor.id);
     }
@@ -1408,10 +1406,10 @@ function placeDirectChildrenInCompactRows(
     if (row.length) rows.push(row);
     return rows;
   };
-  const makeBalancedRows = (group: InterfaceWiringNode[]) => {
+  const makeBalancedRows = (group: InterfaceWiringNode[], configuredMaxNodesPerRow: number) => {
     if (!group.length) return [];
     const maxNodesPerRow = Math.max(1, Math.min(
-      LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW,
+      configuredMaxNodesPerRow,
       Math.floor((usableWidth + LEVEL_TWO_NODE_GAP) / (LEVEL_TWO_MIN_READABLE_WIDTH + LEVEL_TWO_NODE_GAP))
     ));
     const rowCount = Math.max(1, Math.ceil(group.length / maxNodesPerRow));
@@ -1427,11 +1425,16 @@ function placeDirectChildrenInCompactRows(
     return rows;
   };
   const compactPortraitNodes = orderRowNodes(nodes.filter(isCompactPortraitNode));
-  const ordinaryNodes = orderRowNodes(nodes.filter((node) => !isCompactPortraitNode(node)));
+  const wideNodes = orderRowNodes(nodes.filter((node) => !isCompactPortraitNode(node) && isWideInterfacePanelNode(node)));
+  const ordinaryNodes = orderRowNodes(nodes.filter((node) => !isCompactPortraitNode(node) && !isWideInterfacePanelNode(node)));
   const rows = [
     ...makePackedRows(compactPortraitNodes),
-    ...makeBalancedRows(ordinaryNodes)
+    ...makeBalancedRows(wideNodes, LEVEL_TWO_MAX_WIDE_NODES_PER_ROW),
+    ...makeBalancedRows(ordinaryNodes, LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW)
   ];
+  const canShareRow = (row: InterfaceWiringNode[]) => (
+    !row.some(isWideInterfacePanelNode) || row.length <= LEVEL_TWO_MAX_WIDE_NODES_PER_ROW
+  ) && getMinimumRowWidth(orderRowNodes(row)) <= usableWidth;
 
   // Prefer merging a leftover singleton into an existing row. If width makes that
   // impossible, borrow from a row of three or more before accepting a singleton.
@@ -1440,7 +1443,7 @@ function placeDirectChildrenInCompactRows(
     const singleton = rows[rowIndex][0];
     const mergeTarget = rows
       .map((row, index) => ({ row, index }))
-      .filter(({ row, index }) => index !== rowIndex && getMinimumRowWidth(orderRowNodes([...row, singleton])) <= usableWidth)
+      .filter(({ row, index }) => index !== rowIndex && canShareRow([...row, singleton]))
       .sort((left, right) => left.row.length - right.row.length)[0];
     if (mergeTarget) {
       mergeTarget.row.push(singleton);
@@ -1507,6 +1510,11 @@ function isCompactPortraitNode(node: InterfaceWiringNode) {
   if (isCompactSpeakerGroup(node)) return true;
   const aspectRatio = getDevicePortProfile(node.productId)?.interfacePanel?.aspectRatio;
   return typeof aspectRatio === "number" && aspectRatio < 1;
+}
+
+function isWideInterfacePanelNode(node: InterfaceWiringNode) {
+  const aspectRatio = getDevicePortProfile(node.productId)?.interfacePanel?.aspectRatio;
+  return typeof aspectRatio === "number" && aspectRatio >= 2.4;
 }
 
 function placeCompactSpeakerChildRow(input: {
@@ -1677,7 +1685,7 @@ function getNodeDimensions(node: InterfaceWiringNode, width: number) {
     interfacePanel && getInterfacePanelPortAnchor(interfacePanel, port.capabilityId, index, node.ports.length)
   )).length;
   const fallbackRows = Math.ceil(unlocatedPortCount / 4);
-  const imageHeight = interfacePanel ? getInterfacePanelImageSize(interfacePanel.aspectRatio, width).height : 0;
+  const imageHeight = interfacePanel ? getInterfacePanelCompositeSize(node, interfacePanel, width).height : 0;
   return {
     width,
     height: interfacePanel
@@ -1709,12 +1717,22 @@ export function getInterfacePanelImageRect(
 ): InterfacePanelImageRect | undefined {
   const interfacePanel = getDevicePortProfile(node.productId)?.interfacePanel;
   if (!interfacePanel) return undefined;
-  const size = getInterfacePanelImageSize(interfacePanel.aspectRatio, position.width);
+  const size = getInterfacePanelCompositeSize(node, interfacePanel, position.width);
+  const x = position.x + (position.width - size.width) / 2;
+  const y = position.y + 30;
   return {
-    x: position.x + (position.width - size.width) / 2,
-    y: position.y + 30,
+    x,
+    y,
     width: size.width,
-    height: size.height
+    height: size.height,
+    unitRects: size.repeatCount > 1
+      ? Array.from({ length: size.repeatCount }, (_, index) => ({
+          x,
+          y: y + index * (size.unitHeight + size.gap),
+          width: size.width,
+          height: size.unitHeight
+        }))
+      : undefined
   };
 }
 
@@ -1731,6 +1749,25 @@ export function getInterfacePanelPortAnchor(
     : capabilityId.replace(/-\d+$/, "");
   const base = panelProfile.portAnchors[baseId];
   if (!base) return undefined;
+  if (panelProfile.assetKey === "lineArrayConverter") {
+    const unitMatch = capabilityId.match(/-(\d+)$/);
+    const unitIndex = Math.max(1, Number(unitMatch?.[1] ?? 1));
+    const unitCount = Math.max(unitIndex, Math.ceil(portCount / LINE_ARRAY_CONVERTER_PORTS_PER_UNIT));
+    if (unitCount === 1) return base;
+    const compositeHeight = unitCount + REPEATED_INTERFACE_PANEL_GAP_RATIO * (unitCount - 1);
+    const unitTop = (unitIndex - 1) * (1 + REPEATED_INTERFACE_PANEL_GAP_RATIO);
+    const normalizeY = (y: number) => (unitTop + y) / compositeHeight;
+    return {
+      ...base,
+      y: normalizeY(base.y),
+      terminalAnchors: base.terminalAnchors
+        ? Object.fromEntries(Object.entries(base.terminalAnchors).map(([id, point]) => [id, {
+            x: point.x,
+            y: normalizeY(point.y)
+          }]))
+        : undefined
+    };
+  }
   if (panelProfile.assetKey === "passiveSpeaker" && baseId === "terminals" && portCount > 1) {
     const rowCount = Math.ceil(portCount / 2);
     const column = portIndex % 2;
@@ -1766,6 +1803,23 @@ function getInterfacePanelImageSize(aspectRatio: number, nodeWidth: number) {
   return {
     width,
     height: width / aspectRatio
+  };
+}
+
+function getInterfacePanelCompositeSize(
+  node: InterfaceWiringNode,
+  interfacePanel: DeviceInterfacePanel,
+  nodeWidth: number
+) {
+  const unitSize = getInterfacePanelImageSize(interfacePanel.aspectRatio, nodeWidth);
+  const repeatCount = interfacePanel.assetKey === "lineArrayConverter" ? Math.max(1, node.quantity) : 1;
+  const gap = repeatCount > 1 ? unitSize.height * REPEATED_INTERFACE_PANEL_GAP_RATIO : 0;
+  return {
+    width: unitSize.width,
+    height: unitSize.height * repeatCount + gap * (repeatCount - 1),
+    unitHeight: unitSize.height,
+    repeatCount,
+    gap
   };
 }
 

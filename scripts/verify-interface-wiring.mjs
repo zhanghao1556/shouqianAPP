@@ -29,7 +29,10 @@ import {
   devicePortCatalog,
   getDevicePortProfile
 } from "./src/features/classroom/lib/devicePortCatalog.ts";
-import { PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/systemCapabilities.ts";
+import {
+  LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
+  PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
+} from "./src/features/classroom/lib/systemCapabilities.ts";
 import {
   SMALL_DISC_01_PRODUCT_ID,
   SMALL_DISC_02_PRODUCT_ID,
@@ -175,6 +178,20 @@ assert.deepEqual(
   processorPortLabels(oneLineWith02.model).filter((label) => label === "MIC1" || label === "MIC2" || label === "EXTMIC").sort(),
   ["EXTMIC", "MIC1", "MIC2"]
 );
+const oneLineConverterEdges = oneLineWith02.model.edges.filter((edge) => edge.id.startsWith("line-array-converter-mic-"));
+assert.equal(oneLineConverterEdges.length, 2);
+for (const edge of oneLineConverterEdges) {
+  assert.deepEqual(
+    edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.label, conductor.confirmed]),
+    [
+      ["positive", "positive", "红线", true],
+      ["negative", "negative", "白线", true],
+      ["ground", "ground", "屏蔽线", true]
+    ]
+  );
+}
+assert.equal(oneLineWith02.model.findings.some((item) => item.code === "line-array-converter.output-labels"), false);
+assert.equal(oneLineWith02.model.findings.some((item) => item.code.startsWith("unconfirmed-port.line-array-converter-mic-")), false);
 console.log("PASS one SA110 plus 02 uses AJ200, one line-array extender, MIC1/MIC2 and EXTMIC");
 
 const twoLineProfile = makeProfile({
@@ -394,20 +411,25 @@ assert.equal(
 for (const width of [520, 993, 1120]) {
   const levelTwoLayout = getInterfaceWiringLayout(wireless.model, width);
   const levelTwoNodes = wireless.model.nodes.filter((item) => item.level === 2);
+  const wideLevelTwoNodeIds = new Set(levelTwoNodes
+    .filter((item) => (getDevicePortProfile(item.productId)?.interfacePanel?.aspectRatio ?? 0) >= 2.4)
+    .map((item) => item.id));
   const levelTwoRows = new Map();
   levelTwoNodes.forEach((item) => {
     const position = levelTwoLayout.positions[item.id];
     const rowKey = position.centerY.toFixed(3);
     levelTwoRows.set(rowKey, [...(levelTwoRows.get(rowKey) ?? []), item.id]);
   });
-  assert.ok(Array.from(levelTwoRows.values()).every((row) => row.length >= 2));
+  assert.ok(Array.from(levelTwoRows.values()).every((row) => {
+    const wideCount = row.filter((id) => wideLevelTwoNodeIds.has(id)).length;
+    return wideCount === 0 || row.length <= 2;
+  }));
   const lineArrayPosition = levelTwoLayout.positions["line-array"];
   const wirelessReceiverPosition = levelTwoLayout.positions["wireless-receiver"];
-  assert.equal(lineArrayPosition.centerY, wirelessReceiverPosition.centerY);
   assert.ok(lineArrayPosition.width <= 420 && wirelessReceiverPosition.width <= 420);
-  const leftPosition = lineArrayPosition.x < wirelessReceiverPosition.x ? lineArrayPosition : wirelessReceiverPosition;
-  const rightPosition = leftPosition === lineArrayPosition ? wirelessReceiverPosition : lineArrayPosition;
-  assert.equal(rightPosition.x - (leftPosition.x + leftPosition.width), 24);
+  if (width >= 993) {
+    assert.ok(lineArrayPosition.width >= 340 && wirelessReceiverPosition.width >= 340);
+  }
   assert.equal(
     levelTwoNodes.some((item) => levelTwoLayout.positions[item.id].centerY === levelTwoLayout.positions[wireless.model.rootNodeId].centerY),
     false
@@ -425,7 +447,7 @@ for (const width of [520, 993, 1120]) {
     );
   }
 }
-console.log("PASS wireless wiring keeps the receiver physical-only while level-two rows use at least two devices and compact speakers may exceed two");
+console.log("PASS wireless wiring keeps the receiver physical-only while wide level-two panels use at most two devices per row");
 
 const unknownPortProfile = makeProfile({
   length: 8,
@@ -718,6 +740,87 @@ assert.deepEqual([
   Number(lineArrayPanel.portAnchors.rj45.y.toFixed(2))
 ], [0.505, 0.47]);
 assert.match(lineArrayPanel.source, /用户提供SA110完整背面接线图/);
+const lineArrayConverterProfile = getDevicePortProfile(LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID);
+const lineArrayConverterPanel = lineArrayConverterProfile?.interfacePanel;
+assert.ok(lineArrayConverterProfile);
+assert.ok(lineArrayConverterPanel);
+assert.equal(lineArrayConverterPanel.assetKey, "lineArrayConverter");
+assert.equal(lineArrayConverterPanel.aspectRatio, 760 / 280);
+assert.equal(lineArrayConverterPanel.confirmed, true);
+assert.deepEqual(
+  lineArrayConverterProfile.ports.map((port) => [
+    port.id,
+    port.panelLabel,
+    port.interfaceType,
+    port.confirmed,
+    port.terminals.map((terminal) => terminal.label)
+  ]),
+  [
+    ["link", "LINK", "RJ45", true, ["1 白橙", "2 橙", "3 白绿", "4 蓝", "5 白蓝", "6 绿", "7 白棕", "8 棕"]],
+    ["micOut1", "麦克风输出1", "6Pin凤凰端子（前3针：+/-/G）", true, ["+", "-", "G"]],
+    ["micOut2", "麦克风输出2", "6Pin凤凰端子（后3针：+/-/G）", true, ["+", "-", "G"]]
+  ]
+);
+assert.deepEqual(
+  lineArrayConverterProfile.ports.filter((port) => port.id.startsWith("micOut")).map((port) => port.physicalGroupId),
+  ["mic-output-block", "mic-output-block"]
+);
+assert.deepEqual(
+  ["micOut1", "micOut2"].flatMap((portId) => ["positive", "negative", "ground"].map((terminalId) => [
+    portId,
+    terminalId,
+    Number(lineArrayConverterPanel.portAnchors[portId].terminalAnchors[terminalId].x.toFixed(6)),
+    Number(lineArrayConverterPanel.portAnchors[portId].terminalAnchors[terminalId].y.toFixed(3))
+  ])),
+  [
+    ["micOut1", "positive", 0.521053, 0.475],
+    ["micOut1", "negative", 0.590789, 0.475],
+    ["micOut1", "ground", 0.660526, 0.475],
+    ["micOut2", "positive", 0.730263, 0.475],
+    ["micOut2", "negative", 0.8, 0.475],
+    ["micOut2", "ground", 0.869737, 0.475]
+  ]
+);
+assert.deepEqual(
+  getInterfacePanelPortAnchor(lineArrayConverterPanel, "micOut1-1", 1, 3),
+  lineArrayConverterPanel.portAnchors.micOut1
+);
+const firstRepeatedConverterAnchor = getInterfacePanelPortAnchor(lineArrayConverterPanel, "micOut1-1", 1, 6);
+const secondRepeatedConverterAnchor = getInterfacePanelPortAnchor(lineArrayConverterPanel, "micOut1-2", 4, 6);
+assert.ok(firstRepeatedConverterAnchor);
+assert.ok(secondRepeatedConverterAnchor);
+assert.equal(firstRepeatedConverterAnchor.x, secondRepeatedConverterAnchor.x);
+assert.ok(firstRepeatedConverterAnchor.y < secondRepeatedConverterAnchor.y);
+const repeatedConverterLayout = getInterfaceWiringLayout(twoLineWith02.model, 993);
+const repeatedConverterRect = getInterfacePanelImageRect(
+  node(twoLineWith02.model, "line-array-converter"),
+  repeatedConverterLayout.positions["line-array-converter"]
+);
+assert.ok(repeatedConverterRect);
+assert.equal(repeatedConverterRect.unitRects?.length, 2);
+const firstConverterUnitRect = repeatedConverterRect.unitRects[0];
+const secondConverterUnitRect = repeatedConverterRect.unitRects[1];
+assert.ok(firstConverterUnitRect.y + firstConverterUnitRect.height < secondConverterUnitRect.y);
+assert.ok(Math.abs(
+  repeatedConverterRect.y + firstRepeatedConverterAnchor.y * repeatedConverterRect.height -
+  (firstConverterUnitRect.y + lineArrayConverterPanel.portAnchors.micOut1.y * firstConverterUnitRect.height)
+) < 0.001);
+assert.ok(Math.abs(
+  repeatedConverterRect.y + secondRepeatedConverterAnchor.y * repeatedConverterRect.height -
+  (secondConverterUnitRect.y + lineArrayConverterPanel.portAnchors.micOut1.y * secondConverterUnitRect.height)
+) < 0.001);
+const converterPanelSvg = readFileSync("src/assets/yinman-line-array-converter-interface-panel.svg", "utf8");
+assert.match(converterPanelSvg, /viewBox="0 0 760 280"/);
+assert.deepEqual(
+  Array.from(converterPanelSvg.matchAll(/class="terminal-label"[^>]*>([^<]+)<\/text>/g), (match) => match[1]),
+  ["+", "-", "G", "+", "-", "G"]
+);
+for (const holeId of [
+  "mic-out-1-positive-hole", "mic-out-1-negative-hole", "mic-out-1-ground-hole",
+  "mic-out-2-positive-hole", "mic-out-2-negative-hole", "mic-out-2-ground-hole"
+]) {
+  assert.match(converterPanelSvg, new RegExp('id="' + holeId + '"'));
+}
 const wirelessReceiverPanel = getDevicePortProfile(WIRELESS_RECEIVER_PORT_PROFILE_ID)?.interfacePanel;
 assert.ok(wirelessReceiverPanel);
 assert.equal(wirelessReceiverPanel.assetKey, "wirelessReceiver");
@@ -731,10 +834,10 @@ assert.deepEqual(
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
-assert.ok(oneLineWith02.model.findings.some((item) => item.code === "interface-panel.missing.line-array-converter"));
+assert.equal(oneLineWith02.model.findings.some((item) => item.code === "interface-panel.missing.line-array-converter"), false);
 assert.equal(smallDisc01.model.findings.some((item) => item.code === "interface-panel.missing.small-disc-extender"), false);
 assert.equal(smallDiscUsb.model.findings.some((item) => item.code === "interface-panel.missing." + podiumComputer.id), false);
-console.log("PASS missing and partial interface images create review findings while confirmed panels do not");
+console.log("PASS missing and partial interface images create review findings while confirmed panels including the line-array extender do not");
 
 const crossingProfile = makeProfile({
   length: 14.3,

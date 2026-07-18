@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 280" role="img" aria-labelledby="title description">
+  <title id="title">线阵拓展器两端接口示意图</title>
+  <desc id="description">左侧为RJ45网口，右侧为六针凤凰端子，端子顺序为正、负、地、正、负、地。</desc>
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#e8edf2" />
+    </linearGradient>
+    <linearGradient id="terminal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#25ad70" />
+      <stop offset="1" stop-color="#087647" />
+    </linearGradient>
+  </defs>
+
+  <g aria-label="RJ45端">
+    <rect x="28" y="46" width="284" height="188" rx="18" fill="url(#case)" stroke="#9aa8b6" stroke-width="4" />
+    <rect x="48" y="66" width="244" height="148" rx="10" fill="#f8fafc" stroke="#c3ccd5" stroke-width="3" />
+    <rect x="128" y="91" width="94" height="96" rx="4" fill="#c2a66c" stroke="#6d5c38" stroke-width="4" />
+    <path d="M139 102h72v60l-12 15h-48l-12-15z" fill="#111827" stroke="#020617" stroke-width="3" />
+    <path d="M151 108v45m12-45v45m12-45v45m12-45v45m12-45v45" stroke="#334155" stroke-width="4" />
+    <rect x="143" y="166" width="64" height="10" rx="3" fill="#020617" />
+    <circle id="link-hole" cx="175" cy="137" r="5" fill="#020617" />
+    <text x="170" y="34" fill="#263442" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">RJ45</text>
+    <text x="170" y="263" fill="#4b5d6e" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">LINK</text>
+  </g>
+
+  <g aria-label="六针凤凰端子" data-terminal-order="+,-,G,+,-,G">
+    <rect x="336" y="46" width="396" height="188" rx="18" fill="url(#case)" stroke="#9aa8b6" stroke-width="4" />
+    <rect x="354" y="66" width="360" height="148" rx="10" fill="#f8fafc" stroke="#c3ccd5" stroke-width="3" />
+    <text x="449" y="34" fill="#263442" font-family="Arial, sans-serif" font-size="21" font-weight="700" text-anchor="middle">输出 1</text>
+    <text x="608" y="34" fill="#263442" font-family="Arial, sans-serif" font-size="21" font-weight="700" text-anchor="middle">输出 2</text>
+    <rect x="369" y="82" width="334" height="116" rx="5" fill="#075f3c" stroke="#064a31" stroke-width="4" />
+
+    <g fill="url(#terminal)" stroke="#064a31" stroke-width="3">
+      <rect x="375" y="88" width="42" height="104" />
+      <rect x="428" y="88" width="42" height="104" />
+      <rect x="481" y="88" width="42" height="104" />
+      <rect x="534" y="88" width="42" height="104" />
+      <rect x="587" y="88" width="42" height="104" />
+      <rect x="640" y="88" width="42" height="104" />
+    </g>
+
+    <g fill="#13211b" stroke="#04120c" stroke-width="3">
+      <rect id="mic-out-1-positive-hole" x="385" y="120" width="22" height="26" rx="3" />
+      <rect id="mic-out-1-negative-hole" x="438" y="120" width="22" height="26" rx="3" />
+      <rect id="mic-out-1-ground-hole" x="491" y="120" width="22" height="26" rx="3" />
+      <rect id="mic-out-2-positive-hole" x="544" y="120" width="22" height="26" rx="3" />
+      <rect id="mic-out-2-negative-hole" x="597" y="120" width="22" height="26" rx="3" />
+      <rect id="mic-out-2-ground-hole" x="650" y="120" width="22" height="26" rx="3" />
+    </g>
+
+    <g fill="#ffffff" font-family="Arial, sans-serif" font-size="25" font-weight="700" text-anchor="middle">
+      <text class="terminal-label" x="396" y="184">+</text>
+      <text class="terminal-label" x="449" y="184">-</text>
+      <text class="terminal-label" x="502" y="184">G</text>
+      <text class="terminal-label" x="555" y="184">+</text>
+      <text class="terminal-label" x="608" y="184">-</text>
+      <text class="terminal-label" x="661" y="184">G</text>
+    </g>
+    <text x="534" y="263" fill="#4b5d6e" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">6Pin 凤凰端子</text>
+  </g>
+</svg>

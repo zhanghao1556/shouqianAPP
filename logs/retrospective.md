@@ -2149,3 +2149,10 @@ PowerShell reminder:
 - Diagram hierarchy must govern row occupancy as well as parent links. A level-two node should not keep a single-device maximum width that forces avoidable singleton rows; cap level-two dimensions against pair-fit width and rebalance row groups before increasing canvas height.
 - “At least two level-two devices per row” is a lower bound, not a fixed row size. Preserve compact portrait-device runs first, especially all SPK branches that fit on one row, then balance ordinary level-two devices into two- or three-device rows; a generic max-three slicer must not split a four-speaker block.
 - Physical port-anchor order is not visual equipment order. A 2x2 SPK terminal grid may sort channels as `1/3/2/4` by x-coordinate; keep the speaker block contiguous and order it by structured device sequence, then position the whole block from its average root-port score.
+
+### 2026-07-18 repeated converter panel guardrail
+
+- A six-pin terminal block is two logical balanced outputs, not one six-conductor cable. Preserve the physical order `+ / - / G / + / - / G`, map each output to its own three conductors, and anchor every conductor to its actual hole.
+- When repeated converters are grouped in one wiring node, repeat the confirmed panel image per physical unit. Offsetting several unit ports around one panel invents connector positions and makes otherwise correct wires miss the holes.
+- Indexed capability IDs such as `link-1` and `micOut1-1` identify a physical unit. A single-unit node must resolve them to the exact base anchor without the generic per-port offset used for repeated logical ports.
+- A row fitting mathematically does not make its interface panels readable. Wide, flat rear panels are limited to two level-two devices per row; preserve their useful width and accept an odd singleton instead of shrinking three panels until connector holes become ambiguous.
