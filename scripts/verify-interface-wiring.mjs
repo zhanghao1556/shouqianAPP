@@ -2,12 +2,14 @@ import { build } from "esbuild";
 
 const testModule = String.raw`
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createInitialProfile } from "./src/features/classroom/data/initialProfile.ts";
 import { generateEngineeringOutputs } from "./src/features/classroom/lib/engineeringRules.ts";
 import {
   buildInterfaceWiringModel,
   getInterfacePanelPortAnchor,
+  getInterfacePanelImageRect,
   getInterfaceWiringLayout,
   getInterfaceWiringLogicalTerminalOffset,
   getInterfaceWiringLogicalTerminals,
@@ -15,9 +17,11 @@ import {
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
+import { filterUsbExclusiveAudioLines } from "./src/features/classroom/lib/connectionRules.ts";
 import { getExistingMicInputDemand } from "./src/features/classroom/lib/hangingMicRules.ts";
 import { LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import {
+  COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   PROCESSOR_AJ350_PORT_PROFILE_ID,
   PROCESSOR_AJ600_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
@@ -288,7 +292,17 @@ const smallDiscUsbProfile = makeProfile({
 const smallDiscUsb = buildModel(smallDiscUsbProfile);
 const usbEdge = smallDiscUsb.model.edges.find((edge) => edge.id.includes("small-disc-01-usb-host"));
 assert.ok(usbEdge);
-assert.match(node(smallDiscUsb.model, usbEdge.toNodeId).label, /电脑|一体机/);
+const podiumComputer = node(smallDiscUsb.model, usbEdge.toNodeId);
+assert.equal(podiumComputer.label, "讲台电脑");
+assert.equal(podiumComputer.productId, COMPUTER_REAR_PANEL_PORT_PROFILE_ID);
+assert.equal(podiumComputer.ports.find((port) => port.capabilityId === "usbAudio")?.confirmed, true);
+assert.equal(usbEdge.toPortId, podiumComputer.id + ":usbAudio");
+assert.match(usbEdge.connectionMethod, /USB Audio一进一出.*RS232/);
+assert.match(
+  smallDiscUsb.outputs.connectionLines.find((line) => line.id === "small-disc-01-usb-host")?.note ?? "",
+  /USB Audio一进一出.*RS232/
+);
+assert.equal(smallDiscUsb.model.findings.some((item) => item.code === "interface-panel.missing." + podiumComputer.id), false);
 const invalidUsbOutputs = {
   ...smallDiscUsb.outputs,
   connectionLines: [
@@ -311,6 +325,35 @@ const invalidUsbModel = buildInterfaceWiringModel({
 });
 assert.ok(invalidUsbModel.findings.some((item) => item.code.startsWith("usb.invalid-target") && item.severity === "hard"));
 assert.equal(invalidUsbModel.edges.some((edge) => edge.id.includes("test-invalid-usb-target")), false);
+const notebookUsbProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "笔记本电脑",
+  smallDiscConnectionMode: "usb"
+});
+const notebookUsb = buildModel(notebookUsbProfile);
+const notebookNode = notebookUsb.model.nodes.find((item) => item.label === "笔记本电脑");
+assert.ok(notebookNode);
+assert.notEqual(notebookNode.productId, COMPUTER_REAR_PANEL_PORT_PROFILE_ID);
+assert.ok(notebookUsb.model.findings.some((item) => item.code === "interface-panel.missing." + notebookNode.id));
+const allInOneUsbProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "ClassIn 一体机",
+  smallDiscConnectionMode: "usb"
+});
+const allInOneUsb = buildModel(allInOneUsbProfile);
+const allInOneNode = allInOneUsb.model.nodes.find((item) => item.label === "ClassIn 一体机");
+assert.ok(allInOneNode);
+assert.equal(allInOneNode.productId, COMPUTER_REAR_PANEL_PORT_PROFILE_ID);
+assert.equal(allInOneNode.ports.find((port) => port.capabilityId === "usbAudio")?.label, "USB 2.0");
+assert.equal(allInOneUsb.model.findings.some((item) => item.code === "interface-panel.missing." + allInOneNode.id), false);
 console.log("PASS USB audio only connects to a computer or all-in-one and invalid targets are blocked");
 
 const wirelessProfile = makeProfile({
@@ -362,7 +405,77 @@ const unknownPortProfile = makeProfile({
 const unknownPort = buildModel(unknownPortProfile);
 assert.ok(unknownPort.model.findings.some((item) => item.code.startsWith("external-port.") && item.severity === "review"));
 assert.ok(unknownPort.model.nodes.some((item) => item.ports.some((port) => !port.confirmed && port.label.includes("需复核"))));
+const unknownControlHost = unknownPort.model.nodes.find((item) => item.label === "中控主机");
+assert.ok(unknownControlHost?.ports.some((port) => !port.confirmed));
 console.log("PASS unknown external interfaces stay visible as review items without blocking generation");
+
+const podiumAnalogOutputs = {
+  ...singleLine.outputs,
+  connectionLines: [
+    ...singleLine.outputs.connectionLines,
+    {
+      id: "test-podium-computer-audio-input",
+      fromDevice: "智能音频处理主机",
+      fromPort: "Line Out / 模拟输出",
+      toDevice: "讲台电脑",
+      toPort: "音频输入",
+      cableType: "3.5mm音频线",
+      note: "讲台电脑模拟音频输入落点测试"
+    },
+    {
+      id: "test-podium-computer-audio-output",
+      fromDevice: "讲台电脑",
+      fromPort: "音频输出",
+      toDevice: "智能音频处理主机",
+      toPort: "Line In / 模拟输入",
+      cableType: "3.5mm音频线",
+      note: "讲台电脑模拟音频输出落点测试"
+    }
+  ]
+};
+const podiumAnalogModel = buildInterfaceWiringModel({
+  profile: singleLineProfile,
+  outputs: podiumAnalogOutputs,
+  brandId: "yinman"
+});
+const podiumAnalogNode = podiumAnalogModel.nodes.find((item) => item.label === "讲台电脑");
+assert.ok(podiumAnalogNode);
+assert.deepEqual(
+  podiumAnalogNode.ports.map((port) => port.capabilityId).sort(),
+  ["audioIn", "audioOut"]
+);
+assert.ok(podiumAnalogNode.ports.every((port) => port.confirmed));
+const podiumAudioInputEdge = podiumAnalogModel.edges.find((edge) => edge.id === "candidate-test-podium-computer-audio-input");
+const podiumAudioOutputEdge = podiumAnalogModel.edges.find((edge) => edge.id === "candidate-test-podium-computer-audio-output");
+assert.equal(podiumAudioInputEdge?.toPortId, podiumAnalogNode.id + ":audioIn");
+assert.equal(podiumAudioOutputEdge?.fromPortId, podiumAnalogNode.id + ":audioOut");
+assert.equal(
+  podiumAnalogModel.findings.some((item) => item.nodeId === podiumAnalogNode.id),
+  false,
+  JSON.stringify(podiumAnalogModel.findings.filter((item) => item.nodeId === podiumAnalogNode.id))
+);
+assertNoDuplicatePortOccupancy(podiumAnalogModel);
+
+const usbExclusiveLines = [
+  ...smallDiscUsb.outputs.connectionLines,
+  ...podiumAnalogOutputs.connectionLines.filter((line) => line.id.startsWith("test-podium-computer-"))
+];
+const filteredUsbExclusiveLines = filterUsbExclusiveAudioLines(usbExclusiveLines);
+assert.ok(filteredUsbExclusiveLines.some((line) => line.toDevice === "讲台电脑" && /USB/.test(line.cableType)));
+assert.equal(
+  filteredUsbExclusiveLines.some((line) => line.id.startsWith("test-podium-computer-")),
+  false,
+  "USB-connected computers must not retain the 3.5mm analog test lines"
+);
+const usbExclusiveModel = buildInterfaceWiringModel({
+  profile: smallDiscUsbProfile,
+  outputs: { ...smallDiscUsb.outputs, connectionLines: usbExclusiveLines },
+  brandId: "yinman"
+});
+const usbExclusiveComputer = usbExclusiveModel.nodes.find((item) => item.label === "讲台电脑");
+assert.ok(usbExclusiveComputer);
+assert.deepEqual(usbExclusiveComputer.ports.map((port) => port.capabilityId), ["usbAudio"]);
+console.log("PASS podium computer uses confirmed USB, line-input and line-output rear-panel ports");
 
 const recordingLineOutOutputs = {
   ...singleLine.outputs,
@@ -414,6 +527,9 @@ const recordingTerminalOffsets = recordingLineOutEdge.conductors.map((conductor)
 assert.equal(new Set(recordingTerminalOffsets.map((offset) => offset.x + ":" + offset.y)).size, 3);
 const wiringPreviewSource = readFileSync("src/features/classroom/components/InterfaceWiringPreview.tsx", "utf8");
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
+assert.match(wiringPreviewSource, /podium-computer-rear-panel\.png/);
+assert.match(wiringPreviewSource, /podiumComputer:\s*podiumComputerRearPanel/);
+assert.match(wiringPreviewSource, /音频双向；RS232调试/);
 console.log("PASS LINE OUT maps +, -, G to three distinct review heads and wiring SVG contains no arrows");
 
 const overflowLines = Array.from({ length: 5 }, (_, index) => ({
@@ -504,6 +620,40 @@ assert.deepEqual(
     ["ground", 0.55836, 0.424757]
   ]
 );
+const podiumComputerProfile = getDevicePortProfile(COMPUTER_REAR_PANEL_PORT_PROFILE_ID);
+assert.ok(podiumComputerProfile?.interfacePanel);
+assert.equal(podiumComputerProfile.interfacePanel.assetKey, "podiumComputer");
+assert.equal(podiumComputerProfile.interfacePanel.aspectRatio, 357 / 1123);
+assert.deepEqual(
+  ["usbAudio", "audioOut", "audioIn", "headset"].map((portId) => {
+    const port = podiumComputerProfile.ports.find((item) => item.id === portId);
+    const portAnchor = podiumComputerProfile.interfacePanel.portAnchors[portId];
+    return [portId, port?.panelLabel, port?.direction, port?.interfaceType, Number(portAnchor.x.toFixed(3)), Number(portAnchor.y.toFixed(3))];
+  }),
+  [
+    ["usbAudio", "USB 2.0", "bidirectional", "USB-A 2.0（USB Audio一进一出、内置RS232调试）", 0.295, 0.225],
+    ["audioOut", "LINE OUT", "output", "3.5mm", 0.228, 0.911],
+    ["audioIn", "LINE IN", "input", "3.5mm", 0.518, 0.911],
+    ["headset", "HEADSET", "bidirectional", "3.5mm TRRS", 0.808, 0.911]
+  ]
+);
+assert.match(podiumComputerProfile.interfacePanel.source, /左上角接口面板说明书式裁切线稿.*一体机共用显示/);
+const podiumComputerPanelPng = readFileSync("src/assets/podium-computer-rear-panel.png");
+assert.deepEqual(Array.from(podiumComputerPanelPng.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10]);
+assert.equal(podiumComputerPanelPng.readUInt32BE(16), 357);
+assert.equal(podiumComputerPanelPng.readUInt32BE(20), 1123);
+assert.equal(
+  createHash("sha256").update(podiumComputerPanelPng).digest("hex"),
+  "a4e4eafb3d7605cbc50f377d5d4c589b4f969782aeaabf09b50e0c23889e9afa"
+);
+const podiumComputerLayout = getInterfaceWiringLayout(smallDiscUsb.model, 520);
+const podiumComputerImageRect = getInterfacePanelImageRect(
+  podiumComputer,
+  podiumComputerLayout.positions[podiumComputer.id]
+);
+assert.ok(podiumComputerImageRect);
+assert.equal(Number(podiumComputerImageRect.width.toFixed(1)), 69.9);
+assert.equal(podiumComputerImageRect.height, 220);
 const passiveSpeakerPanel = getDevicePortProfile(PASSIVE_SPEAKER_PORT_PROFILE_ID)?.interfacePanel;
 assert.ok(passiveSpeakerPanel);
 assert.equal(passiveSpeakerPanel.aspectRatio, 0.5);
@@ -549,6 +699,7 @@ console.log("PASS interface-panel anchors are normalized, physical rear panels a
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
 assert.ok(oneLineWith02.model.findings.some((item) => item.code === "interface-panel.missing.line-array-converter"));
 assert.equal(smallDisc01.model.findings.some((item) => item.code === "interface-panel.missing.small-disc-extender"), false);
+assert.equal(smallDiscUsb.model.findings.some((item) => item.code === "interface-panel.missing." + podiumComputer.id), false);
 console.log("PASS missing and partial interface images create review findings while confirmed panels do not");
 
 const crossingProfile = makeProfile({

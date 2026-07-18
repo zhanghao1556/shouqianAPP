@@ -29,6 +29,7 @@ import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.png";
 import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.png";
 import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter.png";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.png";
+import podiumComputerRearPanel from "../../../assets/podium-computer-rear-panel.png";
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.png";
 import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.png";
 import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.png";
@@ -49,6 +50,7 @@ const interfacePanelImages: Record<string, string> = {
   lineArray: lineArrayRearPanel,
   lineArrayConverter: lineArrayConverterPanel,
   passiveSpeaker: passiveSpeakerTerminal,
+  podiumComputer: podiumComputerRearPanel,
   ring01: ring01InterfacePanel,
   ring03: ring03InterfacePanel,
   ring08: ring08RearPanel,
@@ -502,7 +504,7 @@ function getCableLegendDefinition(kind: CableLegendKind, fallbackLabel: string) 
   if (kind === "speaker") return { label: "音箱线", description: "红线接 +；白线接 -" };
   if (kind === "audio") return { label: "音频线", description: "红线接 +；白线接 -；屏蔽线接 G" };
   if (kind === "network") return { label: "网线", description: "粗蓝线；T568B 1-8芯直通" };
-  if (kind === "usb") return { label: "USB线", description: "粗黄线；USB接口直连" };
+  if (kind === "usb") return { label: "USB线", description: "音频双向；RS232调试" };
   return { label: fallbackLabel, description: "按图中接口方向直连" };
 }
 

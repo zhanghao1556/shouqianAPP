@@ -14,6 +14,7 @@ import type {
   InterfaceWiringNode,
   InterfaceWiringPort
 } from "../types";
+import { filterUsbExclusiveAudioLines } from "./connectionRules";
 import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./speakerRules";
@@ -21,6 +22,7 @@ import {
   getDevicePortCapability,
   getDevicePortProfile,
   getDevicePortsByPrefix,
+  COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
   PROCESSOR_AJ200_PORT_PROFILE_ID,
   PROCESSOR_AJ350_PORT_PROFILE_ID,
@@ -539,7 +541,7 @@ class CandidateWiringBuilder {
   }
 
   private addFormalConnections() {
-    this.outputs.connectionLines.forEach((line) => {
+    filterUsbExclusiveAudioLines(this.outputs.connectionLines).forEach((line) => {
       if (candidateOwnedConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (generatedSpeakerConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (this.isPowerConnection(line)) return;
@@ -778,7 +780,9 @@ class CandidateWiringBuilder {
     }
     return {
       id: `external-${stableHash(clean)}`,
-      productId: `EXTERNAL-${stableHash(clean)}`,
+      productId: usesSharedComputerRearPanel(clean)
+        ? COMPUTER_REAR_PANEL_PORT_PROFILE_ID
+        : `EXTERNAL-${stableHash(clean)}`,
       label: clean || "外接设备",
       category: "external",
       quantity
@@ -861,6 +865,12 @@ class CandidateWiringBuilder {
     }
     if (node.productId === "WIRELESS-MICROPHONE") {
       return this.syntheticPort(`wireless-${edgeId}`, "无线发射", "无线", "output");
+    }
+    if (node.productId === COMPUTER_REAR_PANEL_PORT_PROFILE_ID) {
+      if (normalized.includes("USB")) return this.requirePort(node.productId, "usbAudio");
+      if (/音频输入|LINE\s*IN/i.test(originalPort)) return this.requirePort(node.productId, "audioIn");
+      if (/音频输出|LINE\s*OUT/i.test(originalPort)) return this.requirePort(node.productId, "audioOut");
+      if (/HEADSET|耳机.*麦克风|复合/i.test(originalPort)) return this.requirePort(node.productId, "headset");
     }
     if (this.isComputerNode(node) && normalized.includes("USB")) {
       return this.syntheticPort("usbAudio", "USB Audio", "USB", "bidirectional");
@@ -1689,7 +1699,7 @@ function getConnectionMethod(
   fromPort: DevicePortCapability,
   toPort: DevicePortCapability
 ) {
-  if (line.cableType.includes("USB")) return "USB直连，双向音频";
+  if (line.cableType.includes("USB")) return "USB直连；USB Audio一进一出；内置RS232软件调试";
   if (fromPort.interfaceType.includes("RJ45") && toPort.interfaceType.includes("RJ45")) return "RJ45直连";
   if (line.cableType.includes("音箱线")) return "保持正负极一致";
   if (line.cableType.includes("音频")) return "按输入/输出方向连接";
@@ -1712,6 +1722,10 @@ function stripQuantity(value: string) {
 
 function isProcessorName(value: string) {
   return value.includes("处理器") || value.includes("智能音频处理主机");
+}
+
+function usesSharedComputerRearPanel(value: string) {
+  return value === "讲台电脑" || /一体机|会议屏|CLASSIN/i.test(value);
 }
 
 function isSpeakerName(value: string) {

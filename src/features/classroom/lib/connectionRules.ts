@@ -36,6 +36,24 @@ import {
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
 
+export function filterUsbExclusiveAudioLines(lines: ConnectionLine[]) {
+  const usbComputerDevices = new Set<string>();
+  lines.forEach((line) => {
+    if (!isUsbAudioConnection(line)) return;
+    [line.fromDevice, line.toDevice]
+      .map(normalizeConnectionDeviceName)
+      .filter(isComputerDeviceName)
+      .forEach((device) => usbComputerDevices.add(device));
+  });
+  if (!usbComputerDevices.size) return lines;
+  return lines.filter((line) => {
+    if (isUsbAudioConnection(line) || !isAnalogAudioConnection(line)) return true;
+    return ![line.fromDevice, line.toDevice]
+      .map(normalizeConnectionDeviceName)
+      .some((device) => usbComputerDevices.has(device));
+  });
+}
+
 export const getPrimaryDtProduct = (selection: ProductRecommendation[]) =>
   selection.find((item) => item.productId === "DT2-Pro" && item.quantity > 0);
 
@@ -46,13 +64,13 @@ export const generateConnectionLines = (
   generatedPoints: GeneratedPoint[] = []
 ): ConnectionLine[] => {
   if (selection.some((item) => item.productId === SMALL_DISC_01_PRODUCT_ID && item.quantity > 0)) {
-    return generateSmallDisc01ConnectionLines(profile, selection);
+    return filterUsbExclusiveAudioLines(generateSmallDisc01ConnectionLines(profile, selection));
   }
   if (selection.some((item) => item.productId === SMALL_DISC_03_PRODUCT_ID && item.quantity > 0)) {
-    return generateSmallDisc03ConnectionLines(profile, selection);
+    return filterUsbExclusiveAudioLines(generateSmallDisc03ConnectionLines(profile, selection));
   }
   if (brandId === "yinman" || selection.some((item) => item.productId === LINE_ARRAY_PRODUCT_ID && item.quantity > 0)) {
-    return generateProcessorDirectConnectionLines(profile, selection, brandId, generatedPoints);
+    return filterUsbExclusiveAudioLines(generateProcessorDirectConnectionLines(profile, selection, brandId, generatedPoints));
   }
   const dt = getPrimaryDtProduct(selection);
   if (!dt) return [];
@@ -84,7 +102,7 @@ export const generateConnectionLines = (
       toDevice: usbDevice,
       toPort: "USB 音频接口",
       cableType: "标配USB线",
-      note: "阵列麦主机数字输入 / 输出接口使用 USB Type-B，承载数字音频输入 / 输出。"
+      note: "同一根USB线承载USB Audio一进一出，并内置RS232串口调试通道，可由电脑直连软件调试。"
     });
   }
 
@@ -177,7 +195,9 @@ export const generateConnectionLines = (
 
   if (legacySound) {
     lines.push(...buildLegacySoundConnectionLines(profile, dtName));
-    if (profile.scenario === "auditorium") return applyAudioLineCapacityRules(lines, dtName);
+    if (profile.scenario === "auditorium") {
+      return applyAudioLineCapacityRules(filterUsbExclusiveAudioLines(lines), dtName);
+    }
   }
 
   if (hasSpeaker) {
@@ -239,7 +259,7 @@ export const generateConnectionLines = (
     }
   }
 
-  return applyAudioLineCapacityRules(lines, dtName);
+  return applyAudioLineCapacityRules(filterUsbExclusiveAudioLines(lines), dtName);
 };
 
 function generateSmallDisc01ConnectionLines(
@@ -270,7 +290,7 @@ function generateSmallDisc01ConnectionLines(
       toDevice: audioRouting.usbDevice,
       toPort: "USB音频接口",
       cableType: "USB音频线（客户自购）",
-      note: "USB只连接电脑或一体机，同时承担供电和数字音频；USB线由客户按安装距离另行采购。"
+      note: "USB只连接电脑或一体机；同一根USB线同时承担供电、USB Audio一进一出和内置RS232串口调试，可由电脑直连软件调试；线材按安装距离由客户另行采购。"
     });
   }
   if (audioRouting.directOutputTarget) {
@@ -533,7 +553,7 @@ function generateProcessorDirectConnectionLines(
       toDevice: usbDevice,
       toPort: "USB 音频接口",
       cableType: "标配USB线",
-      note: "智能音频处理主机通过 USB 承载数字音频输入 / 输出。"
+      note: "同一根USB线承载USB Audio一进一出，并内置RS232串口调试通道，可由电脑直连软件调试。"
     });
   }
 
@@ -722,6 +742,22 @@ function splitDeviceText(value: string) {
 
 function uniqueDeviceList(devices: string[]) {
   return Array.from(new Set(devices));
+}
+
+function normalizeConnectionDeviceName(device: string) {
+  return device.replace(/\s*[×xX]\s*\d+\s*$/i, "").trim();
+}
+
+function isComputerDeviceName(device: string) {
+  return /电脑|一体机|会议屏|CLASSIN|笔记本/i.test(device);
+}
+
+function isUsbAudioConnection(line: ConnectionLine) {
+  return /USB/i.test(`${line.fromPort} ${line.toPort} ${line.cableType}`);
+}
+
+function isAnalogAudioConnection(line: ConnectionLine) {
+  return /音频|LINE|3\.5|6\.35|RCA/i.test(`${line.fromPort} ${line.toPort} ${line.cableType}`);
 }
 
 function getLegacyAudioInputDevice(profile: ClassroomProfile) {

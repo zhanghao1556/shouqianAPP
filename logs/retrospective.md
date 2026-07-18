@@ -1,5 +1,16 @@
 ﻿# Retrospective
 
+## 2026-07-18 Computer rear-panel and USB exclusivity reminder
+
+- Preserve each external device's original label and node identity while assigning a shared rear-panel profile. The approved shared display scope is podium computers plus all-in-one / ClassIn / meeting-screen categories, not laptops or arbitrary computer labels.
+- The confirmed physical mapping is `USB 2.0`, green `LINE OUT`, red `LINE IN`, and blue `HEADSET`; the headset jack remains visible but is not selected by current connection generation.
+- USB audio and analog 3.5mm audio are mutually exclusive per computer endpoint. Implement this as one shared connection-line filter so generated output, imported historical lines and the interface drawing cannot diverge.
+- One USB cable represents one physical `USB 2.0` connection carrying bidirectional USB Audio (`one input + one output`) plus the built-in RS232 software-debug channel. Keep one bidirectional edge and one panel anchor; do not invent a second RS232 cable or port.
+- A tall cropped panel may look clearer when enlarged, but visual scale remains a user-facing choice. The user rejected the `220 x 692px` computer panel and confirmed it should stay close to the wall-speaker rear panel, so the final computer panel shares the generic `220px` image-height cap.
+- Cable-type tests must not identify analog audio by the generic word `音频`, because that also matches `USB音频线`. Assert the explicit analog fixture IDs or a structured cable class instead.
+- Do not place a template literal inside the `String.raw` test program. This known failure was repeated in the first regression draft; use ordinary concatenation for dynamic assertion strings.
+- USB candidate selection currently can choose a control host before a real computer and then reject that target later. Keep this inconsistency logged for a dedicated calibration task; do not change USB priority as collateral work during rear-panel integration.
+
 ## 2026-07-18 Interface line-art replacement reminder
 
 - Replacing a photographed interface panel with a full-device line drawing is not only a binary asset swap. Recalculate the panel aspect ratio and normalized terminal anchors so rendered cable pins remain on the actual positive and negative terminals.
@@ -2135,3 +2146,4 @@ PowerShell reminder:
 - Capacity findings must be derived from the final allocated interface class. A wireless receiver routed to LINE IN must not remain in a legacy MIC-demand counter; otherwise the occupancy table and hard-risk verdict contradict each other.
 - Processor selection, capacity findings and customer copy must share the same interface-class taxonomy. A wireless product category does not imply a MIC input: its receiver output is a line-level source and must consume LINE IN without upgrading the MIC tier; only confirmed direct-MIC devices may enter the MIC counter.
 - Cable-type tests must distinguish USB Audio from analog audio by structured connection identity or explicit test-edge IDs. Matching the generic word `音频` classifies `USB音频线` as analog and creates a test that fails even when the filter is correct.
+- Diagram hierarchy must govern row occupancy as well as parent links. A level-two node should not keep a single-device maximum width that forces avoidable singleton rows; cap level-two dimensions against pair-fit width and rebalance row groups before increasing canvas height.

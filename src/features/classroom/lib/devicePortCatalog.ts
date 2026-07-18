@@ -23,6 +23,7 @@ import {
 export const PROCESSOR_AJ200_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ200";
 export const PROCESSOR_AJ350_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ350";
 export const PROCESSOR_AJ600_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ600";
+export const COMPUTER_REAR_PANEL_PORT_PROFILE_ID = "COMPUTER-REAR-PANEL";
 export const PASSIVE_SPEAKER_PORT_PROFILE_ID = "PASSIVE-SPEAKER";
 export const WIRELESS_RECEIVER_PORT_PROFILE_ID = "WIRELESS-RECEIVER";
 
@@ -355,6 +356,22 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       spk3: speakerAnchor(0.8, 0.49, { x: 0.8, y: 0.28 }, { x: 0.8, y: 0.68 }),
       spk4: speakerAnchor(0.848, 0.49, { x: 0.848, y: 0.28 }, { x: 0.848, y: 0.68 })
     }, "教学模拟功放主机完整背面接口图")
+  },
+  [COMPUTER_REAR_PANEL_PORT_PROFILE_ID]: {
+    productId: COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
+    customerName: "电脑 / 一体机",
+    ports: [
+      port("usbAudio", "USB 2.0", "USB-A 2.0（USB Audio一进一出、内置RS232调试）", "bidirectional", "用户确认讲台电脑接线口径"),
+      port("audioOut", "LINE OUT", "3.5mm", "output", "用户提供讲台电脑背面图"),
+      port("audioIn", "LINE IN", "3.5mm", "input", "用户提供讲台电脑背面图"),
+      port("headset", "HEADSET", "3.5mm TRRS", "bidirectional", "用户提供讲台电脑背面图")
+    ],
+    interfacePanel: panel("podiumComputer", 357 / 1123, {
+      usbAudio: anchor(0.295, 0.225),
+      audioOut: anchor(0.228, 0.911),
+      audioIn: anchor(0.518, 0.911),
+      headset: anchor(0.808, 0.911)
+    }, "用户提供讲台电脑完整背面照片；左上角接口面板说明书式裁切线稿；讲台电脑与一体机共用显示；音频口颜色与用途按用户确认")
   },
   [PASSIVE_SPEAKER_PORT_PROFILE_ID]: {
     productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
