@@ -344,9 +344,9 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
     customerName: "无源音箱",
     ports: [port("terminals", "+ / -", "扬声器接线端子", "input", agentSource, true, speakerTerminals)],
-    interfacePanel: panel("passiveSpeaker", 213 / 373, {
-      terminals: speakerAnchor(0.55, 0.47, { x: 0.67, y: 0.47 }, { x: 0.43, y: 0.47 })
-    }, "无源音箱正负接线卡座实物图")
+    interfacePanel: panel("passiveSpeaker", 1 / 2, {
+      terminals: speakerAnchor(0.5, 0.64, { x: 0.58, y: 0.64 }, { x: 0.42, y: 0.64 })
+    }, "无源音箱完整背面接线线稿")
   },
   [WIRELESS_RECEIVER_PORT_PROFILE_ID]: {
     productId: WIRELESS_RECEIVER_PORT_PROFILE_ID,

@@ -393,6 +393,14 @@ assert.equal(aj600MicPorts.length, 6);
 assert.deepEqual(new Set(aj600MicPorts.map((port) => port.physicalGroupId)), new Set(["mic-block"]));
 const passiveSpeakerPanel = getDevicePortProfile(PASSIVE_SPEAKER_PORT_PROFILE_ID)?.interfacePanel;
 assert.ok(passiveSpeakerPanel);
+assert.equal(passiveSpeakerPanel.aspectRatio, 0.5);
+assert.deepEqual([
+  Number(passiveSpeakerPanel.portAnchors.terminals.x.toFixed(2)),
+  Number(passiveSpeakerPanel.portAnchors.terminals.y.toFixed(2)),
+  Number(passiveSpeakerPanel.portAnchors.terminals.terminalAnchors.positive.x.toFixed(2)),
+  Number(passiveSpeakerPanel.portAnchors.terminals.terminalAnchors.negative.x.toFixed(2))
+], [0.5, 0.64, 0.58, 0.42]);
+assert.match(passiveSpeakerPanel.source, /完整背面接线线稿/);
 const groupedSpeakerAnchors = Array.from({ length: 4 }, (_, index) =>
   getInterfacePanelPortAnchor(passiveSpeakerPanel, "terminals-direct-speaker-" + (index + 1), index, 4)
 );
@@ -400,10 +408,10 @@ assert.deepEqual(groupedSpeakerAnchors.map((anchor) => [
   Number(anchor?.x.toFixed(2)),
   Number(anchor?.y.toFixed(2))
 ]), [
-  [0.44, 0.39],
-  [0.66, 0.39],
-  [0.44, 0.57],
-  [0.66, 0.57]
+  [0.44, 0.6],
+  [0.56, 0.6],
+  [0.44, 0.68],
+  [0.56, 0.68]
 ]);
 const lineArrayPanel = getDevicePortProfile(LINE_ARRAY_PRODUCT_ID)?.interfacePanel;
 assert.ok(lineArrayPanel);

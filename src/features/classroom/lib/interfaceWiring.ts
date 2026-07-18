@@ -1443,15 +1443,15 @@ export function getInterfacePanelPortAnchor(
     const rowCount = Math.ceil(portCount / 2);
     const column = portIndex % 2;
     const row = Math.floor(portIndex / 2);
-    const x = column === 0 ? 0.44 : 0.66;
-    const y = rowCount === 1 ? 0.47 : 0.39 + (row / (rowCount - 1)) * 0.18;
+    const x = column === 0 ? 0.44 : 0.56;
+    const y = rowCount === 1 ? 0.64 : 0.6 + (row / (rowCount - 1)) * 0.08;
     return {
       ...base,
       x,
       y,
       terminalAnchors: {
-        positive: { x: x + 0.035, y },
-        negative: { x: x - 0.035, y }
+        positive: { x: x + 0.03, y },
+        negative: { x: x - 0.03, y }
       }
     };
   }

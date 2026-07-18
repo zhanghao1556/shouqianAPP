@@ -1,5 +1,12 @@
 ﻿# Retrospective
 
+## 2026-07-18 Interface line-art replacement reminder
+
+- Replacing a photographed interface panel with a full-device line drawing is not only a binary asset swap. Recalculate the panel aspect ratio and normalized terminal anchors so rendered cable pins remain on the actual positive and negative terminals.
+- Keep customer-facing product line art generic: no model identifier, brand mark, terminal color, connected cable, texture or shadow. Preserve polarity through explicit `- / +` geometry.
+- Lock the new aspect ratio, single-port anchors, source description and repeated-speaker marker grid in the interface-wiring regression test.
+- The production build still reports a non-blocking main-chunk warning above `500 kB`. Keep it logged for closing cleanup; do not expand a narrow asset replacement into an unrelated code-splitting refactor.
+
 ## 2026-07-15 Meeting-room wall-aim symmetry reminder
 
 - Wide meeting rooms and long meeting rooms currently route through different aiming functions: side-wall speakers use nearest-mic rotated targets, while front and back walls use separate fixed-depth and primary-mic targets. Do not infer one rule from the rendered symmetry without tracing the room-shape branch.
