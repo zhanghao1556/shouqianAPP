@@ -545,6 +545,7 @@ class CandidateWiringBuilder {
       if (candidateOwnedConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (generatedSpeakerConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (this.isPowerConnection(line)) return;
+      if (this.isWirelessAirLink(line)) return;
       const fromNode = this.ensureNode(this.describeDevice(line.fromDevice));
       const toNode = this.ensureNode(this.describeDevice(line.toDevice));
       const fromPort = this.resolvePort(fromNode, line.fromPort, "output", line.id);
@@ -1037,6 +1038,11 @@ class CandidateWiringBuilder {
 
   private isPowerConnection(line: ConnectionLine) {
     return /电源|POWER|AC\s*220|DC\s*12|适配器/i.test(`${line.fromPort} ${line.toPort} ${line.cableType}`);
+  }
+
+  private isWirelessAirLink(line: ConnectionLine) {
+    return /无线信号/i.test(line.cableType) ||
+      (/无线发射/i.test(line.fromPort) && /无线接收/i.test(line.toPort));
   }
 
   private isComputerNode(node: InterfaceWiringNode) {

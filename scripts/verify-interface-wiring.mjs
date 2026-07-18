@@ -312,6 +312,27 @@ assert.ok(invalidUsbModel.findings.some((item) => item.code.startsWith("usb.inva
 assert.equal(invalidUsbModel.edges.some((edge) => edge.id.includes("test-invalid-usb-target")), false);
 console.log("PASS USB audio only connects to a computer or all-in-one and invalid targets are blocked");
 
+const wirelessProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "lineArray"
+});
+const wireless = buildModel(wirelessProfile, { "WIRELESS-HANDHELD": 1 });
+assert.ok(wireless.outputs.connectionLines.some((line) => line.cableType === "无线信号"));
+assert.ok(wireless.model.nodes.some((item) => item.id === "wireless-receiver"));
+assert.equal(wireless.model.nodes.some((item) => item.id === "wireless-microphones"), false);
+assert.equal(wireless.model.edges.some((edge) => edge.cableType === "无线信号"), false);
+assert.equal(
+  wireless.model.nodes.find((item) => item.id === "wireless-receiver")?.ports.some((port) => port.capabilityId === "wirelessReceive"),
+  false
+);
+assert.ok(wireless.model.edges.some((edge) =>
+  (edge.fromNodeId === "wireless-receiver" || edge.toNodeId === "wireless-receiver") && /音频线/.test(edge.cableType)
+));
+console.log("PASS wireless wiring shows only the receiver and its physical audio cable");
+
 const unknownPortProfile = makeProfile({
   length: 8,
   width: 8,
@@ -581,6 +602,7 @@ const models = [
   smallDisc01.model,
   smallDisc03.model,
   smallDiscUsb.model,
+  wireless.model,
   unknownPort.model,
   recordingLineOutModel,
   overflowModel,
@@ -623,7 +645,7 @@ function assertLayoutFitsWidth(model, width) {
 }
 
 for (const width of [520, 993, 1120]) {
-  for (const model of [oneLineWith02.model, smallDisc01.model, smallDisc03.model, smallDiscUsb.model]) {
+  for (const model of [oneLineWith02.model, smallDisc01.model, smallDisc03.model, smallDiscUsb.model, wireless.model]) {
     assertLayoutFitsWidth(model, width);
     assert.deepEqual(getInterfaceWiringLayout(model, width), getInterfaceWiringLayout(model, width));
   }
