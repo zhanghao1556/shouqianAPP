@@ -283,6 +283,7 @@ export interface InterfaceWiringNode {
 
 export interface InterfaceWiringEdge {
   id: string;
+  kind: "field" | "jumper";
   fromNodeId: string;
   fromPortId: string;
   toNodeId: string;

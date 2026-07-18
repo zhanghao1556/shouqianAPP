@@ -38,6 +38,6 @@
   <g aria-label="EXTMIC"><rect class="port" x="365" y="56" width="46" height="46" rx="5"/><path class="hole" d="M374 68h28v20h-5v7h-18v-7h-5z"/><text class="label" x="388" y="118">EXTMIC</text></g>
   <g aria-label="LAN"><rect class="port" x="429" y="56" width="46" height="46" rx="5"/><path class="hole" d="M438 68h28v20h-5v7h-18v-7h-5z"/><text class="label" x="452" y="118">LAN</text></g>
   <g aria-label="USB"><rect class="port" x="489" y="62" width="40" height="38" rx="5"/><rect class="hole" x="498" y="69" width="22" height="24" rx="3"/><text class="label" x="509" y="118">USB</text></g>
-  <g aria-label="RS232"><rect class="bank" x="606" y="62" width="47" height="36" rx="4"/><rect class="hole" x="615" y="72" width="8" height="13" rx="1"/><rect class="hole" x="625" y="72" width="8" height="13" rx="1"/><rect class="hole" x="635" y="72" width="8" height="13" rx="1"/><text class="label" x="629" y="118">RS232</text></g>
+  <g aria-label="RS232 RX TX GND"><rect class="bank" x="606" y="62" width="47" height="36" rx="4"/><rect class="hole" x="615" y="72" width="8" height="13" rx="1"/><rect class="hole" x="625" y="72" width="8" height="13" rx="1"/><rect class="hole" x="635" y="72" width="8" height="13" rx="1"/><text class="small" x="619" y="95">RX</text><text class="small" x="629" y="95">TX</text><text class="small" x="639" y="95">G</text><text class="label" x="629" y="118">RS232</text></g>
   <circle class="hole" cx="694" cy="84" r="6"/><text class="small" x="694" y="112">PWR</text>
 </svg>

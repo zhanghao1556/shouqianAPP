@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" role="img" aria-label="Podium computer audio interface panel">
+  <style>
+    .panel{fill:#f8fafc;stroke:#1f2937;stroke-width:4}.title{font:700 23px Arial,sans-serif;fill:#172033}.label{font:700 18px Arial,sans-serif;fill:#334155}.small{font:700 14px Arial,sans-serif;fill:#64748b}.port{fill:#fff;stroke:#172033;stroke-width:4}.secondary{fill:#e5e7eb;stroke:#64748b;stroke-width:3}.usb{fill:#2563eb;stroke:#172033;stroke-width:4}.audioOut{stroke:#16a34a}.audioIn{stroke:#dc2626}.headset{stroke:#2563eb}
+  </style>
+  <rect class="panel" x="4" y="4" width="752" height="412" rx="18"/>
+  <text class="title" x="380" y="38" text-anchor="middle">COMPUTER AUDIO I/O</text>
+
+  <g aria-label="USB 2.0">
+    <text class="label" x="140" y="88" text-anchor="middle">USB 2.0</text>
+    <rect class="port" x="83" y="119" width="114" height="70" rx="8"/>
+    <rect class="usb" x="107" y="137" width="66" height="34" rx="4"/>
+  </g>
+
+  <g aria-label="3.5mm LINE OUT">
+    <text class="label" x="340" y="78" text-anchor="middle">3.5mm LINE OUT</text>
+    <circle class="port audioOut" cx="340" cy="154" r="39" stroke-width="8"/>
+    <circle cx="340" cy="154" r="17" fill="#172033"/>
+    <circle cx="326" cy="154" r="6" fill="#dc2626"/>
+    <circle cx="340" cy="154" r="6" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="354" cy="154" r="6" fill="#6b7280"/>
+    <text class="small" x="340" y="215" text-anchor="middle">L / R / G</text>
+  </g>
+
+  <g aria-label="3.5mm LINE IN">
+    <text class="label" x="510" y="78" text-anchor="middle">3.5mm LINE IN</text>
+    <circle class="port audioIn" cx="510" cy="154" r="39" stroke-width="8"/>
+    <circle cx="510" cy="154" r="17" fill="#172033"/>
+    <circle cx="496" cy="154" r="6" fill="#dc2626"/>
+    <circle cx="510" cy="154" r="6" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="524" cy="154" r="6" fill="#6b7280"/>
+    <text class="small" x="510" y="215" text-anchor="middle">L / R / G</text>
+  </g>
+
+  <g aria-label="3.5mm headset">
+    <text class="label" x="660" y="78" text-anchor="middle">3.5mm HEADSET</text>
+    <circle class="port headset" cx="660" cy="154" r="39" stroke-width="8"/>
+    <circle cx="660" cy="154" r="17" fill="#172033"/>
+    <text class="small" x="660" y="215" text-anchor="middle">TRRS</text>
+  </g>
+
+  <line x1="44" y1="254" x2="716" y2="254" stroke="#cbd5e1" stroke-width="2"/>
+  <text class="small" x="380" y="282" text-anchor="middle">OTHER I/O</text>
+  <g aria-label="Secondary non-audio interfaces">
+    <rect class="secondary" x="92" y="304" width="90" height="44" rx="5"/>
+    <text class="small" x="137" y="378" text-anchor="middle">LAN</text>
+    <path class="secondary" d="M258 306h102l18 13v27l-18 13H258l-18-13v-27z"/>
+    <text class="small" x="309" y="388" text-anchor="middle">HDMI</text>
+    <rect class="secondary" x="438" y="304" width="94" height="44" rx="5"/>
+    <text class="small" x="485" y="378" text-anchor="middle">DP</text>
+    <rect class="secondary" x="603" y="304" width="64" height="44" rx="5"/>
+    <text class="small" x="635" y="378" text-anchor="middle">USB</text>
+  </g>
+</svg>

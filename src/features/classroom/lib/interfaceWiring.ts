@@ -23,10 +23,17 @@ import {
   getDevicePortProfile,
   getDevicePortsByPrefix,
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
+  CONTROL_HOST_PORT_PROFILE_ID,
+  HEADSET_SPLITTER_PORT_PROFILE_ID,
+  LAPTOP_PORT_PROFILE_ID,
+  OPS_ALL_IN_ONE_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
   PROCESSOR_AJ200_PORT_PROFILE_ID,
   PROCESSOR_AJ350_PORT_PROFILE_ID,
   PROCESSOR_AJ600_PORT_PROFILE_ID,
+  RECORDING_CAMERA_PORT_PROFILE_ID,
+  RECORDING_HOST_PORT_PROFILE_ID,
+  VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID,
   WIRELESS_RECEIVER_PORT_PROFILE_ID
 } from "./devicePortCatalog";
 import {
@@ -47,11 +54,14 @@ import {
 } from "./yinmanSmallDiscRules";
 
 type CandidateProcessor = NonNullable<InterfaceWiringModel["candidateProcessor"]>;
+export type RecordingInputMode = "balanced" | "lrg" | "trs35";
+export type RecordingInputSelections = Partial<Record<string, RecordingInputMode>>;
 
 export interface InterfaceWiringBuildInput {
   profile: ClassroomProfile;
   outputs: GeneratedOutputs;
   brandId: AppBrandId;
+  recordingInputSelections?: RecordingInputSelections;
 }
 
 interface SystemState {
@@ -75,14 +85,20 @@ interface NodeSeed {
 
 interface ConnectionSeed {
   id: string;
+  kind?: InterfaceWiringEdge["kind"];
   fromNode: InterfaceWiringNode;
   fromPort: DevicePortCapability;
+  fromPortInstanceId?: string;
+  allowOccupiedFromPort?: boolean;
   toNode: InterfaceWiringNode;
   toPort: DevicePortCapability;
+  toPortInstanceId?: string;
+  allowOccupiedToPort?: boolean;
   cableType: string;
   connectionMethod: string;
   signalDirection?: InterfaceWiringEdge["signalDirection"];
   quantity?: number;
+  conductors?: InterfaceWiringConductor[];
   fromDeviceSequenceRange?: InterfaceWiringPort["deviceSequenceRange"];
   toDeviceSequenceRange?: InterfaceWiringPort["deviceSequenceRange"];
 }
@@ -166,7 +182,7 @@ export function buildInterfaceWiringModel(input: InterfaceWiringBuildInput): Int
       generatedFrom: "calibrationCandidate"
     };
   }
-  return new CandidateWiringBuilder(input.profile, input.outputs).build();
+  return new CandidateWiringBuilder(input.profile, input.outputs, input.recordingInputSelections ?? {}).build();
 }
 
 class CandidateWiringBuilder {
@@ -182,14 +198,18 @@ class CandidateWiringBuilder {
 
   constructor(
     private readonly profile: ClassroomProfile,
-    private readonly outputs: GeneratedOutputs
+    private readonly outputs: GeneratedOutputs,
+    private readonly recordingInputSelections: RecordingInputSelections
   ) {}
 
   build(): InterfaceWiringModel {
     const state = this.getSystemState();
     this.prepareCandidateMicrophoneSystem(state);
     this.prepareSmallDiscSystem(state);
+    this.ensureSelectedExternalNodes();
     this.addFormalConnections();
+    this.addManagedExternalConnections();
+    this.addComputerFallbackConnections();
     this.addSpeakerRoutes(state);
     this.addKnownBlockingFindings();
     const rootNodeId = this.finalizeHierarchy();
@@ -547,12 +567,33 @@ class CandidateWiringBuilder {
     }
   }
 
+  private getRecordingDevices() {
+    return splitExternalDeviceText(this.profile.existingDevices.recordingHost);
+  }
+
+  private getComputerDevices() {
+    return splitExternalDeviceText(this.profile.existingDevices.computer);
+  }
+
+  private ensureSelectedExternalNodes() {
+    [...this.getRecordingDevices(), ...this.getComputerDevices()].forEach((device) => {
+      this.ensureNode(this.describeDevice(device));
+    });
+  }
+
+  private isManagedExternalConnection(line: ConnectionLine) {
+    return [line.fromDevice, line.toDevice].some((device) =>
+      isRecordingInputDevice(device) || isControlHost(device) || isVideoConferenceTerminal(device)
+    );
+  }
+
   private addFormalConnections() {
     filterUsbExclusiveAudioLines(this.outputs.connectionLines).forEach((line) => {
       if (candidateOwnedConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (generatedSpeakerConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (this.isPowerConnection(line)) return;
       if (this.isWirelessAirLink(line)) return;
+      if (this.isManagedExternalConnection(line)) return;
       const fromNode = this.ensureNode(this.describeDevice(line.fromDevice));
       const toNode = this.ensureNode(this.describeDevice(line.toDevice));
       const fromPort = this.resolvePort(fromNode, line.fromPort, "output", line.id);
@@ -579,6 +620,222 @@ class CandidateWiringBuilder {
         signalDirection: line.cableType.includes("USB") ? "bidirectional" : "fromTo"
       });
     });
+  }
+
+  private addManagedExternalConnections() {
+    this.getRecordingDevices().forEach((device) => {
+      const node = this.ensureNode(this.describeDevice(device));
+      if (isRecordingInputDevice(device)) {
+        this.connectRecordingInputDevice(node);
+      } else if (isControlHost(device)) {
+        this.connectControlHost(node);
+      } else if (isVideoConferenceTerminal(device)) {
+        this.connectVideoConferenceTerminal(node);
+      }
+    });
+  }
+
+  private connectRecordingInputDevice(node: InterfaceWiringNode) {
+    const source = this.allocateExternalHubPort("output", `${node.label} AEC输入`);
+    if (!source) return;
+    const mode = this.recordingInputSelections[node.id] ?? "balanced";
+    const inputPortId = mode === "trs35" ? "lineIn35" : mode === "lrg" ? "lineInLrg" : "lineInBalanced";
+    const inputPort = this.requirePort(node.productId, inputPortId);
+    this.explicitParents.set(node.id, source.node.id);
+    this.addConnection({
+      id: `external-recording-input-${node.id}`,
+      fromNode: source.node,
+      fromPort: source.port,
+      toNode: node,
+      toPort: inputPort,
+      cableType: mode === "trs35" ? "3.5mm音频线" : "音频线",
+      connectionMethod: mode === "balanced"
+        ? "AEC信号：LINE OUT的+/-/G直连LINE IN的+/-/G；禁止接MIC IN"
+        : "AEC信号：LINE OUT +并接L/R，G接G，LINE OUT -悬空；禁止接MIC IN",
+      conductors: mode === "balanced" ? undefined : getBalancedToStereoConductors(source.port, inputPort)
+    });
+  }
+
+  private connectControlHost(node: InterfaceWiringNode) {
+    const processor = this.nodes.get("processor");
+    if (!processor) {
+      this.addFinding({
+        code: "external.control.rs232-unavailable",
+        severity: "hard",
+        title: "中控RS232接口不可用",
+        message: "当前主设备没有已确认的RS232凤凰端子，无法生成中控虚假连线，建议更换设备或专项复核。",
+        nodeId: node.id
+      });
+      return;
+    }
+    const processorPort = this.requireAvailablePort(processor, "rs232", "中控主机RS232");
+    if (!processorPort) return;
+    const controlPort = this.requirePort(node.productId, "rs232");
+    this.explicitParents.set(node.id, processor.id);
+    this.addConnection({
+      id: `external-control-rs232-${node.id}`,
+      fromNode: processor,
+      fromPort: processorPort,
+      toNode: node,
+      toPort: controlPort,
+      cableType: "232线",
+      connectionMethod: "处理器TX接中控RX，处理器RX接中控TX，GND对接GND",
+      signalDirection: "bidirectional",
+      conductors: getRs232Conductors(processorPort, controlPort)
+    });
+  }
+
+  private connectVideoConferenceTerminal(node: InterfaceWiringNode) {
+    const hubOutput = this.allocateExternalHubPort("output", `${node.label} LINE IN`);
+    const hubInput = this.allocateExternalHubPort("input", `${node.label} LINE OUT`);
+    if (!hubOutput || !hubInput) return;
+    const terminalInput = this.requirePort(node.productId, "audioIn");
+    const terminalOutput = this.requirePort(node.productId, "audioOut");
+    this.explicitParents.set(node.id, hubOutput.node.id);
+    this.addConnection({
+      id: `external-conference-input-${node.id}`,
+      fromNode: hubOutput.node,
+      fromPort: hubOutput.port,
+      toNode: node,
+      toPort: terminalInput,
+      cableType: "3.5mm音频线",
+      connectionMethod: "终端L/R并接我方LINE OUT +，屏蔽接G，我方LINE OUT -悬空",
+      conductors: getBalancedToStereoConductors(hubOutput.port, terminalInput)
+    });
+    this.addConnection({
+      id: `external-conference-output-${node.id}`,
+      fromNode: node,
+      fromPort: terminalOutput,
+      toNode: hubInput.node,
+      toPort: hubInput.port,
+      cableType: "3.5mm音频线",
+      connectionMethod: "终端L/R并接我方LINE IN +，屏蔽接G，我方LINE IN -悬空",
+      conductors: getStereoToBalancedConductors(terminalOutput, hubInput.port)
+    });
+  }
+
+  private addComputerFallbackConnections() {
+    this.getComputerDevices().forEach((device) => {
+      const node = this.ensureNode(this.describeDevice(device));
+      if (this.edges.some((edge) => edge.fromNodeId === node.id || edge.toNodeId === node.id)) return;
+      const hubInput = this.allocateExternalHubPort("input", `${node.label}音频输出`);
+      const hubOutput = this.allocateExternalHubPort("output", `${node.label}音频输入`);
+      if (!hubInput || !hubOutput) return;
+      this.explicitParents.set(node.id, hubOutput.node.id);
+      if (node.productId === LAPTOP_PORT_PROFILE_ID) {
+        this.connectLaptopThroughSplitter(node, hubInput, hubOutput);
+        return;
+      }
+      const computerOutput = this.requirePort(node.productId, "audioOut");
+      const computerInput = this.requirePort(node.productId, "audioIn");
+      this.addConnection({
+        id: `external-computer-output-${node.id}`,
+        fromNode: node,
+        fromPort: computerOutput,
+        toNode: hubInput.node,
+        toPort: hubInput.port,
+        cableType: "3.5mm音频线",
+        connectionMethod: "电脑L/R并接我方LINE IN +，屏蔽接G，我方LINE IN -悬空",
+        conductors: getStereoToBalancedConductors(computerOutput, hubInput.port)
+      });
+      this.addConnection({
+        id: `external-computer-input-${node.id}`,
+        fromNode: hubOutput.node,
+        fromPort: hubOutput.port,
+        toNode: node,
+        toPort: computerInput,
+        cableType: "3.5mm音频线",
+        connectionMethod: "我方LINE OUT +并接电脑L/R，G接屏蔽，我方LINE OUT -悬空",
+        conductors: getBalancedToStereoConductors(hubOutput.port, computerInput)
+      });
+    });
+  }
+
+  private connectLaptopThroughSplitter(
+    laptop: InterfaceWiringNode,
+    hubInput: { node: InterfaceWiringNode; port: DevicePortCapability },
+    hubOutput: { node: InterfaceWiringNode; port: DevicePortCapability }
+  ) {
+    const splitter = this.ensureNode({
+      id: `headset-splitter-${laptop.id}`,
+      productId: HEADSET_SPLITTER_PORT_PROFILE_ID,
+      label: "耳麦分线器",
+      category: "extender",
+      quantity: 1
+    });
+    this.explicitParents.set(splitter.id, laptop.id);
+    this.addConnection({
+      id: `external-laptop-splitter-${laptop.id}`,
+      fromNode: laptop,
+      fromPort: this.requirePort(laptop.productId, "headset"),
+      toNode: splitter,
+      toPort: this.requirePort(splitter.productId, "trrs"),
+      cableType: "耳麦分线器",
+      connectionMethod: "3.5mm TRRS复合口必须先拆分，禁止直接接普通3.5mm口"
+    });
+    const headphoneOutput = this.requirePort(splitter.productId, "headphoneOut");
+    this.addConnection({
+      id: `external-laptop-output-${laptop.id}`,
+      fromNode: splitter,
+      fromPort: headphoneOutput,
+      toNode: hubInput.node,
+      toPort: hubInput.port,
+      cableType: "3.5mm音频线",
+      connectionMethod: "耳机L/R并接我方LINE IN +，屏蔽接G，我方LINE IN -悬空",
+      conductors: getStereoToBalancedConductors(headphoneOutput, hubInput.port)
+    });
+    const microphoneInput = this.requirePort(splitter.productId, "micIn");
+    this.addConnection({
+      id: `external-laptop-input-${laptop.id}`,
+      fromNode: hubOutput.node,
+      fromPort: hubOutput.port,
+      toNode: splitter,
+      toPort: microphoneInput,
+      cableType: "3.5mm音频线",
+      connectionMethod: "我方LINE OUT +接麦克风信号，G接G，我方LINE OUT -悬空",
+      conductors: getBalancedToMonoConductors(hubOutput.port, microphoneInput)
+    });
+  }
+
+  private allocateExternalHubPort(direction: "input" | "output", responsibility: string) {
+    const processor = this.nodes.get("processor");
+    if (processor) {
+      const port = this.allocatePort(processor, direction === "input" ? "lineIn" : "lineOut", responsibility);
+      return port ? { node: processor, port } : undefined;
+    }
+    const extender = this.nodes.get("small-disc-extender");
+    const main = this.nodes.get("small-disc-01");
+    const smallDiscCandidates: Array<{ node: InterfaceWiringNode; portId: string }> = [];
+    if (extender) {
+      smallDiscCandidates.push({ node: extender, portId: direction === "input" ? "aIn" : "aOut" });
+    }
+    if (main && direction === "output") {
+      smallDiscCandidates.push({ node: main, portId: "audioOut" });
+    }
+    for (const candidate of smallDiscCandidates) {
+      const port = this.requirePort(candidate.node.productId, candidate.portId);
+      if (!this.isPortOccupied(candidate.node.id, port.id)) return { node: candidate.node, port };
+    }
+    this.addFinding({
+      code: `external.hub-${direction}.${stableHash(responsibility)}`,
+      severity: "hard",
+      title: "外接设备音频接口不足",
+      message: `当前主设备没有可用音频${direction === "input" ? "输入" : "输出"}接口，无法为“${responsibility}”生成虚假连线，建议更换设备。`
+    });
+    return undefined;
+  }
+
+  private requireAvailablePort(node: InterfaceWiringNode, portId: string, responsibility: string) {
+    const port = this.requirePort(node.productId, portId);
+    if (!this.isPortOccupied(node.id, port.id)) return port;
+    this.addFinding({
+      code: `port-capacity.${node.id}.${port.id}.${stableHash(responsibility)}`,
+      severity: "hard",
+      title: "接口数量超过上限",
+      message: `${node.label}的${port.panelLabel}已被占用，无法为“${responsibility}”生成虚假连线，建议更换设备。`,
+      nodeId: node.id
+    });
+    return undefined;
   }
 
   private addSpeakerRoutes(state: SystemState) {
@@ -624,17 +881,60 @@ class CandidateWiringBuilder {
             toNode: amp,
             toPort: ampInput,
             cableType: "音频线",
-            connectionMethod: "模拟音频输出接功放输入"
+            connectionMethod: "模拟音频输出接功放LINE IN 1；LINE IN 1驱动SPK1"
           });
         }
+      }
+      const amplifierInputEdge = root ? this.edges.find((edge) =>
+        (edge.fromNodeId === root.id && edge.toNodeId === amp.id) ||
+        (edge.fromNodeId === amp.id && edge.toNodeId === root.id)
+      ) : undefined;
+      if (amplifierInputEdge) {
+        const connectionMethod = "模拟音频输出接功放LINE IN 1；LINE IN 1驱动SPK1";
+        amplifierInputEdge.connectionMethod = connectionMethod;
+        [root, amp].forEach((node) => node?.ports.forEach((port) => {
+          if (port.id === amplifierInputEdge.fromPortId || port.id === amplifierInputEdge.toPortId) {
+            port.connectionMethod = connectionMethod;
+          }
+        }));
+      }
+      const amplifierSpeakerCount = amplifierCount || speakerSelection.quantity;
+      const activeAmplifierChannels = Math.min(
+        amplifierSpeakerCount,
+        getDevicePortsByPrefix(amp.productId, "spk").length
+      );
+      if (this.isPortOccupied(amp.id, "lineIn1")) {
+        this.addAmplifierInputJumpers(amp, activeAmplifierChannels);
       }
       this.connectSpeakerOutputs(
         amp,
         speakerSelection.name,
-        amplifierCount || speakerSelection.quantity,
+        amplifierSpeakerCount,
         "amplifier-speakers",
         nextSpeaker
       );
+    }
+  }
+
+  private addAmplifierInputJumpers(amplifier: InterfaceWiringNode, activeChannelCount: number) {
+    const lineInputs = getDevicePortsByPrefix(amplifier.productId, "lineIn")
+      .slice(0, Math.min(activeChannelCount, 4));
+    for (let index = 1; index < lineInputs.length; index += 1) {
+      const fromInput = lineInputs[index - 1];
+      const toInput = lineInputs[index];
+      this.addConnection({
+        id: `amplifier-input-jumper-${index}-${index + 1}`,
+        kind: "jumper",
+        fromNode: amplifier,
+        fromPort: fromInput,
+        fromPortInstanceId: `${fromInput.id}-jumper-to-${index + 1}`,
+        allowOccupiedFromPort: true,
+        toNode: amplifier,
+        toPort: toInput,
+        toPortInstanceId: `${toInput.id}-jumper-from-${index}`,
+        cableType: "音频跳线",
+        connectionMethod: `LINE IN ${index}跳接LINE IN ${index + 1}，+/-/G一一对应；LINE IN ${index + 1}驱动SPK${index + 1}`
+      });
     }
   }
 
@@ -748,6 +1048,16 @@ class CandidateWiringBuilder {
       return this.catalogSeed("ring08", PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID, quantity);
     }
     if (clean === "吊麦" || clean.startsWith("吊麦 ")) return this.catalogSeed("hanging-microphones", HANGING_MIC_PRODUCT_ID, quantity);
+    if (clean.includes("录播主机")) return { ...this.catalogSeed("recording-host", RECORDING_HOST_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (clean.includes("录播摄像机")) return { ...this.catalogSeed("recording-camera", RECORDING_CAMERA_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (clean.includes("中控主机")) return { ...this.catalogSeed("control-host", CONTROL_HOST_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (clean.includes("视频会议终端")) return { ...this.catalogSeed("video-conference-terminal", VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (clean === "讲台电脑") return { ...this.catalogSeed("podium-computer", COMPUTER_REAR_PANEL_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (clean.includes("笔记本电脑")) return { ...this.catalogSeed("laptop-computer", LAPTOP_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    if (/ClassIn|会议一体机/i.test(clean)) {
+      const id = clean.includes("ClassIn") ? "classin-all-in-one" : "meeting-all-in-one";
+      return { ...this.catalogSeed(id, OPS_ALL_IN_ONE_PORT_PROFILE_ID, quantity, "external"), label: clean };
+    }
     if (clean.includes("功放主机") || clean === "功放") {
       return {
         id: "amplifier",
@@ -879,6 +1189,24 @@ class CandidateWiringBuilder {
       if (/音频输出|LINE\s*OUT/i.test(originalPort)) return this.requirePort(node.productId, "audioOut");
       if (/HEADSET|耳机.*麦克风|复合/i.test(originalPort)) return this.requirePort(node.productId, "headset");
     }
+    if (node.productId === RECORDING_HOST_PORT_PROFILE_ID || node.productId === RECORDING_CAMERA_PORT_PROFILE_ID) {
+      const mode = this.recordingInputSelections[node.id] ?? "balanced";
+      return this.requirePort(node.productId, mode === "trs35" ? "lineIn35" : mode === "lrg" ? "lineInLrg" : "lineInBalanced");
+    }
+    if (node.productId === CONTROL_HOST_PORT_PROFILE_ID) return this.requirePort(node.productId, "rs232");
+    if (node.productId === LAPTOP_PORT_PROFILE_ID) {
+      if (normalized.includes("USB")) return this.requirePort(node.productId, "usbAudio");
+      return this.requirePort(node.productId, "headset");
+    }
+    if (node.productId === OPS_ALL_IN_ONE_PORT_PROFILE_ID) {
+      if (normalized.includes("USB")) return this.requirePort(node.productId, "usbAudio");
+      if (/音频输入|LINE\s*IN/i.test(originalPort)) return this.requirePort(node.productId, "audioIn");
+      if (/音频输出|LINE\s*OUT/i.test(originalPort)) return this.requirePort(node.productId, "audioOut");
+    }
+    if (node.productId === VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID) {
+      if (/音频输入|LINE\s*IN/i.test(originalPort)) return this.requirePort(node.productId, "audioIn");
+      if (/音频输出|LINE\s*OUT/i.test(originalPort)) return this.requirePort(node.productId, "audioOut");
+    }
     if (this.isComputerNode(node) && normalized.includes("USB")) {
       return this.syntheticPort("usbAudio", "USB Audio", "USB", "bidirectional");
     }
@@ -922,8 +1250,12 @@ class CandidateWiringBuilder {
   }
 
   private addConnection(seed: ConnectionSeed) {
-    if (this.isPortOccupied(seed.fromNode.id, seed.fromPort.id) || this.isPortOccupied(seed.toNode.id, seed.toPort.id)) {
-      const occupiedNode = this.isPortOccupied(seed.fromNode.id, seed.fromPort.id) ? seed.fromNode : seed.toNode;
+    const fromPortOccupied = this.isPortOccupied(seed.fromNode.id, seed.fromPort.id);
+    const toPortOccupied = this.isPortOccupied(seed.toNode.id, seed.toPort.id);
+    const fromPortConflict = fromPortOccupied && !seed.allowOccupiedFromPort;
+    const toPortConflict = toPortOccupied && !seed.allowOccupiedToPort;
+    if (fromPortConflict || toPortConflict) {
+      const occupiedNode = fromPortConflict ? seed.fromNode : seed.toNode;
       const occupiedPort = occupiedNode === seed.fromNode ? seed.fromPort : seed.toPort;
       this.addFinding({
         code: `duplicate-port.${occupiedNode.id}.${occupiedPort.id}.${seed.id}`,
@@ -934,8 +1266,8 @@ class CandidateWiringBuilder {
       });
       return;
     }
-    const fromPortId = `${seed.fromNode.id}:${seed.fromPort.id}`;
-    const toPortId = `${seed.toNode.id}:${seed.toPort.id}`;
+    const fromPortId = `${seed.fromNode.id}:${seed.fromPortInstanceId ?? seed.fromPort.id}`;
+    const toPortId = `${seed.toNode.id}:${seed.toPortInstanceId ?? seed.toPort.id}`;
     seed.fromNode.ports.push({
       id: fromPortId,
       capabilityId: seed.fromPort.id,
@@ -970,6 +1302,7 @@ class CandidateWiringBuilder {
     this.occupiedPorts.add(`${seed.toNode.id}:${seed.toPort.id}`);
     this.edges.push({
       id: seed.id,
+      kind: seed.kind ?? "field",
       fromNodeId: seed.fromNode.id,
       fromPortId,
       toNodeId: seed.toNode.id,
@@ -978,7 +1311,7 @@ class CandidateWiringBuilder {
       connectionMethod: seed.connectionMethod,
       signalDirection: seed.signalDirection ?? (seed.fromPort.direction === "bidirectional" || seed.toPort.direction === "bidirectional" ? "bidirectional" : "fromTo"),
       quantity: seed.quantity ?? 1,
-      conductors: getConductorMappings(seed.fromPort, seed.toPort, seed.cableType)
+      conductors: seed.conductors ?? getConductorMappings(seed.fromPort, seed.toPort, seed.cableType)
     });
     if (!seed.fromPort.confirmed || !seed.toPort.confirmed) {
       this.addFinding({
@@ -1120,6 +1453,81 @@ class CandidateWiringBuilder {
   }
 }
 
+function splitExternalDeviceText(value: string) {
+  return Array.from(new Set(value
+    .split(/[、,，;；]/)
+    .map((item) => item.trim())
+    .filter(Boolean)));
+}
+
+function isRecordingInputDevice(device: string) {
+  return device.includes("录播主机") || device.includes("录播摄像机");
+}
+
+function isControlHost(device: string) {
+  return device.includes("中控主机");
+}
+
+function isVideoConferenceTerminal(device: string) {
+  return device.includes("视频会议终端");
+}
+
+function getTerminalLabel(port: DevicePortCapability, terminalId: string, fallback: string) {
+  return port.terminals.find((terminal) => terminal.id === terminalId)?.label ?? fallback;
+}
+
+function mappedConductor(
+  id: string,
+  label: string,
+  color: string,
+  fromPort: DevicePortCapability,
+  fromTerminalId: string,
+  toPort: DevicePortCapability,
+  toTerminalId: string
+): InterfaceWiringConductor {
+  return {
+    id,
+    label,
+    color,
+    fromTerminalId,
+    fromTerminalLabel: getTerminalLabel(fromPort, fromTerminalId, fromTerminalId),
+    toTerminalId,
+    toTerminalLabel: getTerminalLabel(toPort, toTerminalId, toTerminalId),
+    confirmed: fromPort.confirmed && toPort.confirmed
+  };
+}
+
+function getBalancedToStereoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  return [
+    mappedConductor("positive-left", "红线", "#dc2626", fromPort, "positive", toPort, "left"),
+    mappedConductor("positive-right", "白线", "#ffffff", fromPort, "positive", toPort, "right"),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+  ];
+}
+
+function getStereoToBalancedConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  return [
+    mappedConductor("left-positive", "红线", "#dc2626", fromPort, "left", toPort, "positive"),
+    mappedConductor("right-positive", "白线", "#ffffff", fromPort, "right", toPort, "positive"),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+  ];
+}
+
+function getBalancedToMonoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  return [
+    mappedConductor("positive-signal", "红线", "#dc2626", fromPort, "positive", toPort, "signal"),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+  ];
+}
+
+function getRs232Conductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  return [
+    mappedConductor("tx-rx", "TX", "#eab308", fromPort, "tx", toPort, "rx"),
+    mappedConductor("rx-tx", "RX", "#22c55e", fromPort, "rx", toPort, "tx"),
+    mappedConductor("ground-ground", "GND", "#111827", fromPort, "ground", toPort, "ground")
+  ];
+}
+
 function getConductorMappings(
   fromPort: DevicePortCapability,
   toPort: DevicePortCapability,
@@ -1234,6 +1642,14 @@ export function getInterfaceWiringLayout(
     getRootPortHorizontalScore(model, root, node)
   ]));
   const rootDimensions = dimensions.get(root.id)!;
+  const compactSpeakerChildrenByParent = new Map<string, InterfaceWiringNode[]>();
+  model.nodes.filter(isCompactSpeakerGroup).forEach((node) => {
+    if (!node.parentId || node.parentId === root.id) return;
+    compactSpeakerChildrenByParent.set(node.parentId, [
+      ...(compactSpeakerChildrenByParent.get(node.parentId) ?? []),
+      node
+    ]);
+  });
   placeDirectChildrenInCompactRows(
     directChildren,
     rootDimensions,
@@ -1241,7 +1657,8 @@ export function getInterfaceWiringLayout(
     centerPositions,
     width,
     sidePadding,
-    directChildHorizontalScores
+    directChildHorizontalScores,
+    compactSpeakerChildrenByParent
   );
 
   const placedRects: Array<{ id: string; x: number; y: number; width: number; height: number }> = [];
@@ -1371,7 +1788,8 @@ function placeDirectChildrenInCompactRows(
   positions: Map<string, { x: number; y: number }>,
   width: number,
   sidePadding: number,
-  horizontalScores: Map<string, number>
+  horizontalScores: Map<string, number>,
+  compactSpeakerChildrenByParent: Map<string, InterfaceWiringNode[]>
 ) {
   const sortByRootPort = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
     (horizontalScores.get(left.id) ?? 0.5) - (horizontalScores.get(right.id) ?? 0.5);
@@ -1445,6 +1863,33 @@ function placeDirectChildrenInCompactRows(
     !row.some(isWideInterfacePanelNode) || row.length <= LEVEL_TWO_MAX_WIDE_NODES_PER_ROW
   ) && getMinimumRowWidth(orderRowNodes(row)) <= usableWidth;
 
+  for (const speakerRow of rows.filter((row) => row.length > 1 && row.every(isCompactSpeakerGroup))) {
+    const speakerScore = speakerRow.reduce(
+      (sum, node) => sum + (horizontalScores.get(node.id) ?? 0.5),
+      0
+    ) / speakerRow.length;
+    const candidate = rows
+      .filter((row) => row !== speakerRow)
+      .flatMap((row) => row
+        .filter((node) => !isCompactSpeakerGroup(node) && canShareRow([...speakerRow, node]))
+        .map((node) => ({ node, row })))
+      .sort((left, right) => {
+        const wideDifference = Number(isWideInterfacePanelNode(left.node)) - Number(isWideInterfacePanelNode(right.node));
+        if (wideDifference) return wideDifference;
+        const separationDifference = Math.abs((horizontalScores.get(right.node.id) ?? 0.5) - speakerScore) -
+          Math.abs((horizontalScores.get(left.node.id) ?? 0.5) - speakerScore);
+        if (separationDifference) return separationDifference;
+        const singletonDifference = Number(left.row.length !== 1) - Number(right.row.length !== 1);
+        if (singletonDifference) return singletonDifference;
+        return dimensions.get(left.node.id)!.width - dimensions.get(right.node.id)!.width;
+      })[0];
+    if (!candidate) continue;
+    candidate.row.splice(candidate.row.indexOf(candidate.node), 1);
+    speakerRow.push(candidate.node);
+    speakerRow.splice(0, speakerRow.length, ...orderRowNodes(speakerRow));
+    if (!candidate.row.length) rows.splice(rows.indexOf(candidate.row), 1);
+  }
+
   // Prefer merging a leftover singleton into an existing row. If width makes that
   // impossible, borrow from a row of three or more before accepting a singleton.
   for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
@@ -1462,10 +1907,13 @@ function placeDirectChildrenInCompactRows(
     }
     const donor = rows
       .map((row, index) => ({ row, index }))
-      .filter(({ row, index }) => index !== rowIndex && row.length > 2)
+      .filter(({ row, index }) => index !== rowIndex && row.length > 2 && row.some((node) => !isCompactSpeakerGroup(node)))
       .sort((left, right) => left.row.length - right.row.length)[0];
     if (!donor) continue;
-    const movedNode = donor.row.pop()!;
+    let movedNodeIndex = donor.row.length - 1;
+    while (movedNodeIndex >= 0 && isCompactSpeakerGroup(donor.row[movedNodeIndex])) movedNodeIndex -= 1;
+    if (movedNodeIndex < 0) continue;
+    const [movedNode] = donor.row.splice(movedNodeIndex, 1);
     rows[rowIndex].push(movedNode);
     rows[rowIndex].splice(0, rows[rowIndex].length, ...orderRowNodes(rows[rowIndex]));
   }
@@ -1504,7 +1952,18 @@ function placeDirectChildrenInCompactRows(
         positions.set(node.id, { x: centerX, y: centerY });
         cursorX += nodeWidth + (row[index + 1] ? nodeGap(node, row[index + 1]) : 0);
       });
-      boundary += direction * (rowHeight + 170);
+      const compactChildDepth = row.reduce((maxDepth, parent) => {
+        const children = compactSpeakerChildrenByParent.get(parent.id) ?? [];
+        if (!children.length) return maxDepth;
+        const childRows = getCompactSpeakerRows(children, dimensions, usableWidth);
+        const childHeights = childRows.map((items) => Math.max(...items.map((node) => dimensions.get(node.id)!.height)));
+        const totalChildHeight = childHeights.reduce((sum, height) => sum + height, 0) +
+          COMPACT_SPEAKER_ROW_GAP * Math.max(0, childHeights.length - 1);
+        const parentHeight = dimensions.get(parent.id)!.height;
+        return Math.max(maxDepth, parentHeight / 2 + COMPACT_SPEAKER_PARENT_GAP + totalChildHeight - rowHeight / 2);
+      }, 0);
+      const outwardGap = Math.max(170, compactChildDepth + COMPACT_SPEAKER_COLLISION_GAP);
+      boundary += direction * (rowHeight + outwardGap);
     }
   };
   placeRows(topRows, -1);
@@ -1526,6 +1985,34 @@ function isWideInterfacePanelNode(node: InterfaceWiringNode) {
   return typeof aspectRatio === "number" && aspectRatio >= 2.4;
 }
 
+const COMPACT_SPEAKER_ROW_GAP = 32;
+const COMPACT_SPEAKER_PARENT_GAP = 88;
+const COMPACT_SPEAKER_COLLISION_GAP = 48;
+
+function getCompactSpeakerRows(
+  nodes: InterfaceWiringNode[],
+  dimensions: Map<string, { width: number; height: number }>,
+  usableWidth: number
+) {
+  const rows: InterfaceWiringNode[][] = [];
+  let row: InterfaceWiringNode[] = [];
+  let rowWidth = 0;
+  nodes.forEach((node) => {
+    const nodeWidth = dimensions.get(node.id)!.width;
+    const candidateWidth = rowWidth + (row.length ? COMPACT_SPEAKER_GAP : 0) + nodeWidth;
+    if (row.length && candidateWidth > usableWidth) {
+      rows.push(row);
+      row = [node];
+      rowWidth = nodeWidth;
+    } else {
+      row.push(node);
+      rowWidth = candidateWidth;
+    }
+  });
+  if (row.length) rows.push(row);
+  return rows;
+}
+
 function placeCompactSpeakerChildRow(input: {
   nodes: InterfaceWiringNode[];
   parentCenter: { x: number; y: number };
@@ -1539,27 +2026,11 @@ function placeCompactSpeakerChildRow(input: {
 }) {
   const { nodes, parentCenter, parentSize, rootCenter, dimensions, positions, placedRects, width, sidePadding } = input;
   const gap = COMPACT_SPEAKER_GAP;
-  const rowGap = 32;
   const usableWidth = width - sidePadding * 2;
-  const rows: InterfaceWiringNode[][] = [];
-  let row: InterfaceWiringNode[] = [];
-  let rowWidth = 0;
-  nodes.forEach((node) => {
-    const nodeWidth = dimensions.get(node.id)!.width;
-    const candidateWidth = rowWidth + (row.length ? gap : 0) + nodeWidth;
-    if (row.length && candidateWidth > usableWidth) {
-      rows.push(row);
-      row = [node];
-      rowWidth = nodeWidth;
-    } else {
-      row.push(node);
-      rowWidth = candidateWidth;
-    }
-  });
-  if (row.length) rows.push(row);
+  const rows = getCompactSpeakerRows(nodes, dimensions, usableWidth);
   const rowHeights = rows.map((items) => Math.max(...items.map((node) => dimensions.get(node.id)!.height)));
   const direction = parentCenter.y >= rootCenter.y ? 1 : -1;
-  let distance = parentSize.height / 2 + rowHeights[0] / 2 + 88;
+  let distance = parentSize.height / 2 + rowHeights[0] / 2 + COMPACT_SPEAKER_PARENT_GAP;
   for (let attempt = 0; attempt < 6; attempt += 1) {
     let centerY = parentCenter.y + direction * distance;
     const candidates = rows.flatMap((items, rowIndex) => {
@@ -1582,7 +2053,7 @@ function placeCompactSpeakerChildRow(input: {
         return candidate;
       });
       const nextHeight = rowHeights[rowIndex + 1];
-      if (nextHeight) centerY += direction * (rowHeights[rowIndex] / 2 + rowGap + nextHeight / 2);
+      if (nextHeight) centerY += direction * (rowHeights[rowIndex] / 2 + COMPACT_SPEAKER_ROW_GAP + nextHeight / 2);
       return rowCandidates;
     });
     if (!candidates.some((candidate) => placedRects.some((placed) => rectanglesOverlap(candidate, placed, 48)))) {
@@ -1595,7 +2066,8 @@ function placeCompactSpeakerChildRow(input: {
       });
       return;
     }
-    distance += rowHeights.reduce((sum, height) => sum + height, 0) + rowGap * (rows.length - 1) + 56;
+    distance += rowHeights.reduce((sum, height) => sum + height, 0) +
+      COMPACT_SPEAKER_ROW_GAP * (rows.length - 1) + 56;
   }
 }
 

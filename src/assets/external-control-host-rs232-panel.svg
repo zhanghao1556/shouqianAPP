@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" role="img" aria-label="Control host RS232 panel">
+  <style>.panel{fill:#f8fafc;stroke:#1f2937;stroke-width:4}.title{font:700 22px Arial,sans-serif;fill:#172033}.label{font:700 17px Arial,sans-serif;fill:#334155}.bank{fill:#4f9b68;stroke:#225c38;stroke-width:3}.hole{fill:#111827;stroke:#d1fae5;stroke-width:2}</style>
+  <rect class="panel" x="4" y="4" width="712" height="232" rx="18"/>
+  <text class="title" x="360" y="48" text-anchor="middle">CONTROL HOST RS232</text>
+  <rect class="bank" x="205" y="78" width="310" height="88" rx="10"/>
+  <rect class="hole" x="252" y="99" width="34" height="32" rx="4"/><rect class="hole" x="343" y="99" width="34" height="32" rx="4"/><rect class="hole" x="434" y="99" width="34" height="32" rx="4"/>
+  <text class="label" x="269" y="153" text-anchor="middle">RX</text><text class="label" x="360" y="153" text-anchor="middle">TX</text><text class="label" x="451" y="153" text-anchor="middle">GND</text>
+  <circle cx="269" cy="190" r="7" fill="#22c55e"/><circle cx="360" cy="190" r="7" fill="#eab308"/><circle cx="451" cy="190" r="7" fill="#111827"/>
+</svg>

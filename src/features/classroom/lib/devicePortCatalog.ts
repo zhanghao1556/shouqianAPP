@@ -24,6 +24,13 @@ export const PROCESSOR_AJ200_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ200";
 export const PROCESSOR_AJ350_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ350";
 export const PROCESSOR_AJ600_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ600";
 export const COMPUTER_REAR_PANEL_PORT_PROFILE_ID = "COMPUTER-REAR-PANEL";
+export const RECORDING_HOST_PORT_PROFILE_ID = "EXTERNAL-RECORDING-HOST";
+export const RECORDING_CAMERA_PORT_PROFILE_ID = "EXTERNAL-RECORDING-CAMERA";
+export const CONTROL_HOST_PORT_PROFILE_ID = "EXTERNAL-CONTROL-HOST";
+export const LAPTOP_PORT_PROFILE_ID = "EXTERNAL-LAPTOP";
+export const OPS_ALL_IN_ONE_PORT_PROFILE_ID = "EXTERNAL-OPS-ALL-IN-ONE";
+export const VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID = "EXTERNAL-VIDEO-CONFERENCE-TERMINAL";
+export const HEADSET_SPLITTER_PORT_PROFILE_ID = "EXTERNAL-HEADSET-SPLITTER";
 export const PASSIVE_SPEAKER_PORT_PROFILE_ID = "PASSIVE-SPEAKER";
 export const WIRELESS_RECEIVER_PORT_PROFILE_ID = "WIRELESS-RECEIVER";
 
@@ -39,6 +46,18 @@ const balancedTerminals: DevicePortTerminal[] = [
   { id: "positive", label: "+", role: "positive", color: "#dc2626" },
   { id: "negative", label: "-", role: "negative", color: "#ffffff" },
   { id: "ground", label: "G", role: "ground", color: "#64748b" }
+];
+
+const stereoTerminals: DevicePortTerminal[] = [
+  { id: "left", label: "L", role: "signal", color: "#dc2626" },
+  { id: "right", label: "R", role: "signal", color: "#ffffff" },
+  { id: "ground", label: "G", role: "ground", color: "#6b7280" }
+];
+
+const rs232Terminals: DevicePortTerminal[] = [
+  { id: "rx", label: "RX", role: "signal", color: "#22c55e" },
+  { id: "tx", label: "TX", role: "signal", color: "#eab308" },
+  { id: "ground", label: "GND", role: "ground", color: "#111827" }
 ];
 
 const xlrTerminals: DevicePortTerminal[] = [
@@ -74,6 +93,38 @@ const calibratedBalancedAnchor = (
   return anchor(negativeX / width, y, {
     positive: { x: positiveX / width, y },
     negative: { x: negativeX / width, y },
+    ground: { x: groundX / width, y }
+  });
+};
+
+const calibratedRs232Anchor = (
+  width: number,
+  height: number,
+  rxX: number,
+  txX: number,
+  groundX: number,
+  terminalY: number
+): DevicePortVisualAnchor => {
+  const y = terminalY / height;
+  return anchor(txX / width, y, {
+    rx: { x: rxX / width, y },
+    tx: { x: txX / width, y },
+    ground: { x: groundX / width, y }
+  });
+};
+
+const calibratedStereoAnchor = (
+  width: number,
+  height: number,
+  leftX: number,
+  rightX: number,
+  groundX: number,
+  terminalY: number
+): DevicePortVisualAnchor => {
+  const y = terminalY / height;
+  return anchor(rightX / width, y, {
+    left: { x: leftX / width, y },
+    right: { x: rightX / width, y },
     ground: { x: groundX / width, y }
   });
 };
@@ -152,7 +203,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("extmic", "EXTMIC", "RJ45", "input", confirmedSource, true, rj45Terminals),
       port("usb", "USB", "USB-B", "bidirectional", agentSource),
       port("lan", "LAN", "RJ45", "bidirectional", agentSource, true, rj45Terminals),
-      port("rs232", "RS232", "三芯接线端子（Rx/Tx/G）", "bidirectional", agentSource, true, balancedTerminals),
+      port("rs232", "RS232", "三芯接线端子（RX/TX/GND）", "bidirectional", confirmedSource, true, rs232Terminals),
       ...numberedPorts("spk", "SPK", 2, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
     interfacePanel: panel("aj200", 750 / 168, {
@@ -169,7 +220,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       extmic: anchor(388 / 750, 84 / 168),
       lan: anchor(452 / 750, 84 / 168),
       usb: anchor(509 / 750, 84 / 168),
-      rs232: calibratedBalancedAnchor(750, 168, 619, 629, 639, 78)
+      rs232: calibratedRs232Anchor(750, 168, 619, 629, 639, 78)
     }, "用户确认接口能力；按清晰工程面板重构并以孔位中心标定")
   },
   [PROCESSOR_AJ350_PORT_PROFILE_ID]: {
@@ -183,7 +234,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("a1", "A1", "RJ45", "input", confirmedSource, true, rj45Terminals),
       port("a2", "A2", "RJ45", "input", confirmedSource, true, rj45Terminals),
       port("lan", "LAN", "RJ45", "bidirectional", agentSource, true, rj45Terminals),
-      port("rs232", "RS232", "三芯接线端子（Rx/Tx/G）", "bidirectional", agentSource, true, balancedTerminals),
+      port("rs232", "RS232", "三芯接线端子（RX/TX/GND）", "bidirectional", confirmedSource, true, rs232Terminals),
       port("usb", "USB", "USB Type-C", "bidirectional", agentSource),
       ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
@@ -204,7 +255,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       a1: anchor(913 / 1268, 103 / 206),
       a2: anchor(989 / 1268, 103 / 206),
       lan: anchor(1065 / 1268, 103 / 206),
-      rs232: calibratedBalancedAnchor(1268, 206, 1138, 1148, 1158, 101),
+      rs232: calibratedRs232Anchor(1268, 206, 1138, 1148, 1158, 101),
       usb: anchor(1205 / 1268, 103 / 206)
     }, "用户确认接口能力；按清晰工程面板重构并以孔位中心标定")
   },
@@ -219,7 +270,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       port("extmic", "EXTMIC", "RJ45", "input", confirmedSource, true, rj45Terminals),
       port("usb", "USB", "USB-B", "bidirectional", agentSource),
       port("lan", "LAN", "RJ45", "bidirectional", agentSource, true, rj45Terminals),
-      port("rs232", "RS232", "三芯接线端子（Rx/Tx/G）", "bidirectional", agentSource, true, balancedTerminals),
+      port("rs232", "RS232", "三芯接线端子（RX/TX/GND）", "bidirectional", confirmedSource, true, rs232Terminals),
       ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
     interfacePanel: panel("aj600", 724 / 124, {
@@ -244,7 +295,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       extmic: anchor(398 / 724, 66 / 124),
       lan: anchor(454 / 724, 66 / 124),
       usb: anchor(506 / 724, 67 / 124),
-      rs232: calibratedBalancedAnchor(724, 124, 606, 616, 626, 67)
+      rs232: calibratedRs232Anchor(724, 124, 606, 616, 626, 67)
     }, "用户指定采用AJ600上面板接口；按清晰工程面板重构并以孔位中心标定；MIC1-MIC6为同一多针插座内逻辑通道")
   },
   [PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID]: {
@@ -370,19 +421,113 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
   },
   [COMPUTER_REAR_PANEL_PORT_PROFILE_ID]: {
     productId: COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
-    customerName: "电脑 / 一体机",
+    customerName: "讲台电脑",
     ports: [
       port("usbAudio", "USB 2.0", "USB-A 2.0（USB Audio一进一出、内置RS232调试）", "bidirectional", "用户确认讲台电脑接线口径"),
-      port("audioOut", "LINE OUT", "3.5mm", "output", "用户提供讲台电脑背面图"),
-      port("audioIn", "LINE IN", "3.5mm", "input", "用户提供讲台电脑背面图"),
+      port("audioOut", "LINE OUT", "3.5mm TRS（L/R/G）", "output", "用户提供讲台电脑背面图", true, stereoTerminals),
+      port("audioIn", "LINE IN", "3.5mm TRS（L/R/G）", "input", "用户提供讲台电脑背面图", true, stereoTerminals),
       port("headset", "HEADSET", "3.5mm TRRS", "bidirectional", "用户提供讲台电脑背面图")
     ],
-    interfacePanel: panel("podiumComputer", 357 / 1123, {
-      usbAudio: anchor(0.295, 0.225),
-      audioOut: anchor(0.228, 0.911),
-      audioIn: anchor(0.518, 0.911),
-      headset: anchor(0.808, 0.911)
-    }, "用户提供讲台电脑完整背面照片；左上角接口面板说明书式裁切线稿；讲台电脑与一体机共用显示；音频口颜色与用途按用户确认")
+    interfacePanel: panel("podiumComputer", 760 / 420, {
+      usbAudio: anchor(140 / 760, 154 / 420),
+      audioOut: calibratedStereoAnchor(760, 420, 326, 340, 354, 154),
+      audioIn: calibratedStereoAnchor(760, 420, 496, 510, 524, 154),
+      headset: anchor(660 / 760, 154 / 420)
+    }, "用户要求讲台电脑接口图以USB Audio和3.5mm音频输入输出为主；HDMI等非接线接口降为次要信息")
+  },
+  [RECORDING_HOST_PORT_PROFILE_ID]: {
+    productId: RECORDING_HOST_PORT_PROFILE_ID,
+    customerName: "录播主机",
+    ports: [
+      port("lineIn35", "LINE IN（3.5mm）", "3.5mm TRS（L/R/G）", "input", confirmedSource, true, stereoTerminals),
+      port("lineInBalanced", "LINE IN（+/-/G）", "3Pin凤凰端子（+/-/G）", "input", confirmedSource, true, balancedTerminals),
+      port("lineInLrg", "LINE IN（L/R/G）", "3Pin凤凰端子（L/R/G）", "input", confirmedSource, true, stereoTerminals)
+    ],
+    interfacePanel: panel("recordingLineInput", 960 / 260, {
+      lineIn35: calibratedStereoAnchor(960, 260, 153, 168, 183, 137),
+      lineInBalanced: calibratedBalancedAnchor(960, 260, 431, 480, 529, 130),
+      lineInLrg: calibratedStereoAnchor(960, 260, 743, 792, 841, 130)
+    }, "用户确认录播主机三种LINE IN任选其一；禁止连接MIC IN")
+  },
+  [RECORDING_CAMERA_PORT_PROFILE_ID]: {
+    productId: RECORDING_CAMERA_PORT_PROFILE_ID,
+    customerName: "录播摄像机",
+    ports: [
+      port("lineIn35", "LINE IN（3.5mm）", "3.5mm TRS（L/R/G）", "input", confirmedSource, true, stereoTerminals),
+      port("lineInBalanced", "LINE IN（+/-/G）", "3Pin凤凰端子（+/-/G）", "input", confirmedSource, true, balancedTerminals),
+      port("lineInLrg", "LINE IN（L/R/G）", "3Pin凤凰端子（L/R/G）", "input", confirmedSource, true, stereoTerminals)
+    ],
+    interfacePanel: panel("recordingLineInput", 960 / 260, {
+      lineIn35: calibratedStereoAnchor(960, 260, 153, 168, 183, 137),
+      lineInBalanced: calibratedBalancedAnchor(960, 260, 431, 480, 529, 130),
+      lineInLrg: calibratedStereoAnchor(960, 260, 743, 792, 841, 130)
+    }, "用户确认录播摄像机三种LINE IN任选其一；禁止连接MIC IN")
+  },
+  [CONTROL_HOST_PORT_PROFILE_ID]: {
+    productId: CONTROL_HOST_PORT_PROFILE_ID,
+    customerName: "中控主机",
+    ports: [port("rs232", "RS232", "3Pin凤凰端子（RX/TX/GND）", "bidirectional", confirmedSource, true, rs232Terminals)],
+    interfacePanel: panel("controlHost", 720 / 240, {
+      rs232: calibratedRs232Anchor(720, 240, 269, 360, 451, 115)
+    }, "用户确认中控使用RX/TX/GND凤凰端子并与处理器RS232交叉连接")
+  },
+  [LAPTOP_PORT_PROFILE_ID]: {
+    productId: LAPTOP_PORT_PROFILE_ID,
+    customerName: "笔记本电脑",
+    ports: [
+      port("usbAudio", "USB Audio", "USB-A", "bidirectional", confirmedSource),
+      port("headset", "HEADSET", "3.5mm TRRS耳麦复合口", "bidirectional", confirmedSource)
+    ],
+    interfacePanel: panel("laptop", 760 / 220, {
+      usbAudio: anchor(207 / 760, 110 / 220),
+      headset: anchor(553 / 760, 110 / 220)
+    }, "用户确认笔记本USB优先；模拟音频必须先经过耳麦分线器")
+  },
+  [OPS_ALL_IN_ONE_PORT_PROFILE_ID]: {
+    productId: OPS_ALL_IN_ONE_PORT_PROFILE_ID,
+    customerName: "一体机",
+    ports: [
+      port("usbAudio", "USB Audio", "USB-A", "bidirectional", confirmedSource),
+      port("audioOut", "LINE OUT", "3.5mm TRS（L/R/G）", "output", confirmedSource, true, stereoTerminals),
+      port("audioIn", "LINE IN", "3.5mm TRS（L/R/G）", "input", confirmedSource, true, stereoTerminals)
+    ],
+    interfacePanel: panel("opsAllInOne", 900 / 260, {
+      usbAudio: anchor(295 / 900, 112 / 260),
+      audioOut: calibratedStereoAnchor(900, 260, 625, 640, 655, 112),
+      audioIn: calibratedStereoAnchor(900, 260, 775, 790, 805, 112)
+    }, "用户确认ClassIn与会议一体机接口相同；参考通用OPS后板布局重构，USB Audio优先")
+  },
+  [VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID]: {
+    productId: VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID,
+    customerName: "视频会议终端",
+    ports: [
+      port("audioOut", "LINE OUT", "3.5mm TRS（L/R/G）", "output", confirmedSource, true, stereoTerminals),
+      port("audioIn", "LINE IN", "3.5mm TRS（L/R/G）", "input", confirmedSource, true, stereoTerminals)
+    ],
+    interfacePanel: panel("conferenceTerminal", 760 / 220, {
+      audioOut: calibratedStereoAnchor(760, 220, 220, 235, 250, 112),
+      audioIn: calibratedStereoAnchor(760, 220, 510, 525, 540, 112)
+    }, "用户确认视频会议终端使用独立3.5mm LINE IN与LINE OUT")
+  },
+  [HEADSET_SPLITTER_PORT_PROFILE_ID]: {
+    productId: HEADSET_SPLITTER_PORT_PROFILE_ID,
+    customerName: "耳麦分线器",
+    ports: [
+      port("trrs", "TRRS", "3.5mm TRRS", "bidirectional", confirmedSource),
+      port("headphoneOut", "HEADPHONE OUT", "3.5mm TRS（L/R/G）", "output", confirmedSource, true, stereoTerminals),
+      port("micIn", "MIC IN", "3.5mm TS（信号/G）", "input", confirmedSource, true, [
+        { id: "signal", label: "SIG", role: "signal", color: "#dc2626" },
+        { id: "ground", label: "G", role: "ground", color: "#6b7280" }
+      ])
+    ],
+    interfacePanel: panel("headsetSplitter", 760 / 240, {
+      trrs: anchor(135 / 760, 125 / 240),
+      headphoneOut: calibratedStereoAnchor(760, 240, 540, 555, 570, 82),
+      micIn: anchor(555 / 760, 172 / 240, {
+        signal: { x: 548 / 760, y: 172 / 240 },
+        ground: { x: 562 / 760, y: 172 / 240 }
+      })
+    }, "用户确认笔记本模拟接线需使用耳麦分线器")
   },
   [PASSIVE_SPEAKER_PORT_PROFILE_ID]: {
     productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,

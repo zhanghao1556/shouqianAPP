@@ -20,9 +20,15 @@ import {
   getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringTableCableLabel,
-  getInterfaceWiringUsageDeviceLabel
+  getInterfaceWiringUsageDeviceLabel,
+  type RecordingInputMode,
+  type RecordingInputSelections
 } from "../lib/interfaceWiring";
-import { getDevicePortProfile } from "../lib/devicePortCatalog";
+import {
+  getDevicePortProfile,
+  RECORDING_CAMERA_PORT_PROFILE_ID,
+  RECORDING_HOST_PORT_PROFILE_ID
+} from "../lib/devicePortCatalog";
 import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.svg";
 import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.svg";
 import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.svg";
@@ -30,7 +36,13 @@ import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.svg";
 import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.svg";
 import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.svg";
-import podiumComputerRearPanel from "../../../assets/podium-computer-rear-panel.png";
+import podiumComputerRearPanel from "../../../assets/external-podium-computer-panel.svg";
+import recordingLineInputPanel from "../../../assets/external-recording-line-input-panel.svg";
+import controlHostPanel from "../../../assets/external-control-host-rs232-panel.svg";
+import laptopPanel from "../../../assets/external-laptop-panel.svg";
+import opsAllInOnePanel from "../../../assets/external-ops-panel.svg";
+import conferenceTerminalPanel from "../../../assets/external-conference-terminal-panel.svg";
+import headsetSplitterPanel from "../../../assets/external-headset-splitter-panel.svg";
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.svg";
 import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.svg";
 import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
@@ -52,6 +64,12 @@ const interfacePanelImages: Record<string, string> = {
   lineArrayConverter: lineArrayConverterPanel,
   passiveSpeaker: passiveSpeakerTerminal,
   podiumComputer: podiumComputerRearPanel,
+  recordingLineInput: recordingLineInputPanel,
+  controlHost: controlHostPanel,
+  laptop: laptopPanel,
+  opsAllInOne: opsAllInOnePanel,
+  conferenceTerminal: conferenceTerminalPanel,
+  headsetSplitter: headsetSplitterPanel,
   ring01: ring01InterfacePanel,
   ring03: ring03InterfacePanel,
   ring08: ring08RearPanel,
@@ -66,9 +84,10 @@ interface InterfaceWiringPreviewProps {
 }
 
 export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceWiringPreviewProps) {
+  const [recordingInputSelections, setRecordingInputSelections] = useState<RecordingInputSelections>({});
   const model = useMemo(
-    () => buildInterfaceWiringModel({ profile, outputs, brandId }),
-    [profile, outputs, brandId]
+    () => buildInterfaceWiringModel({ profile, outputs, brandId, recordingInputSelections }),
+    [profile, outputs, brandId, recordingInputSelections]
   );
   const hardCount = model.findings.filter((item) => item.severity === "hard").length;
   const reviewCount = model.findings.filter((item) => item.severity === "review").length;
@@ -91,7 +110,12 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
         </div>
       </header>
 
-      <InterfaceWiringDiagram model={model} portReferenceNumbers={portReferenceNumbers} />
+      <InterfaceWiringDiagram
+        model={model}
+        portReferenceNumbers={portReferenceNumbers}
+        selections={recordingInputSelections}
+        onChange={(nodeId, mode) => setRecordingInputSelections((current) => ({ ...current, [nodeId]: mode }))}
+      />
 
       <div className="interfaceWiringDataGrid">
         <InterfacePortUsageTable model={model} portReferenceNumbers={portReferenceNumbers} />
@@ -101,12 +125,30 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
   );
 }
 
+const recordingInputOptions: Array<{
+  mode: RecordingInputMode;
+  label: string;
+  region: { x: number; y: number; width: number; height: number };
+}> = [
+  { mode: "trs35", label: "3.5mm", region: { x: 38, y: 54, width: 260, height: 150 } },
+  { mode: "balanced", label: "凤凰 +/-/G", region: { x: 350, y: 54, width: 260, height: 150 } },
+  { mode: "lrg", label: "凤凰 L/R/G", region: { x: 662, y: 54, width: 260, height: 150 } }
+];
+
+function isRecordingInputNode(node: InterfaceWiringNode) {
+  return node.productId === RECORDING_HOST_PORT_PROFILE_ID || node.productId === RECORDING_CAMERA_PORT_PROFILE_ID;
+}
+
 function InterfaceWiringDiagram({
   model,
-  portReferenceNumbers
+  portReferenceNumbers,
+  selections,
+  onChange
 }: {
   model: InterfaceWiringModel;
   portReferenceNumbers: Record<string, number>;
+  selections: RecordingInputSelections;
+  onChange: (nodeId: string, mode: RecordingInputMode) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [availableWidth, setAvailableWidth] = useState(1120);
@@ -170,6 +212,8 @@ function InterfaceWiringDiagram({
                 node={node}
                 position={position}
                 positions={layout.positions}
+                recordingInputMode={selections[node.id] ?? "balanced"}
+                onRecordingInputChange={onChange}
               />
             </foreignObject>
           );
@@ -286,15 +330,20 @@ type WiringNodePositions = ReturnType<typeof getInterfaceWiringLayout>["position
 function InterfaceWiringNodeCard({
   node,
   position,
-  positions
+  positions,
+  recordingInputMode,
+  onRecordingInputChange
 }: {
   node: InterfaceWiringNode;
   position: WiringNodePosition;
   positions: WiringNodePositions;
+  recordingInputMode: RecordingInputMode;
+  onRecordingInputChange: (nodeId: string, mode: RecordingInputMode) => void;
 }) {
   const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
   const panelImage = panelProfile ? interfacePanelImages[panelProfile.assetKey] : undefined;
   const imageRect = panelProfile && panelImage ? getInterfacePanelImageRect(node, position) : undefined;
+  const recordingInputNode = isRecordingInputNode(node);
   const markers = node.ports.map((port, index) => {
     const panelAnchor = panelProfile
       ? getInterfacePanelPortAnchor(panelProfile, port.capabilityId, index, node.ports.length)
@@ -358,6 +407,34 @@ function InterfaceWiringNodeCard({
           }}
         />
       ))}
+      {recordingInputNode && imageRect && recordingInputOptions.map((option) => (
+        <button
+          type="button"
+          key={option.mode}
+          className={`interfaceWiringPanelOptionButton ${recordingInputMode === option.mode ? "active" : ""}`}
+          aria-label={`${node.label}选择${option.label} LINE IN`}
+          aria-pressed={recordingInputMode === option.mode}
+          title={`选择${option.label} LINE IN`}
+          data-recording-input-option={option.mode}
+          onClick={() => onRecordingInputChange(node.id, option.mode)}
+          style={{
+            left: imageRect.x - position.x + option.region.x / 960 * imageRect.width,
+            top: imageRect.y - position.y + option.region.y / 260 * imageRect.height,
+            width: option.region.width / 960 * imageRect.width,
+            height: option.region.height / 260 * imageRect.height
+          }}
+        >
+          {recordingInputMode === option.mode && <CheckCircle2 aria-hidden="true" />}
+        </button>
+      ))}
+      {recordingInputNode && imageRect && (
+        <span
+          className="interfaceWiringNodeInterfaceNote"
+          style={{ top: imageRect.y - position.y + imageRect.height + 4 }}
+        >
+          LINE OUT 接 LINE IN；禁止接 MIC IN
+        </span>
+      )}
       {(!imageRect || hasUnlocatedPorts) && (
         <span
           className="interfaceWiringMissingPanelLabel"
@@ -488,7 +565,7 @@ function FromToCell({ from, to }: { from: string; to: string }) {
   );
 }
 
-type CableLegendKind = "speaker" | "audio" | "network" | "usb" | "other";
+type CableLegendKind = "speaker" | "audio" | "serial" | "network" | "usb" | "other";
 
 interface CableLegendRow {
   kind: CableLegendKind;
@@ -520,7 +597,7 @@ function CableLegendTable({ rows }: { rows: CableLegendRow[] }) {
 }
 
 function CableLegendSwatch({ kind }: { kind: CableLegendKind }) {
-  const lineCount = kind === "speaker" ? 2 : kind === "audio" ? 3 : 1;
+  const lineCount = kind === "speaker" ? 2 : kind === "audio" || kind === "serial" ? 3 : 1;
   return (
     <span className={`interfaceWiringLegendSwatch ${kind}`} aria-label={`${kind}线材图例`}>
       {Array.from({ length: lineCount }, (_, index) => <i key={index} />)}
@@ -535,9 +612,11 @@ function getCableLegendRows(edges: InterfaceWiringEdge[]): CableLegendRow[] {
       ? "network"
       : isUsbEdge(edge)
         ? "usb"
+        : /232/i.test(edge.cableType)
+          ? "serial"
         : edge.cableType.includes("音箱线")
           ? "speaker"
-          : /音频线|话筒线/i.test(edge.cableType)
+          : /音频(?:跳)?线|话筒线/i.test(edge.cableType)
             ? "audio"
             : "other";
     const definition = getCableLegendDefinition(kind, edge.cableType);
@@ -545,13 +624,14 @@ function getCableLegendRows(edges: InterfaceWiringEdge[]): CableLegendRow[] {
     if (existing) existing.quantity += edge.quantity;
     else rows.set(kind, { kind, quantity: edge.quantity, ...definition });
   });
-  const order: CableLegendKind[] = ["speaker", "audio", "network", "usb", "other"];
+  const order: CableLegendKind[] = ["speaker", "audio", "serial", "network", "usb", "other"];
   return order.flatMap((kind) => rows.get(kind) ?? []);
 }
 
 function getCableLegendDefinition(kind: CableLegendKind, fallbackLabel: string) {
   if (kind === "speaker") return { label: "音箱线", description: "红线接 +；白线接 -" };
   if (kind === "audio") return { label: "音频线", description: "红线接 +；白线接 -；屏蔽线接 G" };
+  if (kind === "serial") return { label: "232线", description: "黄线 TX；绿线 RX；黑线 GND，TX/RX交叉" };
   if (kind === "network") return { label: "网线", description: "粗蓝线；T568B 1-8芯直通" };
   if (kind === "usb") return { label: "USB线", description: "音频双向；RS232调试" };
   return { label: fallbackLabel, description: "按图中接口方向直连" };
@@ -693,15 +773,29 @@ function buildEdgeDrawings(
     const pairCount = pairCounts.get(pairKey) ?? 1;
     const laneOffset = (pairIndex - (pairCount - 1) / 2) * 34;
     const displayConductors = getDisplayConductors(edge);
-    const route = findOpenCableRoute({
-      from,
-      to,
-      preferredOffset: laneOffset,
-      nodeRects,
-      endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId])
-    });
+    const route = edge.kind === "jumper"
+      ? getInternalJumperRoute(from, to, fromPosition, laneOffset)
+      : findOpenCableRoute({
+        from,
+        to,
+        preferredOffset: laneOffset,
+        nodeRects,
+        endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId])
+      });
     const conductorRoutes = displayConductors.map((conductor, conductorIndex) => {
-      const conductorOffset = (conductorIndex - (displayConductors.length - 1) / 2) * 3.2;
+      const conductorOffset = (conductorIndex - (displayConductors.length - 1) / 2) * 5.2;
+      const fromFanOffset = getSharedTerminalFanOffset(
+        displayConductors,
+        conductorIndex,
+        conductor.fromTerminalId,
+        "from"
+      );
+      const toFanOffset = getSharedTerminalFanOffset(
+        displayConductors,
+        conductorIndex,
+        conductor.toTerminalId,
+        "to"
+      );
       const conductorFrom = getPortAnchor(
         fromNode,
         edge.fromPortId,
@@ -716,12 +810,16 @@ function buildEdgeDrawings(
         conductor.toTerminalId,
         fromPosition
       );
-      const bundledRoute = getEdgeRoute(from, to, route.offset + conductorOffset);
+      const bundledRoute = edge.kind === "jumper"
+        ? getInternalJumperRoute(conductorFrom, conductorTo, fromPosition, conductorOffset)
+        : getEdgeRoute(from, to, route.offset + conductorOffset);
       const paths = getBundledConductorSegments(
         conductorFrom,
         conductorTo,
         bundledRoute,
-        displayConductors.length > 1 ? 26 : 18
+        displayConductors.length > 1 ? 28 : 18,
+        fromFanOffset,
+        toFanOffset
       );
       return {
         conductor,
@@ -745,7 +843,9 @@ function getBundledConductorSegments(
   terminalFrom: { x: number; y: number },
   terminalTo: { x: number; y: number },
   route: ReturnType<typeof getEdgeRoute>,
-  splitDistance: number
+  splitDistance: number,
+  fromFanOffset = 0,
+  toFanOffset = 0
 ) {
   const fromSplit = movePointToward(route.from, route.control1, splitDistance);
   const toSplit = movePointToward(route.to, route.control2, splitDistance);
@@ -754,9 +854,49 @@ function getBundledConductorSegments(
       `M ${fromSplit.x} ${fromSplit.y}`,
       `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${toSplit.x} ${toSplit.y}`
     ].join(" "),
-    fromLeadPath: `M ${terminalFrom.x} ${terminalFrom.y} L ${fromSplit.x} ${fromSplit.y}`,
-    toLeadPath: `M ${toSplit.x} ${toSplit.y} L ${terminalTo.x} ${terminalTo.y}`
+    fromLeadPath: getTerminalFanPath(terminalFrom, fromSplit, fromFanOffset, false),
+    toLeadPath: getTerminalFanPath(terminalTo, toSplit, toFanOffset, true)
   };
+}
+
+function getSharedTerminalFanOffset(
+  conductors: InterfaceWiringConductor[],
+  conductorIndex: number,
+  terminalId: string,
+  endpoint: "from" | "to"
+) {
+  const sharedIndexes = conductors.flatMap((conductor, index) => {
+    const candidate = endpoint === "from" ? conductor.fromTerminalId : conductor.toTerminalId;
+    return candidate === terminalId ? [index] : [];
+  });
+  if (sharedIndexes.length < 2) return 0;
+  const sharedIndex = sharedIndexes.indexOf(conductorIndex);
+  return (sharedIndex - (sharedIndexes.length - 1) / 2) * 12;
+}
+
+function getTerminalFanPath(
+  terminal: { x: number; y: number },
+  split: { x: number; y: number },
+  fanOffset: number,
+  reverse: boolean
+) {
+  if (!fanOffset) {
+    return reverse
+      ? `M ${split.x} ${split.y} L ${terminal.x} ${terminal.y}`
+      : `M ${terminal.x} ${terminal.y} L ${split.x} ${split.y}`;
+  }
+  const deltaX = split.x - terminal.x;
+  const deltaY = split.y - terminal.y;
+  const length = Math.hypot(deltaX, deltaY) || 1;
+  const stemDistance = Math.min(14, length * 0.45);
+  const stemRatio = stemDistance / length;
+  const fanPoint = {
+    x: terminal.x + deltaX * stemRatio - (deltaY / length) * fanOffset,
+    y: terminal.y + deltaY * stemRatio + (deltaX / length) * fanOffset
+  };
+  return reverse
+    ? `M ${split.x} ${split.y} L ${fanPoint.x} ${fanPoint.y} L ${terminal.x} ${terminal.y}`
+    : `M ${terminal.x} ${terminal.y} L ${fanPoint.x} ${fanPoint.y} L ${split.x} ${split.y}`;
 }
 
 function movePointToward(
@@ -879,6 +1019,31 @@ function getEdgeRoute(
   };
 }
 
+function getInternalJumperRoute(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  node: WiringNodePosition,
+  laneOffset = 0
+) {
+  const useLeftSide = (from.x + to.x) / 2 <= node.centerX;
+  const side = useLeftSide ? -1 : 1;
+  const nodeEdgeX = useLeftSide ? node.x : node.x + node.width;
+  const bendX = nodeEdgeX + side * (32 + laneOffset);
+  const control1 = { x: bendX, y: from.y };
+  const control2 = { x: bendX, y: to.y };
+  return {
+    path: `M ${from.x} ${from.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${to.x} ${to.y}`,
+    labelX: bendX,
+    labelY: (from.y + to.y) / 2,
+    offset: laneOffset,
+    labelProgress: 0.5,
+    from,
+    to,
+    control1,
+    control2
+  };
+}
+
 function edgeRouteCrossesNodes(
   route: ReturnType<typeof getEdgeRoute>,
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
@@ -917,5 +1082,6 @@ function pointInsideRect(
 }
 
 function getPairKey(edge: InterfaceWiringEdge) {
+  if (edge.kind === "jumper") return edge.id;
   return [edge.fromNodeId, edge.toNodeId].sort().join("::");
 }

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 260" role="img" aria-label="Recording device line input options">
+  <style>
+    .panel{fill:#f8fafc;stroke:#1f2937;stroke-width:4}.group{fill:#fff;stroke:#94a3b8;stroke-width:2}.title{font:700 22px Arial,sans-serif;fill:#172033}.label{font:700 17px Arial,sans-serif;fill:#334155}.small{font:700 14px Arial,sans-serif;fill:#64748b}.warn{font:700 15px Arial,sans-serif;fill:#b42318}.bank{fill:#4f9b68;stroke:#225c38;stroke-width:3}.hole{fill:#111827;stroke:#d1fae5;stroke-width:2}
+  </style>
+  <rect class="panel" x="4" y="4" width="952" height="252" rx="18"/>
+  <text class="title" x="480" y="34" text-anchor="middle">LINE INPUT OPTIONS</text>
+  <g aria-label="3.5mm LINE IN">
+    <rect class="group" x="38" y="54" width="260" height="150" rx="12"/>
+    <text class="label" x="168" y="82" text-anchor="middle">3.5mm LINE IN</text>
+    <circle cx="168" cy="137" r="35" fill="#111827" stroke="#64748b" stroke-width="5"/>
+    <circle cx="153" cy="137" r="6" fill="#dc2626"/><circle cx="168" cy="137" r="6" fill="#fff" stroke="#64748b" stroke-width="2"/><circle cx="183" cy="137" r="6" fill="#6b7280"/>
+    <text class="small" x="168" y="188" text-anchor="middle">L / R / G</text>
+  </g>
+  <g aria-label="Phoenix balanced LINE IN">
+    <rect class="group" x="350" y="54" width="260" height="150" rx="12"/>
+    <text class="label" x="480" y="82" text-anchor="middle">PHOENIX LINE IN</text>
+    <rect class="bank" x="397" y="105" width="166" height="58" rx="7"/>
+    <rect class="hole" x="420" y="119" width="22" height="22" rx="3"/><rect class="hole" x="469" y="119" width="22" height="22" rx="3"/><rect class="hole" x="518" y="119" width="22" height="22" rx="3"/>
+    <text class="label" x="431" y="184" text-anchor="middle">+</text><text class="label" x="480" y="184" text-anchor="middle">-</text><text class="label" x="529" y="184" text-anchor="middle">G</text>
+  </g>
+  <g aria-label="Phoenix stereo LINE IN">
+    <rect class="group" x="662" y="54" width="260" height="150" rx="12"/>
+    <text class="label" x="792" y="82" text-anchor="middle">PHOENIX LINE IN</text>
+    <rect class="bank" x="709" y="105" width="166" height="58" rx="7"/>
+    <rect class="hole" x="732" y="119" width="22" height="22" rx="3"/><rect class="hole" x="781" y="119" width="22" height="22" rx="3"/><rect class="hole" x="830" y="119" width="22" height="22" rx="3"/>
+    <text class="label" x="743" y="184" text-anchor="middle">L</text><text class="label" x="792" y="184" text-anchor="middle">R</text><text class="label" x="841" y="184" text-anchor="middle">G</text>
+  </g>
+  <text class="warn" x="480" y="235" text-anchor="middle">LINE IN ONLY - DO NOT CONNECT TO MIC IN</text>
+</svg>

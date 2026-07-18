@@ -82,6 +82,58 @@
   color: #b42318;
 }
 
+.interfaceWiringPanelOptionButton {
+  position: absolute;
+  z-index: 5;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #0b5cad;
+  cursor: pointer;
+}
+
+.interfaceWiringPanelOptionButton:hover {
+  border-color: #60a5fa;
+  background: rgba(219, 234, 254, 0.18);
+}
+
+.interfaceWiringPanelOptionButton.active {
+  border-color: #0b5cad;
+  background: rgba(219, 234, 254, 0.28);
+  box-shadow: inset 0 0 0 1px #ffffff, 0 0 0 1px rgba(11, 92, 173, 0.24);
+}
+
+.interfaceWiringPanelOptionButton:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.interfaceWiringPanelOptionButton svg {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 1px;
+  border-radius: 50%;
+  background: #ffffff;
+  stroke-width: 3;
+}
+
+.interfaceWiringNodeInterfaceNote {
+  position: absolute;
+  z-index: 5;
+  right: 8px;
+  left: 8px;
+  color: #b42318;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 .interfaceWiringCanvasFrame {
   min-width: 0;
   max-width: 100%;
@@ -319,6 +371,8 @@
   filter: drop-shadow(0 0 0.7px #334155) drop-shadow(0 0 0.7px #334155);
 }
 
+.interfaceWiringEdgeTrunks,
+.interfaceWiringEdgeLeads,
 .interfaceWiringEdgeReference {
   pointer-events: none;
 }
@@ -438,6 +492,18 @@
   background: #6b7280;
 }
 
+.interfaceWiringLegendSwatch.serial i:first-child {
+  background: #eab308;
+}
+
+.interfaceWiringLegendSwatch.serial i:nth-child(2) {
+  background: #22c55e;
+}
+
+.interfaceWiringLegendSwatch.serial i:nth-child(3) {
+  background: #111827;
+}
+
 .interfaceWiringLegendSwatch.network i {
   height: 5px;
   background: #2563eb;
@@ -530,5 +596,9 @@
 
   .interfaceWiringSummary {
     justify-content: flex-start;
+  }
+
+  .interfaceWiringExternalControl {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

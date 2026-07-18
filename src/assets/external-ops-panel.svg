@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 260" role="img" aria-label="OPS all-in-one audio interface panel">
+  <style>.panel{fill:#f8fafc;stroke:#1f2937;stroke-width:4}.title{font:700 22px Arial,sans-serif;fill:#172033}.label{font:700 17px Arial,sans-serif;fill:#334155}.port{fill:#fff;stroke:#172033;stroke-width:4}.unused{fill:#e5e7eb;stroke:#64748b;stroke-width:3}</style>
+  <rect class="panel" x="4" y="4" width="892" height="252" rx="18"/>
+  <text class="title" x="450" y="40" text-anchor="middle">OPS AUDIO I/O</text>
+  <rect class="unused" x="70" y="83" width="100" height="58" rx="6"/><text class="label" x="120" y="180" text-anchor="middle">LAN</text>
+  <rect class="port" x="232" y="75" width="126" height="74" rx="8"/><rect x="257" y="94" width="76" height="36" fill="#2563eb"/><text class="label" x="295" y="180" text-anchor="middle">USB AUDIO</text>
+  <rect class="unused" x="406" y="84" width="104" height="58" rx="8"/><text class="label" x="458" y="180" text-anchor="middle">HDMI</text>
+  <circle cx="640" cy="112" r="35" fill="#fff" stroke="#16a34a" stroke-width="7"/><circle cx="640" cy="112" r="14" fill="#fff" stroke="#172033" stroke-width="3"/><text class="label" x="640" y="180" text-anchor="middle">3.5 OUT</text>
+  <circle cx="790" cy="112" r="35" fill="#fff" stroke="#dc2626" stroke-width="7"/><circle cx="790" cy="112" r="14" fill="#fff" stroke="#172033" stroke-width="3"/><text class="label" x="790" y="180" text-anchor="middle">3.5 IN</text>
+  <text class="label" x="450" y="226" text-anchor="middle">USB AUDIO PRIORITY</text>
+</svg>
