@@ -195,11 +195,11 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     internalModel: "AJ200",
     customerName: "智能音频处理主机",
     ports: [
-      ...numberedPorts("mic", "MIC", 2, "三芯麦克风接线端子（48V）", "input", confirmedSource, balancedTerminals, "mic-block"),
+      ...numberedPorts("mic", "MIC", 2, "三芯麦克风接线端子（+/-/G）", "input", confirmedSource, balancedTerminals, "mic-block"),
       ...numberedPorts("lineIn", "LINE IN ", 2, "三芯差分接线端子（+/-/G）", "input", agentSource, balancedTerminals, "line-in-block"),
       ...numberedPorts("lineOut", "LINE OUT ", 2, "三芯差分接线端子（+/-/G）", "output", agentSource, balancedTerminals, "line-out-block"),
-      port("hpIn", "HP IN", "3.5mm", "input", agentSource),
-      port("hpOut", "HP OUT", "3.5mm", "output", agentSource),
+      port("hpIn", "HP IN", "3.5mm TRS（L/R/G）", "input", confirmedSource, true, stereoTerminals),
+      port("hpOut", "HP OUT", "3.5mm TRS（L/R/G）", "output", confirmedSource, true, stereoTerminals),
       port("extmic", "EXTMIC", "RJ45", "input", confirmedSource, true, rj45Terminals),
       port("usb", "USB", "USB-B", "bidirectional", agentSource),
       port("lan", "LAN", "RJ45", "bidirectional", agentSource, true, rj45Terminals),
@@ -264,7 +264,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     internalModel: "AJ600",
     customerName: "智能音频处理主机",
     ports: [
-      ...numberedPorts("mic", "MIC", 6, "MIC多针插座逻辑通道（48V，+/-/G）", "input", confirmedSource, balancedTerminals, "mic-block"),
+      ...numberedPorts("mic", "MIC", 6, "MIC多针插座逻辑通道（+/-/G）", "input", confirmedSource, balancedTerminals, "mic-block"),
       ...numberedPorts("lineIn", "LINE IN ", 4, "多针差分接线端子（+/-/G）", "input", agentSource, balancedTerminals, "line-in-block"),
       ...numberedPorts("lineOut", "LINE OUT ", 4, "多针差分接线端子（+/-/G）", "output", agentSource, balancedTerminals, "line-out-block"),
       port("extmic", "EXTMIC", "RJ45", "input", confirmedSource, true, rj45Terminals),
@@ -342,7 +342,22 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     productId: HANGING_MIC_PRODUCT_ID,
     internalModel: "LB102",
     customerName: "吊麦",
-    ports: [port("xlr", "音频输出", "XLR-3（1=G、2=+、3=-）", "output", agentSource, true, xlrTerminals)]
+    ports: [port(
+      "xlr",
+      "卡侬母头",
+      "XLR-3 卡侬母头（1=G、2=+、3=-）",
+      "output",
+      "用户确认吊麦采用卡侬母头，针序1=G、2=+、3=-",
+      true,
+      xlrTerminals
+    )],
+    interfacePanel: panel("hangingMic", 760 / 1560, {
+      xlr: anchor(380 / 760, 1430 / 1560, {
+        pin2: { x: 345 / 760, y: 1400 / 1560 },
+        pin3: { x: 415 / 760, y: 1400 / 1560 },
+        pin1: { x: 380 / 760, y: 1455 / 1560 }
+      })
+    }, "吊麦本体按用户提供实物图重构；卡侬母头与针序按用户确认")
   },
   [SMALL_DISC_01_PRODUCT_ID]: {
     productId: SMALL_DISC_01_PRODUCT_ID,
@@ -423,7 +438,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     productId: COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
     customerName: "讲台电脑",
     ports: [
-      port("usbAudio", "USB 2.0", "USB-A 2.0（USB Audio一进一出、内置RS232调试）", "bidirectional", "用户确认讲台电脑接线口径"),
+      port("usbAudio", "USB 2.0", "USB-A 2.0（USB Audio一进一出、内置232串口信号）", "bidirectional", "用户确认讲台电脑接线口径"),
       port("audioOut", "LINE OUT", "3.5mm TRS（L/R/G）", "output", "用户提供讲台电脑背面图", true, stereoTerminals),
       port("audioIn", "LINE IN", "3.5mm TRS（L/R/G）", "input", "用户提供讲台电脑背面图", true, stereoTerminals),
       port("headset", "HEADSET", "3.5mm TRRS", "bidirectional", "用户提供讲台电脑背面图")

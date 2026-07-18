@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1560" width="760" height="1560" role="img" aria-label="吊麦背面与卡侬母头说明书式线稿">
+  <defs>
+    <pattern id="mesh" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M-3 3L3-3M0 12L12 0M9 15L15 9" fill="none" stroke="#111111" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <style>
+    .outline{fill:#fff;stroke:#111111;stroke-width:8;stroke-linejoin:round}
+    .detail{fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    .fine{fill:none;stroke:#666666;stroke-width:3;stroke-linecap:round}
+    .dark{fill:#111111;stroke:#111111;stroke-width:4}
+    .number{fill:#111111;font:700 23px Arial,sans-serif;letter-spacing:0;text-anchor:middle}
+  </style>
+
+  <g aria-label="吊麦背面机身">
+    <path class="outline" d="M302 96Q302 60 336 47Q380 29 424 47Q458 60 458 96V1096Q458 1136 430 1150H330Q302 1136 302 1096Z"/>
+    <path class="detail" d="M302 354Q380 374 458 354"/>
+    <path class="fine" d="M318 75Q380 52 442 75M318 1118Q380 1133 442 1118"/>
+
+    <path class="outline" d="M302 108V332Q318 353 338 357H422Q442 353 458 332V108Q442 81 420 73H340Q318 81 302 108Z"/>
+    <path class="detail" d="M302 155L286 168V205L302 216M458 155L474 168V205L458 216M302 224L286 237V274L302 285M458 224L474 237V274L458 285"/>
+    <rect x="323" y="139" width="114" height="39" rx="18" fill="url(#mesh)" stroke="#111111" stroke-width="5"/>
+    <rect x="323" y="207" width="114" height="39" rx="18" fill="url(#mesh)" stroke="#111111" stroke-width="5"/>
+    <rect x="323" y="275" width="114" height="39" rx="18" fill="url(#mesh)" stroke="#111111" stroke-width="5"/>
+    <path class="fine" d="M327 66Q380 43 433 66"/>
+
+    <rect class="detail" x="362" y="676" width="36" height="84" rx="18"/>
+    <rect class="dark" x="368" y="710" width="24" height="37" rx="9"/>
+    <path class="fine" d="M380 686V704"/>
+  </g>
+
+  <g aria-label="吊麦出线">
+    <path class="detail" d="M380 1150V1194C380 1217 367 1227 367 1248" stroke-width="9"/>
+    <path class="outline" d="M345 1204H415L426 1245H334Z"/>
+    <path class="detail" d="M340 1220H420M337 1232H423"/>
+  </g>
+
+  <g aria-label="三针卡侬母头">
+    <path class="outline" d="M322 1246Q322 1229 340 1229H420Q438 1229 438 1246V1368Q438 1388 420 1396H340Q322 1388 322 1368Z"/>
+    <path class="detail" d="M338 1270H422M338 1290H422M338 1310H422"/>
+    <circle class="outline" cx="380" cy="1430" r="92"/>
+    <circle class="detail" cx="380" cy="1430" r="72"/>
+    <path class="outline" d="M362 1348H398V1373H362Z"/>
+
+    <circle id="female-pin-2-hole" data-female-pin-hole="true" class="dark" cx="345" cy="1400" r="12"/>
+    <circle id="female-pin-3-hole" data-female-pin-hole="true" class="dark" cx="415" cy="1400" r="12"/>
+    <circle id="female-pin-1-hole" data-female-pin-hole="true" class="dark" cx="380" cy="1455" r="12"/>
+    <text class="number" x="325" y="1392">2</text>
+    <text class="number" x="435" y="1392">3</text>
+    <text class="number" x="380" y="1497">1</text>
+  </g>
+</svg>

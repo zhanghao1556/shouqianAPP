@@ -1,5 +1,12 @@
 ﻿# Retrospective
 
+## 2026-07-18 Hanging-microphone interface evidence and MIC-input guardrail
+
+- Separate visual evidence by component: the supplied LB102 photo supports the microphone body silhouette, while the XLR female connector, female-hole geometry and `1=G / 2=+ / 3=-` mapping come from the user's explicit confirmation because the photo does not show that connector.
+- A manual-style “black-and-white” SVG must use actual grayscale RGB values, not visually dark slate colors. Lock each female XLR hole with a stable identifier and calibrate every conductor to its own physical hole.
+- Represent every hanging microphone as one physical panel with `quantity: 1`, one XLR female output and one powered processor `MIC IN`; keep both the customer label and connection method explicit, and reject any `LINE IN` interpretation.
+- A point-system regression currently expects the six-MIC processor while the existing uncommitted processor-selection work returns the two-MIC processor in `interfaceForcedAj600`. Keep this recorded and isolated; do not change processor selection as collateral work during hanging-microphone interface integration.
+
 ## 2026-07-18 Computer rear-panel and USB exclusivity reminder
 
 - Preserve each external device's original label and node identity while assigning a shared rear-panel profile. The approved shared display scope is podium computers plus all-in-one / ClassIn / meeting-screen categories, not laptops or arbitrary computer labels.
@@ -2217,3 +2224,22 @@ PowerShell reminder:
 - Output-channel allocation alone does not prove an amplifier channel has signal. For every active `SPKn`, trace the same-numbered `LINE IN n`; after the processor feeds channel 1, model and draw each required local `+/-/G` jumper through the highest active channel.
 - A physical terminal may legitimately carry one incoming cable and one local jumper. Keep the physical capability shared but give each cable endpoint a unique logical ID, limit sharing to confirmed amplifier LINE IN jumper chains and preserve one drawing reference plus one usage-table row per cable.
 - A same-device jumper should not use the ordinary long cable router. Draw a short U-shaped route just outside the panel, keep all three conductors visible, and place its reference outside the equipment rectangle so terminal detail remains readable.
+
+### 2026-07-18 global USB target allocation guardrail
+
+- A control host is an RS232 endpoint, not a USB Audio candidate. Adding it must never reorder, remove or replace a processor-to-computer USB edge.
+- USB Audio target selection is a global allocation decision, not a per-device fallback decision. Resolve exactly one target before adding analog fallbacks, using the confirmed order `all-in-one > podium computer > laptop`; only non-selected computers may receive analog fallback edges.
+- Regression coverage must compare the model before and after adding a control host and must exercise mixed candidate sets. Checking each computer type in isolation cannot detect unstable selection caused by an unrelated external device.
+- A correct connection change can alter node dimensions and row ordering. Parent-child adjacency reservations must remain valid across USB-only and analog-fallback panel states; a layout invariant that passes only for one port-occupancy shape is not a general hierarchy rule.
+- The per-unit wiring-node rule applies equally to repeated RING08 microphones. Two physical RJ45 sockets and two A1/A2 cables require two nodes with quantity one; a BOM-style `x2` aggregate cannot show truthful endpoint ownership.
+- A greedy compact-row pack can turn four speakers into `3+1` at a narrow width even though `2+2` is both readable and consistent with the no-avoidable-singleton rule. Rebalance a pure compact-speaker tail before placing rows; do not rely on the ordinary-node donor logic, which intentionally skips speaker groups.
+- Processor selection must resolve non-speaker interface requirements before applying speaker-capacity tiers. The speaker policy is valid only when AJ200 and AJ600 are otherwise both feasible; a later speaker rule must not downgrade a processor already required by microphone or external-input capacity.
+- Lock the speaker tier at every inclusive boundary: `4/5`, `8/9` and `12/13`. Assertions must cover both selected processor and the physical split between direct SPK outputs and amplifier-fed speakers, because a correct model name with the old routing split is still an incorrect system.
+
+### 2026-07-18 physical jumper drawing correction
+
+- Logical channel order is not a substitute for physical terminal order. Derive same-device jumpers from the confirmed panel arrangement; for the four-channel amplifier that means `1→2` on the left, `2→4` below and `4→3` on the right.
+- The earlier rule to draw all three jumper conductors visibly was too dense at the actual panel scale. Keep `+/-/G` in the structured edge and usage table, but collapse each local jumper to one thick arc in the drawing.
+- A nominal cubic U-route can still look cramped when its visible bulge is only three quarters of the control-point offset. Use the half-ellipse `4/3` control ratio, size the visible bulge explicitly and place the reference at the arc apex outside the terminal block.
+- Automatic hardware behavior should not be phrased as an installer action. When processor MIC phantom supply is automatic, retain the electrical pin map but remove “enable 48V” from customer wiring instructions and interface labels.
+- USB Audio and embedded serial capability must use one stable customer phrase across the edge, usage table, legend and port description. Updating only the table fallback leaves contradictory wording elsewhere.

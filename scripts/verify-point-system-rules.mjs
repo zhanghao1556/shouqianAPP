@@ -7,7 +7,7 @@ import { normalizeProfile } from "./src/features/classroom/lib/profileNormalizat
 import { generateEngineeringPoints } from "./src/features/classroom/lib/drawingEngine.ts";
 import { generateEngineeringOutputs, getCompleteness } from "./src/features/classroom/lib/engineeringRules.ts";
 import { getCustomerPointValidationStatus, validatePointPlan } from "./src/features/classroom/lib/pointValidation.ts";
-import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getProcessorTiersForSelection, getTeacherActivityZone, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M, LINE_ARRAY_PRODUCT_ID, YINMAN_LARGE_ARRAY_PROCESSOR_TIER } from "./src/features/classroom/lib/lineArrayRules.ts";
+import { getLineArrayDecision, getLineArrayHangingFrontDistance, getProcessorCapacity, getProcessorTiersForBrand, getProcessorTiersForSelection, getTeacherActivityZone, getYinmanAjProcessorSpeakerPlan, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M, LINE_ARRAY_PRODUCT_ID, YINMAN_LARGE_ARRAY_PROCESSOR_TIER } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { getMeetingFurnitureEndClearance, getMeetingFurnitureLayout } from "./src/features/classroom/lib/meetingFurnitureRules.ts";
 import { getSpeakerProductId } from "./src/features/classroom/lib/speakerRules.ts";
 import { getCustomerVisibleConnectionLines, getCustomerVisiblePoints } from "./src/features/classroom/lib/customerOutput.ts";
@@ -420,6 +420,59 @@ assert.equal(yinmanDoubleLine.productSelection.find((item) => item.category === 
 assert.equal(yinmanDoubleLine.connectionLines.filter((line) => line.id.startsWith("array-mic-processor-network-")).length, 2);
 assert.doesNotMatch(JSON.stringify([yinmanSingleLine, yinmanEconomyLine, yinmanInterfaceRichLine, yinmanDoubleLine]), /SA110|AJ200|AJ600|AJ350/);
 
+const alternativeProcessorSpeakerBoundaries = [
+  { count: 4, tier: "twoMic", direct: 4, amplifier: 0 },
+  { count: 5, tier: "sixMic", direct: 5, amplifier: 0 },
+  { count: 8, tier: "sixMic", direct: 8, amplifier: 0 },
+  { count: 9, tier: "twoMic", direct: 4, amplifier: 5 },
+  { count: 12, tier: "twoMic", direct: 4, amplifier: 8 },
+  { count: 13, tier: "sixMic", direct: 8, amplifier: 5 }
+];
+for (const expected of alternativeProcessorSpeakerBoundaries) {
+  assert.deepEqual(getYinmanAjProcessorSpeakerPlan(expected.count), {
+    processorTier: expected.tier,
+    directSpeakerCapacity: expected.tier === "twoMic" ? 4 : 8,
+    directSpeakerCount: expected.direct,
+    amplifierSpeakerCount: expected.amplifier,
+    requiresExternalAmplifier: expected.amplifier > 0
+  });
+  const result = generateEngineeringOutputs(makeProfile({
+    length: 8,
+    width: 8,
+    scope: "podium",
+    microphoneSolution: "hangingMic",
+    speakerProductOverride: "wall",
+    overheadSpeakerMounting: "available"
+  }), { "COLUMN-SPEAKER": expected.count }, "yinman");
+  assert.equal(result.generatedPoints.filter((point) => point.type === "speaker").length, expected.count);
+  assert.equal(
+    result.productSelection.find((item) => item.category === "processor")?.name,
+    expected.tier === "twoMic" ? "双麦处理器" : "六麦处理器"
+  );
+  assert.equal(
+    result.productSelection.find((item) => item.productId === "YY-POWER-AMP")?.quantity ?? 0,
+    expected.amplifier > 0 ? 1 : 0
+  );
+  const directLine = result.connectionLines.find((line) => line.id === "processor-speaker-direct");
+  assert.match(directLine?.toDevice ?? "", new RegExp("× " + expected.direct + "$"));
+  const amplifierLine = result.connectionLines.find((line) => line.id === "processor-amplifier-speakers");
+  if (expected.amplifier > 0) assert.match(amplifierLine?.toDevice ?? "", new RegExp("× " + expected.amplifier + "$"));
+  else assert.equal(amplifierLine, undefined);
+}
+const interfaceForcedAj600 = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  legacyWirelessMic: "有线麦克风、有线麦克风、有线麦克风"
+}), { "COLUMN-SPEAKER": 9 }, "yinman");
+assert.equal(interfaceForcedAj600.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
+assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "processor-speaker-direct")?.toDevice ?? "", /× 8$/);
+assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "processor-amplifier-speakers")?.toDevice ?? "", /× 1$/);
+console.log("PASS AJ200/AJ600 4/5/8/9/12/13 speaker tiers preserve interface-first selection and physical direct/amplifier splits");
+
 const hybridProfile12 = makeProfile({
   length: 12.4,
   width: 7.4,
@@ -486,7 +539,7 @@ assert.deepEqual(hybrid17.generatedPoints.filter((point) => point.type === "arra
 assert.deepEqual(pointSnapshot(hybrid17.generatedPoints.filter((point) => point.type === "speaker")), pointSnapshot(getLineArraySpeakerBaseline(hybridProfile17)));
 assert.equal(hybrid17.connectionLines.filter((line) => line.id.startsWith("line-array-supplement-cascade-")).length, 1);
 assert.equal(hybrid17.connectionLines.filter((line) => line.toPort === "EXTMIC").length, 1);
-assert.equal(hybrid17.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "双麦处理器");
+assert.equal(hybrid17.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name, "六麦处理器");
 
 const hybridWithExistingWireless = generateEngineeringOutputs({
   ...hybridEconomyProfile12,
@@ -635,7 +688,10 @@ assert.equal(yinmanHanging.productSelection.find((item) => item.category === "pr
 assert.equal(hangingPoints.length, 2);
 assert.ok(hangingPoints.every((point) => point.coverageRadius === HANGING_MIC_RADIUS_M && point.label.startsWith("吊麦")));
 assert.equal(hangingConnections.length, 2);
-assert.ok(hangingConnections.every((line, index) => line.toPort === "MIC " + (index + 1) && line.note.includes("MIC口直接供电")));
+assert.deepEqual(
+  hangingConnections.map((line) => [line.toPort, /MIC IN/.test(line.note), /48V|供电/.test(line.note)]),
+  [["MIC IN 1", true, false], ["MIC IN 2", true, false]]
+);
 assert.match(yinmanHanging.solutionSelection.microphone.advantages, /价格更低的双麦处理器/);
 assert.match(yinmanHanging.solutionSelection.microphone.cautions, /吊麦和直连MIC的利旧有线麦克风合计MIC占用/);
 
@@ -665,7 +721,7 @@ assert.ok((resetHangingProcessor?.wiring ?? "").includes("独立触摸屏"));
 assert.ok((resetHangingProcessor?.wiring ?? "").includes("音箱音量"));
 assert.ok((resetHangingProcessor?.wiring ?? "").includes("麦克风静音/开音"));
 assert.match(resetHangingProcessor?.wiring ?? "", /当前合计占用3路MIC输入/);
-assert.match(yinmanHangingAfterHighPerformanceReset.solutionSelection.microphone.cautions, /超过2路时自动配置六麦处理器/);
+assert.match(yinmanHangingAfterHighPerformanceReset.solutionSelection.microphone.cautions, /同时根据音箱数量配置/);
 
 const yinmanHangingMicLimited = generateEngineeringOutputs(makeProfile({
   length: 8,
@@ -709,7 +765,7 @@ const yinyiHangingDraft = generateEngineeringOutputs(makeProfile({
 assert.notEqual(yinyiHangingDraft.solutionSelection.microphone.selected, "hangingMic");
 assert.equal(yinyiHangingDraft.productSelection.some((item) => item.productId === HANGING_MIC_PRODUCT_ID || item.name === "吊麦"), false);
 assert.equal(yinyiHangingDraft.generatedPoints.some((point) => point.pickupKind === "hangingMic"), false);
-console.log("PASS Yinman-only hanging microphone coverage, powered MIC capacity and processor boundaries");
+console.log("PASS Yinman-only hanging microphone coverage, MIC capacity and processor boundaries");
 
 const smallDisc01Profile = makeProfile({
   length: 8,
@@ -769,6 +825,26 @@ assert.equal(
   ),
   false
 );
+const smallDisc01UsbPriority = generateEngineeringOutputs(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass"],
+  scope: "full",
+  microphoneSolution: "smallDisc01",
+  computer: "讲台电脑、ClassIn 一体机",
+  overheadSpeakerMounting: "available",
+  smallDiscConnectionMode: "usb"
+}), {}, "yinman");
+assert.equal(
+  smallDisc01UsbPriority.connectionLines.find((line) => line.id === "small-disc-01-usb-host")?.toDevice,
+  "ClassIn 一体机"
+);
+assert.ok(smallDisc01UsbPriority.connectionLines.some((line) =>
+  line.toDevice === "讲台电脑" && line.fromPort === "A OUT"
+));
+assert.ok(smallDisc01UsbPriority.connectionLines.some((line) =>
+  line.fromDevice === "讲台电脑" && line.toPort === "A IN"
+));
 const smallDisc01UsbTopology = getTopologyLayoutSnapshot(
   smallDisc01UsbRoutingProfile,
   smallDisc01UsbRouting.connectionLines,

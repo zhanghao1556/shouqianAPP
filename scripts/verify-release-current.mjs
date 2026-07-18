@@ -19,6 +19,7 @@ const brands = [
       "yinman-array-mic-topology.png",
       "yinman-audio-processor.png",
       "yinman-hanging-mic.png",
+      "yinman-hanging-mic-interface-panel.svg",
       "yinman-small-disc-mic.png",
       "yinman-audio-extender.png",
       "yinman-line-array-converter.png"

@@ -9,10 +9,10 @@ import type {
 import type { AppBrandId } from "../brand";
 import {
   getLineArrayDecision,
-  getProcessorAlternativeTier,
   getProcessorInterfaceDemand,
   getProcessorTier,
-  getProcessorTierName
+  getProcessorTierName,
+  getYinmanProcessorAlternativeTier
 } from "./lineArrayRules";
 import { getSpeakerProductId } from "./speakerRules";
 import {
@@ -77,9 +77,10 @@ export function getCustomerSolutionSelection(
   const requestedSpeaker = selectedMicrophone === "smallDisc01" ? "auto" : profile.engineeringConstraints.speakerProductOverride ?? "auto";
   const selectedSpeaker = selectedMicrophone === "smallDisc01" ? "wall" : requestedSpeaker === "auto" ? recommendedSpeaker : requestedSpeaker;
   const requiresSpecialReview = selectedSpeaker === "ceiling" && profile.engineeringConstraints.overheadSpeakerMounting === "unavailable";
+  const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
   const hangingMicSupport = getHangingMicSupport(profile, brandId);
   const hangingMicDemand = getHangingMicCoverageDemand(profile);
-  const hangingMicTier = getHangingMicProcessorTier(profile, hangingMicDemand);
+  const hangingMicTier = getHangingMicProcessorTier(profile, hangingMicDemand, speakerCount);
   const hangingMicCapacity = getHangingMicRemainingCapacity(profile, hangingMicTier);
   const hangingMicCapacityWarning = selectedMicrophone === "hangingMic" && hangingMicCapacity < hangingMicDemand
     ? `讲台区按3m覆盖需要${hangingMicDemand}只，当前剩余MIC容量仅支持${hangingMicCapacity}只。`
@@ -93,7 +94,6 @@ export function getCustomerSolutionSelection(
     (selectedMicrophone === "hangingMic" && (!hangingMicSupport.supported || hangingMicCapacity === 0)) ||
     !smallDisc01InterfaceSupported;
   const lineArrayCount = generatedPoints.filter((point) => point.pickupKind === "lineArray").length;
-  const speakerCount = generatedPoints.filter((point) => point.type === "speaker").length;
   const processor = brandId === "yinman" && lineArrayCount === 1
     ? getYinmanSingleLineProcessorSelection(profile, speakerCount, usesHybridLineArray)
     : undefined;
@@ -111,7 +111,7 @@ export function getCustomerSolutionSelection(
         : selectedMicrophone === "smallDisc03"
           ? "成本较低，适合直接录音和巡课设备拾音。"
           : selectedMicrophone === "hangingMic"
-        ? "成本低于线阵麦加处理器方案；MIC接口够用时优先配置价格更低的双麦处理器。"
+        ? "成本低于线阵麦加处理器方案；接口和音箱容量满足时优先配置价格更低的双麦处理器。"
         : selectedMicrophone === "lineArray"
           ? "含处理器的整套价格更低；短距摆放或定向声幕有利于抑制背向噪声。"
           : "覆盖范围和扩展能力更适合全场拾音及较大空间。",
@@ -119,8 +119,8 @@ export function getCustomerSolutionSelection(
         ? "效果相对较弱，本地扩声只提供壁挂音箱；线上直连所需USB音频线由客户自购。"
         : selectedMicrophone === "smallDisc03"
           ? "仅用于直接录音或巡课拾音，不用于本地扩声、视频会议或线上互动。"
-          : selectedMicrophone === "hangingMic"
-        ? "只用于讲台区域扩声，每只占用一路带供电MIC输入；系统按吊麦和直连MIC的利旧有线麦克风合计MIC占用，超过2路时自动配置六麦处理器。六麦处理器接口更多、价格较高，带独立触摸屏，可控制音箱音量及麦克风静音/开音。"
+        : selectedMicrophone === "hangingMic"
+        ? "只用于讲台区域扩声，每只占用一路MIC输入；处理器按吊麦和直连MIC的利旧有线麦克风合计MIC占用，并同时根据音箱数量配置。六麦处理器接口更多、价格较高，带独立触摸屏，可控制音箱音量及麦克风静音/开音。"
         : selectedMicrophone === "lineArray"
           ? "责任区宽度、纵深、最远发言距离和处理器接口容量需要同时满足。"
           : "需要结合安装位置、混响和多麦部署复核覆盖均匀性。",
@@ -186,7 +186,7 @@ function getYinmanSingleLineProcessorSelection(
   usesHybridLineArray: boolean
 ): NonNullable<CustomerSolutionSelection["processor"]> {
   if (usesHybridLineArray) {
-    const selected = getYinmanHybridProcessorTier(profile);
+    const selected = getYinmanHybridProcessorTier(profile, speakerCount);
     const alternative = selected === "twoMic" ? "sixMic" : "twoMic";
     const interfaceDemand = getYinmanHybridProcessorInputDemand(profile);
     const selectedLabel = getProcessorTierName(selected);
@@ -202,10 +202,10 @@ function getYinmanSingleLineProcessorSelection(
         ? "满足线阵麦与后场补充拾音接入，优先控制整套成本。"
         : "为线阵麦、后场补充拾音和其他麦克风输入保留足够接口。",
       cautions: "后场补充拾音阵麦采用麦克风端级联，共用一个扩展麦克风接口。",
-      recommendationReason: `系统按接口需求自动配置${selectedLabel}；线阵麦使用双MIC输入，补充拾音阵麦级联后使用扩展麦克风接口。`,
+      recommendationReason: `系统按接口与音箱容量自动配置${selectedLabel}；线阵麦使用双MIC输入，补充拾音阵麦级联后使用扩展麦克风接口。`,
       decisionFactors: [
         `接口：当前MIC输入需求为${interfaceDemand}路，补充拾音阵麦数量不重复占用处理器MIC口`,
-        "成本：接口满足时优先采用成本较低的处理器",
+        `音箱：当前配置${speakerCount}只，处理器与功放按输出容量分配`,
         "连接：线阵麦经信号转换器接入，后场补充拾音阵麦共用扩展麦克风接口"
       ],
       alternative,
@@ -215,7 +215,7 @@ function getYinmanSingleLineProcessorSelection(
   }
   const recommended = "highPerformance" as const;
   const selected = getProcessorTier(profile, "yinman", 1, speakerCount);
-  const alternative = getProcessorAlternativeTier(profile, speakerCount);
+  const alternative = getYinmanProcessorAlternativeTier(profile, speakerCount);
   const interfaceDemand = getProcessorInterfaceDemand(profile, speakerCount);
   const selectedLabel = getProcessorTierName(selected);
   const alternativeLabel = getProcessorTierName(alternative);

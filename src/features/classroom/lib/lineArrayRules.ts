@@ -17,6 +17,18 @@ export const LINE_ARRAY_HANGING_MAX_FRONT_DISTANCE_M = 3;
 export const LINE_ARRAY_HANGING_MIN_WIDTH_M = 6;
 export const LINE_ARRAY_HANGING_MAX_WIDTH_M = 10;
 export const YINMAN_LARGE_ARRAY_PROCESSOR_TIER = "highPerformance" as const;
+export const YINMAN_AJ200_DIRECT_SPEAKER_CAPACITY = 4;
+export const YINMAN_AJ600_DIRECT_SPEAKER_CAPACITY = 8;
+
+export type YinmanAjProcessorTier = "twoMic" | "sixMic";
+
+export interface YinmanAjProcessorSpeakerPlan {
+  processorTier: YinmanAjProcessorTier;
+  directSpeakerCapacity: number;
+  directSpeakerCount: number;
+  amplifierSpeakerCount: number;
+  requiresExternalAmplifier: boolean;
+}
 
 export interface LineArrayActivityZone {
   left: number;
@@ -139,6 +151,7 @@ export function getProcessorTier(profile: ClassroomProfile, brandId: AppBrandId,
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
   if (requested !== "auto" && getProcessorTiersForBrand(brandId).includes(requested)) return requested;
   if (brandId === "yinman" && lineArrayCount === 1) return "highPerformance";
+  if (brandId === "yinman") return getYinmanProcessorAlternativeTier(profile, speakerCount);
   return getProcessorAlternativeTier(profile, speakerCount);
 }
 
@@ -164,10 +177,49 @@ export function getProcessorAlternativeTier(profile: ClassroomProfile, speakerCo
   return getProcessorInterfaceDemand(profile, speakerCount) > 2 ? "sixMic" : "twoMic";
 }
 
-export function getProcessorInterfaceDemand(profile: ClassroomProfile, speakerCount: number) {
+export function getYinmanAjProcessorSpeakerPlan(
+  speakerCount: number,
+  minimumTier: YinmanAjProcessorTier = "twoMic"
+): YinmanAjProcessorSpeakerPlan {
+  const normalizedCount = Number.isFinite(speakerCount) ? Math.max(0, Math.round(speakerCount)) : 0;
+  const speakerTier: YinmanAjProcessorTier = normalizedCount <= 4 || (normalizedCount >= 9 && normalizedCount <= 12)
+    ? "twoMic"
+    : "sixMic";
+  const processorTier = minimumTier === "sixMic" ? "sixMic" : speakerTier;
+  const directSpeakerCapacity = getYinmanProcessorDirectSpeakerCapacity(processorTier);
+  const directSpeakerCount = Math.min(normalizedCount, directSpeakerCapacity);
+  const amplifierSpeakerCount = Math.max(0, normalizedCount - directSpeakerCount);
+  return {
+    processorTier,
+    directSpeakerCapacity,
+    directSpeakerCount,
+    amplifierSpeakerCount,
+    requiresExternalAmplifier: amplifierSpeakerCount > 0
+  };
+}
+
+export function getYinmanProcessorDirectSpeakerCapacity(tier: Exclude<ProcessorTier, "auto">) {
+  return tier === "twoMic" ? YINMAN_AJ200_DIRECT_SPEAKER_CAPACITY : YINMAN_AJ600_DIRECT_SPEAKER_CAPACITY;
+}
+
+export function getProcessorNonSpeakerInterfaceDemand(profile: ClassroomProfile) {
   const inputCount = splitDevices(profile.existingDevices.legacyWirelessMic).length;
   const outputCount = splitDevices(profile.existingDevices.recordingHost).length;
-  return Math.max(inputCount, outputCount, speakerCount);
+  return Math.max(inputCount, outputCount);
+}
+
+export function getYinmanProcessorAlternativeTier(
+  profile: ClassroomProfile,
+  speakerCount: number,
+  minimumInterfaceDemand = 0
+): YinmanAjProcessorTier {
+  const interfaceDemand = Math.max(minimumInterfaceDemand, getProcessorNonSpeakerInterfaceDemand(profile));
+  const minimumTier: YinmanAjProcessorTier = interfaceDemand > 2 ? "sixMic" : "twoMic";
+  return getYinmanAjProcessorSpeakerPlan(speakerCount, minimumTier).processorTier;
+}
+
+export function getProcessorInterfaceDemand(profile: ClassroomProfile, speakerCount: number) {
+  return Math.max(getProcessorNonSpeakerInterfaceDemand(profile), speakerCount);
 }
 
 export function getProcessorTierName(tier: Exclude<ProcessorTier, "auto">) {

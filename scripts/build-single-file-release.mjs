@@ -82,6 +82,7 @@ function getReplacementAsset(_assetName, sourceAssetName) {
     if (sourceAssetName === "yinman-array-mic-topology.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-audio-processor.png") return assetReplacement("topology-audio-processor.png");
     if (sourceAssetName === "yinman-hanging-mic.png") return assetReplacement("topology-wired-mic.png");
+    if (sourceAssetName === "yinman-hanging-mic-interface-panel.svg") return assetReplacement("topology-wired-mic.png");
     if (sourceAssetName === "yinman-small-disc-mic.png") return assetReplacement("topology-array-mic.png");
     if (sourceAssetName === "yinman-audio-extender.png") return assetReplacement("topology-audio-processor.png");
     if (sourceAssetName === "yinman-line-array-converter.png") return assetReplacement("topology-audio-processor.png");
@@ -122,6 +123,7 @@ function isolateInlineBrandAssets(value) {
     next = replaceInlineAsset(next, "yinman-array-mic-topology.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-audio-processor.png", "topology-audio-processor.png");
     next = replaceInlineAsset(next, "yinman-hanging-mic.png", "topology-wired-mic.png");
+    next = replaceInlineAsset(next, "yinman-hanging-mic-interface-panel.svg", "topology-wired-mic.png");
     next = replaceInlineAsset(next, "yinman-small-disc-mic.png", "topology-array-mic.png");
     next = replaceInlineAsset(next, "yinman-audio-extender.png", "topology-audio-processor.png");
     next = replaceInlineAsset(next, "yinman-line-array-converter.png", "topology-audio-processor.png");

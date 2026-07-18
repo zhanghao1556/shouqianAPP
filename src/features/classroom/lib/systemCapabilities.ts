@@ -8,7 +8,12 @@ import {
   getRequiredArrayMicCountForFullRoomAmplification,
   type PointQuantityTargets
 } from "./drawingEngine";
-import { getLineArrayDecision, LINE_ARRAY_LOCAL_RADIUS_M, LINE_ARRAY_ONLINE_RADIUS_M } from "./lineArrayRules";
+import {
+  getLineArrayDecision,
+  getYinmanProcessorAlternativeTier,
+  LINE_ARRAY_LOCAL_RADIUS_M,
+  LINE_ARRAY_ONLINE_RADIUS_M
+} from "./lineArrayRules";
 import {
   getDefaultHangingMicCount,
   getExistingMicInputDemand,
@@ -255,8 +260,8 @@ export function getYinmanHybridProcessorInputDemand(profile: ClassroomProfile) {
   return LINE_ARRAY_PROCESSOR_MIC_INPUT_DEMAND + getExistingMicInputDemand(profile);
 }
 
-export function getYinmanHybridProcessorTier(profile: ClassroomProfile): "twoMic" | "sixMic" {
-  return getYinmanHybridProcessorInputDemand(profile) > 2 ? "sixMic" : "twoMic";
+export function getYinmanHybridProcessorTier(profile: ClassroomProfile, speakerCount = 0): "twoMic" | "sixMic" {
+  return getYinmanProcessorAlternativeTier(profile, speakerCount, getYinmanHybridProcessorInputDemand(profile));
 }
 
 function getYinmanLineArraySupplementPoints(

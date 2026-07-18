@@ -284,6 +284,7 @@ export interface InterfaceWiringNode {
 export interface InterfaceWiringEdge {
   id: string;
   kind: "field" | "jumper";
+  jumperRoute?: "left" | "right" | "top" | "bottom";
   fromNodeId: string;
   fromPortId: string;
   toNodeId: string;

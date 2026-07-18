@@ -69,6 +69,7 @@ import {
   getProcessorInterfaceDemand,
   getProcessorTier,
   getProcessorTierName,
+  getYinmanProcessorDirectSpeakerCapacity,
   LINE_ARRAY_PRODUCT_ID,
   YINMAN_LARGE_ARRAY_PROCESSOR_TIER
 } from "./lineArrayRules";
@@ -325,7 +326,7 @@ const getAudioPlan = (
       : usesSmallDisc01
         ? "本方案采用小圆盘阵麦01；本地扩声经教学模拟功放主机驱动壁挂音箱，线上音频按所选USB直连或音频扩展器接入。"
       : usesHangingMic
-      ? "本方案由吊麦配合智能音频处理主机完成讲台区域拾音和本地扩声；每只吊麦独占一路带供电MIC输入。"
+      ? "本方案由吊麦配合智能音频处理主机完成讲台区域拾音和本地扩声；每只吊麦独占一路MIC输入。"
       : brandId === "yinman"
       ? "本方案由大圆盘阵麦配合智能音频处理主机完成拾音、音频处理和无源音箱驱动，形成完整课堂音频链路。"
       : "本方案以智能天花阵列麦克风作为课堂音频核心，集成拾音、音频处理和功放能力，结合波束成形、多波束动态跟踪、AFC 反馈抑制、ANS 自动噪声抑制、AEC 回声消除和 AGC 自动增益，减少外置处理设备和复杂布线。",
@@ -468,7 +469,7 @@ export const getInstallationGuide = (profile: ClassroomProfile, points: Generate
         ? point.pickupKind === "smallDisc01" || point.pickupKind === "smallDisc02" || point.pickupKind === "smallDisc03"
           ? "采用吊杆固定，避开空调风口、强噪声设备、音箱正前方和灯具检修口；级联网线单段不超过20m。"
         : point.pickupKind === "hangingMic"
-          ? "避开空调风口、强噪声设备、音箱正前方和灯具检修口；每只独占一路带供电MIC输入。"
+          ? "避开空调风口、强噪声设备、音箱正前方和灯具检修口；每只独占一路MIC输入。"
         : point.pickupKind === "lineArray"
           ? `${point.installationMode === "podium" ? "优先放在讲台上并靠近讲话位置。" : point.installationMode === "tabletop" ? "放在会议桌主要发言区并保持拾音面无遮挡。" : "吊挂点保持拾音正面朝向责任区。"}避开空调风口、强噪声设备，网线禁止接PoE。`
           : `${getArrayMicInstallAdvice(profile)}避开投影机、空调出风口、强噪声设备和灯具检修口；不要贴近墙角或门口。`
@@ -632,9 +633,6 @@ const syncBrandSystemSelection = (
   const speakerCount = selection.find((item) => item.category === "speaker" && item.quantity > 0)?.quantity ?? 0;
   const usesSmallDisc01 = selection.some((item) => item.productId === SMALL_DISC_01_PRODUCT_ID && item.quantity > 0);
   const usesSmallDisc03 = selection.some((item) => item.productId === SMALL_DISC_03_PRODUCT_ID && item.quantity > 0);
-  const amplifierCount = shouldGenerateNewSpeakers(profile)
-    ? usesSmallDisc01 && speakerCount > 0 ? 1 : getBrandExternalAmplifierCount(speakerCount, brandId)
-    : 0;
   let selectionWithoutSystemDevices = selection.filter(
     (item) => item.productId !== EXTERNAL_AMPLIFIER_PRODUCT_ID && item.productId !== AUDIO_PROCESSOR_HOST_PRODUCT_ID
   );
@@ -648,11 +646,18 @@ const syncBrandSystemSelection = (
   const processorTier = usesYinmanLargeArray
     ? YINMAN_LARGE_ARRAY_PROCESSOR_TIER
     : usesHybridLineArray
-    ? getYinmanHybridProcessorTier(profile)
+    ? getYinmanHybridProcessorTier(profile, speakerCount)
     : hangingMic
-    ? getHangingMicProcessorTier(profile, hangingMic.quantity)
+    ? getHangingMicProcessorTier(profile, hangingMic.quantity, speakerCount)
     : getProcessorTier(profile, brandId, lineArrayCount, speakerCount);
   const processorCapacity = getProcessorCapacity(processorTier);
+  const amplifierCount = shouldGenerateNewSpeakers(profile)
+    ? usesSmallDisc01 && speakerCount > 0
+      ? 1
+      : brandId === "yinman"
+        ? speakerCount > getYinmanProcessorDirectSpeakerCapacity(processorTier) ? 1 : 0
+        : getBrandExternalAmplifierCount(speakerCount, brandId)
+    : 0;
   if (hangingMic) {
     const remainingCapacity = getHangingMicRemainingCapacity(profile, processorTier);
     selectionWithoutSystemDevices = selectionWithoutSystemDevices.map((item) => item.productId === HANGING_MIC_PRODUCT_ID
@@ -729,7 +734,7 @@ const getRiskItems = (profile: ClassroomProfile, acousticAssessment: AcousticAss
   if (lineArray.selected) {
     const speakerCount = points.filter((point) => point.type === "speaker").length;
     const tier = usesHybridLineArray
-      ? getYinmanHybridProcessorTier(profile)
+      ? getYinmanHybridProcessorTier(profile, speakerCount)
       : getProcessorTier(profile, brandId, lineArray.count, speakerCount);
     const capacity = getProcessorCapacity(tier);
     const demand = usesHybridLineArray

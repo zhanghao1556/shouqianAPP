@@ -2,6 +2,7 @@ import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, MicrophoneSolution, SmallDiscConnectionMode } from "../types";
 import { getTeacherActivityZone, hasFullRoomPickupNeed } from "./lineArrayRules";
 import { getMeetingFurnitureLayout } from "./meetingFurnitureRules";
+import { selectPrimaryUsbAudioDevice } from "./usbAudioRules";
 
 export const SMALL_DISC_01_PRODUCT_ID = "YINMAN-SMALL-DISC-01";
 export const SMALL_DISC_02_PRODUCT_ID = "YINMAN-SMALL-DISC-02";
@@ -79,8 +80,8 @@ export function getSmallDisc01AudioRouting(profile: ClassroomProfile) {
   );
   const hasRecordingNeed = profile.needs.includes("recording");
   const hasLocalSpeakerOutput = profile.needs.includes("localAmplification") || profile.needs.includes("interactiveClass");
-  const usbDevice = mode === "usb" ? computerDevices[0] : undefined;
-  const analogComputerDevices = usbDevice ? computerDevices.slice(1) : computerDevices;
+  const usbDevice = mode === "usb" ? selectPrimaryUsbAudioDevice(computerDevices) : undefined;
+  const analogComputerDevices = usbDevice ? computerDevices.filter((device) => device !== usbDevice) : computerDevices;
   const extenderInputSources = hasOnlineAudio ? analogComputerDevices : [];
   const externalOutputTargets = hasOnlineAudio && analogComputerDevices.length > 0
     ? [analogComputerDevices[0], ...(hasRecordingNeed ? recordingInputDevices : [])]

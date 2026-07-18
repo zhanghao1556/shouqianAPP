@@ -19,7 +19,7 @@ import {
   LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./systemCapabilities";
-import { LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
+import { getYinmanProcessorDirectSpeakerCapacity, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 import {
   getSmallDisc01AudioRouting,
@@ -32,6 +32,11 @@ import {
   SMALL_DISC_RECORDING_NAME,
   SMALL_DISC_SLAVE_NAME
 } from "./yinmanSmallDiscRules";
+import {
+  isUsbAudioAllInOneDevice,
+  isUsbAudioTargetDevice,
+  selectPrimaryUsbAudioDevice
+} from "./usbAudioRules";
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
@@ -42,15 +47,22 @@ export function filterUsbExclusiveAudioLines(lines: ConnectionLine[]) {
     if (!isUsbAudioConnection(line)) return;
     [line.fromDevice, line.toDevice]
       .map(normalizeConnectionDeviceName)
-      .filter(isComputerDeviceName)
+      .filter(isUsbAudioTargetDevice)
       .forEach((device) => usbComputerDevices.add(device));
   });
   if (!usbComputerDevices.size) return lines;
+  const usbTarget = selectPrimaryUsbAudioDevice(Array.from(usbComputerDevices));
   return lines.filter((line) => {
-    if (isUsbAudioConnection(line) || !isAnalogAudioConnection(line)) return true;
+    if (isUsbAudioConnection(line)) {
+      const computerEndpoints = [line.fromDevice, line.toDevice]
+        .map(normalizeConnectionDeviceName)
+        .filter(isUsbAudioTargetDevice);
+      return computerEndpoints.length === 0 || computerEndpoints.includes(usbTarget);
+    }
+    if (!isAnalogAudioConnection(line)) return true;
     return ![line.fromDevice, line.toDevice]
       .map(normalizeConnectionDeviceName)
-      .some((device) => usbComputerDevices.has(device));
+      .some((device) => device === usbTarget);
   });
 }
 
@@ -90,9 +102,9 @@ export const generateConnectionLines = (
   const legacyAudioInputDevice = getLegacyAudioInputDevice(profile);
   const shouldRouteExternalToLegacyAudio = Boolean(legacySound && legacyAudioInputDevice);
 
-  const usbDevice = selectPrimaryUsbDevice(
-    shouldRouteExternalToLegacyAudio ? mediaDevices.filter(isAllInOneUsbDevice) : mediaDevices,
-    hasRemoteOrRecording
+  const usbDevice = selectPrimaryUsbAudioDevice(
+    shouldRouteExternalToLegacyAudio ? mediaDevices.filter(isUsbAudioAllInOneDevice) : mediaDevices,
+    hasRemoteOrRecording ? "教室电脑" : ""
   );
   if (usbDevice) {
     lines.push({
@@ -102,7 +114,7 @@ export const generateConnectionLines = (
       toDevice: usbDevice,
       toPort: "USB 音频接口",
       cableType: "标配USB线",
-      note: "同一根USB线承载USB Audio一进一出，并内置RS232串口调试通道，可由电脑直连软件调试。"
+      note: "同一根USB线承载USB Audio一进一出；内置232串口信号，可用于连接调试软件。"
     });
   }
 
@@ -136,7 +148,7 @@ export const generateConnectionLines = (
 
   if (shouldRouteExternalToLegacyAudio) {
     mediaDevices
-      .filter((device) => !isRecordingHostAudioDevice(device) && !isAllInOneUsbDevice(device) && !isControlHostDevice(device))
+      .filter((device) => !isRecordingHostAudioDevice(device) && !isUsbAudioAllInOneDevice(device) && !isControlHostDevice(device))
       .forEach((device, index) => {
         lines.push(buildExternalToLegacyAudioLine(device, legacyAudioInputDevice, `media-legacy-audio-${index + 1}`));
       });
@@ -290,7 +302,7 @@ function generateSmallDisc01ConnectionLines(
       toDevice: audioRouting.usbDevice,
       toPort: "USB音频接口",
       cableType: "USB音频线（客户自购）",
-      note: "USB只连接电脑或一体机；同一根USB线同时承担供电、USB Audio一进一出和内置RS232串口调试，可由电脑直连软件调试；线材按安装距离由客户另行采购。"
+      note: "USB只连接电脑或一体机；同一根USB线同时承担供电和USB Audio一进一出；内置232串口信号，可用于连接调试软件；线材按安装距离由客户另行采购。"
     });
   }
   if (audioRouting.directOutputTarget) {
@@ -443,6 +455,10 @@ function generateProcessorDirectConnectionLines(
   const lines: ConnectionLine[] = [];
   const coreName = processor.name;
   const capability = getBrandSystemCapability(brandId);
+  const processorTier = coreName.includes("双麦") ? "twoMic" : coreName.includes("六麦") ? "sixMic" : "highPerformance";
+  const directSpeakerCapacity = brandId === "yinman"
+    ? getYinmanProcessorDirectSpeakerCapacity(processorTier)
+    : capability.integratedSpeakerCapacity;
   const isLineArray = arrayMic.productId === LINE_ARRAY_PRODUCT_ID;
   const isHangingMic = arrayMic.productId === HANGING_MIC_PRODUCT_ID;
   const hasRemoteOrRecording =
@@ -520,11 +536,11 @@ function generateProcessorDirectConnectionLines(
       lines.push({
         id: `hanging-mic-processor-${index}`,
         fromDevice: `吊麦 ${index}`,
-        fromPort: "音频输出",
+        fromPort: "卡侬母头（XLR-3）",
         toDevice: coreName,
-        toPort: `MIC ${index}`,
+        toPort: `MIC IN ${index}`,
         cableType: "麦克风线",
-        note: "每只吊麦独占一路MIC输入，由MIC口直接供电。"
+        note: "卡侬母头按2=+、3=-、1=G接处理器MIC IN。"
       });
       return;
     }
@@ -541,9 +557,9 @@ function generateProcessorDirectConnectionLines(
     });
   });
 
-  const usbDevice = selectPrimaryUsbDevice(
-    shouldRouteExternalToLegacyAudio ? mediaDevices.filter(isAllInOneUsbDevice) : mediaDevices,
-    hasRemoteOrRecording
+  const usbDevice = selectPrimaryUsbAudioDevice(
+    shouldRouteExternalToLegacyAudio ? mediaDevices.filter(isUsbAudioAllInOneDevice) : mediaDevices,
+    hasRemoteOrRecording ? "教室电脑" : ""
   );
   if (usbDevice) {
     lines.push({
@@ -553,7 +569,7 @@ function generateProcessorDirectConnectionLines(
       toDevice: usbDevice,
       toPort: "USB 音频接口",
       cableType: "标配USB线",
-      note: "同一根USB线承载USB Audio一进一出，并内置RS232串口调试通道，可由电脑直连软件调试。"
+      note: "同一根USB线承载USB Audio一进一出；内置232串口信号，可用于连接调试软件。"
     });
   }
 
@@ -641,7 +657,7 @@ function generateProcessorDirectConnectionLines(
   }
 
   if (speakerCount > 0) {
-    const directSpeakerCount = Math.min(speakerCount, capability.integratedSpeakerCapacity);
+    const directSpeakerCount = Math.min(speakerCount, directSpeakerCapacity);
     const speakerPoints = generatedPoints.filter((point) => point.type === "speaker");
     const directSignalGroups = getSpeakerSignalGroups(speakerPoints.slice(0, directSpeakerCount));
     if (directSignalGroups.length) {
@@ -674,11 +690,11 @@ function generateProcessorDirectConnectionLines(
         note: `智能音频处理主机直接推动前 ${directSpeakerCount} 只无源音箱，现场复核阻抗、线径、极性和通道负载。`
       });
     }
-    if (speakerCount > capability.integratedSpeakerCapacity) {
+    if (speakerCount > directSpeakerCapacity) {
       const externalAmplifier = selection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0);
       const externalSpeakerCount = Math.min(
-        speakerCount - capability.integratedSpeakerCapacity,
-        capability.totalSpeakerCapacity - capability.integratedSpeakerCapacity
+        speakerCount - directSpeakerCapacity,
+        capability.totalSpeakerCapacity - directSpeakerCapacity
       );
       if (externalAmplifier) {
         lines.push({
@@ -688,8 +704,8 @@ function generateProcessorDirectConnectionLines(
           toDevice: externalAmplifier.name,
           toPort: "音频输入",
           cableType: "音频线",
-          note: "第 9-16 只无源音箱通过一台教学模拟功放主机扩展。",
-          speakerSignalMode: speakerPoints.slice(capability.integratedSpeakerCapacity).some((point) => point.speakerSignalMode === "withoutLineArrayAfc")
+          note: `第 ${directSpeakerCapacity + 1}-${Math.min(speakerCount, capability.totalSpeakerCapacity)} 只无源音箱通过一台教学模拟功放主机扩展。`,
+          speakerSignalMode: speakerPoints.slice(directSpeakerCapacity).some((point) => point.speakerSignalMode === "withoutLineArrayAfc")
             ? undefined
             : speakerPoints.some((point) => point.speakerSignalMode) ? "afc" : undefined
         });
@@ -701,7 +717,7 @@ function generateProcessorDirectConnectionLines(
           toPort: "音箱 + / -",
           cableType: "音箱线",
           note: "超过主机直驱容量的无源音箱由教学模拟功放主机承载。",
-          speakerSignalMode: speakerPoints.slice(capability.integratedSpeakerCapacity).some((point) => point.speakerSignalMode)
+          speakerSignalMode: speakerPoints.slice(directSpeakerCapacity).some((point) => point.speakerSignalMode)
             ? "afc"
             : undefined
         });
@@ -746,10 +762,6 @@ function uniqueDeviceList(devices: string[]) {
 
 function normalizeConnectionDeviceName(device: string) {
   return device.replace(/\s*[×xX]\s*\d+\s*$/i, "").trim();
-}
-
-function isComputerDeviceName(device: string) {
-  return /电脑|一体机|会议屏|CLASSIN|笔记本/i.test(device);
 }
 
 function isUsbAudioConnection(line: ConnectionLine) {
@@ -911,18 +923,6 @@ function getAudioConnectionCount(line: ConnectionLine) {
 function getQuantityFromText(value: string) {
   const match = value.match(/[×xX]\s*(\d+)/);
   return match ? Number(match[1]) : undefined;
-}
-
-function selectPrimaryUsbDevice(devices: string[], hasRemoteOrRecording: boolean) {
-  const usbCandidates = devices.filter((device) => !isRecordingHostAudioDevice(device));
-  const allInOne = usbCandidates.find(isAllInOneUsbDevice);
-  if (allInOne) return allInOne;
-  if (usbCandidates.length > 0) return usbCandidates[0];
-  return devices.length === 0 && hasRemoteOrRecording ? "教室电脑" : "";
-}
-
-function isAllInOneUsbDevice(device: string) {
-  return device.includes("一体机") || device.includes("会议屏") || device.includes("ClassIn");
 }
 
 function isControlHostDevice(device: string) {

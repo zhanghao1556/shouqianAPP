@@ -133,6 +133,6 @@ export const productRules: ProductRule[] = [
     matchedNeeds: ["recording", "localAmplification"],
     source: "音曼小振膜电容麦克风-LB102参数（铜管）.pdf",
     quantityRule: () => 0,
-    reason: () => "仅在音曼讲台区域扩声方案中手动选择；每只占一路带供电MIC输入。"
+    reason: () => "仅在音曼讲台区域扩声方案中手动选择；每只占一路MIC输入。"
   }
 ];

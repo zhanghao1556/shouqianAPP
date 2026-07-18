@@ -1,6 +1,10 @@
 import type { AppBrandId } from "../brand";
 import type { ClassroomProfile, Point, ProcessorTier } from "../types";
-import { getProcessorCapacity, getTeacherActivityZone } from "./lineArrayRules";
+import {
+  getProcessorCapacity,
+  getTeacherActivityZone,
+  getYinmanProcessorAlternativeTier
+} from "./lineArrayRules";
 
 export const HANGING_MIC_PRODUCT_ID = "HANGING-MIC";
 export const HANGING_MIC_RADIUS_M = 3;
@@ -34,12 +38,13 @@ export function getExistingMicInputDemand(profile: ClassroomProfile) {
 
 export function getHangingMicProcessorTier(
   profile: ClassroomProfile,
-  hangingMicDemand = getHangingMicCoverageDemand(profile)
+  hangingMicDemand = getHangingMicCoverageDemand(profile),
+  speakerCount = 0
 ): Exclude<ProcessorTier, "auto"> {
   const requested = profile.engineeringConstraints.processorTier ?? "auto";
   if (requested !== "auto") return requested;
   const totalDemand = getExistingMicInputDemand(profile) + hangingMicDemand;
-  return totalDemand <= getProcessorCapacity("twoMic") ? "twoMic" : "sixMic";
+  return getYinmanProcessorAlternativeTier(profile, speakerCount, totalDemand);
 }
 
 export function getHangingMicRemainingCapacity(

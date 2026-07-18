@@ -46,6 +46,7 @@ import headsetSplitterPanel from "../../../assets/external-headset-splitter-pane
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.svg";
 import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.svg";
 import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
+import hangingMicInterfacePanel from "../../../assets/yinman-hanging-mic-interface-panel.svg";
 import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.svg";
 import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.svg";
 import "./InterfaceWiringPreview.css";
@@ -73,6 +74,7 @@ const interfacePanelImages: Record<string, string> = {
   ring01: ring01InterfacePanel,
   ring03: ring03InterfacePanel,
   ring08: ring08RearPanel,
+  hangingMic: hangingMicInterfacePanel,
   ringOfA: ringOfAInterfacePanel,
   wirelessReceiver: wirelessReceiverRearPanel
 };
@@ -633,7 +635,7 @@ function getCableLegendDefinition(kind: CableLegendKind, fallbackLabel: string) 
   if (kind === "audio") return { label: "音频线", description: "红线接 +；白线接 -；屏蔽线接 G" };
   if (kind === "serial") return { label: "232线", description: "黄线 TX；绿线 RX；黑线 GND，TX/RX交叉" };
   if (kind === "network") return { label: "网线", description: "粗蓝线；T568B 1-8芯直通" };
-  if (kind === "usb") return { label: "USB线", description: "音频双向；RS232调试" };
+  if (kind === "usb") return { label: "USB线", description: "音频双向；内置232串口信号，可用于连接调试软件" };
   return { label: fallbackLabel, description: "按图中接口方向直连" };
 }
 
@@ -774,7 +776,7 @@ function buildEdgeDrawings(
     const laneOffset = (pairIndex - (pairCount - 1) / 2) * 34;
     const displayConductors = getDisplayConductors(edge);
     const route = edge.kind === "jumper"
-      ? getInternalJumperRoute(from, to, fromPosition, laneOffset)
+      ? getInternalJumperRoute(from, to, fromPosition, edge.jumperRoute, laneOffset)
       : findOpenCableRoute({
         from,
         to,
@@ -811,20 +813,22 @@ function buildEdgeDrawings(
         fromPosition
       );
       const bundledRoute = edge.kind === "jumper"
-        ? getInternalJumperRoute(conductorFrom, conductorTo, fromPosition, conductorOffset)
+        ? getInternalJumperRoute(conductorFrom, conductorTo, fromPosition, edge.jumperRoute, laneOffset + conductorOffset)
         : getEdgeRoute(from, to, route.offset + conductorOffset);
-      const paths = getBundledConductorSegments(
-        conductorFrom,
-        conductorTo,
-        bundledRoute,
-        displayConductors.length > 1 ? 28 : 18,
-        fromFanOffset,
-        toFanOffset
-      );
+      const paths = edge.kind === "jumper"
+        ? { trunkPath: bundledRoute.path, fromLeadPath: "", toLeadPath: "" }
+        : getBundledConductorSegments(
+            conductorFrom,
+            conductorTo,
+            bundledRoute,
+            displayConductors.length > 1 ? 28 : 18,
+            fromFanOffset,
+            toFanOffset
+          );
       return {
         conductor,
         ...paths,
-        strokeWidth: isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
+        strokeWidth: edge.kind === "jumper" ? 3.2 : isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
         needsOutline: conductor.color.toLowerCase() === "#ffffff"
       };
     });
@@ -931,6 +935,9 @@ function findReferenceBadgePoint(
 }
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {
+  if (edge.kind === "jumper") {
+    return [getCollapsedCableConductor(edge, "jumper", "音频跳线", "#b91c1c", "+/-/G")];
+  }
   if (isNetworkEdge(edge)) {
     return [getCollapsedCableConductor(edge, "network", "网线", "#2563eb", "RJ45")];
   }
@@ -1023,18 +1030,33 @@ function getInternalJumperRoute(
   from: { x: number; y: number },
   to: { x: number; y: number },
   node: WiringNodePosition,
+  routeSide?: InterfaceWiringEdge["jumperRoute"],
   laneOffset = 0
 ) {
-  const useLeftSide = (from.x + to.x) / 2 <= node.centerX;
-  const side = useLeftSide ? -1 : 1;
-  const nodeEdgeX = useLeftSide ? node.x : node.x + node.width;
-  const bendX = nodeEdgeX + side * (32 + laneOffset);
-  const control1 = { x: bendX, y: from.y };
-  const control2 = { x: bendX, y: to.y };
+  const resolvedSide = routeSide ?? ((from.x + to.x) / 2 <= node.centerX ? "left" : "right");
+  const bulge = 44 + laneOffset;
+  const controlDistance = bulge * 4 / 3;
+  const isHorizontalRoute = resolvedSide === "top" || resolvedSide === "bottom";
+  const bendX = resolvedSide === "left"
+    ? Math.min(from.x, to.x) - controlDistance
+    : resolvedSide === "right" ? Math.max(from.x, to.x) + controlDistance : undefined;
+  const bendY = resolvedSide === "top"
+    ? Math.min(from.y, to.y) - controlDistance
+    : resolvedSide === "bottom" ? Math.max(from.y, to.y) + controlDistance : undefined;
+  const control1 = isHorizontalRoute
+    ? { x: from.x, y: bendY! }
+    : { x: bendX!, y: from.y };
+  const control2 = isHorizontalRoute
+    ? { x: to.x, y: bendY! }
+    : { x: bendX!, y: to.y };
   return {
     path: `M ${from.x} ${from.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${to.x} ${to.y}`,
-    labelX: bendX,
-    labelY: (from.y + to.y) / 2,
+    labelX: isHorizontalRoute
+      ? (from.x + to.x) / 2
+      : resolvedSide === "left" ? Math.min(from.x, to.x) - bulge : Math.max(from.x, to.x) + bulge,
+    labelY: isHorizontalRoute
+      ? resolvedSide === "top" ? Math.min(from.y, to.y) - bulge : Math.max(from.y, to.y) + bulge
+      : (from.y + to.y) / 2,
     offset: laneOffset,
     labelProgress: 0.5,
     from,
