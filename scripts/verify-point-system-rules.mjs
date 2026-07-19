@@ -425,6 +425,7 @@ const alternativeProcessorSpeakerBoundaries = [
   { count: 5, tier: "sixMic", direct: 5, amplifier: 0 },
   { count: 8, tier: "sixMic", direct: 8, amplifier: 0 },
   { count: 9, tier: "twoMic", direct: 4, amplifier: 5 },
+  { count: 10, tier: "twoMic", direct: 4, amplifier: 6 },
   { count: 12, tier: "twoMic", direct: 4, amplifier: 8 },
   { count: 13, tier: "sixMic", direct: 8, amplifier: 5 }
 ];
@@ -436,14 +437,15 @@ for (const expected of alternativeProcessorSpeakerBoundaries) {
     amplifierSpeakerCount: expected.amplifier,
     requiresExternalAmplifier: expected.amplifier > 0
   });
-  const result = generateEngineeringOutputs(makeProfile({
+  const boundaryProfile = makeProfile({
     length: 8,
     width: 8,
     scope: "podium",
     microphoneSolution: "hangingMic",
     speakerProductOverride: "wall",
     overheadSpeakerMounting: "available"
-  }), { "COLUMN-SPEAKER": expected.count }, "yinman");
+  });
+  const result = generateEngineeringOutputs(boundaryProfile, { "COLUMN-SPEAKER": expected.count }, "yinman");
   assert.equal(result.generatedPoints.filter((point) => point.type === "speaker").length, expected.count);
   assert.equal(
     result.productSelection.find((item) => item.category === "processor")?.name,
@@ -458,6 +460,15 @@ for (const expected of alternativeProcessorSpeakerBoundaries) {
   const amplifierLine = result.connectionLines.find((line) => line.id === "processor-amplifier-speakers");
   if (expected.amplifier > 0) assert.match(amplifierLine?.toDevice ?? "", new RegExp("× " + expected.amplifier + "$"));
   else assert.equal(amplifierLine, undefined);
+  const customerTopology = getTopologyLayoutSnapshot(
+    boundaryProfile,
+    getCustomerVisibleConnectionLines(result.connectionLines),
+    getCustomerVisiblePoints(result.generatedPoints)
+  );
+  assert.equal(customerTopology.nodes.find((node) => node.key === "speaker-dt")?.quantity, expected.direct);
+  assert.equal(customerTopology.edges.find((edge) => edge.id === "processor-speaker-direct")?.label, "音箱线 ×" + expected.direct);
+  assert.equal(customerTopology.nodes.find((node) => node.key === "speaker-amplifier")?.quantity, expected.amplifier || undefined);
+  assert.equal(customerTopology.edges.find((edge) => edge.id === "processor-amplifier-speakers")?.label, expected.amplifier > 0 ? "音箱线 ×" + expected.amplifier : undefined);
 }
 const interfaceForcedAj600 = generateEngineeringOutputs(makeProfile({
   length: 8,
@@ -471,7 +482,7 @@ const interfaceForcedAj600 = generateEngineeringOutputs(makeProfile({
 assert.equal(interfaceForcedAj600.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "processor-speaker-direct")?.toDevice ?? "", /× 8$/);
 assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "processor-amplifier-speakers")?.toDevice ?? "", /× 1$/);
-console.log("PASS AJ200/AJ600 4/5/8/9/12/13 speaker tiers preserve interface-first selection and physical direct/amplifier splits");
+console.log("PASS AJ200/AJ600 4/5/8/9/10/12/13 speaker tiers preserve interface-first selection and physical direct/amplifier splits in formal connections and customer topology");
 
 const hybridProfile12 = makeProfile({
   length: 12.4,

@@ -1868,9 +1868,9 @@ function isTwoInTwoOutAudioConnection(connection: ConnectionLine) {
 function getTopologyCableQuantity(connection: ConnectionLine, fromKey: string, toKey: string, speakerCount: number) {
   if (connection.cableType.includes("无线信号")) return getTopologyQuantityFromText(connection.fromDevice) ?? 1;
   if (isTopologySpeakerKey(fromKey) || isTopologySpeakerKey(toKey)) {
-    if (connection.speakerSignalMode) {
-      return getTopologyQuantityFromText(connection.fromDevice) ?? getTopologyQuantityFromText(connection.toDevice) ?? 1;
-    }
+    const explicitSpeakerQuantity = getTopologySpeakerEndpointQuantity(connection, fromKey, toKey);
+    if (explicitSpeakerQuantity !== undefined) return Math.max(1, explicitSpeakerQuantity);
+    if (connection.speakerSignalMode) return 1;
     if (fromKey === "speaker-amplifier" || toKey === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
     if (fromKey === "mainMic" || toKey === "mainMic" || fromKey === "processorHost" || toKey === "processorHost") {
       return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));
@@ -1888,6 +1888,12 @@ function getTopologyCableQuantity(connection: ConnectionLine, fromKey: string, t
     return getTopologyQuantityFromText(connection.fromDevice) ?? getTopologyQuantityFromText(connection.toDevice) ?? 1;
   }
   return 1;
+}
+
+function getTopologySpeakerEndpointQuantity(connection: ConnectionLine, fromKey: string, toKey: string) {
+  if (isTopologySpeakerKey(fromKey)) return getTopologyQuantityFromText(connection.fromDevice);
+  if (isTopologySpeakerKey(toKey)) return getTopologyQuantityFromText(connection.toDevice);
+  return undefined;
 }
 
 function getTopologyBottomLeftNotes(connections: ConnectionLine[]) {
@@ -2080,8 +2086,10 @@ function getTopologySpeakerLabel(type: "吸顶" | "壁挂", key: string) {
 }
 
 function getTopologySpeakerQuantity(key: string, speakerCount: number, device: string) {
+  const explicitQuantity = getTopologyQuantityFromText(device);
+  if (explicitQuantity !== undefined) return Math.max(1, explicitQuantity);
   if (key === "speaker-afc" || key === "speaker-afc-center-fill" || key === "speaker-without-line-array-afc") {
-    return getTopologyQuantityFromText(device) ?? 1;
+    return 1;
   }
   if (key === "speaker-amplifier") return Math.max(1, getExternalSpeakerCount(speakerCount));
   return Math.max(1, Math.min(speakerCount, MAX_SPEAKERS_PER_DT));

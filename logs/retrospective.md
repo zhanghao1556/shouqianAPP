@@ -2255,3 +2255,10 @@ PowerShell reminder:
 
 - Re-read the project rules and both closing logs before touching code after an overnight boundary. A clean synchronized branch and a healthy existing dev server should be reused rather than rebuilt or restarted.
 - The managed executor still redirects an explicit PowerShell 7 path to the inaccessible WindowsApps alias. Record the fallback once per work session, then use `cmd.exe` plus UTF-8-aware Node reads instead of repeatedly probing PowerShell paths.
+
+### 2026-07-19 topology capacity parity investigation
+
+- A topology that shows AJ200 driving eight passive speakers is electrically inconsistent even when the BOM and total speaker count are correct. Formal connection lines, customer-visible aggregation and interface wiring must all consume the same selected-processor SPK capacity.
+- When regression tests already assert the expected `4+N` split but a long-lived page shows `8+N`, compare the current tab with a fresh module load before editing valid rules. Fix the shared data source only if a fresh page reproduces the mismatch.
+- Generated topology is a projection of formal connections, not a second capacity calculator. When a speaker endpoint already carries an explicit `xN`, use that quantity for both the node and cable label; retain global speaker-count formulas only as compatibility fallbacks for older lines without explicit quantities.
+- Test customer-visible projections as well as engineering outputs. A connection-rule assertion can pass while a drawing silently recomputes a different count after internal fields are stripped; the 10-speaker `AJ200 4 + amplifier 6` case now guards that boundary directly.
