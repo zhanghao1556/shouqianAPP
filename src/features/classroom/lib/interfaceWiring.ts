@@ -175,15 +175,15 @@ const generatedSpeakerConnectionPrefixes = [
 export function buildInterfaceWiringModel(input: InterfaceWiringBuildInput): InterfaceWiringModel {
   if (input.brandId !== "yinman") {
     return {
-      title: "接口接线图拟调整预览",
+      title: "接口接线图",
       status: "review",
       nodes: [],
       edges: [],
       findings: [{
         code: "brand.yinman-only",
         severity: "info",
-        title: "音曼内部校准",
-        message: "本轮接口接线候选仅用于音曼开发页。"
+        title: "接口接线品牌范围",
+        message: "当前品牌不生成音曼接口接线图。"
       }],
       generatedFrom: "calibrationCandidate"
     };
@@ -226,7 +226,7 @@ class CandidateWiringBuilder {
         ? "review"
         : "ready";
     return {
-      title: "接口接线图拟调整预览",
+      title: "接口接线图",
       status,
       rootNodeId,
       nodes: Array.from(this.nodes.values()),
@@ -294,8 +294,8 @@ class CandidateWiringBuilder {
       this.addFinding({
         code: "processor.candidate-difference",
         severity: "info",
-        title: "候选处理器调整",
-        message: `正式输出当前映射为${formalModel}，接口接线候选按已确认规则使用${this.candidateProcessor}。`,
+        title: "处理器接口校核调整",
+        message: "设备清单与接口校核采用的处理器能力不一致，请按接口校核结果复核设备清单。",
         nodeId: "processor"
       });
     }
@@ -335,8 +335,8 @@ class CandidateWiringBuilder {
       this.addFinding({
         code: "ring08.a1-a2-capacity",
         severity: "hard",
-        title: "RING08接口超过上限",
-        message: `AJ350只有A1、A2两个RING08接口，当前${count}只无法由一台主机接入，建议更换设备或拆分系统。`,
+        title: "大圆盘阵麦接口超过上限",
+        message: `高性能处理器只有A1、A2两个大圆盘阵麦接口，当前${count}只无法由一台主机接入，建议更换设备或拆分系统。`,
         nodeId: processor.id
       });
     }
@@ -469,7 +469,7 @@ class CandidateWiringBuilder {
         code: "processor.total-mic-capacity",
         severity: "hard",
         title: "处理器MIC总需求超过上限",
-        message: `当前需要${totalMicDemand}个MIC输入，${this.candidateProcessor}只有${micCapacity}个，无法生成超额接口连线，建议更换设备。`,
+        message: `当前需要${totalMicDemand}个MIC输入，当前处理器只有${micCapacity}个，无法生成超额接口连线，建议更换设备。`,
         nodeId: processor.id
       });
     }
@@ -1500,7 +1500,7 @@ class CandidateWiringBuilder {
         title: hasPartialPanel ? "完整接口图待补充" : "设备接口图待补充",
         message: hasPartialPanel
           ? `${node.label}当前资料只确认了部分接口面，未确认位置继续使用文字标注，不伪造接口位置。`
-          : `${node.label}尚无已确认的完整背面或接口面板图，候选图仅保留接口文字，不借用正面实物图。`,
+          : `${node.label}尚无已确认的完整背面或接口面板图，接线图仅保留接口文字，不借用正面实物图。`,
         nodeId: node.id
       });
     });
@@ -1854,6 +1854,47 @@ export function getInterfaceWiringUsageDeviceLabel(node: InterfaceWiringNode, po
 
 export function getInterfaceWiringTableCableLabel(cableType: string) {
   return cableType.replace(/(?:\s*[×xX]\s*\d+)+\s*$/, "").trim();
+}
+
+export interface InterfaceWiringUsageRow {
+  edgeId: string;
+  referenceNumber: number;
+  fromDevice: string;
+  toDevice: string;
+  fromPort: string;
+  toPort: string;
+  fromInterfaceType: string;
+  toInterfaceType: string;
+  cableType: string;
+  connectionMethod: string;
+  confirmed: boolean;
+}
+
+export function getInterfaceWiringUsageRows(
+  model: InterfaceWiringModel,
+  portReferenceNumbers = getInterfaceWiringPortReferenceNumbers(model)
+): InterfaceWiringUsageRow[] {
+  const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
+  return model.edges.flatMap((edge, index) => {
+    const fromNode = nodeMap.get(edge.fromNodeId);
+    const toNode = nodeMap.get(edge.toNodeId);
+    const fromPort = fromNode?.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = toNode?.ports.find((port) => port.id === edge.toPortId);
+    if (!fromNode || !toNode || !fromPort || !toPort) return [];
+    return [{
+      edgeId: edge.id,
+      referenceNumber: portReferenceNumbers[edge.fromPortId] ?? portReferenceNumbers[edge.toPortId] ?? index + 1,
+      fromDevice: getInterfaceWiringUsageDeviceLabel(fromNode, fromPort),
+      toDevice: getInterfaceWiringUsageDeviceLabel(toNode, toPort),
+      fromPort: fromPort.label,
+      toPort: toPort.label,
+      fromInterfaceType: fromPort.interfaceType,
+      toInterfaceType: toPort.interfaceType,
+      cableType: getInterfaceWiringTableCableLabel(edge.cableType),
+      connectionMethod: edge.connectionMethod,
+      confirmed: fromPort.confirmed && toPort.confirmed
+    }];
+  });
 }
 
 const COMPACT_LAYOUT_ROW_GAP = 32;

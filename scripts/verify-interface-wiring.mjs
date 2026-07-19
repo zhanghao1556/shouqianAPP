@@ -12,6 +12,7 @@ import {
   getInterfaceWiringLayout,
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringTableCableLabel,
+  getInterfaceWiringUsageRows,
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
@@ -1131,12 +1132,39 @@ const meetingAllInOneUsb = buildModel(makeProfile({
 assert.equal(node(meetingAllInOneUsb.model, "meeting-all-in-one").productId, OPS_ALL_IN_ONE_PORT_PROFILE_ID);
 console.log("PASS ClassIn and meeting all-in-ones share the OPS panel, prefer USB Audio and retain analog input/output fallback");
 
+const singleLineUsageRows = getInterfaceWiringUsageRows(singleLine.model);
+assert.equal(singleLineUsageRows.length, singleLine.model.edges.length);
+assert.deepEqual(
+  Object.keys(singleLineUsageRows[0]).sort(),
+  [
+    "cableType",
+    "confirmed",
+    "connectionMethod",
+    "edgeId",
+    "fromDevice",
+    "fromInterfaceType",
+    "fromPort",
+    "referenceNumber",
+    "toDevice",
+    "toInterfaceType",
+    "toPort"
+  ]
+);
+assert.equal(new Set(singleLineUsageRows.map((row) => row.referenceNumber)).size, singleLineUsageRows.length);
+console.log("PASS interface usage rows provide one structured report row per physical cable");
+
 const wiringPreviewSource = readFileSync("src/features/classroom/components/InterfaceWiringPreview.tsx", "utf8");
 const wiringPreviewStyles = readFileSync("src/features/classroom/components/InterfaceWiringPreview.css", "utf8");
+const engineeringAppSource = readFileSync("src/features/classroom/ClassroomEngineeringApp.tsx", "utf8");
+const interfaceWiringSource = readFileSync("src/features/classroom/lib/interfaceWiring.ts", "utf8");
+const pdfExporterSource = readFileSync("src/features/classroom/lib/pdfExporter.ts", "utf8");
+const imageExporterSource = readFileSync("src/features/classroom/lib/imageExporter.ts", "utf8");
+const viteConfigSource = readFileSync("vite.config.ts", "utf8");
+const packageJsonSource = readFileSync("package.json", "utf8");
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
 assert.match(wiringPreviewSource, /external-podium-computer-panel\.svg/);
 assert.match(wiringPreviewSource, /podiumComputer:\s*podiumComputerRearPanel/);
-assert.match(wiringPreviewSource, /<td><ConnectionMethodCell value=\{edge\.connectionMethod\} \/><\/td>/);
+assert.match(wiringPreviewSource, /<td><ConnectionMethodCell value=\{row\.connectionMethod\} \/><\/td>/);
 assert.match(
   wiringPreviewSource,
   /function ConnectionMethodCell[\s\S]*?value\.indexOf\(WIRED_MIC_LINE_IN_POWER_NOTE\)[\s\S]*?<strong className="interfaceWiringInlineWarning">\{WIRED_MIC_LINE_IN_POWER_NOTE\}<\/strong>/
@@ -1145,7 +1173,7 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringInlineWarning \{[\s\S]*?font
 assert.doesNotMatch(wiringPreviewSource, /\*\*[^*\r\n]*WIRED_MIC_LINE_IN_POWER_NOTE[^*\r\n]*\*\*/);
 assert.match(wiringPreviewSource, /const recordingInputOptions:[\s\S]*?3\.5mm[\s\S]*?凤凰 \+\/-\/G[\s\S]*?凤凰 L\/R\/G/);
 assert.match(wiringPreviewSource, /selections\[node\.id\] \?\? "balanced"/);
-assert.match(wiringPreviewSource, /\[nodeId\]: mode/);
+assert.match(engineeringAppSource, /\[nodeId\]: mode/);
 assert.match(wiringPreviewSource, /data-recording-input-option=\{option\.mode\}/);
 assert.match(wiringPreviewSource, /option\.region\.x \/ 960 \* imageRect\.width/);
 assert.match(wiringPreviewSource, /option\.region\.y \/ 260 \* imageRect\.height/);
@@ -1161,8 +1189,32 @@ assert.doesNotMatch(wiringPreviewSource, /laneOffset \+ conductorOffset/);
 assert.match(wiringPreviewSource, /resolvedSide === "left"[\s\S]*?resolvedSide === "right"[\s\S]*?resolvedSide === "top"[\s\S]*?resolvedSide === "bottom"/);
 assert.match(wiringPreviewSource, /if \(edge\.kind === "jumper"\) \{\s*return \[getCollapsedCableConductor/);
 assert.match(wiringPreviewSource, /const bulge = 44 \+ laneOffset;[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
-assert.match(wiringPreviewSource, /const rows = model\.edges\.flatMap/);
+assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(model, portReferenceNumbers\)/);
 assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
+assert.match(wiringPreviewSource, /aria-label="接口接线图与接口占用表"/);
+assert.match(wiringPreviewSource, /aria-label="音曼接口接线图"/);
+assert.doesNotMatch(wiringPreviewSource, /拟调整预览|尚未写入正式规则|内部校准|当前候选|候选主机/);
+assert.match(engineeringAppSource, /const YinmanInterfaceWiring = __ENABLE_YINMAN_INTERFACE_WIRING__/);
+assert.match(engineeringAppSource, /brand\.id === "yinman" && YinmanInterfaceWiring/);
+assert.doesNotMatch(engineeringAppSource, /brand\.id === "yinman" && !isReleaseBuild\(\)/);
+assert.match(engineeringAppSource, /exportPdfReport\(profile, outputs, quantityOverrides, recordingInputSelections\)/);
+assert.doesNotMatch(interfaceWiringSource, /接口接线图拟调整预览|音曼内部校准|接口接线候选|候选图仅保留|AJ350只有A1、A2|候选处理器调整/);
+assert.match(pdfExporterSource, /svg\[aria-label="音曼接口接线图"\]/);
+assert.match(pdfExporterSource, /svg\[aria-label\^="\$\{prefix\}"\]\[aria-label\$="点位图"\]/);
+assert.match(pdfExporterSource, /buildInterfaceWiringReportRows[\s\S]*?getInterfaceWiringUsageRows/);
+assert.match(pdfExporterSource, /renderImagePage\("接口接线图", interfaceWiringImage\)/);
+assert.match(pdfExporterSource, /renderInterfaceUsagePages\(interfaceWiringRows\)/);
+assert.match(pdfExporterSource, /接口占用表（续）/);
+assert.match(pdfExporterSource, /drawPageNumber\(canvas, index \+ 1, pages\.length\)/);
+assert.match(imageExporterSource, /querySelectorAll\("image, img"\)/);
+assert.match(imageExporterSource, /getInterfaceWiringExportCss\(svg\)/);
+assert.match(imageExporterSource, /convertInterfaceForeignObjects\(svg, clone\)/);
+assert.match(imageExporterSource, /data-interface-export-object/);
+assert.match(viteConfigSource, /__ENABLE_YINMAN_INTERFACE_WIRING__/);
+assert.match(viteConfigSource, /inlineDynamicImports: true/);
+assert.match(packageJsonSource, /set APP_BRAND=yinyi&& npm\.cmd run build/);
+assert.match(packageJsonSource, /set APP_BRAND=yinman&& npm\.cmd run build/);
+console.log("PASS formal Yinman wiring is release-enabled, report-backed and build-isolated from Yinyi");
 assert.match(wiringPreviewSource, /设备（从 \/ 到）/);
 assert.match(wiringPreviewSource, /接口（从 \/ 到）/);
 assert.doesNotMatch(wiringPreviewSource, /data-reference-side/);
@@ -1178,7 +1230,7 @@ assert.doesNotMatch(wiringPreviewStyles, /interfaceWiringLegendSwatch\.speaker i
 assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2"), "音箱线");
 assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2 ×2"), "音箱线");
 assert.equal(getInterfaceWiringTableCableLabel("音频线 ×2"), "音频线");
-assert.match(wiringPreviewSource, /getInterfaceWiringTableCableLabel\(edge\.cableType\)/);
+assert.match(interfaceWiringSource, /cableType: getInterfaceWiringTableCableLabel\(edge\.cableType\)/);
 assert.doesNotMatch(wiringPreviewSource, /edge\.cableType\}\{edge\.quantity/);
 console.log("PASS each cable has one centered reference and one fully expanded from-to usage row");
 console.log("PASS external recording selectors are independent and wiring SVG contains no arrows");

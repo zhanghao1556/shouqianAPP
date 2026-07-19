@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
 const distDir = path.join(root, "dist");
+const requestedBrand = getArgValue("--brand");
 
 const brands = [
   {
@@ -12,7 +13,7 @@ const brands = [
     label: "音翼",
     appName: "音翼AI售前工具",
     slug: "yinyi-ai-presales-tool",
-    forbidden: ["音曼", "Yinman AI Presales Tool", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "吊麦", "小圆盘阵麦", "音频扩展器", "\uFFFD"],
+    forbidden: ["音曼", "Yinman AI Presales Tool", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "吊麦", "小圆盘阵麦", "音频扩展器", "拟调整预览", "尚未写入正式规则", "内部校准", "\uFFFD"],
     forbiddenAssets: [
       "yinman-logo.png",
       "yinman-array-mic-pointmap.png",
@@ -30,7 +31,7 @@ const brands = [
     label: "音曼",
     appName: "音曼AI售前工具",
     slug: "yinman-ai-presales-tool",
-    forbidden: ["音翼", "Yinyi AI Presales Tool", "DT2 Pro", "DT2 pro", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "\uFFFD"],
+    forbidden: ["音翼", "Yinyi AI Presales Tool", "DT2 Pro", "DT2 pro", "翼欧", "拟调整预览", "尚未写入正式规则", "内部校准", "\uFFFD"],
     forbiddenAssets: ["yinyi-tech-logo.svg", "yiou-logo.png", "topology-array-mic.png"]
   }
 ];
@@ -40,7 +41,9 @@ const distWorkspaceTitleRule = extractCssRule(distCss, ".engineeringHeader .work
 const newestSourceStat = newestRelevantSourceStat();
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const scriptChecks = checkReleaseScripts(packageJson.scripts ?? {});
-const results = brands.map(verifyBrand);
+const selectedBrands = requestedBrand ? brands.filter((brand) => brand.id === requestedBrand) : brands;
+if (!selectedBrands.length) throw new Error(`Unknown release brand: ${requestedBrand}`);
+const results = selectedBrands.map(verifyBrand);
 
 const summary = {
   scriptChecks,
@@ -82,7 +85,8 @@ function verifyBrand(brand) {
     brand.appName,
     "高端教育空间声学方案",
     ".engineeringHeader .workspaceTitle",
-    "viewport-fit=cover"
+    "viewport-fit=cover",
+    ...(brand.id === "yinman" ? ["接口接线图", "接口占用表", "音曼接口接线图"] : [])
   ];
 
   return {
@@ -188,6 +192,11 @@ function checkReleaseScripts(scripts) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getArgValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
 }
 
 function findForbiddenAssetMatches(html, assetNames) {

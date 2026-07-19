@@ -42,6 +42,9 @@ export function EngineeringOutputs({
   onLegacySpeakerPointRemoveLast,
   onLegacySpeakerPointTargetChange
 }: EngineeringOutputsProps) {
+  const readyOutputSummary = __ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman"
+    ? "已生成设备清单、点位图、拓扑图、接口接线图和接口占用表。"
+    : "已生成设备清单、点位图和拓扑图。";
   const brand = getAppBrand();
   const selectedSpeakerProductId = outputs.solutionSelection.speaker.selected === "ceiling" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
   const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId, outputs.solutionSelection.microphone.selected);
@@ -64,7 +67,7 @@ export function EngineeringOutputs({
         <div>
           <span className="panelStep">03</span>
           <h2>方案输出</h2>
-          <p>{outputs.solutionSelection.drawingBlocked ? "已保留客户选型，点位图与拓扑待改选后生成。" : outputs.isFinalReady ? "已生成设备清单、点位图和拓扑图。" : "补齐关键信息后生成方案输出。"}</p>
+          <p>{outputs.solutionSelection.drawingBlocked ? "已保留客户选型，点位图与拓扑待改选后生成。" : outputs.isFinalReady ? readyOutputSummary : "补齐关键信息后生成方案输出。"}</p>
         </div>
       </div>
 

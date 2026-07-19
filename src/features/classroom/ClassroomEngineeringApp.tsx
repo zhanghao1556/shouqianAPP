@@ -7,6 +7,7 @@ import { ProfilePanel } from "./components/ProfilePanel";
 import { Questionnaire } from "./components/Questionnaire";
 import { exportPdfReport } from "./lib/pdfExporter";
 import { generateEngineeringOutputs } from "./lib/engineeringRules";
+import type { RecordingInputMode, RecordingInputSelections } from "./lib/interfaceWiring";
 import { normalizeProfile } from "./lib/profileNormalization";
 import { getAppBrand, getBrandLogoSrc } from "./brand";
 import type { ClassroomProfile, LegacySpeakerType, LegacyWallAdjustability, Point, QuantityOverrides } from "./types";
@@ -22,7 +23,7 @@ const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCE
 const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
 const processorOverrideIds = new Set(["AUDIO-PROCESSOR-HOST"]);
 const connectionOverrideIds = new Set(["YINMAN-AUDIO-EXTENDER", "USB-AUDIO-CABLE"]);
-const InternalInterfaceWiringPreview = __ENABLE_CALIBRATION_WORKBENCHES__
+const YinmanInterfaceWiring = __ENABLE_YINMAN_INTERFACE_WIRING__
   ? lazy(() => import("./components/InterfaceWiringPreview").then((module) => ({ default: module.InterfaceWiringPreview })))
   : null;
 
@@ -31,6 +32,7 @@ export function ClassroomEngineeringApp() {
   const [initialDraft] = useState(() => (isReleaseBuild() ? createCleanReleasePresalesDraft() : loadSavedPresalesDraft()));
   const [profile, setProfile] = useState<ClassroomProfile>(() => sanitizeHiddenProfileState(initialDraft.profile));
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>(() => initialDraft.quantityOverrides);
+  const [recordingInputSelections, setRecordingInputSelections] = useState<RecordingInputSelections>({});
   const importInputRef = useRef<HTMLInputElement>(null);
   const outputs = useMemo(() => generateEngineeringOutputs(profile, quantityOverrides), [profile, quantityOverrides]);
 
@@ -170,7 +172,7 @@ export function ClassroomEngineeringApp() {
             accept="application/json,.json,text/html,.html,application/pdf,.pdf"
             onChange={(event) => importReport(event.target.files?.[0])}
           />
-          <button type="button" onClick={() => void exportPdfReport(profile, outputs, quantityOverrides)}>
+          <button type="button" onClick={() => void exportPdfReport(profile, outputs, quantityOverrides, recordingInputSelections)}>
             <Download size={16} /> 导出报告
           </button>
         </div>
@@ -197,9 +199,17 @@ export function ClassroomEngineeringApp() {
             onLegacySpeakerPointRemoveLast={removeLastLegacySpeakerPoint}
             onLegacySpeakerPointTargetChange={updateLegacySpeakerPointTarget}
           />
-          {brand.id === "yinman" && !isReleaseBuild() && InternalInterfaceWiringPreview && (
-            <Suspense fallback={<div className="interfaceWiringLoading">正在生成接口接线预览...</div>}>
-              <InternalInterfaceWiringPreview profile={profile} outputs={outputs} brandId={brand.id} />
+          {brand.id === "yinman" && YinmanInterfaceWiring && (
+            <Suspense fallback={<div className="interfaceWiringLoading">正在生成接口接线图...</div>}>
+              <YinmanInterfaceWiring
+                profile={profile}
+                outputs={outputs}
+                brandId={brand.id}
+                recordingInputSelections={recordingInputSelections}
+                onRecordingInputSelectionChange={(nodeId: string, mode: RecordingInputMode) => {
+                  setRecordingInputSelections((current) => ({ ...current, [nodeId]: mode }));
+                }}
+              />
             </Suspense>
           )}
         </section>

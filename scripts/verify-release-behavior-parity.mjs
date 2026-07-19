@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
+const requestedBrand = getArgValue("--brand");
 const browser = await launchBrowser();
 const server = http.createServer((request, response) => {
   const pathname = new URL(request.url, "http://127.0.0.1").pathname;
@@ -23,12 +24,19 @@ const address = server.address();
 const distUrl = `http://127.0.0.1:${address.port}/`;
 
 try {
-  for (const brand of ["yinyi", "yinman"]) {
+  const brands = requestedBrand ? [requestedBrand] : ["yinyi", "yinman"];
+  for (const brand of brands) {
+    if (brand !== "yinyi" && brand !== "yinman") throw new Error(`Unknown release brand: ${brand}`);
     const appName = brand === "yinman" ? "音曼AI售前工具" : "音翼AI售前工具";
     const expected = await renderFixture(distUrl, brand, false);
     const releasePath = path.join(latestReleaseDir(appName), `${appName}-1.1.html`);
     const actual = await renderFixture(pathToFileUrl(releasePath), brand, true);
-    if (actual.pointMap !== expected.pointMap || actual.deviceList !== expected.deviceList) {
+    if (
+      actual.pointMap !== expected.pointMap ||
+      actual.deviceList !== expected.deviceList ||
+      actual.interfaceWiring !== expected.interfaceWiring ||
+      actual.interfaceUsage !== expected.interfaceUsage
+    ) {
       throw new Error(`${appName} final release behavior differs from current dist for the fixed classroom fixture.`);
     }
     console.log(`PASS ${appName}: final HTML matches current dist business output`);
@@ -66,8 +74,35 @@ async function renderFixture(url, brand, isRelease) {
     return clone.outerHTML;
   });
   const deviceList = await page.locator(".tableBox").first().textContent();
+  let interfaceWiring = "";
+  let interfaceUsage = "";
+  if (brand === "yinman") {
+    const wiringSelector = 'svg[aria-label="音曼接口接线图"]';
+    await page.waitForSelector(wiringSelector);
+    interfaceWiring = await page.locator(wiringSelector).evaluate((svg) => {
+      const clone = svg.cloneNode(true);
+      clone.querySelectorAll("image, img").forEach((image) => {
+        image.removeAttribute("href");
+        image.removeAttribute("xlink:href");
+        image.removeAttribute("src");
+      });
+      return clone.outerHTML;
+    });
+    interfaceUsage = (await page.locator(".interfaceWiringPortTable").textContent()).replace(/\s+/g, " ").trim();
+    const customerText = await page.locator("body").innerText();
+    for (const model of ["AJ200", "AJ350", "AJ600", "SA110", "AP150", "RING08"]) {
+      if (customerText.includes(model)) throw new Error(`Customer-visible Yinman output exposes internal model: ${model}`);
+    }
+  } else if (await page.locator(".interfaceWiringPreview").count()) {
+    throw new Error("Yinyi release unexpectedly renders the Yinman interface-wiring module.");
+  }
   await context.close();
-  return { pointMap, deviceList: deviceList.replace(/\s+/g, " ").trim() };
+  return {
+    pointMap,
+    deviceList: deviceList.replace(/\s+/g, " ").trim(),
+    interfaceWiring,
+    interfaceUsage
+  };
 }
 
 async function launchBrowser() {
@@ -105,4 +140,9 @@ function pathToFileUrl(filePath) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getArgValue(name) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : "";
 }

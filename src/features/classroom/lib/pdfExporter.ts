@@ -16,12 +16,14 @@ import { getSpeakerModelName } from "./speakerRules";
 import { svgToPngDataUrl } from "./imageExporter";
 import { formatBrandText, getAppBrand } from "../brand";
 import { getCustomerPointValidationStatus } from "./pointValidation";
+import type { InterfaceWiringUsageRow, RecordingInputSelections } from "./interfaceWiring";
 
 const getInstallationSelector = () => {
   const prefix = getAppBrand().id === "yinman" ? "音曼" : "音翼";
-  return `svg[aria-label="${prefix}阵列麦与音箱点位图"], svg[aria-label="${prefix}阵列麦点位图"], svg[aria-label="${prefix}线阵麦与音箱点位图"], svg[aria-label="${prefix}线阵麦点位图"]`;
+  return `svg[aria-label^="${prefix}"][aria-label$="点位图"]`;
 };
 const getTopologySelector = () => `svg[aria-label="${getAppBrand().id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
+const getInterfaceWiringSelector = () => 'svg[aria-label="音曼接口接线图"]';
 const pdfPageWidthPx = 1240;
 const pdfPageHeightPx = 1754;
 const pdfPageWidthPt = 595.28;
@@ -81,11 +83,23 @@ const getReportTheme = (): ReportTheme => getAppBrand().id === "yinman"
       sideGradient: "rgba(18, 168, 160, 0.13)"
     };
 
-export const exportPdfReport = async (profile: ClassroomProfile, outputs: GeneratedOutputs, quantityOverrides: QuantityOverrides = {}) => {
+export const exportPdfReport = async (
+  profile: ClassroomProfile,
+  outputs: GeneratedOutputs,
+  quantityOverrides: QuantityOverrides = {},
+  recordingInputSelections: RecordingInputSelections = {}
+) => {
   const pointMapSvg = document.querySelector<SVGSVGElement>(getInstallationSelector());
   const topologySvg = document.querySelector<SVGSVGElement>(getTopologySelector());
   const pointMapImage = pointMapSvg ? await svgToPngDataUrl(pointMapSvg) : "";
   const topologyImage = topologySvg ? await svgToPngDataUrl(topologySvg) : "";
+  let interfaceWiringImage = "";
+  let interfaceWiringRows: InterfaceWiringUsageRow[] = [];
+  if (__ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman") {
+    const interfaceWiringSvg = await waitForInterfaceWiringSvg();
+    interfaceWiringImage = interfaceWiringSvg ? await svgToPngDataUrl(interfaceWiringSvg) : "";
+    interfaceWiringRows = await buildInterfaceWiringReportRows(profile, outputs, recordingInputSelections);
+  }
   const payload = encodeReportPayload({
     version: "1.1-internal-test",
     exportedAt: new Date().toISOString(),
@@ -93,12 +107,52 @@ export const exportPdfReport = async (profile: ClassroomProfile, outputs: Genera
     profile,
     quantityOverrides
   });
-  const pages = await renderReportPages(profile, outputs, pointMapImage, topologyImage);
+  const pages = await renderReportPages(
+    profile,
+    outputs,
+    pointMapImage,
+    topologyImage,
+    interfaceWiringImage,
+    interfaceWiringRows
+  );
   const pdfBlob = buildImagePdf(pages, payload);
   downloadBlob(pdfBlob, `${sanitizeFilename(profile.projectName || getAppBrand().defaultPlanName)}-内部测试报告.pdf`);
 };
 
-async function renderReportPages(profile: ClassroomProfile, outputs: GeneratedOutputs, pointMapImage: string, topologyImage: string) {
+async function waitForInterfaceWiringSvg() {
+  if (!__ENABLE_YINMAN_INTERFACE_WIRING__ || getAppBrand().id !== "yinman") return null;
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const svg = document.querySelector<SVGSVGElement>(getInterfaceWiringSelector());
+    if (svg) return svg;
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  }
+  return null;
+}
+
+async function buildInterfaceWiringReportRows(
+  profile: ClassroomProfile,
+  outputs: GeneratedOutputs,
+  recordingInputSelections: RecordingInputSelections
+) {
+  if (!__ENABLE_YINMAN_INTERFACE_WIRING__ || getAppBrand().id !== "yinman") return [];
+  const { buildInterfaceWiringModel, getInterfaceWiringUsageRows } = await import("./interfaceWiring");
+  const model = buildInterfaceWiringModel({
+    profile,
+    outputs,
+    brandId: "yinman",
+    recordingInputSelections
+  });
+  return getInterfaceWiringUsageRows(model);
+}
+
+async function renderReportPages(
+  profile: ClassroomProfile,
+  outputs: GeneratedOutputs,
+  pointMapImage: string,
+  topologyImage: string,
+  interfaceWiringImage: string,
+  interfaceWiringRows: InterfaceWiringUsageRow[]
+) {
   const pages: HTMLCanvasElement[] = [];
   let page = createCanvasPage();
   drawReportHeader(page, profile);
@@ -113,7 +167,13 @@ async function renderReportPages(profile: ClassroomProfile, outputs: GeneratedOu
   if (topologyImage) {
     pages.push(await renderImagePage("系统拓扑图", topologyImage));
   }
+  if (__ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman") {
+    if (!interfaceWiringImage) throw new Error("接口接线图尚未生成，请稍后重试导出。");
+    pages.push(await renderImagePage("接口接线图", interfaceWiringImage));
+    pages.push(...renderInterfaceUsagePages(interfaceWiringRows));
+  }
 
+  pages.forEach((canvas, index) => drawPageNumber(canvas, index + 1, pages.length));
   return Promise.all(pages.map(canvasToJpegPage));
 }
 
@@ -373,9 +433,16 @@ function getExternalDeviceSummary(profile: ClassroomProfile) {
 
 function formatPublicDeviceName(name: string) {
   const model = ["A", "P", "150"].join("");
-  return formatBrandText(name
+  return formatPublicReportText(name
     .replace(new RegExp(`YM-?${model}`, "gi"), "教学模拟功放主机")
-    .replace(new RegExp(model, "gi"), "教学模拟功放主机")
+    .replace(new RegExp(model, "gi"), "教学模拟功放主机"));
+}
+
+function formatPublicReportText(value: string) {
+  return formatBrandText(value
+    .replace(/AJ(?:200|350|600)/gi, "智能音频处理主机")
+    .replace(/SA110/gi, "智能线阵麦克风")
+    .replace(/RING08/gi, "大圆盘阵麦")
     .replace(/\u7ffc\u6b27/g, "音翼"));
 }
 
@@ -406,6 +473,140 @@ async function renderImagePage(title: string, dataUrl: string) {
   page.ctx.drawImage(image, boxX + (boxW - drawW) / 2, boxY + (boxH - drawH) / 2, drawW, drawH);
   drawFooter(page);
   return page.canvas;
+}
+
+type InterfaceUsageColumnKey = "reference" | "device" | "port" | "interfaceType" | "cable" | "method";
+
+const interfaceUsageColumns: Array<{ key: InterfaceUsageColumnKey; title: string; width: number }> = [
+  { key: "reference", title: "编号", width: 70 },
+  { key: "device", title: "设备（从 / 到）", width: 200 },
+  { key: "port", title: "接口（从 / 到）", width: 175 },
+  { key: "interfaceType", title: "接口形式（从 / 到）", width: 210 },
+  { key: "cable", title: "线材", width: 105 },
+  { key: "method", title: "接线方式", width: 340 }
+];
+
+function renderInterfaceUsagePages(rows: InterfaceWiringUsageRow[]) {
+  const pages: HTMLCanvasElement[] = [];
+  let page = createInterfaceUsagePage(false);
+  if (!rows.length) {
+    drawText(page.ctx, "当前方案没有可生成的接口占用记录。", 90, page.y + 58, {
+      size: 20,
+      weight: 700,
+      color: getReportTheme().muted,
+      maxWidth: 1000
+    });
+  }
+
+  rows.forEach((row) => {
+    const cells = getInterfaceUsageCellLines(page.ctx, row);
+    const rowHeight = Math.max(78, Math.max(...Object.values(cells).map((lines) => lines.length)) * 21 + 26);
+    if (page.y + rowHeight > pdfPageHeightPx - 105) {
+      drawFooter(page);
+      pages.push(page.canvas);
+      page = createInterfaceUsagePage(true);
+    }
+    drawInterfaceUsageRow(page.ctx, page.y, rowHeight, cells, row.confirmed);
+    page.y += rowHeight;
+  });
+
+  drawFooter(page);
+  pages.push(page.canvas);
+  return pages;
+}
+
+function createInterfaceUsagePage(continued: boolean) {
+  const page = createCanvasPage();
+  drawSectionTitle(page.ctx, continued ? "接口占用表（续）" : "接口占用表", 70, 92);
+  page.y = 150;
+  drawInterfaceUsageHeader(page.ctx, page.y);
+  page.y += 58;
+  return page;
+}
+
+function drawInterfaceUsageHeader(ctx: CanvasRenderingContext2D, y: number) {
+  const theme = getReportTheme();
+  ctx.fillStyle = theme.tableHeader;
+  ctx.fillRect(70, y, 1100, 58);
+  ctx.strokeStyle = theme.border;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(70, y, 1100, 58);
+  let x = 70;
+  interfaceUsageColumns.forEach((column, index) => {
+    if (index > 0) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + 58);
+      ctx.stroke();
+    }
+    drawText(ctx, column.title, x + 10, y + 36, {
+      size: 15,
+      weight: 800,
+      color: theme.accent,
+      maxWidth: column.width - 20
+    });
+    x += column.width;
+  });
+}
+
+function getInterfaceUsageCellLines(ctx: CanvasRenderingContext2D, row: InterfaceWiringUsageRow) {
+  const size = 15;
+  const weight = 600;
+  const width = (key: InterfaceUsageColumnKey) => interfaceUsageColumns.find((column) => column.key === key)!.width - 20;
+  const pair = (from: string, to: string, key: InterfaceUsageColumnKey) => [
+    ...getWrappedLines(ctx, `从 ${formatPublicReportText(from)}`, width(key), size, weight),
+    ...getWrappedLines(ctx, `到 ${formatPublicReportText(to)}`, width(key), size, weight)
+  ];
+  return {
+    reference: [String(row.referenceNumber)],
+    device: pair(row.fromDevice, row.toDevice, "device"),
+    port: pair(row.fromPort, row.toPort, "port"),
+    interfaceType: pair(row.fromInterfaceType, row.toInterfaceType, "interfaceType"),
+    cable: getWrappedLines(ctx, formatPublicReportText(row.cableType), width("cable"), size, weight),
+    method: getWrappedLines(ctx, formatPublicReportText(row.connectionMethod), width("method"), size, weight)
+  } satisfies Record<InterfaceUsageColumnKey, string[]>;
+}
+
+function drawInterfaceUsageRow(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  height: number,
+  cells: Record<InterfaceUsageColumnKey, string[]>,
+  confirmed: boolean
+) {
+  const theme = getReportTheme();
+  ctx.fillStyle = confirmed ? "rgba(255, 255, 255, 0.88)" : "rgba(255, 248, 230, 0.94)";
+  ctx.fillRect(70, y, 1100, height);
+  ctx.strokeStyle = theme.border;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(70, y, 1100, height);
+  let x = 70;
+  interfaceUsageColumns.forEach((column, index) => {
+    if (index > 0) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + height);
+      ctx.stroke();
+    }
+    ctx.fillStyle = theme.ink;
+    ctx.font = `${column.key === "reference" ? 800 : 600} 15px "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif`;
+    ctx.textBaseline = "alphabetic";
+    cells[column.key].forEach((line, lineIndex) => {
+      ctx.fillText(line, x + 10, y + 22 + lineIndex * 21, column.width - 20);
+    });
+    x += column.width;
+  });
+}
+
+function drawPageNumber(canvas: HTMLCanvasElement, pageNumber: number, totalPages: number) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  drawText(ctx, `${pageNumber} / ${totalPages}`, 1080, pdfPageHeightPx - 58, {
+    size: 16,
+    weight: 800,
+    color: getReportTheme().muted,
+    maxWidth: 90
+  });
 }
 
 function drawFooter(page: CanvasPage) {

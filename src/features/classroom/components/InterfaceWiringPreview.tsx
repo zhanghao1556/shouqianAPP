@@ -23,7 +23,7 @@ import {
   getInterfaceWiringLogicalTerminals,
   getInterfaceWiringPortDrawingAnchor,
   getInterfaceWiringPortReferenceNumbers,
-  getInterfaceWiringTableCableLabel,
+  getInterfaceWiringUsageRows,
   getInterfaceWiringUsageDeviceLabel,
   type InterfacePanelImageRect,
   type RecordingInputMode,
@@ -117,10 +117,17 @@ interface InterfaceWiringPreviewProps {
   profile: ClassroomProfile;
   outputs: GeneratedOutputs;
   brandId: AppBrandId;
+  recordingInputSelections: RecordingInputSelections;
+  onRecordingInputSelectionChange: (nodeId: string, mode: RecordingInputMode) => void;
 }
 
-export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceWiringPreviewProps) {
-  const [recordingInputSelections, setRecordingInputSelections] = useState<RecordingInputSelections>({});
+export function InterfaceWiringPreview({
+  profile,
+  outputs,
+  brandId,
+  recordingInputSelections,
+  onRecordingInputSelectionChange
+}: InterfaceWiringPreviewProps) {
   const model = useMemo(
     () => buildInterfaceWiringModel({ profile, outputs, brandId, recordingInputSelections }),
     [profile, outputs, brandId, recordingInputSelections]
@@ -129,17 +136,15 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
   const reviewCount = model.findings.filter((item) => item.severity === "review").length;
   const portReferenceNumbers = useMemo(() => getInterfaceWiringPortReferenceNumbers(model), [model]);
   return (
-    <section className="interfaceWiringPreview" aria-label="接口接线图拟调整预览">
+    <section className="interfaceWiringPreview" aria-label="接口接线图与接口占用表">
       <header className="interfaceWiringPreviewHeader">
         <div>
-          <span className="interfaceWiringEyebrow"><Network size={15} /> 内部校准</span>
+          <span className="interfaceWiringEyebrow"><Network size={15} /> 接口校核</span>
           <h3>接口接线图</h3>
-          <p>拟调整预览 / 尚未写入正式规则</p>
         </div>
         <div className="interfaceWiringSummary" aria-label="接口接线校核摘要">
           <span>{model.nodes.length} 组设备</span>
           <span>{model.edges.length} 条接口连线</span>
-          {model.candidateProcessor && <span>候选主机 {model.candidateProcessor}</span>}
           <span className={hardCount ? "hard" : reviewCount ? "review" : "ready"}>
             {hardCount ? `硬风险 ${hardCount}` : reviewCount ? `待复核 ${reviewCount}` : "接口校核通过"}
           </span>
@@ -150,7 +155,7 @@ export function InterfaceWiringPreview({ profile, outputs, brandId }: InterfaceW
         model={model}
         portReferenceNumbers={portReferenceNumbers}
         selections={recordingInputSelections}
-        onChange={(nodeId, mode) => setRecordingInputSelections((current) => ({ ...current, [nodeId]: mode }))}
+        onChange={onRecordingInputSelectionChange}
       />
 
       <div className="interfaceWiringDataGrid">
@@ -231,7 +236,7 @@ function InterfaceWiringDiagram({
           width: "100%"
         }}
         role="img"
-        aria-label="音曼接口接线图拟调整预览"
+        aria-label="音曼接口接线图"
         data-routing-clearance={routingClearance}
         data-routing-failed={failedEdgeIds.join(",")}
         data-active-edge-id={highlightedEdgeId ?? undefined}
@@ -246,10 +251,6 @@ function InterfaceWiringDiagram({
           strokeWidth="1"
         />
         <text x={layout.width / 2} y="48" textAnchor="middle" className="cadTitle">接口接线图</text>
-        <text x={layout.width / 2} y="72" textAnchor="middle" className="cadSmall" fill="#9a6700">
-          拟调整预览 / 尚未写入正式规则
-        </text>
-
         {model.nodes.map((node) => {
           const position = layout.positions[node.id];
           if (!position) return null;
@@ -961,16 +962,7 @@ function InterfacePortUsageTable({
   model: InterfaceWiringModel;
   portReferenceNumbers: Record<string, number>;
 }) {
-  const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
-  const rows = model.edges.flatMap((edge) => {
-    const fromNode = nodeMap.get(edge.fromNodeId);
-    const toNode = nodeMap.get(edge.toNodeId);
-    const fromPort = fromNode?.ports.find((port) => port.id === edge.fromPortId);
-    const toPort = toNode?.ports.find((port) => port.id === edge.toPortId);
-    return fromNode && toNode && fromPort && toPort
-      ? [{ edge, fromNode, toNode, fromPort, toPort }]
-      : [];
-  });
+  const rows = getInterfaceWiringUsageRows(model, portReferenceNumbers);
   return (
     <section className="interfaceWiringTableSection">
       <div className="interfaceWiringSubHeader">
@@ -991,14 +983,14 @@ function InterfacePortUsageTable({
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ edge, fromNode, toNode, fromPort, toPort }) => (
-                <tr key={edge.id} className={fromPort.confirmed && toPort.confirmed ? "" : "unconfirmed"}>
-                  <td><span className="interfaceWiringTablePortPin">{portReferenceNumbers[edge.fromPortId]}</span></td>
-                  <td><FromToCell from={getInterfaceWiringUsageDeviceLabel(fromNode, fromPort)} to={getInterfaceWiringUsageDeviceLabel(toNode, toPort)} /></td>
-                  <td><FromToCell from={fromPort.label} to={toPort.label} /></td>
-                  <td><FromToCell from={fromPort.interfaceType} to={toPort.interfaceType} /></td>
-                  <td>{getInterfaceWiringTableCableLabel(edge.cableType)}</td>
-                  <td><ConnectionMethodCell value={edge.connectionMethod} /></td>
+              {rows.map((row) => (
+                <tr key={row.edgeId} className={row.confirmed ? "" : "unconfirmed"}>
+                  <td><span className="interfaceWiringTablePortPin">{row.referenceNumber}</span></td>
+                  <td><FromToCell from={row.fromDevice} to={row.toDevice} /></td>
+                  <td><FromToCell from={row.fromPort} to={row.toPort} /></td>
+                  <td><FromToCell from={row.fromInterfaceType} to={row.toInterfaceType} /></td>
+                  <td>{row.cableType}</td>
+                  <td><ConnectionMethodCell value={row.connectionMethod} /></td>
                 </tr>
               ))}
             </tbody>
@@ -1124,7 +1116,7 @@ function InterfaceWiringFindings({ findings }: { findings: InterfaceWiringFindin
         )) : (
           <div className="interfaceWiringFinding ready">
             <CheckCircle2 size={18} />
-            <div><strong>接口校核通过</strong><p>当前候选未发现接口容量或资料缺口。</p></div>
+            <div><strong>接口校核通过</strong><p>当前方案未发现接口容量或资料缺口。</p></div>
           </div>
         )}
       </div>

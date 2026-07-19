@@ -1,32 +1,37 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig(({ command }) => ({
-  base: "./",
-  plugins: [react()],
-  define: {
-    __ENABLE_CALIBRATION_WORKBENCHES__: JSON.stringify(command === "serve")
-  },
-  build: {
-    sourcemap: false,
-    minify: "esbuild",
-    cssMinify: true,
-    assetsInlineLimit: 4096,
-    rollupOptions: {
-      output: {
-        entryFileNames: "assets/app-[hash].js",
-        chunkFileNames: "assets/chunk-[hash].js",
-        assetFileNames: "assets/asset-[hash][extname]"
+export default defineConfig(({ command }) => {
+  const buildBrand = process.env.APP_BRAND;
+  return {
+    base: "./",
+    plugins: [react()],
+    define: {
+      __ENABLE_CALIBRATION_WORKBENCHES__: JSON.stringify(command === "serve"),
+      __ENABLE_YINMAN_INTERFACE_WIRING__: JSON.stringify(command === "serve" || buildBrand !== "yinyi")
+    },
+    build: {
+      sourcemap: false,
+      minify: "esbuild",
+      cssMinify: true,
+      assetsInlineLimit: 4096,
+      rollupOptions: {
+        output: {
+          inlineDynamicImports: true,
+          entryFileNames: "assets/app-[hash].js",
+          chunkFileNames: "assets/chunk-[hash].js",
+          assetFileNames: "assets/asset-[hash][extname]"
+        }
+      }
+    },
+    server: {
+      host: "127.0.0.1",
+      port: 5174,
+      strictPort: true,
+      watch: {
+        ignored: ["**/docx_2/**", "**/input/**", "**/inputs/**", "**/output/**", "**/outputs/**", "**/work/**", "**/logs/**"]
       }
     }
-  },
-  server: {
-    host: "127.0.0.1",
-    port: 5174,
-    strictPort: true,
-    watch: {
-      ignored: ["**/docx_2/**", "**/input/**", "**/inputs/**", "**/output/**", "**/outputs/**", "**/work/**", "**/logs/**"]
-    }
-  }
-}));
+  };
+});
 
