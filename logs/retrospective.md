@@ -2322,3 +2322,9 @@ PowerShell reminder:
 - Cable sheath color and conductor color are separate visual semantics. Use one cable-type sheath color for the long trunk, then show red / white / gray or yellow / green / black only in the short terminal fan-out and its compact color key.
 - The drawing and legend must consume one shared cable-type color map. Duplicating colors in CSS and route code allows the legend to drift from the actual cable, which defeats the purpose of color coding.
 - A renderer test that hard-codes a neutral multicore sheath becomes an active regression after the user confirms colored sheaths. Replace it with a contract that rejects the old neutral fallback and verifies the shared mapping, rather than deleting coverage.
+
+### 2026-07-19 headset splitter wiring correction
+
+- A device accessory name is not a cable type. The laptop-to-headset-splitter TRRS link belongs to the audio-cable category so its trunk, legend aggregation and usage table stay consistent.
+- For the user-confirmed balanced-output to 3.5mm mono-input convention, represent the physical three-core cable explicitly: red and white both leave `LINE OUT +` and meet the mono signal contact, while the shield connects ground and `LINE OUT -` remains unused. A two-conductor shortcut is visually and electrically ambiguous in this drawing system.
+- Once terminal fan-out colors and cable-sheath legend colors are visible, separate red / white / gray text badges add clutter without new information. Remove their render path and data calculation together so dead label geometry cannot reappear or affect future routing work.

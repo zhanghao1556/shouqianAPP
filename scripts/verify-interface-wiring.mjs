@@ -1003,7 +1003,19 @@ assert.deepEqual(laptopAnalogNode.ports.map((port) => port.capabilityId), ["head
 assert.deepEqual(headsetSplitterNode.ports.map((port) => port.capabilityId).sort(), ["headphoneOut", "micIn", "trrs"]);
 const splitterLink = laptopAnalog.model.edges.find((edge) => edge.id === "external-laptop-splitter-laptop-computer");
 assert.ok(splitterLink);
+assert.equal(splitterLink.cableType, "音频线");
 assert.match(splitterLink.connectionMethod, /TRRS复合口必须先拆分.*禁止直接接普通3\.5mm口/);
+const splitterMicInputLink = laptopAnalog.model.edges.find((edge) => edge.id === "external-laptop-input-laptop-computer");
+assert.ok(splitterMicInputLink);
+assert.deepEqual(
+  splitterMicInputLink.conductors.map((conductor) => [conductor.label, conductor.fromTerminalId, conductor.toTerminalId]),
+  [
+    ["红线", "positive", "signal"],
+    ["白线", "positive", "signal"],
+    ["屏蔽线", "ground", "ground"]
+  ]
+);
+assert.match(splitterMicInputLink.connectionMethod, /LINE OUT \+接红白两芯并接分线器MIC IN信号/);
 assert.equal(laptopAnalog.model.edges.some((edge) =>
   (edge.fromNodeId === laptopAnalogNode.id || edge.toNodeId === laptopAnalogNode.id) &&
   edge.id !== "external-laptop-splitter-laptop-computer"
@@ -1788,7 +1800,7 @@ assert.match(wiringPreviewSource, /function getCableEscapeCommands/);
 assert.match(wiringPreviewSource, /const multicore = conductors\.length > 1/);
 assert.doesNotMatch(wiringPreviewSource, /multicore \? "#374151"/);
 assert.match(wiringPreviewSource, /CABLE_SHEATH_COLORS\[getCableLegendKind\(edge\)\]/);
-assert.match(wiringPreviewSource, /interfaceWiringConductorColorLabel/);
+assert.doesNotMatch(wiringPreviewSource, /conductorColorLabel|interfaceWiringConductorColorLabel|getConductorColorLabel|getConductorColorName/);
 assert.doesNotMatch(wiringPreviewSource, /C \$\{fromSplit\.x\} \$\{route\.corridor\.fromY\}/);
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 

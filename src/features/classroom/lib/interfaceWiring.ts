@@ -821,7 +821,7 @@ class CandidateWiringBuilder {
       fromPort: this.requirePort(laptop.productId, "headset"),
       toNode: splitter,
       toPort: this.requirePort(splitter.productId, "trrs"),
-      cableType: "耳麦分线器",
+      cableType: "音频线",
       connectionMethod: "3.5mm TRRS复合口必须先拆分，禁止直接接普通3.5mm口"
     });
     const headphoneOutput = this.requirePort(splitter.productId, "headphoneOut");
@@ -850,8 +850,8 @@ class CandidateWiringBuilder {
       toPort: microphoneInput,
       cableType: directOutput ? "3.5mm成品音频线" : "3.5mm音频线",
       connectionMethod: directOutput
-        ? "HP OUT接分线器麦克风输入，信号与G一一对应"
-        : "我方LINE OUT +接麦克风信号，G接G，我方LINE OUT -悬空",
+        ? "HP OUT L/R并接分线器MIC IN信号，G接G"
+        : "我方LINE OUT +接红白两芯并接分线器MIC IN信号，G接屏蔽线，LINE OUT -悬空",
       conductors: directOutput
         ? getStereoToMonoConductors(hubOutput.port, microphoneInput)
         : getBalancedToMonoConductors(hubOutput.port, microphoneInput)
@@ -1659,7 +1659,8 @@ function getStereoToMonoConductors(fromPort: DevicePortCapability, toPort: Devic
 
 function getBalancedToMonoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
   return [
-    mappedConductor("positive-signal", "红线", "#dc2626", fromPort, "positive", toPort, "signal"),
+    mappedConductor("positive-signal-red", "红线", "#dc2626", fromPort, "positive", toPort, "signal"),
+    mappedConductor("positive-signal-white", "白线", "#ffffff", fromPort, "positive", toPort, "signal"),
     mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
   ];
 }

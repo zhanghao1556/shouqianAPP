@@ -329,33 +329,6 @@ function InterfaceWiringDiagram({
 
         {model.edges.map((edge) => {
           const drawing = edgeDrawings.get(edge.id);
-          const label = drawing?.conductorColorLabel;
-          if (!label) return null;
-          const width = label.items.length * 22 + 6;
-          return (
-            <g
-              key={`${edge.id}-conductor-colors`}
-              className="interfaceWiringConductorColorLabel"
-              transform={`translate(${label.x} ${label.y})`}
-              data-edge-id={edge.id}
-              aria-label={label.items.map((item) => item.label).join("、")}
-            >
-              <rect x={-width / 2} y="-8" width={width} height="16" fill="#ffffff" stroke="#9ca3af" />
-              {label.items.map((item, index) => {
-                const itemX = -width / 2 + 7 + index * 22;
-                return (
-                  <g key={`${edge.id}-${item.label}`} transform={`translate(${itemX} 0)`}>
-                    <circle r="3" fill={item.color} stroke={item.color === "#ffffff" ? "#9ca3af" : item.color} />
-                    <text x="5" y="0" dy="0.34em" fontSize="7" fill="#111827">{item.label}</text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
-
-        {model.edges.map((edge) => {
-          const drawing = edgeDrawings.get(edge.id);
           if (!drawing) return null;
           const unconfirmed = edge.conductors.some((conductor) => !conductor.confirmed);
           return (
@@ -852,11 +825,6 @@ function buildEdgeDrawings(
       strokeWidth: number;
       needsOutline: boolean;
     }>;
-    conductorColorLabel?: {
-      x: number;
-      y: number;
-      items: Array<{ color: string; label: string }>;
-    };
     referenceBadges: Array<{
       x: number;
       y: number;
@@ -968,18 +936,7 @@ function buildEdgeDrawings(
     if (referencePoint) usedReferencePoints.push(referencePoint);
     const referenceBadges = referencePoint ? [{ ...referencePoint, referenceNumber }] : [];
     const trunkRoutes = getCableTrunkRoutes(edge, displayConductors, route, fromMerge, toMerge);
-    const conductorColorLabel = getConductorColorLabel({
-      conductors: displayConductors,
-      fromNode,
-      toNode,
-      fromMerge,
-      toMerge,
-      fromEscape: route.endpointEscapes?.from,
-      toEscape: route.endpointEscapes?.to,
-      fromRect: fromRoutingRect,
-      toRect: toRoutingRect
-    });
-    drawings.set(edge.id, { route, trunkRoutes, conductorRoutes, conductorColorLabel, referenceBadges });
+    drawings.set(edge.id, { route, trunkRoutes, conductorRoutes, referenceBadges });
   });
   return drawings;
 }
@@ -1185,60 +1142,6 @@ function getInternalCableMergePoint(
     x: clamp(center.x + direction.x * CABLE_INTERNAL_MERGE_DISTANCE, deviceRect.x + 6, deviceRect.x + deviceRect.width - 6),
     y: clamp(center.y + direction.y * CABLE_INTERNAL_MERGE_DISTANCE, deviceRect.y + 20, deviceRect.y + deviceRect.height - 6)
   };
-}
-
-function getConductorColorLabel(input: {
-  conductors: InterfaceWiringConductor[];
-  fromNode: InterfaceWiringNode;
-  toNode: InterfaceWiringNode;
-  fromMerge: { x: number; y: number };
-  toMerge: { x: number; y: number };
-  fromEscape?: CableDeviceEscape;
-  toEscape?: CableDeviceEscape;
-  fromRect: { x: number; y: number; width: number; height: number };
-  toRect: { x: number; y: number; width: number; height: number };
-}) {
-  const {
-    conductors,
-    fromNode,
-    fromMerge,
-    toMerge,
-    fromEscape,
-    toEscape,
-    fromRect,
-    toRect
-  } = input;
-  if (conductors.length < 2) return undefined;
-  const useToEndpoint = fromNode.id === "processor" && Boolean(toEscape);
-  const mergePoint = useToEndpoint ? toMerge : fromMerge;
-  const escape = useToEndpoint ? toEscape : fromEscape;
-  const rect = useToEndpoint ? toRect : fromRect;
-  if (!escape) return undefined;
-  const direction = getCableExitVector(escape.side);
-  const labelWidth = conductors.length * 22 + 6;
-  const desired = {
-    x: mergePoint.x - direction.x * (labelWidth / 2 + 8),
-    y: mergePoint.y - direction.y * 13
-  };
-  return {
-    x: clamp(desired.x, rect.x + labelWidth / 2 + 4, rect.x + rect.width - labelWidth / 2 - 4),
-    y: clamp(desired.y, rect.y + 30, rect.y + rect.height - 10),
-    items: conductors.map((conductor) => ({
-      color: conductor.color,
-      label: getConductorColorName(conductor.color)
-    }))
-  };
-}
-
-function getConductorColorName(color: string) {
-  const normalized = color.toLowerCase();
-  if (normalized === "#dc2626") return "红";
-  if (normalized === "#ffffff") return "白";
-  if (normalized === "#6b7280" || normalized === "#64748b") return "灰";
-  if (normalized === "#eab308") return "黄";
-  if (normalized === "#22c55e") return "绿";
-  if (normalized === "#111827") return "黑";
-  return "芯";
 }
 
 function getCollapsedCableConductor(
