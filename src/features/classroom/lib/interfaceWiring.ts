@@ -14,7 +14,7 @@ import type {
   InterfaceWiringNode,
   InterfaceWiringPort
 } from "../types";
-import { filterUsbExclusiveAudioLines } from "./connectionRules";
+import { filterUsbExclusiveAudioLines, WIRED_MIC_LINE_IN_POWER_NOTE } from "./connectionRules";
 import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./hangingMicRules";
 import { getYinmanProcessorDirectSpeakerCapacity, LINE_ARRAY_PRODUCT_ID } from "./lineArrayRules";
 import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./speakerRules";
@@ -24,6 +24,7 @@ import {
   getDevicePortsByPrefix,
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   CONTROL_HOST_PORT_PROFILE_ID,
+  EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
   HEADSET_SPLITTER_PORT_PROFILE_ID,
   LAPTOP_PORT_PROFILE_ID,
   OPS_ALL_IN_ONE_PORT_PROFILE_ID,
@@ -459,7 +460,8 @@ class CandidateWiringBuilder {
     }
 
     const micCapacity = getDevicePortsByPrefix(this.processorProductId!, "mic").length;
-    const totalMicDemand = convertedCount * 2 + getExistingMicInputDemand(this.profile);
+    const directWiredMicDemand = micCapacity > 0 ? getExistingMicInputDemand(this.profile) : 0;
+    const totalMicDemand = convertedCount * 2 + directWiredMicDemand;
     if (totalMicDemand > micCapacity) {
       this.addFinding({
         code: "processor.total-mic-capacity",
@@ -1144,6 +1146,18 @@ class CandidateWiringBuilder {
       return this.catalogSeed("ring08", PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID, quantity);
     }
     if (clean === "吊麦" || clean.startsWith("吊麦 ")) return this.catalogSeed("hanging-microphones", HANGING_MIC_PRODUCT_ID, quantity);
+    const wiredMicrophoneMatch = /^(?:利旧)?有线麦克风(?:\s+(\d+))?$/.exec(clean);
+    if (wiredMicrophoneMatch) {
+      const sequence = wiredMicrophoneMatch[1];
+      return {
+        ...this.catalogSeed(
+          sequence ? `existing-wired-microphone-${sequence}` : "existing-wired-microphone",
+          EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
+          1
+        ),
+        label: clean
+      };
+    }
     if (clean.includes("录播主机")) return { ...this.catalogSeed("recording-host", RECORDING_HOST_PORT_PROFILE_ID, quantity, "external"), label: clean };
     if (clean.includes("录播摄像机")) return { ...this.catalogSeed("recording-camera", RECORDING_CAMERA_PORT_PROFILE_ID, quantity, "external"), label: clean };
     if (clean.includes("中控主机")) return { ...this.catalogSeed("control-host", CONTROL_HOST_PORT_PROFILE_ID, quantity, "external"), label: clean };
@@ -1243,9 +1257,18 @@ class CandidateWiringBuilder {
     preferredAudioForm: ExternalAudioPortForm = "balanced"
   ): DevicePortCapability | undefined {
     const normalized = originalPort.toUpperCase();
+    if (node.productId === EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID) {
+      return this.requirePort(node.productId, "xlr");
+    }
     if (node.category === "processor") {
       if (normalized.includes("USB")) return this.requirePort(node.productId, "usb");
       if (/网络|控制|LAN/.test(originalPort)) return this.requirePort(node.productId, "lan");
+      if (/MIC\s*IN/i.test(originalPort)) {
+        const target = this.allocatePort(node, "mic", originalPort);
+        if (!target) return undefined;
+        const sequence = /^mic(\d+)$/i.exec(target.id)?.[1];
+        return sequence ? { ...target, panelLabel: `MIC IN ${sequence}` } : target;
+      }
       if (/LINE OUT|模拟输出|音频输出/i.test(originalPort)) return this.allocateProcessorAudioPort(node, "output", originalPort, preferredAudioForm);
       if (/LINE IN|模拟输入|音频输入/i.test(originalPort)) return this.allocateProcessorAudioPort(node, "input", originalPort, preferredAudioForm);
       const micMatch = /MIC\s*(\d+)/i.exec(originalPort);
@@ -1339,7 +1362,7 @@ class CandidateWiringBuilder {
         code: `port-capacity.${node.id}.${prefix}.${stableHash(responsibility)}`,
         severity: "hard",
         title: "接口数量超过上限",
-        message: `${node.label}没有剩余${prefix.startsWith("lineIn") ? "音频输入" : prefix.startsWith("lineOut") ? "音频输出" : "可用"}接口，无法为“${responsibility}”生成虚假连线，建议更换设备。`,
+        message: `${node.label}没有剩余${prefix.startsWith("mic") ? "MIC输入" : prefix.startsWith("lineIn") ? "音频输入" : prefix.startsWith("lineOut") ? "音频输出" : "可用"}接口，无法为“${responsibility}”生成虚假连线，建议更换设备。`,
         nodeId: node.id
       });
     }
@@ -2172,7 +2195,8 @@ function getInterfaceWiringRowAffinity(node: InterfaceWiringNode): InterfaceWiri
   }
   if (
     node.category === "microphone" ||
-    node.productId === WIRELESS_RECEIVER_PORT_PROFILE_ID
+    node.productId === WIRELESS_RECEIVER_PORT_PROFILE_ID ||
+    node.productId === EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID
   ) {
     return "microphoneWireless";
   }
@@ -2601,6 +2625,11 @@ function getConnectionMethod(
   toPort: DevicePortCapability
 ) {
   if (line.cableType.includes("USB")) return "USB直连；USB Audio一进一出；内置232串口信号，可用于连接调试软件";
+  if (fromPort.id === "xlr" && line.fromPort.includes("卡侬母头")) {
+    return toPort.id.startsWith("mic")
+      ? "卡侬母头按2=+、3=-、1=G接处理器MIC IN"
+      : `卡侬母头按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
+  }
   if (fromPort.interfaceType.includes("RJ45") && toPort.interfaceType.includes("RJ45")) return "RJ45直连";
   if (line.cableType.includes("音箱线")) return "保持正负极一致";
   if (hasStereoTerminals(fromPort) && hasStereoTerminals(toPort)) {

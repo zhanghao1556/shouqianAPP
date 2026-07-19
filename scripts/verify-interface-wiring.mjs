@@ -15,13 +15,17 @@ import {
   getInterfaceWiringUsageDeviceLabel
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
-import { filterUsbExclusiveAudioLines } from "./src/features/classroom/lib/connectionRules.ts";
+import {
+  filterUsbExclusiveAudioLines,
+  WIRED_MIC_LINE_IN_POWER_NOTE
+} from "./src/features/classroom/lib/connectionRules.ts";
 import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./src/features/classroom/lib/hangingMicRules.ts";
 import { getYinmanAjProcessorSpeakerPlan, LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./src/features/classroom/lib/speakerRules.ts";
 import {
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   CONTROL_HOST_PORT_PROFILE_ID,
+  EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
   HEADSET_SPLITTER_PORT_PROFILE_ID,
   LAPTOP_PORT_PROFILE_ID,
   OPS_ALL_IN_ONE_PORT_PROFILE_ID,
@@ -1039,6 +1043,13 @@ const wiringPreviewStyles = readFileSync("src/features/classroom/components/Inte
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
 assert.match(wiringPreviewSource, /external-podium-computer-panel\.svg/);
 assert.match(wiringPreviewSource, /podiumComputer:\s*podiumComputerRearPanel/);
+assert.match(wiringPreviewSource, /<td><ConnectionMethodCell value=\{edge\.connectionMethod\} \/><\/td>/);
+assert.match(
+  wiringPreviewSource,
+  /function ConnectionMethodCell[\s\S]*?value\.indexOf\(WIRED_MIC_LINE_IN_POWER_NOTE\)[\s\S]*?<strong className="interfaceWiringInlineWarning">\{WIRED_MIC_LINE_IN_POWER_NOTE\}<\/strong>/
+);
+assert.match(wiringPreviewStyles, /\.interfaceWiringInlineWarning \{[\s\S]*?font-weight: 800;/);
+assert.doesNotMatch(wiringPreviewSource, /\*\*[^*\r\n]*WIRED_MIC_LINE_IN_POWER_NOTE[^*\r\n]*\*\*/);
 assert.match(wiringPreviewSource, /const recordingInputOptions:[\s\S]*?3\.5mm[\s\S]*?凤凰 \+\/-\/G[\s\S]*?凤凰 L\/R\/G/);
 assert.match(wiringPreviewSource, /selections\[node\.id\] \?\? "balanced"/);
 assert.match(wiringPreviewSource, /\[nodeId\]: mode/);
@@ -1200,6 +1211,206 @@ assert.deepEqual(
   ["female-pin-1-hole", "female-pin-2-hole", "female-pin-3-hole"]
 );
 console.log("PASS two hanging microphones use separate XLR female panels and MIC IN ports without manual 48V instructions");
+
+const wiredMicrophoneEdgeSort = (left, right) => left.id.localeCompare(right.id, "en", { numeric: true });
+const getWiredMicrophoneEdges = (model) => model.edges
+  .filter((edge) => edge.id.includes("processor-wired-mic-audio-"))
+  .sort(wiredMicrophoneEdgeSort);
+const getWiredMicrophoneLines = (outputs) => outputs.connectionLines
+  .filter((line) => line.id.startsWith("processor-wired-mic-audio-"))
+  .sort(wiredMicrophoneEdgeSort);
+const getTargetPort = (model, edge) => node(model, edge.toNodeId).ports.find((port) => port.id === edge.toPortId);
+
+const aj200WiredProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  legacyWirelessMic: "有线麦克风",
+  speakerProductOverride: "wall"
+});
+const aj200Wired = buildModel(aj200WiredProfile, {
+  [HANGING_MIC_PRODUCT_ID]: 1,
+  "COLUMN-SPEAKER": 4
+});
+assert.equal(aj200Wired.model.candidateProcessor, "AJ200");
+const aj200HangingEdge = aj200Wired.model.edges.find((edge) => edge.id === "hanging-mic-1");
+assert.ok(aj200HangingEdge);
+assert.equal(getTargetPort(aj200Wired.model, aj200HangingEdge)?.capabilityId, "mic1");
+const aj200WiredEdges = getWiredMicrophoneEdges(aj200Wired.model);
+assert.equal(aj200WiredEdges.length, 1);
+assert.equal(getTargetPort(aj200Wired.model, aj200WiredEdges[0])?.capabilityId, "mic2");
+assert.equal(getTargetPort(aj200Wired.model, aj200WiredEdges[0])?.label, "MIC IN 2");
+assert.match(aj200WiredEdges[0].connectionMethod, /卡侬母头.*MIC IN/);
+assert.doesNotMatch(aj200WiredEdges[0].connectionMethod, /LINE IN|自供电|前级供电/);
+
+const aj200ExhaustedOutputs = {
+  ...aj200Wired.outputs,
+  connectionLines: [
+    ...aj200Wired.outputs.connectionLines,
+    {
+      ...getWiredMicrophoneLines(aj200Wired.outputs)[0],
+      id: "processor-wired-mic-audio-2",
+      fromDevice: "利旧有线麦克风 2"
+    }
+  ]
+};
+const aj200ExhaustedModel = buildInterfaceWiringModel({
+  profile: aj200WiredProfile,
+  outputs: aj200ExhaustedOutputs,
+  brandId: "yinman"
+});
+assert.equal(getWiredMicrophoneEdges(aj200ExhaustedModel).length, 1);
+assert.ok(aj200ExhaustedModel.findings.some((item) => item.code.startsWith("port-capacity.processor.mic.")));
+assert.equal(
+  getWiredMicrophoneEdges(aj200ExhaustedModel).some((edge) =>
+    getTargetPort(aj200ExhaustedModel, edge)?.capabilityId.startsWith("lineIn")
+  ),
+  false
+);
+
+const aj600WiredProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  legacyWirelessMic: "有线麦克风,有线麦克风",
+  speakerProductOverride: "wall"
+});
+const aj600Wired = buildModel(aj600WiredProfile, {
+  [HANGING_MIC_PRODUCT_ID]: 1,
+  "COLUMN-SPEAKER": 5
+});
+assert.equal(aj600Wired.model.candidateProcessor, "AJ600");
+const aj600HangingEdge = aj600Wired.model.edges.find((edge) => edge.id === "hanging-mic-1");
+assert.ok(aj600HangingEdge);
+assert.equal(getTargetPort(aj600Wired.model, aj600HangingEdge)?.capabilityId, "mic1");
+const aj600WiredEdges = getWiredMicrophoneEdges(aj600Wired.model);
+assert.deepEqual(
+  aj600WiredEdges.map((edge) => {
+    const targetPort = getTargetPort(aj600Wired.model, edge);
+    return [targetPort?.capabilityId, targetPort?.label];
+  }),
+  [["mic2", "MIC IN 2"], ["mic3", "MIC IN 3"]]
+);
+assert.ok(aj600WiredEdges.every((edge) => /卡侬母头.*MIC IN/.test(edge.connectionMethod)));
+assert.ok(aj600WiredEdges.every((edge) => !/LINE IN|自供电|前级供电/.test(edge.connectionMethod)));
+const aj600WiredNodes = aj600Wired.model.nodes.filter(
+  (item) => item.productId === EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID
+);
+assert.deepEqual(
+  aj600WiredNodes.map((item) => [item.id, item.label, item.quantity, item.parentId]),
+  [
+    ["existing-wired-microphone-1", "利旧有线麦克风 1", 1, "processor"],
+    ["existing-wired-microphone-2", "利旧有线麦克风 2", 1, "processor"]
+  ]
+);
+assert.ok(aj600WiredNodes.every((item) =>
+  item.ports.length === 1 && item.ports[0].capabilityId === "xlr" && item.ports[0].direction === "output"
+));
+assert.equal(new Set(aj600WiredEdges.map((edge) => edge.fromNodeId)).size, 2);
+
+const aj350WiredProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  legacyWirelessMic: "有线麦克风"
+});
+const aj350Wired = buildModel(aj350WiredProfile, { "COLUMN-SPEAKER": 2 });
+assert.equal(aj350Wired.model.candidateProcessor, "AJ350");
+assert.equal(
+  WIRED_MIC_LINE_IN_POWER_NOTE,
+  "有线麦直连LINE IN时，需自供电或前级供电，仅提供音频信号。"
+);
+const aj350WiredLines = getWiredMicrophoneLines(aj350Wired.outputs);
+const aj350WiredEdges = getWiredMicrophoneEdges(aj350Wired.model);
+assert.equal(aj350WiredLines.length, 1);
+assert.equal(aj350WiredEdges.length, 1);
+assert.equal(aj350WiredLines[0].note.split(WIRED_MIC_LINE_IN_POWER_NOTE).length - 1, 1);
+assert.equal(aj350WiredEdges[0].connectionMethod.split(WIRED_MIC_LINE_IN_POWER_NOTE).length - 1, 1);
+assert.doesNotMatch(aj350WiredLines[0].note + aj350WiredEdges[0].connectionMethod, /\*\*/);
+assert.equal(getTargetPort(aj350Wired.model, aj350WiredEdges[0])?.capabilityId, "lineIn1");
+assert.equal(getTargetPort(aj350Wired.model, aj350WiredEdges[0])?.label, "LINE IN 1");
+assert.doesNotMatch(getTargetPort(aj350Wired.model, aj350WiredEdges[0])?.capabilityId ?? "", /^mic\d+$/);
+
+assert.deepEqual(
+  aj200WiredEdges[0].conductors.map((conductor) => [
+    conductor.fromTerminalId,
+    conductor.toTerminalId,
+    conductor.fromTerminalLabel,
+    conductor.toTerminalLabel
+  ]),
+  [
+    ["pin2", "positive", "2 (+)", "+"],
+    ["pin3", "negative", "3 (-)", "-"],
+    ["pin1", "ground", "1 (G)", "G"]
+  ]
+);
+
+const wiredMicrophoneProfile = getDevicePortProfile(EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID);
+const wiredMicrophonePanel = wiredMicrophoneProfile?.interfacePanel;
+assert.ok(wiredMicrophoneProfile);
+assert.ok(wiredMicrophonePanel);
+assert.deepEqual(
+  wiredMicrophoneProfile.ports.map((port) => [port.id, port.panelLabel, port.interfaceType, port.direction]),
+  [["xlr", "卡侬母头", "XLR-3 卡侬母头（1=G、2=+、3=-）", "output"]]
+);
+assert.equal(wiredMicrophonePanel.assetKey, "wiredMicrophone");
+assert.equal(wiredMicrophonePanel.aspectRatio, 760 / 1240);
+assert.deepEqual(wiredMicrophonePanel.portAnchors.xlr, {
+  x: 380 / 760,
+  y: 1120 / 1240,
+  terminalAnchors: {
+    pin2: { x: 347 / 760, y: 1092 / 1240 },
+    pin3: { x: 413 / 760, y: 1092 / 1240 },
+    pin1: { x: 380 / 760, y: 1146 / 1240 }
+  }
+});
+const wiredMicrophonePanelSvg = readFileSync("src/assets/external-wired-microphone-panel.svg", "utf8");
+assert.match(wiredMicrophonePanelSvg, /viewBox="0 0 760 1240"/);
+assert.doesNotMatch(wiredMicrophonePanelSvg, /<image[\s>]/i);
+const wiredMicrophonePaintValues = Array.from(
+  wiredMicrophonePanelSvg.matchAll(/(?:fill|stroke)\s*(?:=|:)\s*["']?([^;"'\s}]+)/gi),
+  (match) => match[1]
+);
+assert.ok(wiredMicrophonePaintValues.length > 0);
+for (const paintValue of wiredMicrophonePaintValues) {
+  if (!paintValue.startsWith("#")) {
+    assert.match(paintValue, /^(?:none|url\(#[\w-]+\))$/, "Unexpected wired-microphone SVG paint " + paintValue);
+    continue;
+  }
+  const rawHex = paintValue.slice(1);
+  assert.match(rawHex, /^(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
+  const rgb = rawHex.length <= 4
+    ? rawHex.slice(0, 3).split("").map((value) => value + value)
+    : [rawHex.slice(0, 2), rawHex.slice(2, 4), rawHex.slice(4, 6)];
+  assert.equal(new Set(rgb.map((value) => value.toLowerCase())).size, 1, "Non-gray SVG paint " + paintValue);
+}
+assert.doesNotMatch(wiredMicrophonePanelSvg, /\b(?:rgb|hsl)a?\s*\(/i);
+assert.deepEqual(
+  Array.from(
+    wiredMicrophonePanelSvg.matchAll(/<circle\s+id="(wired-female-pin-[123]-hole)"\s+data-female-pin-hole="true"/g),
+    (match) => match[1]
+  ).sort(),
+  ["wired-female-pin-1-hole", "wired-female-pin-2-hole", "wired-female-pin-3-hole"]
+);
+for (const result of [aj200Wired, aj600Wired, aj350Wired]) {
+  const wiredNodeIds = new Set(result.model.nodes
+    .filter((item) => item.productId === EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID)
+    .map((item) => item.id));
+  assert.ok(wiredNodeIds.size > 0);
+  assert.equal(
+    result.model.findings.some((item) =>
+      item.code.startsWith("interface-panel.missing.") && wiredNodeIds.has(item.nodeId ?? item.code.slice("interface-panel.missing.".length))
+    ),
+    false
+  );
+}
+console.log("PASS legacy wired microphones use individual grayscale XLR panels, free MIC IN ports and the exact AJ350 LINE IN power note");
 
 const rj45Edge = ringCases.get(1).model.edges.find((edge) => edge.conductors.length === 8);
 assert.ok(rj45Edge, "No T568B network cable was generated");
@@ -1505,6 +1716,7 @@ const reconstructedPanelFiles = [
   "external-ops-panel.svg",
   "external-podium-computer-panel.svg",
   "external-recording-line-input-panel.svg",
+  "external-wired-microphone-panel.svg",
   "yinman-aj200-interface-panel.svg",
   "yinman-aj350-interface-panel.svg",
   "yinman-aj600-interface-panel.svg",
@@ -1547,6 +1759,10 @@ assert.doesNotMatch(wiringPreviewSource, /getNodeExitPoint/);
 assert.match(wiringPreviewSource, /function getCorridorCableRoute/);
 assert.match(wiringPreviewSource, /const corridorCandidates = \[/);
 assert.match(wiringPreviewSource, /route\.corridor/);
+assert.match(wiringPreviewSource, /canvasHeight: layout\.height/);
+assert.match(wiringPreviewSource, /if \(!edgeRouteStaysInsideDrawingFrame\(route, canvasWidth, canvasHeight\)\) continue;/);
+assert.match(wiringPreviewSource, /DRAWING_FRAME_LEFT \+ CABLE_FRAME_CLEARANCE/);
+assert.match(wiringPreviewSource, /canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE/);
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
@@ -1804,6 +2020,9 @@ const models = [
   opsAnalog.model,
   overflowModel,
   hanging.model,
+  aj200Wired.model,
+  aj600Wired.model,
+  aj350Wired.model,
   crossingCase.model,
   amplifierClusterCase.model,
   sixteenSpeakerCase.model
@@ -1852,6 +2071,9 @@ for (const width of [520, 993, 1120]) {
     wireless.model,
     amplifierClusterCase.model,
     sixteenSpeakerCase.model,
+    aj200Wired.model,
+    aj600Wired.model,
+    aj350Wired.model
   ]) {
     assertLayoutFitsWidth(model, width);
     assert.deepEqual(getInterfaceWiringLayout(model, width), getInterfaceWiringLayout(model, width));

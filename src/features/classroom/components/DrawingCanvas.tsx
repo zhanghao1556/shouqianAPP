@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import type { ClassroomProfile, ConnectionLine, DrawingType, GeneratedPoint, LegacySpeakerPoint, LegacySpeakerType, LegacyWallAdjustability, Point } from "../types";
-import { DT_AUDIO_LINE_IN_LIMIT, DT_AUDIO_LINE_OUT_LIMIT } from "../lib/connectionRules";
+import { DT_AUDIO_LINE_IN_LIMIT, DT_AUDIO_LINE_OUT_LIMIT, WIRED_MIC_LINE_IN_POWER_NOTE } from "../lib/connectionRules";
 import { generateEngineeringPoints, getArrayMicCentralAirRequiredClearance, getArrayMicEffectiveAmplificationRadius, getArrayMicInstallLabel, getCanvasRoomLayout, toCanvasPoint } from "../lib/drawingEngine";
 import { isMeetingScenario } from "../lib/scenarioRules";
 import { PODIUM_DEPTH_M, PODIUM_FRONT_CLEARANCE_M } from "../lib/podiumGeometry";
@@ -1709,6 +1709,10 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
     const key = getTopologyNodeKey(device);
     if (isUnknownTopologyNodeKey(key) || key === topologyRootKey || key.startsWith("arrayMic-")) return;
     const hasConfirmedConnection = edges.some((edge) => edge.from === key || edge.to === key);
+    const hasConfirmedWiredMicrophone = isTopologyWiredMicrophoneKey(key) && edges.some(
+      (edge) => isTopologyWiredMicrophoneKey(edge.from) || isTopologyWiredMicrophoneKey(edge.to)
+    );
+    if (hasConfirmedWiredMicrophone) return;
     if (usesSmallDisc && !hasConfirmedConnection) return;
     ensureNode(getTopologyNode(device, "", key, speakerCount, topologySpeakerType));
     if (hasConfirmedConnection) return;
@@ -1904,13 +1908,13 @@ function getTopologyBottomLeftNotes(connections: ConnectionLine[]) {
     .filter((connection) => getTopologyNodeKey(connection.fromDevice, connection.fromPort) === "mainMic" && isTopologyAudioOutputCable(connection.cableType))
     .reduce((sum, connection) => sum + getTopologyAudioConnectionCount(connection), 0);
   const notes: string[] = [];
-  if (hasDirectWiredMicToSystemAudioInput(connections)) notes.push("备注：有线麦直连系统音频输入时，需自供电或前级供电，仅提供音频信号。");
+  if (hasDirectWiredMicToSystemLineInput(connections)) notes.push(`备注：${WIRED_MIC_LINE_IN_POWER_NOTE}`);
   if (inputCount > DT_AUDIO_LINE_IN_LIMIT) notes.push(`备注：Line In ${inputCount}路，超过${DT_AUDIO_LINE_IN_LIMIT}路无法接入。`);
   if (outputCount > DT_AUDIO_LINE_OUT_LIMIT) notes.push(`备注：Line Out ${outputCount}路，超过${DT_AUDIO_LINE_OUT_LIMIT}路可并联相同信号。`);
   return notes;
 }
 
-function hasDirectWiredMicToSystemAudioInput(connections: ConnectionLine[]) {
+function hasDirectWiredMicToSystemLineInput(connections: ConnectionLine[]) {
   return connections.some(
     (connection) => {
       const targetKey = getTopologyNodeKey(connection.toDevice, connection.toPort);
@@ -1918,14 +1922,14 @@ function hasDirectWiredMicToSystemAudioInput(connections: ConnectionLine[]) {
         connection.fromDevice.includes("有线") &&
         connection.fromDevice.includes("麦") &&
         (targetKey === "mainMic" || targetKey === "processorHost") &&
-        connection.cableType.includes("音频")
+        /LINE\s*IN|模拟输入|音频输入/i.test(connection.toPort)
       );
     }
   );
 }
 
 function isTopologyAudioInputCable(cableType: string) {
-  return cableType.includes("音频") || cableType.includes("无法接入");
+  return cableType.includes("音频") || cableType.includes("麦克风线") || cableType.includes("无法接入");
 }
 
 function isTopologyAudioOutputCable(cableType: string) {
@@ -1994,7 +1998,7 @@ function getTopologyNodeKey(
     return getStableTopologyDeviceKey("legacyWirelessMic", device);
   }
   if (device.includes("接收机")) return "wirelessReceiver";
-  if (device.includes("有线麦")) return getStableTopologyDeviceKey("wiredMic", device);
+  if (device.includes("有线麦")) return getStableTopologyDeviceKey("wiredMic", normalizeTopologyWiredMicrophoneDevice(device));
   if (device.includes("无线手持") || device.includes("手持麦")) return getStableTopologyDeviceKey("wirelessMic", device);
   if (device.includes("电脑") || device.includes("录播") || device.includes("一体机") || device.includes("平台") || device.includes("会议") || device.includes("中控")) return getStableTopologyDeviceKey("media", device);
   return getStableTopologyDeviceKey("device", device);
@@ -2062,6 +2066,14 @@ function getTopologyNode(device: string, port: string, key: string, speakerCount
 
 function getStableTopologyDeviceKey(prefix: string, value: string) {
   return `${prefix}-${value.replace(/\s+/g, "").slice(0, 24)}`;
+}
+
+function normalizeTopologyWiredMicrophoneDevice(device: string) {
+  return device.replace(/^利旧/, "");
+}
+
+function isTopologyWiredMicrophoneKey(key: string) {
+  return key.startsWith("wiredMic-");
 }
 
 function isTopologySpeaker(device: string, port: string) {

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1240" width="760" height="1240" role="img" aria-label="利旧有线麦与卡侬母头说明书式线稿">
+  <defs>
+    <pattern id="wired-mic-mesh" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M-2 2L2-2M0 10L10 0M8 12L12 8" fill="none" stroke="#111111" stroke-width="1.7"/>
+    </pattern>
+  </defs>
+  <style>
+    .outline{fill:#ffffff;stroke:#111111;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+    .detail{fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    .fine{fill:none;stroke:#666666;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    .dark{fill:#111111;stroke:#111111;stroke-width:3}
+    .pinNumber{fill:#111111;font:700 22px Arial,sans-serif;letter-spacing:0;text-anchor:middle}
+  </style>
+
+  <g aria-label="鹅颈有线麦本体">
+    <g transform="rotate(-18 532 91)" aria-label="麦克风头">
+      <rect class="outline" x="466" y="58" width="132" height="66" rx="30"/>
+      <path class="detail" d="M490 59V123M512 59V123M534 59V123M556 59V123"/>
+      <path d="M570 64H590Q603 64 603 91Q603 118 590 118H570Z" fill="url(#wired-mic-mesh)" stroke="#111111" stroke-width="5"/>
+      <path class="fine" d="M475 75H565M473 91H565M475 107H565"/>
+    </g>
+
+    <path class="detail" stroke-width="17" d="M486 116C450 153 462 209 421 258C360 331 344 413 304 492C275 550 230 606 218 682"/>
+    <path class="fine" stroke-width="6" d="M486 116C450 153 462 209 421 258C360 331 344 413 304 492C275 550 230 606 218 682"/>
+
+    <path class="outline" d="M187 652Q187 626 213 620H245Q271 626 271 652V704H187Z"/>
+    <path class="detail" d="M197 655H261M197 674H261"/>
+
+    <path class="outline" d="M133 704L470 650L602 759L221 847L133 785Z"/>
+    <path class="fine" d="M147 733L467 681L571 763L224 823Z"/>
+    <path class="outline" d="M133 785L221 847L602 759V842L227 932L133 861Z"/>
+    <path class="detail" d="M221 847V930M602 759V842"/>
+    <path class="fine" d="M151 811L225 867L579 783M151 836L225 892L579 808"/>
+
+    <path class="outline" d="M418 693L485 682L516 706L447 719Z"/>
+    <path class="fine" d="M436 696L476 690L493 703L452 709"/>
+    <circle class="dark" cx="466" cy="700" r="5"/>
+  </g>
+
+  <g aria-label="有线麦出线">
+    <path class="detail" stroke-width="9" d="M381 895V954"/>
+    <path class="outline" d="M349 932H413L424 974H338Z"/>
+    <path class="detail" d="M344 947H418M341 960H421"/>
+  </g>
+
+  <g aria-label="三针卡侬母头">
+    <path class="outline" d="M326 974Q326 957 344 957H416Q434 957 434 974V1045Q434 1063 416 1072H344Q326 1063 326 1045Z"/>
+    <path class="detail" d="M342 994H418M342 1013H418M342 1032H418"/>
+    <circle class="outline" cx="380" cy="1120" r="88"/>
+    <circle class="detail" cx="380" cy="1120" r="68"/>
+    <path class="outline" d="M363 1043H397V1068H363Z"/>
+
+    <circle id="wired-female-pin-2-hole" data-female-pin-hole="true" class="dark" cx="347" cy="1092" r="12"/>
+    <circle id="wired-female-pin-3-hole" data-female-pin-hole="true" class="dark" cx="413" cy="1092" r="12"/>
+    <circle id="wired-female-pin-1-hole" data-female-pin-hole="true" class="dark" cx="380" cy="1146" r="12"/>
+    <text class="pinNumber" x="328" y="1085">2</text>
+    <text class="pinNumber" x="432" y="1085">3</text>
+    <text class="pinNumber" x="380" y="1188">1</text>
+  </g>
+</svg>

@@ -1,5 +1,24 @@
 ﻿# Retrospective
 
+## 2026-07-19 Existing wired-microphone panel and input fallback guardrail
+
+- Rebuild the legacy wired microphone's customer panel from its actual product photo as deterministic manual-style line art, then keep one calibrated XLR female connector and `1=G / 2=+ / 3=-` terminal contract consistent with the hanging microphone.
+- Prefer a powered processor `MIC IN` whenever one exists. Only when the selected processor exposes no `MIC IN` may the existing wired microphone fall back to `LINE IN`, and that fallback must visibly state: “有线麦直连LINE IN时，需自供电或前级供电，仅提供音频信号。”
+- Treat microphone input class and microphone power as separate facts. A line-level input can carry the audio signal but cannot be presented as microphone power; preserve this distinction in the edge, usage table, findings and regression tests.
+- The managed executor again redirected an explicit PowerShell 7 path to the inaccessible WindowsApps alias. Record this once for the session and continue with `cmd.exe` plus UTF-8-aware Node scripts rather than retrying PowerShell paths.
+- Check the repository's actual package scripts before invoking a convenience alias. If no `typecheck` script exists, call the tracked TypeScript executable directly instead of adding an unrelated script during wiring calibration.
+- When esbuild cannot read the project parent directory inside the managed sandbox, distinguish the environment failure from a source or assertion failure: record the first result, then rerun the unchanged test/build command outside the sandbox as prescribed by the project workflow.
+- A completed-looking subagent can still finish a pending whole-file write. Before final verification, wait for all writers to terminate, inspect the actual diff again and remove unrelated test contracts introduced by delegated work rather than diagnosing their failures as product regressions.
+- A locally installed Playwright package does not guarantee its bundled browser exists. For read-only UI QA, prefer an already installed Chromium-based browser executable over downloading a new runtime when the project environment supplies one.
+- Browser QA selectors must come from the rendered component contract. Treat a missing test selector as a harness failure and inspect the actual canvas classes before reporting geometry overflow.
+- Do not bind browser automation to dynamic recommendation suffixes. Select the stable product name or accessible state while keeping exact selectors for static commands.
+- Keep formal connection labels, physical port allocation and topology notes on the same input-class decision. A formal `MIC IN` edge must consume a free physical `micN`; a `LINE IN` fallback must consume `lineInN`, carry the power warning and stop contributing to MIC-capacity findings.
+- Repeated legacy microphones are physical equipment, not a BOM aggregate. Stable per-unit names are required before interface-node construction so each XLR connector owns exactly one cable and one processor input.
+- Delegated test work must not introduce production layout algorithms. Review both test and source diffs after agents stop; remove any cross-device placement policy that was not part of the confirmed wiring request before trusting the final regression result.
+- A formal connection may add the customer-facing `利旧` prefix while the questionnaire still exposes the raw device label. Topology identity must normalize those aliases before merging selected devices with confirmed edges; otherwise one physical wired microphone appears twice even though the interface model is correct. Preserve explicit unit suffixes so two physical microphones remain two nodes.
+- Keeping an SVG inside its container does not keep its cables inside the engineering border. Corridor placement must reserve the border inset, the largest conductor fan offset, half the maximum stroke width and the reference-badge radius as one geometry contract; rendered QA must compare every cable and badge bounding box with the inner drawing rect, not only compare canvas width with its frame.
+- Distinguish SVG-canvas bounds from the inset engineering border in responsive audits. A node can remain inside the SVG while touching the inner border by a few pixels; record that separately from a cable route that visibly exits the drawing, and do not fold an unrelated node-layout change into a targeted routing correction.
+
 ## 2026-07-18 Hanging-microphone interface evidence and MIC-input guardrail
 
 - Separate visual evidence by component: the supplied LB102 photo supports the microphone body silhouette, while the XLR female connector, female-hole geometry and `1=G / 2=+ / 3=-` mapping come from the user's explicit confirmation because the photo does not show that connector.

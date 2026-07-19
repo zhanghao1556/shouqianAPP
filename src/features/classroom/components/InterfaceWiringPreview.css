@@ -309,6 +309,17 @@
   color: #64748b;
 }
 
+.interfaceWiringConnectionMethod {
+  display: grid;
+  gap: 4px;
+}
+
+.interfaceWiringInlineWarning {
+  display: block;
+  color: #9a3412;
+  font-weight: 800;
+}
+
 .interfaceWiringPortTable th:first-child,
 .interfaceWiringPortTable td:first-child {
   width: 64px;

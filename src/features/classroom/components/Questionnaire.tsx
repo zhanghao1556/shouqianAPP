@@ -480,7 +480,7 @@ export function Questionnaire({ profile, onChange }: QuestionnaireProps) {
             options={externalDeviceOptions.legacyWirelessMic}
             value={profile.existingDevices.legacyWirelessMic}
             onToggle={(label) => toggleExistingDevice("legacyWirelessMic", label)}
-            hint="有线麦克风需自供电或由前级设备供电，并提供音频信号。"
+            hint="有线麦克风优先接处理器MIC IN；仅直连LINE IN时需自供电或前级供电。"
           />
         </div>
       </section>

@@ -24,6 +24,7 @@ import {
   type RecordingInputMode,
   type RecordingInputSelections
 } from "../lib/interfaceWiring";
+import { WIRED_MIC_LINE_IN_POWER_NOTE } from "../lib/connectionRules";
 import {
   getDevicePortProfile,
   RECORDING_CAMERA_PORT_PROFILE_ID,
@@ -43,6 +44,7 @@ import laptopPanel from "../../../assets/external-laptop-panel.svg";
 import opsAllInOnePanel from "../../../assets/external-ops-panel.svg";
 import conferenceTerminalPanel from "../../../assets/external-conference-terminal-panel.svg";
 import headsetSplitterPanel from "../../../assets/external-headset-splitter-panel.svg";
+import wiredMicrophonePanel from "../../../assets/external-wired-microphone-panel.svg";
 import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.svg";
 import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.svg";
 import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
@@ -55,6 +57,11 @@ const CABLE_LEGEND_BASE_HEIGHT = 52;
 const CABLE_LEGEND_ROW_HEIGHT = 28;
 const CABLE_LEGEND_TOP_GAP = 24;
 const CABLE_LEGEND_BOTTOM_GAP = 28;
+const DRAWING_FRAME_LEFT = 18;
+const DRAWING_FRAME_TOP = 18;
+const DRAWING_FRAME_RIGHT = 18;
+const DRAWING_FRAME_BOTTOM = 22;
+const CABLE_FRAME_CLEARANCE = 12;
 
 const interfacePanelImages: Record<string, string> = {
   aj200: aj200InterfacePanel,
@@ -71,6 +78,7 @@ const interfacePanelImages: Record<string, string> = {
   opsAllInOne: opsAllInOnePanel,
   conferenceTerminal: conferenceTerminalPanel,
   headsetSplitter: headsetSplitterPanel,
+  wiredMicrophone: wiredMicrophonePanel,
   ring01: ring01InterfacePanel,
   ring03: ring03InterfacePanel,
   ring08: ring08RearPanel,
@@ -192,7 +200,15 @@ function InterfaceWiringDiagram({
         role="img"
         aria-label="音曼接口接线图拟调整预览"
       >
-        <rect x="18" y="18" width={layout.width - 36} height={layout.height - 40} fill="#ffffff" stroke="#111827" strokeWidth="1" />
+        <rect
+          x={DRAWING_FRAME_LEFT}
+          y={DRAWING_FRAME_TOP}
+          width={layout.width - DRAWING_FRAME_LEFT - DRAWING_FRAME_RIGHT}
+          height={layout.height - DRAWING_FRAME_TOP - DRAWING_FRAME_BOTTOM}
+          fill="#ffffff"
+          stroke="#111827"
+          strokeWidth="1"
+        />
         <text x={layout.width / 2} y="48" textAnchor="middle" className="cadTitle">接口接线图</text>
         <text x={layout.width / 2} y="72" textAnchor="middle" className="cadSmall" fill="#9a6700">
           拟调整预览 / 尚未写入正式规则
@@ -547,7 +563,7 @@ function InterfacePortUsageTable({
                   <td><FromToCell from={fromPort.label} to={toPort.label} /></td>
                   <td><FromToCell from={fromPort.interfaceType} to={toPort.interfaceType} /></td>
                   <td>{getInterfaceWiringTableCableLabel(edge.cableType)}</td>
-                  <td>{edge.connectionMethod}</td>
+                  <td><ConnectionMethodCell value={edge.connectionMethod} /></td>
                 </tr>
               ))}
             </tbody>
@@ -563,6 +579,20 @@ function FromToCell({ from, to }: { from: string; to: string }) {
     <span className="interfaceWiringFromToCell">
       <span><b>从</b>{from}</span>
       <span><b>到</b>{to}</span>
+    </span>
+  );
+}
+
+function ConnectionMethodCell({ value }: { value: string }) {
+  const warningIndex = value.indexOf(WIRED_MIC_LINE_IN_POWER_NOTE);
+  if (warningIndex < 0) return <>{value}</>;
+  const before = value.slice(0, warningIndex).trim();
+  const after = value.slice(warningIndex + WIRED_MIC_LINE_IN_POWER_NOTE.length).trim();
+  return (
+    <span className="interfaceWiringConnectionMethod">
+      {before && <span>{before}</span>}
+      <strong className="interfaceWiringInlineWarning">{WIRED_MIC_LINE_IN_POWER_NOTE}</strong>
+      {after && <span>{after}</span>}
     </span>
   );
 }
@@ -783,7 +813,8 @@ function buildEdgeDrawings(
         preferredOffset: laneOffset,
         nodeRects,
         endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId]),
-        canvasWidth: layout.width
+        canvasWidth: layout.width,
+        canvasHeight: layout.height
       });
     const conductorRoutes = displayConductors.map((conductor, conductorIndex) => {
       const conductorOffset = (conductorIndex - (displayConductors.length - 1) / 2) * 5.2;
@@ -1019,6 +1050,7 @@ function findOpenCableRoute(input: {
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>;
   endpointNodeIds: Set<string>;
   canvasWidth: number;
+  canvasHeight: number;
 }): CableRoute {
   const {
     from,
@@ -1026,14 +1058,18 @@ function findOpenCableRoute(input: {
     preferredOffset,
     nodeRects,
     endpointNodeIds,
-    canvasWidth
+    canvasWidth,
+    canvasHeight
   } = input;
   const offsets = [preferredOffset];
   for (let distance = 44; distance <= 440; distance += 44) {
     offsets.push(preferredOffset - distance, preferredOffset + distance);
   }
+  let firstBoundedRoute: CableRoute | undefined;
   for (const offset of offsets) {
     const route = getEdgeRoute(from, to, offset);
+    if (!edgeRouteStaysInsideDrawingFrame(route, canvasWidth, canvasHeight)) continue;
+    firstBoundedRoute ??= route;
     if (!edgeRouteCrossesNodes(route, nodeRects, endpointNodeIds)) return route;
   }
   const obstacles = nodeRects.filter((rect) =>
@@ -1041,24 +1077,37 @@ function findOpenCableRoute(input: {
     rect.y < Math.max(from.y, to.y) &&
     rect.y + rect.height > Math.min(from.y, to.y)
   );
-  if (!obstacles.length) return getEdgeRoute(from, to, preferredOffset);
+  if (!obstacles.length) return firstBoundedRoute ?? getEdgeRoute(from, to, 0);
   const obstacleLeft = Math.min(...obstacles.map((rect) => rect.x));
   const obstacleRight = Math.max(...obstacles.map((rect) => rect.x + rect.width));
   const obstacleTop = Math.min(...obstacles.map((rect) => rect.y));
   const obstacleBottom = Math.max(...obstacles.map((rect) => rect.y + rect.height));
   const corridorGap = 18;
+  const minRouteX = DRAWING_FRAME_LEFT + CABLE_FRAME_CLEARANCE;
+  const maxRouteX = canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE;
+  const minRouteY = DRAWING_FRAME_TOP + CABLE_FRAME_CLEARANCE;
+  const maxRouteY = canvasHeight - DRAWING_FRAME_BOTTOM - CABLE_FRAME_CLEARANCE;
   const corridorCandidates = [
-    Math.max(24, obstacleLeft - corridorGap),
-    Math.min(canvasWidth - 24, obstacleRight + corridorGap)
+    Math.max(minRouteX, obstacleLeft - corridorGap),
+    Math.min(maxRouteX, obstacleRight + corridorGap)
   ].filter((x) => x <= obstacleLeft - 10 || x >= obstacleRight + 10);
   const corridorX = corridorCandidates.sort((left, right) =>
     Math.abs(from.x - left) + Math.abs(to.x - left) -
     (Math.abs(from.x - right) + Math.abs(to.x - right))
   )[0];
-  if (corridorX === undefined) return getEdgeRoute(from, to, preferredOffset);
-  const fromY = from.y <= to.y ? obstacleTop - corridorGap : obstacleBottom + corridorGap;
-  const toY = from.y <= to.y ? obstacleBottom + corridorGap : obstacleTop - corridorGap;
-  return getCorridorCableRoute(from, to, corridorX, fromY, toY);
+  if (corridorX === undefined) return firstBoundedRoute ?? getEdgeRoute(from, to, 0);
+  const fromY = Math.min(maxRouteY, Math.max(
+    minRouteY,
+    from.y <= to.y ? obstacleTop - corridorGap : obstacleBottom + corridorGap
+  ));
+  const toY = Math.min(maxRouteY, Math.max(
+    minRouteY,
+    from.y <= to.y ? obstacleBottom + corridorGap : obstacleTop - corridorGap
+  ));
+  const corridorRoute = getCorridorCableRoute(from, to, corridorX, fromY, toY);
+  return edgeRouteStaysInsideDrawingFrame(corridorRoute, canvasWidth, canvasHeight)
+    ? corridorRoute
+    : firstBoundedRoute ?? getEdgeRoute(from, to, 0);
 }
 
 type CableRoute = ReturnType<typeof getEdgeRoute> & {
@@ -1174,6 +1223,16 @@ function edgeRouteCrossesNodes(
     if (obstacles.some((rect) => pointInsideRect(point, rect, 5))) return true;
   }
   return false;
+}
+
+function edgeRouteStaysInsideDrawingFrame(route: CableRoute, canvasWidth: number, canvasHeight: number) {
+  const minX = DRAWING_FRAME_LEFT + CABLE_FRAME_CLEARANCE;
+  const maxX = canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE;
+  const minY = DRAWING_FRAME_TOP + CABLE_FRAME_CLEARANCE;
+  const maxY = canvasHeight - DRAWING_FRAME_BOTTOM - CABLE_FRAME_CLEARANCE;
+  return [route.from, route.control1, route.control2, route.to, { x: route.labelX, y: route.labelY }].every(
+    (point) => point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY
+  );
 }
 
 function cubicPoint(

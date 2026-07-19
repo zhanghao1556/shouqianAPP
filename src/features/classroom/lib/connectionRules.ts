@@ -40,6 +40,10 @@ import {
 
 export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
+export const WIRED_MIC_LINE_IN_POWER_NOTE = "有线麦直连LINE IN时，需自供电或前级供电，仅提供音频信号。";
+
+const WIRED_MIC_TO_MIC_IN_NOTE = "卡侬母头按2=+、3=-、1=G接处理器MIC IN。";
+const WIRED_MIC_TO_LINE_IN_NOTE = `卡侬母头按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
 
 export function filterUsbExclusiveAudioLines(lines: ConnectionLine[]) {
   const usbComputerDevices = new Set<string>();
@@ -190,18 +194,14 @@ export const generateConnectionLines = (
   }
 
   wiredMicrophones.forEach((device, index) => {
-    if (shouldRouteExternalToLegacyAudio) {
-      lines.push(buildExternalToLegacyAudioLine(device, legacyAudioInputDevice, `microphone-line-legacy-${index + 1}`));
-      return;
-    }
     lines.push({
       id: `microphone-line-dt-${index + 1}`,
-      fromDevice: device,
-      fromPort: "音频输出",
+      fromDevice: getWiredMicrophoneUnitLabel(device, index, wiredMicrophones.length),
+      fromPort: "卡侬母头（XLR-3）",
       toDevice: dtName,
       toPort: "模拟输入 L/R/G",
-      cableType: "音频线",
-      note: getExternalMicrophoneConnectionNote(device)
+      cableType: "麦克风线",
+      note: WIRED_MIC_TO_LINE_IN_NOTE
     });
   });
 
@@ -636,19 +636,16 @@ function generateProcessorDirectConnectionLines(
     );
   }
   wiredMicrophones.forEach((device, index) => {
-    lines.push(
-      shouldRouteExternalToLegacyAudio
-        ? buildExternalToLegacyAudioLine(device, legacyAudioInputDevice, `processor-wired-mic-legacy-${index + 1}`)
-        : {
-            id: `processor-wired-mic-audio-${index + 1}`,
-            fromDevice: device,
-            fromPort: "音频输出",
-            toDevice: coreName,
-            toPort: "模拟音频输入",
-            cableType: "音频线",
-            note: "有线麦克风需自供电或由前级设备供电，再向智能音频处理主机提供音频信号。"
-          }
-    );
+    const usesLineInput = processorTier === "highPerformance";
+    lines.push({
+      id: `processor-wired-mic-audio-${index + 1}`,
+      fromDevice: getWiredMicrophoneUnitLabel(device, index, wiredMicrophones.length),
+      fromPort: "卡侬母头（XLR-3）",
+      toDevice: coreName,
+      toPort: usesLineInput ? "LINE IN" : "MIC IN",
+      cableType: "麦克风线",
+      note: usesLineInput ? WIRED_MIC_TO_LINE_IN_NOTE : WIRED_MIC_TO_MIC_IN_NOTE
+    });
   });
 
   if (legacySound) {
@@ -942,12 +939,17 @@ function getLegacyWirelessMicrophoneLabel(device: string) {
   return device.startsWith("利旧") ? device : `利旧${device}`;
 }
 
+function getWiredMicrophoneUnitLabel(device: string, index: number, total: number) {
+  const legacyLabel = getLegacyWirelessMicrophoneLabel(device);
+  return total > 1 ? `${legacyLabel} ${index + 1}` : legacyLabel;
+}
+
 export const hasExistingWirelessHandheld = (profile: ClassroomProfile) =>
   splitDeviceText(profile.existingDevices.legacyWirelessMic).some(isWirelessMicrophoneDevice);
 
 function getExternalMicrophoneConnectionNote(device: string) {
   if (device.includes("无线接收机")) return "无线接收机信号输出优先使用 LINE OUT RCA；阵列麦主机模拟输入为 L/R/G。";
   if (isWirelessMicrophoneDevice(device)) return "现场外接无线手持麦需复核接收机输出接口，优先接入阵列麦主机模拟输入 L/R/G。";
-  if (device.includes("有线")) return "阵列麦主机模拟输入不提供幻象供电；有线麦克风需自供电或由前级设备供电，并向阵列麦主机提供线路 / 麦克风音频信号。";
+  if (device.includes("有线")) return WIRED_MIC_TO_LINE_IN_NOTE;
   return "外接麦克风需复核前级输出接口，优先接入阵列麦主机模拟输入 L/R/G。";
 }

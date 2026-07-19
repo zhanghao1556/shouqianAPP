@@ -484,6 +484,125 @@ assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "pr
 assert.match(interfaceForcedAj600.connectionLines.find((line) => line.id === "processor-amplifier-speakers")?.toDevice ?? "", /× 1$/);
 console.log("PASS AJ200/AJ600 4/5/8/9/10/12/13 speaker tiers preserve interface-first selection and physical direct/amplifier splits in formal connections and customer topology");
 
+const wiredMicLineInWarning = "有线麦直连LINE IN时，需自供电或前级供电，仅提供音频信号。";
+const buildWiredMicProcessorOutput = (processorTier, legacyWirelessMic, microphoneSolution = "lineArray") =>
+  generateEngineeringOutputs(makeProfile({
+    length: 8,
+    width: 8,
+    scope: "podium",
+    microphoneSolution,
+    processorTier,
+    legacyWirelessMic,
+    speakerProductOverride: "wall",
+    overheadSpeakerMounting: "available",
+    measuredRt60: 0.4
+  }), twoSpeakerOverrides, "yinman");
+const getFormalWiredMicLines = (outputs) => outputs.connectionLines
+  .filter((line) => line.id.startsWith("processor-wired-mic-audio-"));
+
+const twoMicWiredOutput = buildWiredMicProcessorOutput("twoMic", "有线麦克风、有线麦克风");
+assert.equal(twoMicWiredOutput.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
+const twoMicWiredLines = getFormalWiredMicLines(twoMicWiredOutput);
+assert.deepEqual(twoMicWiredLines.map((line) => line.fromDevice), ["利旧有线麦克风 1", "利旧有线麦克风 2"]);
+twoMicWiredLines.forEach((line) => {
+  assert.equal(line.fromPort, "卡侬母头（XLR-3）");
+  assert.equal(line.toDevice, "双麦处理器");
+  assert.equal(line.toPort, "MIC IN");
+  assert.equal(line.cableType, "麦克风线");
+  assert.equal(line.note.includes(wiredMicLineInWarning), false);
+});
+
+const sixMicWiredOutput = buildWiredMicProcessorOutput("sixMic", "有线麦克风");
+assert.equal(sixMicWiredOutput.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
+const sixMicWiredLine = getFormalWiredMicLines(sixMicWiredOutput)[0];
+assert.equal(sixMicWiredLine?.fromDevice, "利旧有线麦克风");
+assert.equal(sixMicWiredLine?.fromPort, "卡侬母头（XLR-3）");
+assert.equal(sixMicWiredLine?.toDevice, "六麦处理器");
+assert.equal(sixMicWiredLine?.toPort, "MIC IN");
+assert.equal(sixMicWiredLine?.cableType, "麦克风线");
+assert.equal(sixMicWiredLine?.note.includes(wiredMicLineInWarning), false);
+
+const highPerformanceWiredOutput = buildWiredMicProcessorOutput("highPerformance", "有线麦克风", "existingArray");
+assert.equal(highPerformanceWiredOutput.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
+const highPerformanceWiredLine = getFormalWiredMicLines(highPerformanceWiredOutput)[0];
+assert.equal(highPerformanceWiredLine?.fromDevice, "利旧有线麦克风");
+assert.equal(highPerformanceWiredLine?.fromPort, "卡侬母头（XLR-3）");
+assert.equal(highPerformanceWiredLine?.toDevice, "高性能处理器");
+assert.equal(highPerformanceWiredLine?.toPort, "LINE IN");
+assert.equal(highPerformanceWiredLine?.cableType, "麦克风线");
+assert.equal(highPerformanceWiredLine?.note.includes(wiredMicLineInWarning), true);
+
+const singleWiredMicTopologyProfile = makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "existingArray",
+  processorTier: "highPerformance",
+  legacyWirelessMic: "有线麦克风",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+});
+const singleWiredMicTopology = getTopologyLayoutSnapshot(
+  singleWiredMicTopologyProfile,
+  highPerformanceWiredOutput.connectionLines,
+  highPerformanceWiredOutput.generatedPoints
+);
+assert.deepEqual(
+  singleWiredMicTopology.nodes.filter((node) => node.key.startsWith("wiredMic-")).map((node) => node.key),
+  ["wiredMic-有线麦克风"]
+);
+assert.equal(singleWiredMicTopology.edges.some((edge) => edge.id.startsWith("pending-external-") && edge.to.startsWith("wiredMic-")), false);
+
+const twoWiredMicTopologyProfile = makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  processorTier: "twoMic",
+  legacyWirelessMic: "有线麦克风、有线麦克风",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+});
+const twoWiredMicTopology = getTopologyLayoutSnapshot(
+  twoWiredMicTopologyProfile,
+  twoMicWiredOutput.connectionLines,
+  twoMicWiredOutput.generatedPoints
+);
+assert.deepEqual(
+  twoWiredMicTopology.nodes
+    .filter((node) => node.key.startsWith("wiredMic-"))
+    .map((node) => node.key)
+    .sort(),
+  ["wiredMic-有线麦克风1", "wiredMic-有线麦克风2"]
+);
+assert.equal(twoWiredMicTopology.edges.filter((edge) => edge.from.startsWith("wiredMic-")).length, 2);
+assert.equal(twoWiredMicTopology.edges.some((edge) => edge.id.startsWith("pending-external-") && edge.to.startsWith("wiredMic-")), false);
+
+const wiredMicWithLegacySoundProfile = makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  processorTier: "sixMic",
+  legacyWirelessMic: "有线麦克风",
+  speakerProductOverride: "wall",
+  overheadSpeakerMounting: "available",
+  measuredRt60: 0.4
+});
+wiredMicWithLegacySoundProfile.existingDevices = {
+  ...wiredMicWithLegacySoundProfile.existingDevices,
+  legacySoundSystem: "调音台、功放"
+};
+const wiredMicWithLegacySoundOutput = generateEngineeringOutputs(wiredMicWithLegacySoundProfile, twoSpeakerOverrides, "yinman");
+const wiredMicWithLegacySoundLine = getFormalWiredMicLines(wiredMicWithLegacySoundOutput)[0];
+assert.equal(wiredMicWithLegacySoundLine?.toDevice, "六麦处理器");
+assert.equal(wiredMicWithLegacySoundLine?.toPort, "MIC IN");
+assert.equal(wiredMicWithLegacySoundOutput.connectionLines.some((line) => line.id.startsWith("processor-wired-mic-legacy-")), false);
+assert.equal(wiredMicWithLegacySoundOutput.connectionLines.some((line) => line.fromDevice === "利旧有线麦克风" && line.toDevice === "调音台"), false);
+console.log("PASS legacy wired microphones use XLR female microphone cables into processor MIC IN, fall back to AJ350 LINE IN with the exact power note, bypass no legacy system, and retain stable per-unit labels");
+
 const hybridProfile12 = makeProfile({
   length: 12.4,
   width: 7.4,
