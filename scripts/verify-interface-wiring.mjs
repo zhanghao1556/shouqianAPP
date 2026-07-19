@@ -601,49 +601,49 @@ assert.equal(
   "LINE IN 1"
 );
 for (const width of [520, 993, 1120]) {
-  const levelTwoLayout = getInterfaceWiringLayout(wireless.model, width);
-  const levelTwoNodes = wireless.model.nodes.filter((item) => item.level === 2);
-  const wideLevelTwoNodeIds = new Set(levelTwoNodes
+  const compactLayout = getInterfaceWiringLayout(wireless.model, width);
+  const nonRootNodes = wireless.model.nodes.filter((item) => item.id !== wireless.model.rootNodeId);
+  const wideNodeIds = new Set(nonRootNodes
     .filter((item) => (getDevicePortProfile(item.productId)?.interfacePanel?.aspectRatio ?? 0) >= 2.4)
     .map((item) => item.id));
-  const levelTwoRows = new Map();
-  levelTwoNodes.forEach((item) => {
-    const position = levelTwoLayout.positions[item.id];
+  const compactRows = new Map();
+  nonRootNodes.forEach((item) => {
+    const position = compactLayout.positions[item.id];
     const rowKey = position.centerY.toFixed(3);
-    levelTwoRows.set(rowKey, [...(levelTwoRows.get(rowKey) ?? []), item.id]);
+    compactRows.set(rowKey, [...(compactRows.get(rowKey) ?? []), item.id]);
   });
-  assert.ok(Array.from(levelTwoRows.values()).every((row) => {
-    const wideCount = row.filter((id) => wideLevelTwoNodeIds.has(id)).length;
-    return wideCount === 0 || row.length <= 2;
+  assert.ok(Array.from(compactRows.values()).every((row) => {
+    const wideCount = row.filter((id) => wideNodeIds.has(id)).length;
+    return wideCount <= (width < 560 ? 1 : 2);
   }));
-  const lineArrayPosition = levelTwoLayout.positions["line-array"];
-  const wirelessReceiverPosition = levelTwoLayout.positions["wireless-receiver"];
+  const lineArrayPosition = compactLayout.positions["line-array"];
+  const wirelessReceiverPosition = compactLayout.positions["wireless-receiver"];
   assert.ok(lineArrayPosition.width <= 460 && wirelessReceiverPosition.width <= 460);
   if (width >= 993) {
-    const expectedWidePanelWidth = Math.min(460, Math.floor((width - 72 * 2 - 24) / 2));
-    assert.deepEqual(
-      [lineArrayPosition.width, wirelessReceiverPosition.width],
-      [expectedWidePanelWidth, expectedWidePanelWidth]
-    );
+    assert.ok(lineArrayPosition.width >= 300 && wirelessReceiverPosition.width >= 300);
   }
   assert.equal(
-    levelTwoNodes.some((item) => levelTwoLayout.positions[item.id].centerY === levelTwoLayout.positions[wireless.model.rootNodeId].centerY),
+    nonRootNodes.some((item) => compactLayout.positions[item.id].centerY === compactLayout.positions[wireless.model.rootNodeId].centerY),
     false
   );
-  const levelTwoSpeakerPositions = levelTwoNodes
+  const speakerNodes = nonRootNodes
     .filter((item) => item.category === "speaker")
-    .map((item) => levelTwoLayout.positions[item.id]);
-  assert.equal(levelTwoSpeakerPositions.length, levelTwoNodes.filter((item) => item.category === "speaker").length);
-  assert.ok(levelTwoSpeakerPositions.length >= 2);
-  assert.equal(new Set(levelTwoSpeakerPositions.map((item) => item.centerY)).size, 1);
-  for (let index = 1; index < levelTwoSpeakerPositions.length; index += 1) {
-    assert.equal(
-      levelTwoSpeakerPositions[index].x - (levelTwoSpeakerPositions[index - 1].x + levelTwoSpeakerPositions[index - 1].width),
-      0
-    );
+    .sort((left, right) => left.ports[0].deviceSequenceRange.start - right.ports[0].deviceSequenceRange.start);
+  assert.ok(speakerNodes.length >= 2);
+  const speakerRows = speakerNodes.reduce((rows, item) => {
+    const rowKey = compactLayout.positions[item.id].centerY;
+    rows.set(rowKey, [...(rows.get(rowKey) ?? []), item]);
+    return rows;
+  }, new Map());
+  assert.ok(Array.from(speakerRows.values()).every((row) => row.length <= 8));
+  for (const row of speakerRows.values()) {
+    const positions = row.map((item) => compactLayout.positions[item.id]).sort((left, right) => left.x - right.x);
+    for (let index = 1; index < positions.length; index += 1) {
+      assert.equal(positions[index].x - (positions[index - 1].x + positions[index - 1].width), 0);
+    }
   }
 }
-console.log("PASS wireless wiring keeps the receiver physical-only while wide level-two panels use at most two devices per row");
+console.log("PASS wireless wiring keeps the receiver physical-only while peer devices pack compactly and speakers remain continuous");
 
 const unknownPortProfile = singleLineProfile;
 const unknownPortOutputs = {
@@ -1828,7 +1828,8 @@ const amplifierLayoutCase = buildModel(makeProfile({
 }));
 const amplifierLayoutNode = amplifierLayoutCase.model.nodes.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID);
 assert.ok(amplifierLayoutNode);
-assert.equal(getInterfaceWiringLayout(amplifierLayoutCase.model, 993).positions[amplifierLayoutNode.id].width, 460);
+const amplifierLayoutWidth = getInterfaceWiringLayout(amplifierLayoutCase.model, 993).positions[amplifierLayoutNode.id].width;
+assert.ok(amplifierLayoutWidth >= 300 && amplifierLayoutWidth <= 460);
 const amplifierLayoutJumpers = amplifierLayoutCase.model.edges.filter((edge) => edge.kind === "jumper");
 const amplifierLayoutSpkPorts = amplifierLayoutNode.ports.filter((port) => /^spk[1-4]$/.test(port.capabilityId));
 assert.match(
@@ -1915,28 +1916,31 @@ for (let index = 1; index < amplifierClusterSpeakerPositions.length; index += 1)
   );
 }
 const amplifierClusterSpeakerRowY = amplifierClusterSpeakerPositions[0].centerY;
-assert.ok(amplifierClusterPosition.centerY < amplifierClusterSpeakerRowY);
-assert.ok(amplifierClusterSpeakerRowY < amplifierClusterRootPosition.centerY);
+assert.notEqual(amplifierClusterPosition.centerY, amplifierClusterSpeakerRowY);
+assert.notEqual(amplifierClusterSpeakerRowY, amplifierClusterRootPosition.centerY);
+assert.equal(amplifierClusterRootPosition.centerY, amplifierClusterLayout.height / 2);
+
+const compactPriorityRoot = node(amplifierClusterCase.model, amplifierClusterCase.model.rootNodeId);
+const compactPrioritySpeakers = amplifierClusterAllSpeakers.slice(0, 2);
+const compactPriorityModel = {
+  ...amplifierClusterCase.model,
+  nodes: [compactPriorityRoot, controlHostNode, ...compactPrioritySpeakers],
+  edges: []
+};
+const compactPriorityLayout = getInterfaceWiringLayout(compactPriorityModel, 993, 44);
+const compactPriorityControlPosition = compactPriorityLayout.positions[controlHostNode.id];
+assert.equal(compactPriorityControlPosition.width, 307);
+assert.equal(Math.round(compactPriorityControlPosition.height), 138);
 assert.equal(
-  Math.round(amplifierClusterSpeakerPositions[0].y - (amplifierClusterPosition.y + amplifierClusterPosition.height)),
-  88
+  compactPriorityControlPosition.centerY,
+  compactPriorityLayout.positions[compactPrioritySpeakers[0].id].centerY,
+  "a compact mixed row must beat an affinity-only extra row"
 );
 assert.equal(
-  Math.round(amplifierClusterRootPosition.y -
-    (amplifierClusterSpeakerPositions[0].y + amplifierClusterSpeakerPositions[0].height)),
-  88
+  compactPriorityLayout.positions[compactPriorityModel.rootNodeId].centerY,
+  compactPriorityLayout.height / 2
 );
-for (const directChild of amplifierClusterCase.model.nodes.filter((item) =>
-  item.parentId === amplifierClusterCase.model.rootNodeId &&
-  item.id !== amplifierClusterNode.id &&
-  item.category !== "speaker"
-)) {
-  const position = amplifierClusterLayout.positions[directChild.id];
-  assert.ok(
-    position.y >= amplifierClusterRootPosition.y + amplifierClusterRootPosition.height,
-    directChild.id + " must stay on the opposite side of the amplifier-speaker-processor cluster"
-  );
-}
+console.log("PASS compactness outranks row affinity and the control-host panel is reduced to 307 by 138");
 
 const sixteenSpeakerCase = buildModel(makeProfile({
   length: 8,
@@ -1964,9 +1968,10 @@ assert.equal(
   1,
   "eight speaker icons must share one desktop row"
 );
-assert.ok(
-  sixteenSpeakerDesktopLayout.positions[sixteenSpeakerAmplifier.id].centerY < sixteenSpeakerDesktopPositions[0].centerY &&
-  sixteenSpeakerDesktopPositions[0].centerY < sixteenSpeakerDesktopLayout.positions[sixteenSpeakerCase.model.rootNodeId].centerY
+assert.notEqual(sixteenSpeakerDesktopLayout.positions[sixteenSpeakerAmplifier.id].centerY, sixteenSpeakerDesktopPositions[0].centerY);
+assert.equal(
+  sixteenSpeakerDesktopLayout.positions[sixteenSpeakerCase.model.rootNodeId].centerY,
+  sixteenSpeakerDesktopLayout.height / 2
 );
 const sixteenSpeakerNarrowLayout = getInterfaceWiringLayout(sixteenSpeakerCase.model, 520);
 const sixteenSpeakerNarrowRows = Object.values(sixteenSpeakerGroups.reduce((rows, item) => {
@@ -2008,12 +2013,12 @@ const crossingSpeakerGroups = crossingCase.model.nodes.filter((item) => item.cat
 assert.equal(crossingSpeakerGroups.length, 4);
 const crossingSpeakerPositions = crossingSpeakerGroups.map((item) => crossingLayout.positions[item.id]);
 assert.equal(new Set(crossingSpeakerPositions.map((item) => item.centerY)).size, 1);
-assert.ok(crossingSpeakerPositions[0].centerY < crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
-assert.ok(crossingLayout.positions[crossingComputer.id].centerY > crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
+assert.notEqual(crossingSpeakerPositions[0].centerY, crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
+assert.notEqual(crossingLayout.positions[crossingComputer.id].centerY, crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
 for (let index = 1; index < crossingSpeakerPositions.length; index += 1) {
   assert.equal(crossingSpeakerPositions[index].x - (crossingSpeakerPositions[index - 1].x + crossingSpeakerPositions[index - 1].width), 0);
 }
-console.log("PASS compact speaker groups stay ordered while unrelated devices remain beyond the processor row");
+console.log("PASS compact speaker groups stay ordered while unrelated devices use peer-row packing");
 
 const crossingReferences = getInterfaceWiringPortReferenceNumbers(crossingCase.model);
 const crossingPorts = crossingCase.model.nodes.flatMap((item) => item.ports);
@@ -2110,7 +2115,21 @@ function assertLayoutFitsWidth(model, width) {
       assert.equal(overlaps, false, left.id + " overlaps " + right.id + " at canvas width " + width);
     }
   }
+  const nodeById = new Map(model.nodes.map((item) => [item.id, item]));
+  const visualRows = rectangles.reduce((rows, rectangle) => {
+    rows.set(rectangle.centerY, [...(rows.get(rectangle.centerY) ?? []), rectangle]);
+    return rows;
+  }, new Map());
+  const ordinarySidePadding = width < 560 ? 60 : width < 720 ? 48 : 72;
+  for (const row of visualRows.values()) {
+    const hasSpeaker = row.some((item) => nodeById.get(item.id)?.category === "speaker");
+    const hasOtherDevice = row.some((item) => nodeById.get(item.id)?.category !== "speaker");
+    if (!hasSpeaker || !hasOtherDevice) continue;
+    assert.ok(Math.min(...row.map((item) => item.x)) >= ordinarySidePadding - 0.001);
+    assert.ok(Math.max(...row.map((item) => item.x + item.width)) <= width - ordinarySidePadding + 0.001);
+  }
   assert.equal(layout.positions[model.rootNodeId]?.centerX, width / 2, "Level-one device must remain horizontally centered");
+  assert.equal(layout.positions[model.rootNodeId]?.centerY, layout.height / 2, "Level-one device must remain vertically centered");
 }
 
 for (const width of [520, 993, 1120]) {
@@ -2130,7 +2149,7 @@ for (const width of [520, 993, 1120]) {
     assert.deepEqual(getInterfaceWiringLayout(model, width), getInterfaceWiringLayout(model, width));
   }
 }
-console.log("PASS responsive wiring layouts stay within browser width without node overlap");
+console.log("PASS responsive wiring layouts stay within browser width without overlap and keep the level-one device at geometric center");
 `;
 
 const result = await build({
