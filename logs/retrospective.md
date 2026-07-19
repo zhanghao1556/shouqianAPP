@@ -2262,3 +2262,18 @@ PowerShell reminder:
 - When regression tests already assert the expected `4+N` split but a long-lived page shows `8+N`, compare the current tab with a fresh module load before editing valid rules. Fix the shared data source only if a fresh page reproduces the mismatch.
 - Generated topology is a projection of formal connections, not a second capacity calculator. When a speaker endpoint already carries an explicit `xN`, use that quantity for both the node and cable label; retain global speaker-count formulas only as compatibility fallbacks for older lines without explicit quantities.
 - Test customer-visible projections as well as engineering outputs. A connection-rule assertion can pass while a drawing silently recomputes a different count after internal fields are stripped; the 10-speaker `AJ200 4 + amplifier 6` case now guards that boundary directly.
+
+### 2026-07-19 interface-wiring row affinity
+
+- Apply business-family row affinity before generic portrait/wide/ordinary packing: speakers with hanging microphones, recording with conference endpoints, computer/all-in-one/laptop devices, and visible microphones with wireless receivers.
+- Affinity is a preference inside the established hierarchy and readability limits. Preserve amplifier-child adjacency, the two-wide-panels-per-row cap and responsive width bounds; spill a family to another row when it cannot fit legibly.
+- Singleton rebalancing must prefer its own affinity before borrowing or merging across families, otherwise a later generic cleanup silently undoes the requested grouping.
+- Speaker affinity crosses parent levels: processor-direct and amplifier-driven speaker nodes share one physical sequence. Pack by display-node count, not cumulative physical quantity: one icon may represent one or two physical speakers, and each row caps at eight speaker icons. Preserve ascending physical sequence across rows and place the amplifier adjacent to the shared speaker band.
+
+### 2026-07-19 global speaker-band correction
+
+- Distinguish physical device quantity from drawing-node quantity before translating a user limit. “Eight speaker images per row” means eight compact interface nodes even when each node represents two physical speakers; tests must assert both the icon count and each node's sequence range.
+- Parentage is an electrical contract, not a visual grouping boundary. Keep processor/amplifier parent IDs and edges unchanged while projecting all compact speaker nodes into one globally sorted display band.
+- The preferred desktop order is amplifier, shared speaker band, processor, with unrelated devices beyond the processor. On narrow canvases, preserve width and readability by adding speaker rows; do not force the desktop three-row shape through scaling or overflow.
+- A full-width equipment band can become a routing barrier. Node collision tests alone did not catch the processor-amplifier cable crossing a speaker image; rendered QA must inspect cross-band edges after reordering.
+- When a single cubic cannot clear a continuous row inside the canvas, use a bounded side-corridor fallback made of curved entry/exit segments. Keep every terminal lead anchored to the confirmed hole, place the cable reference in the corridor and select the shorter available side without leaving the drawing frame.

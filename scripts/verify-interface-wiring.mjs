@@ -1544,6 +1544,9 @@ const leadLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringEd
 assert.ok(nodeLayerIndex >= 0 && nodeLayerIndex < trunkLayerIndex && trunkLayerIndex < leadLayerIndex);
 assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortPin|markerEnd=/);
 assert.doesNotMatch(wiringPreviewSource, /getNodeExitPoint/);
+assert.match(wiringPreviewSource, /function getCorridorCableRoute/);
+assert.match(wiringPreviewSource, /const corridorCandidates = \[/);
+assert.match(wiringPreviewSource, /route\.corridor/);
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
@@ -1632,49 +1635,118 @@ assert.deepEqual(amplifierClusterJumpers.map((edge) => edge.connectionMethod), [
 const amplifierClusterLayout = getInterfaceWiringLayout(amplifierClusterCase.model, 993);
 const amplifierClusterPosition = amplifierClusterLayout.positions[amplifierClusterNode.id];
 const amplifierClusterRootPosition = amplifierClusterLayout.positions[amplifierClusterCase.model.rootNodeId];
-const amplifierClusterDirection = amplifierClusterPosition.centerY >= amplifierClusterRootPosition.centerY ? 1 : -1;
-const amplifierOuterEdge = amplifierClusterPosition.centerY * amplifierClusterDirection + amplifierClusterPosition.height / 2;
-const speakerNearEdges = amplifierClusterSpeakers.map((item) => {
-  const position = amplifierClusterLayout.positions[item.id];
-  return position.centerY * amplifierClusterDirection - position.height / 2;
-});
-const speakerFarEdge = Math.max(...amplifierClusterSpeakers.map((item) => {
-  const position = amplifierClusterLayout.positions[item.id];
-  return position.centerY * amplifierClusterDirection + position.height / 2;
-}));
-assert.equal(Math.round(Math.min(...speakerNearEdges) - amplifierOuterEdge), 88);
-for (const directChild of amplifierClusterCase.model.nodes.filter((item) =>
-  item.parentId === amplifierClusterCase.model.rootNodeId && item.id !== amplifierClusterNode.id
-)) {
-  const position = amplifierClusterLayout.positions[directChild.id];
-  const nearEdge = position.centerY * amplifierClusterDirection - position.height / 2;
-  const farEdge = position.centerY * amplifierClusterDirection + position.height / 2;
+const amplifierClusterAllSpeakers = amplifierClusterCase.model.nodes
+  .filter((item) => item.category === "speaker")
+  .sort((left, right) => left.ports[0].deviceSequenceRange.start - right.ports[0].deviceSequenceRange.start);
+const amplifierClusterSpeakerPositions = amplifierClusterAllSpeakers.map((item) =>
+  amplifierClusterLayout.positions[item.id]
+);
+assert.equal(new Set(amplifierClusterSpeakerPositions.map((item) => item.centerY)).size, 1);
+assert.ok(amplifierClusterAllSpeakers.some((item) => item.parentId === amplifierClusterCase.model.rootNodeId));
+assert.ok(amplifierClusterAllSpeakers.some((item) => item.parentId === amplifierClusterNode.id));
+for (let index = 1; index < amplifierClusterSpeakerPositions.length; index += 1) {
   assert.equal(
-    farEdge > amplifierOuterEdge && nearEdge < speakerFarEdge,
-    false,
-    directChild.id + " must not sit between the amplifier and its speaker children"
+    amplifierClusterSpeakerPositions[index].x -
+      (amplifierClusterSpeakerPositions[index - 1].x + amplifierClusterSpeakerPositions[index - 1].width),
+    0
   );
 }
+const amplifierClusterSpeakerRowY = amplifierClusterSpeakerPositions[0].centerY;
+assert.ok(amplifierClusterPosition.centerY < amplifierClusterSpeakerRowY);
+assert.ok(amplifierClusterSpeakerRowY < amplifierClusterRootPosition.centerY);
+assert.equal(
+  Math.round(amplifierClusterSpeakerPositions[0].y - (amplifierClusterPosition.y + amplifierClusterPosition.height)),
+  88
+);
+assert.equal(
+  Math.round(amplifierClusterRootPosition.y -
+    (amplifierClusterSpeakerPositions[0].y + amplifierClusterSpeakerPositions[0].height)),
+  88
+);
+for (const directChild of amplifierClusterCase.model.nodes.filter((item) =>
+  item.parentId === amplifierClusterCase.model.rootNodeId &&
+  item.id !== amplifierClusterNode.id &&
+  item.category !== "speaker"
+)) {
+  const position = amplifierClusterLayout.positions[directChild.id];
+  assert.ok(
+    position.y >= amplifierClusterRootPosition.y + amplifierClusterRootPosition.height,
+    directChild.id + " must stay on the opposite side of the amplifier-speaker-processor cluster"
+  );
+}
+
+const sixteenSpeakerCase = buildModel(makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "hangingMic",
+  computer: "讲台电脑",
+  recordingHost: "录播主机、中控主机"
+}), { [HANGING_MIC_PRODUCT_ID]: 1, "COLUMN-SPEAKER": 16 });
+const sixteenSpeakerAmplifier = node(sixteenSpeakerCase.model, "amplifier");
+const sixteenSpeakerGroups = sixteenSpeakerCase.model.nodes
+  .filter((item) => item.category === "speaker")
+  .sort((left, right) => left.ports[0].deviceSequenceRange.start - right.ports[0].deviceSequenceRange.start);
+assert.equal(sixteenSpeakerGroups.length, 8);
+assert.ok(sixteenSpeakerGroups.every((item) => item.quantity === 2));
+assert.deepEqual(
+  sixteenSpeakerGroups.map((item) => item.ports[0].deviceSequenceRange),
+  Array.from({ length: 8 }, (_, index) => ({ start: index * 2 + 1, end: index * 2 + 2 }))
+);
+const sixteenSpeakerDesktopLayout = getInterfaceWiringLayout(sixteenSpeakerCase.model, 993);
+const sixteenSpeakerDesktopPositions = sixteenSpeakerGroups.map((item) => sixteenSpeakerDesktopLayout.positions[item.id]);
+assert.equal(new Set(sixteenSpeakerDesktopPositions.map((item) => item.centerY)).size, 1);
+assert.ok(
+  sixteenSpeakerDesktopLayout.positions[sixteenSpeakerAmplifier.id].centerY < sixteenSpeakerDesktopPositions[0].centerY &&
+  sixteenSpeakerDesktopPositions[0].centerY < sixteenSpeakerDesktopLayout.positions[sixteenSpeakerCase.model.rootNodeId].centerY
+);
+const sixteenSpeakerNarrowLayout = getInterfaceWiringLayout(sixteenSpeakerCase.model, 520);
+const sixteenSpeakerNarrowRows = Object.values(sixteenSpeakerGroups.reduce((rows, item) => {
+  const y = sixteenSpeakerNarrowLayout.positions[item.id].centerY;
+  rows[y] = [...(rows[y] ?? []), item];
+  return rows;
+}, {}));
+assert.deepEqual(sixteenSpeakerNarrowRows.map((row) => row.length).sort((left, right) => right - left), [4, 4]);
+
+const ninthSpeakerSource = sixteenSpeakerGroups[7];
+const ninthSpeakerNode = {
+  ...ninthSpeakerSource,
+  id: "layout-only-speaker-group-9",
+  parentId: sixteenSpeakerCase.model.rootNodeId,
+  ports: ninthSpeakerSource.ports.map((port) => ({
+    ...port,
+    id: "layout-only-speaker-group-9:terminals",
+    nodeId: "layout-only-speaker-group-9",
+    deviceSequenceRange: { start: 17, end: 18 }
+  }))
+};
+const nineIconLayout = getInterfaceWiringLayout({
+  ...sixteenSpeakerCase.model,
+  nodes: [...sixteenSpeakerCase.model.nodes, ninthSpeakerNode]
+}, 1120);
+const nineIconRows = [...sixteenSpeakerGroups, ninthSpeakerNode].reduce((rows, item) => {
+  const y = nineIconLayout.positions[item.id].centerY;
+  rows[y] = (rows[y] ?? 0) + 1;
+  return rows;
+}, {});
+assert.deepEqual(Object.values(nineIconRows).sort((left, right) => right - left), [8, 1]);
+console.log("PASS processor and amplifier speakers form one ordered band with at most eight speaker icons per row");
+
 const crossingCase = buildModel(crossingProfile);
 const crossingLayout = getInterfaceWiringLayout(crossingCase.model, 993);
 const crossingComputer = crossingCase.model.nodes.find((item) => item.label === "讲台电脑");
 assert.ok(crossingComputer);
 const crossingSpeakerGroups = crossingCase.model.nodes.filter((item) => item.category === "speaker");
 assert.equal(crossingSpeakerGroups.length, 4);
-assert.ok(crossingSpeakerGroups.every((item) => crossingLayout.positions[item.id].centerX < crossingLayout.positions[crossingComputer.id].centerX));
 const crossingSpeakerPositions = crossingSpeakerGroups.map((item) => crossingLayout.positions[item.id]);
 assert.equal(new Set(crossingSpeakerPositions.map((item) => item.centerY)).size, 1);
-assert.equal(crossingLayout.positions[crossingComputer.id].centerY, crossingSpeakerPositions[0].centerY);
-assert.equal(
-  crossingCase.model.nodes.filter((item) =>
-    item.level === 2 && crossingLayout.positions[item.id].centerY === crossingSpeakerPositions[0].centerY
-  ).length,
-  5
-);
+assert.ok(crossingSpeakerPositions[0].centerY < crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
+assert.ok(crossingLayout.positions[crossingComputer.id].centerY > crossingLayout.positions[crossingCase.model.rootNodeId].centerY);
 for (let index = 1; index < crossingSpeakerPositions.length; index += 1) {
   assert.equal(crossingSpeakerPositions[index].x - (crossingSpeakerPositions[index - 1].x + crossingSpeakerPositions[index - 1].width), 0);
 }
-console.log("PASS portrait level-two devices stay together and SPK child groups remain compact on the root-port side");
+console.log("PASS compact speaker groups stay ordered while unrelated devices remain beyond the processor row");
 
 const crossingReferences = getInterfaceWiringPortReferenceNumbers(crossingCase.model);
 const crossingPorts = crossingCase.model.nodes.flatMap((item) => item.ports);
@@ -1733,7 +1805,8 @@ const models = [
   overflowModel,
   hanging.model,
   crossingCase.model,
-  amplifierClusterCase.model
+  amplifierClusterCase.model,
+  sixteenSpeakerCase.model
 ];
 for (const model of models) {
   assertNoDuplicatePortOccupancy(model);
@@ -1777,7 +1850,8 @@ for (const width of [520, 993, 1120]) {
     smallDisc03.model,
     smallDiscUsb.model,
     wireless.model,
-    amplifierClusterCase.model
+    amplifierClusterCase.model,
+    sixteenSpeakerCase.model,
   ]) {
     assertLayoutFitsWidth(model, width);
     assert.deepEqual(getInterfaceWiringLayout(model, width), getInterfaceWiringLayout(model, width));

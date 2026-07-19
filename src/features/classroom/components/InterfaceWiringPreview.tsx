@@ -745,7 +745,7 @@ function buildEdgeDrawings(
   }));
   const usedReferencePoints: Array<{ x: number; y: number }> = [];
   const drawings = new Map<string, {
-    route: ReturnType<typeof getEdgeRoute>;
+    route: CableRoute;
     conductorRoutes: Array<{
       conductor: InterfaceWiringConductor;
       trunkPath: string;
@@ -775,14 +775,15 @@ function buildEdgeDrawings(
     const pairCount = pairCounts.get(pairKey) ?? 1;
     const laneOffset = (pairIndex - (pairCount - 1) / 2) * 34;
     const displayConductors = getDisplayConductors(edge);
-    const route = edge.kind === "jumper"
+    const route: CableRoute = edge.kind === "jumper"
       ? getInternalJumperRoute(from, to, fromPosition, edge.jumperRoute, laneOffset)
       : findOpenCableRoute({
         from,
         to,
         preferredOffset: laneOffset,
         nodeRects,
-        endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId])
+        endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId]),
+        canvasWidth: layout.width
       });
     const conductorRoutes = displayConductors.map((conductor, conductorIndex) => {
       const conductorOffset = (conductorIndex - (displayConductors.length - 1) / 2) * 5.2;
@@ -814,7 +815,15 @@ function buildEdgeDrawings(
       );
       const bundledRoute = edge.kind === "jumper"
         ? getInternalJumperRoute(conductorFrom, conductorTo, fromPosition, edge.jumperRoute, laneOffset + conductorOffset)
-        : getEdgeRoute(from, to, route.offset + conductorOffset);
+        : route.corridor
+          ? getCorridorCableRoute(
+              conductorFrom,
+              conductorTo,
+              route.corridor.x + conductorOffset,
+              route.corridor.fromY,
+              route.corridor.toY
+            )
+          : getEdgeRoute(from, to, route.offset + conductorOffset);
       const paths = edge.kind === "jumper"
         ? { trunkPath: bundledRoute.path, fromLeadPath: "", toLeadPath: "" }
         : getBundledConductorSegments(
@@ -846,11 +855,27 @@ function buildEdgeDrawings(
 function getBundledConductorSegments(
   terminalFrom: { x: number; y: number },
   terminalTo: { x: number; y: number },
-  route: ReturnType<typeof getEdgeRoute>,
+  route: CableRoute,
   splitDistance: number,
   fromFanOffset = 0,
   toFanOffset = 0
 ) {
+  if (route.corridor) {
+    const fromBend = { x: route.corridor.x, y: route.corridor.fromY };
+    const toBend = { x: route.corridor.x, y: route.corridor.toY };
+    const fromSplit = movePointToward(terminalFrom, fromBend, splitDistance);
+    const toSplit = movePointToward(terminalTo, toBend, splitDistance);
+    return {
+      trunkPath: [
+        `M ${fromSplit.x} ${fromSplit.y}`,
+        `C ${fromSplit.x} ${route.corridor.fromY}, ${route.corridor.x} ${fromSplit.y}, ${route.corridor.x} ${route.corridor.fromY}`,
+        `L ${route.corridor.x} ${route.corridor.toY}`,
+        `C ${route.corridor.x} ${toSplit.y}, ${toSplit.x} ${route.corridor.toY}, ${toSplit.x} ${toSplit.y}`
+      ].join(" "),
+      fromLeadPath: getTerminalFanPath(terminalFrom, fromSplit, fromFanOffset, false),
+      toLeadPath: getTerminalFanPath(terminalTo, toSplit, toFanOffset, true)
+    };
+  }
   const fromSplit = movePointToward(route.from, route.control1, splitDistance);
   const toSplit = movePointToward(route.to, route.control2, splitDistance);
   return {
@@ -920,10 +945,23 @@ function movePointToward(
 }
 
 function findReferenceBadgePoint(
-  route: ReturnType<typeof getEdgeRoute>,
+  route: CableRoute,
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
   usedReferencePoints: Array<{ x: number; y: number }>
 ) {
+  if (route.corridor) {
+    const midpoint = (route.corridor.fromY + route.corridor.toY) / 2;
+    const candidates = [0, -28, 28, -56, 56].map((offset) => ({
+      x: route.corridor!.x,
+      y: midpoint + offset
+    }));
+    const outsideNodes = candidates.filter((point) =>
+      !nodeRects.some((rect) => pointInsideRect(point, rect, 11))
+    );
+    return outsideNodes.find((point) =>
+      usedReferencePoints.every((used) => Math.hypot(point.x - used.x, point.y - used.y) >= 22)
+    ) ?? outsideNodes[0] ?? candidates[0];
+  }
   const progresses = [0.5, 0.46, 0.54, 0.42, 0.58, 0.38, 0.62, 0.34, 0.66];
   const outsideNodes = progresses.flatMap((progress) => {
     const point = cubicPoint(route.from, route.control1, route.control2, route.to, progress);
@@ -980,13 +1018,15 @@ function findOpenCableRoute(input: {
   preferredOffset: number;
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>;
   endpointNodeIds: Set<string>;
-}) {
+  canvasWidth: number;
+}): CableRoute {
   const {
     from,
     to,
     preferredOffset,
     nodeRects,
-    endpointNodeIds
+    endpointNodeIds,
+    canvasWidth
   } = input;
   const offsets = [preferredOffset];
   for (let distance = 44; distance <= 440; distance += 44) {
@@ -996,7 +1036,63 @@ function findOpenCableRoute(input: {
     const route = getEdgeRoute(from, to, offset);
     if (!edgeRouteCrossesNodes(route, nodeRects, endpointNodeIds)) return route;
   }
-  return getEdgeRoute(from, to, preferredOffset);
+  const obstacles = nodeRects.filter((rect) =>
+    !endpointNodeIds.has(rect.id) &&
+    rect.y < Math.max(from.y, to.y) &&
+    rect.y + rect.height > Math.min(from.y, to.y)
+  );
+  if (!obstacles.length) return getEdgeRoute(from, to, preferredOffset);
+  const obstacleLeft = Math.min(...obstacles.map((rect) => rect.x));
+  const obstacleRight = Math.max(...obstacles.map((rect) => rect.x + rect.width));
+  const obstacleTop = Math.min(...obstacles.map((rect) => rect.y));
+  const obstacleBottom = Math.max(...obstacles.map((rect) => rect.y + rect.height));
+  const corridorGap = 18;
+  const corridorCandidates = [
+    Math.max(24, obstacleLeft - corridorGap),
+    Math.min(canvasWidth - 24, obstacleRight + corridorGap)
+  ].filter((x) => x <= obstacleLeft - 10 || x >= obstacleRight + 10);
+  const corridorX = corridorCandidates.sort((left, right) =>
+    Math.abs(from.x - left) + Math.abs(to.x - left) -
+    (Math.abs(from.x - right) + Math.abs(to.x - right))
+  )[0];
+  if (corridorX === undefined) return getEdgeRoute(from, to, preferredOffset);
+  const fromY = from.y <= to.y ? obstacleTop - corridorGap : obstacleBottom + corridorGap;
+  const toY = from.y <= to.y ? obstacleBottom + corridorGap : obstacleTop - corridorGap;
+  return getCorridorCableRoute(from, to, corridorX, fromY, toY);
+}
+
+type CableRoute = ReturnType<typeof getEdgeRoute> & {
+  corridor?: {
+    x: number;
+    fromY: number;
+    toY: number;
+  };
+};
+
+function getCorridorCableRoute(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorX: number,
+  fromY: number,
+  toY: number
+): CableRoute {
+  return {
+    path: [
+      `M ${from.x} ${from.y}`,
+      `C ${from.x} ${fromY}, ${corridorX} ${from.y}, ${corridorX} ${fromY}`,
+      `L ${corridorX} ${toY}`,
+      `C ${corridorX} ${to.y}, ${to.x} ${toY}, ${to.x} ${to.y}`
+    ].join(" "),
+    labelX: corridorX,
+    labelY: (fromY + toY) / 2,
+    offset: 0,
+    labelProgress: 0.5,
+    from,
+    to,
+    control1: { x: corridorX, y: fromY },
+    control2: { x: corridorX, y: toY },
+    corridor: { x: corridorX, fromY, toY }
+  };
 }
 
 function getEdgeRoute(
