@@ -2328,3 +2328,10 @@ PowerShell reminder:
 - A device accessory name is not a cable type. The laptop-to-headset-splitter TRRS link belongs to the audio-cable category so its trunk, legend aggregation and usage table stay consistent.
 - For the user-confirmed balanced-output to 3.5mm mono-input convention, represent the physical three-core cable explicitly: red and white both leave `LINE OUT +` and meet the mono signal contact, while the shield connects ground and `LINE OUT -` remains unused. A two-conductor shortcut is visually and electrically ambiguous in this drawing system.
 - Once terminal fan-out colors and cable-sheath legend colors are visible, separate red / white / gray text badges add clutter without new information. Remove their render path and data calculation together so dead label geometry cannot reappear or affect future routing work.
+
+### 2026-07-19 interface-wiring compact-layout proposal
+
+- Treat non-root hierarchy as a presentation choice, not an electrical requirement. Keep the primary device at the geometric center, then pack every other physical rectangle as a peer while preserving connection data separately.
+- Compactness outranks affinity. Speaker continuity remains a hard constraint, but other affinity groups are only a tie-breaker among layouts with equal or near-equal footprint; otherwise affinity can recreate sparse tier rows.
+- Compare candidate layouts with real node dimensions and the actual edge graph. Use a lexicographic objective: hard constraints, footprint, route length / crossings, then affinity ordering. Center-to-center distance is useful for preview comparison but must not be presented as a billable cable length.
+- A geometric-center hard constraint can leave intentional whitespace on the less-populated side. Do not move the root away from center merely to make the occupied bounding box look centered; instead alternate packed bands above and below and use the remaining space for bounded cable corridors.
