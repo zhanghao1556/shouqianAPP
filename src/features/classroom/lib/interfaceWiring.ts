@@ -1790,6 +1790,37 @@ export function getInterfaceWiringLayout(
   });
 }
 
+export function expandInterfaceWiringLayoutRoutingChannels(
+  layout: InterfaceWiringLayout,
+  rootNodeId: string | undefined,
+  channelGap: number
+): InterfaceWiringLayout {
+  const rootPosition = rootNodeId ? layout.positions[rootNodeId] : undefined;
+  if (!rootPosition || channelGap <= 0) return layout;
+  const rowCenters = Array.from(new Set(Object.values(layout.positions).map((position) => position.centerY)));
+  const topRows = rowCenters.filter((centerY) => centerY < rootPosition.centerY).sort((left, right) => right - left);
+  const bottomRows = rowCenters.filter((centerY) => centerY > rootPosition.centerY).sort((left, right) => left - right);
+  const rowRank = new Map<number, number>();
+  topRows.forEach((centerY, index) => rowRank.set(centerY, -(index + 1)));
+  bottomRows.forEach((centerY, index) => rowRank.set(centerY, index + 1));
+  const maxDepth = Math.max(topRows.length, bottomRows.length);
+  const centerShift = maxDepth * channelGap;
+  const positions = Object.fromEntries(Object.entries(layout.positions).map(([id, position]) => {
+    const rank = rowRank.get(position.centerY) ?? 0;
+    const shift = centerShift + Math.sign(rank) * Math.abs(rank) * channelGap;
+    return [id, {
+      ...position,
+      y: position.y + shift,
+      centerY: position.centerY + shift
+    }];
+  }));
+  return {
+    width: layout.width,
+    height: layout.height + centerShift * 2,
+    positions
+  };
+}
+
 export function getInterfaceWiringPortReferenceNumbers(model: InterfaceWiringModel) {
   const references: Record<string, number> = {};
   model.edges.forEach((edge, index) => {
@@ -2642,6 +2673,82 @@ export function getInterfacePanelPortAnchor(
         }]))
       : undefined
   };
+}
+
+export function getInterfaceWiringFallbackPortLabelTop(
+  position: MutableLayoutPosition,
+  imageRect: InterfacePanelImageRect | undefined
+) {
+  return imageRect ? imageRect.y - position.y + imageRect.height + 5 : 28;
+}
+
+export function getInterfaceWiringFallbackPortMarker(
+  node: InterfaceWiringNode,
+  portIndex: number,
+  position: MutableLayoutPosition,
+  imageRect: InterfacePanelImageRect | undefined,
+  panelProfile: DeviceInterfacePanel | undefined
+) {
+  const unlocatedIndexes = node.ports.flatMap((port, index) => {
+    const anchor = panelProfile
+      ? getInterfacePanelPortAnchor(panelProfile, port.capabilityId, index, node.ports.length)
+      : undefined;
+    return anchor ? [] : [index];
+  });
+  const fallbackIndex = Math.max(0, unlocatedIndexes.indexOf(portIndex));
+  const row = Math.floor(fallbackIndex / 4);
+  const rowStart = row * 4;
+  const columnsInRow = Math.min(4, unlocatedIndexes.length - rowStart);
+  const column = fallbackIndex - rowStart;
+  return {
+    left: ((column + 1) / (columnsInRow + 1)) * position.width,
+    top: getInterfaceWiringFallbackPortLabelTop(position, imageRect) + 24 + row * 22
+  };
+}
+
+export function getInterfaceWiringPortDrawingAnchor(
+  node: InterfaceWiringNode,
+  portId: string,
+  position: MutableLayoutPosition,
+  terminalId?: string,
+  peer?: MutableLayoutPosition
+) {
+  const index = Math.max(0, node.ports.findIndex((port) => port.id === portId));
+  const port = node.ports[index];
+  const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
+  const imageRect = panelProfile ? getInterfacePanelImageRect(node, position) : undefined;
+  const visualAnchor = panelProfile && port
+    ? getInterfacePanelPortAnchor(panelProfile, port.capabilityId, index, node.ports.length)
+    : undefined;
+  if (imageRect && visualAnchor) {
+    const terminalAnchor = terminalId ? visualAnchor.terminalAnchors?.[terminalId] : undefined;
+    if (terminalAnchor) {
+      return {
+        x: imageRect.x + terminalAnchor.x * imageRect.width,
+        y: imageRect.y + terminalAnchor.y * imageRect.height
+      };
+    }
+    const basePoint = {
+      x: imageRect.x + visualAnchor.x * imageRect.width,
+      y: imageRect.y + visualAnchor.y * imageRect.height
+    };
+    const offset = terminalId && port
+      ? getInterfaceWiringLogicalTerminalOffset(port.terminals, terminalId, getDrawingPeerDelta(basePoint, peer))
+      : { x: 0, y: 0 };
+    return { x: basePoint.x + offset.x, y: basePoint.y + offset.y };
+  }
+  const fallback = getInterfaceWiringFallbackPortMarker(node, index, position, imageRect, panelProfile);
+  const basePoint = { x: position.x + fallback.left, y: position.y + fallback.top };
+  const offset = terminalId && port
+    ? getInterfaceWiringLogicalTerminalOffset(port.terminals, terminalId, getDrawingPeerDelta(basePoint, peer))
+    : { x: 0, y: 0 };
+  return { x: basePoint.x + offset.x, y: basePoint.y + offset.y };
+}
+
+function getDrawingPeerDelta(point: { x: number; y: number }, peer?: MutableLayoutPosition) {
+  return peer
+    ? { x: peer.centerX - point.x, y: peer.centerY - point.y }
+    : { x: 0, y: -1 };
 }
 
 function getInterfacePanelImageSize(aspectRatio: number, nodeWidth: number) {
