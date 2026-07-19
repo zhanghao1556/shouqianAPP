@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1560" width="760" height="1560" role="img" aria-label="吊麦背面与卡侬母头说明书式线稿">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1560" width="760" height="1560" role="img" aria-label="吊麦背面与卡侬公口说明书式线稿">
   <defs>
     <pattern id="mesh" width="12" height="12" patternUnits="userSpaceOnUse">
       <path d="M-3 3L3-3M0 12L12 0M9 15L15 9" fill="none" stroke="#111111" stroke-width="2"/>
@@ -9,6 +9,7 @@
     .detail{fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
     .fine{fill:none;stroke:#666666;stroke-width:3;stroke-linecap:round}
     .dark{fill:#111111;stroke:#111111;stroke-width:4}
+    .pin{fill:#d1d1d1;stroke:#111111;stroke-width:5}
     .number{fill:#111111;font:700 23px Arial,sans-serif;letter-spacing:0;text-anchor:middle}
   </style>
 
@@ -35,16 +36,16 @@
     <path class="detail" d="M340 1220H420M337 1232H423"/>
   </g>
 
-  <g aria-label="三针卡侬母头">
+  <g aria-label="三针卡侬公口">
     <path class="outline" d="M322 1246Q322 1229 340 1229H420Q438 1229 438 1246V1368Q438 1388 420 1396H340Q322 1388 322 1368Z"/>
     <path class="detail" d="M338 1270H422M338 1290H422M338 1310H422"/>
     <circle class="outline" cx="380" cy="1430" r="92"/>
     <circle class="detail" cx="380" cy="1430" r="72"/>
     <path class="outline" d="M362 1348H398V1373H362Z"/>
 
-    <circle id="female-pin-2-hole" data-female-pin-hole="true" class="dark" cx="345" cy="1400" r="12"/>
-    <circle id="female-pin-3-hole" data-female-pin-hole="true" class="dark" cx="415" cy="1400" r="12"/>
-    <circle id="female-pin-1-hole" data-female-pin-hole="true" class="dark" cx="380" cy="1455" r="12"/>
+    <circle id="male-pin-2" data-male-pin="true" class="pin" cx="345" cy="1400" r="12"/>
+    <circle id="male-pin-3" data-male-pin="true" class="pin" cx="415" cy="1400" r="12"/>
+    <circle id="male-pin-1" data-male-pin="true" class="pin" cx="380" cy="1455" r="12"/>
     <text class="number" x="325" y="1392">2</text>
     <text class="number" x="435" y="1392">3</text>
     <text class="number" x="380" y="1497">1</text>

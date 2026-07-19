@@ -31,6 +31,12 @@ import {
 } from "../lib/interfaceWiring";
 import { WIRED_MIC_LINE_IN_POWER_NOTE } from "../lib/connectionRules";
 import {
+  CABLE_MATERIAL_COLORS,
+  CABLE_MATERIAL_LABELS,
+  getCableMaterialKind,
+  type CableMaterialKind
+} from "../lib/cablePresentation";
+import {
   getDevicePortProfile,
   RECORDING_CAMERA_PORT_PROFILE_ID,
   RECORDING_HOST_PORT_PROFILE_ID
@@ -1023,16 +1029,7 @@ function ConnectionMethodCell({ value }: { value: string }) {
   );
 }
 
-type CableLegendKind = "speaker" | "audio" | "serial" | "network" | "usb" | "other";
-
-const CABLE_SHEATH_COLORS: Record<CableLegendKind, string> = {
-  speaker: "#b45309",
-  audio: "#0f766e",
-  serial: "#7c3aed",
-  network: "#2563eb",
-  usb: "#eab308",
-  other: "#475569"
-};
+type CableLegendKind = CableMaterialKind;
 
 interface CableLegendRow {
   kind: CableLegendKind;
@@ -1066,7 +1063,7 @@ function CableLegendTable({ rows }: { rows: CableLegendRow[] }) {
 function CableLegendSwatch({ kind }: { kind: CableLegendKind }) {
   return (
     <span className="interfaceWiringLegendSwatch" aria-label={`${kind}线材胶套颜色`}>
-      <i style={{ backgroundColor: CABLE_SHEATH_COLORS[kind] }} />
+      <i style={{ backgroundColor: CABLE_MATERIAL_COLORS[kind] }} />
     </span>
   );
 }
@@ -1085,24 +1082,19 @@ function getCableLegendRows(edges: InterfaceWiringEdge[]): CableLegendRow[] {
 }
 
 function getCableLegendKind(edge: InterfaceWiringEdge): CableLegendKind {
-  if (isNetworkEdge(edge)) return "network";
-  if (isUsbEdge(edge)) return "usb";
-  if (/232/i.test(edge.cableType)) return "serial";
-  if (edge.cableType.includes("音箱线")) return "speaker";
-  if (/音频(?:跳)?线|话筒线/i.test(edge.cableType)) return "audio";
-  return "other";
+  return getCableMaterialKind(edge.cableType);
 }
 
 function getCableSheathColor(edge: InterfaceWiringEdge) {
-  return CABLE_SHEATH_COLORS[getCableLegendKind(edge)];
+  return CABLE_MATERIAL_COLORS[getCableLegendKind(edge)];
 }
 
 function getCableLegendDefinition(kind: CableLegendKind, fallbackLabel: string) {
-  if (kind === "speaker") return { label: "音箱线", description: "红线接 +；白线接 -" };
-  if (kind === "audio") return { label: "音频线", description: "红线接 +；白线接 -；屏蔽线接 G" };
-  if (kind === "serial") return { label: "232线", description: "黄线 TX；绿线 RX；黑线 GND，TX/RX交叉" };
-  if (kind === "network") return { label: "网线", description: "T568B 1-8芯直通" };
-  if (kind === "usb") return { label: "USB线", description: "音频双向；内置232串口信号，可用于连接调试软件" };
+  if (kind === "speaker") return { label: CABLE_MATERIAL_LABELS.speaker, description: "红线接 +；白线接 -" };
+  if (kind === "audio") return { label: CABLE_MATERIAL_LABELS.audio, description: "红线接 +；白线接 -；屏蔽线接 G" };
+  if (kind === "serial") return { label: CABLE_MATERIAL_LABELS.serial, description: "黄线 TX；绿线 RX；黑线 GND，TX/RX交叉" };
+  if (kind === "network") return { label: CABLE_MATERIAL_LABELS.network, description: "T568B 1-8芯直通" };
+  if (kind === "usb") return { label: CABLE_MATERIAL_LABELS.usb, description: "音频双向；内置232串口信号，可用于连接调试软件" };
   return { label: fallbackLabel, description: "按图中接口方向直连" };
 }
 
@@ -1473,13 +1465,13 @@ function findReferenceBadgePoint(
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {
   if (edge.kind === "jumper") {
-    return [getCollapsedCableConductor(edge, "jumper", "音频跳线", CABLE_SHEATH_COLORS.audio, "+/-/G")];
+    return [getCollapsedCableConductor(edge, "jumper", "音频跳线", CABLE_MATERIAL_COLORS.audio, "+/-/G")];
   }
   if (isNetworkEdge(edge)) {
-    return [getCollapsedCableConductor(edge, "network", "网线", CABLE_SHEATH_COLORS.network, "RJ45")];
+    return [getCollapsedCableConductor(edge, "network", "网线", CABLE_MATERIAL_COLORS.network, "RJ45")];
   }
   if (isUsbEdge(edge)) {
-    return [getCollapsedCableConductor(edge, "usb", "USB线", CABLE_SHEATH_COLORS.usb, "USB")];
+    return [getCollapsedCableConductor(edge, "usb", "USB线", CABLE_MATERIAL_COLORS.usb, "USB")];
   }
   return edge.conductors;
 }

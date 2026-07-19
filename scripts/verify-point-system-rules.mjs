@@ -402,6 +402,36 @@ const yinmanLargeArrayHardRuleTopology = getTopologyLayoutSnapshot(
   yinmanLargeArrayHardRule.generatedPoints
 );
 assert.equal(yinmanLargeArrayHardRuleTopology.nodes.some((node) => /双麦处理器|六麦处理器/.test(node.label)), false);
+const topologyCableParityProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["interactiveClass", "recording"],
+  scope: "podium",
+  microphoneSolution: "existingArray",
+  computer: "讲台电脑",
+  recordingHost: "录播主机、中控主机",
+  speakerProductOverride: "wall"
+});
+const topologyCableParityOutput = generateEngineeringOutputs(topologyCableParityProfile, { "COLUMN-SPEAKER": 2 }, "yinman");
+const topologyControlLine = topologyCableParityOutput.connectionLines.find((line) => line.id === "processor-control-host-1");
+assert.ok(topologyControlLine);
+assert.equal(topologyControlLine.cableType, "232线");
+assert.match(topologyControlLine.fromPort, /RS232.*TX.*RX.*GND/);
+assert.match(topologyControlLine.toPort, /RS232.*RX.*TX.*GND/);
+const topologyCableParity = getTopologyLayoutSnapshot(
+  topologyCableParityProfile,
+  getCustomerVisibleConnectionLines(topologyCableParityOutput.connectionLines),
+  getCustomerVisiblePoints(topologyCableParityOutput.generatedPoints)
+);
+const topologyCableColors = Object.fromEntries(topologyCableParity.edges.map((edge) => [edge.cableKind, edge.cableColor]));
+assert.equal(topologyCableColors.speaker, "#b45309");
+assert.equal(topologyCableColors.audio, "#0f766e");
+assert.equal(topologyCableColors.serial, "#7c3aed");
+assert.equal(topologyCableColors.network, "#2563eb");
+assert.equal(topologyCableColors.usb, "#eab308");
+assert.equal(topologyCableParity.edges.find((edge) => edge.id === "processor-control-host-1")?.label, "232线 ×1");
+assert.equal(topologyCableParity.edges.find((edge) => edge.id === "processor-usb-host-1")?.label, "USB线 ×1");
+console.log("PASS topology reuses wiring cable labels and sheath colors, including processor-to-control-host RS232");
 const yinyiRejectsYinmanProcessor = generateEngineeringOutputs(makeProfile({ length: 8, width: 8, scope: "podium", microphoneSolution: "lineArray", processorTier: "highPerformance" }), twoSpeakerOverrides, "yinyi");
 assert.equal(yinyiRejectsYinmanProcessor.productSelection.find((item) => item.category === "processor")?.name, "双麦处理器");
 assert.equal(yinmanSingleLine.solutionSelection.processor?.recommended, "highPerformance");
@@ -505,7 +535,7 @@ assert.equal(twoMicWiredOutput.productSelection.find((item) => item.category ===
 const twoMicWiredLines = getFormalWiredMicLines(twoMicWiredOutput);
 assert.deepEqual(twoMicWiredLines.map((line) => line.fromDevice), ["利旧有线麦克风 1", "利旧有线麦克风 2"]);
 twoMicWiredLines.forEach((line) => {
-  assert.equal(line.fromPort, "卡侬母头（XLR-3）");
+  assert.equal(line.fromPort, "卡侬公口（XLR-3）");
   assert.equal(line.toDevice, "双麦处理器");
   assert.equal(line.toPort, "MIC IN");
   assert.equal(line.cableType, "音频线");
@@ -516,7 +546,7 @@ const sixMicWiredOutput = buildWiredMicProcessorOutput("sixMic", "有线麦克�
 assert.equal(sixMicWiredOutput.productSelection.find((item) => item.category === "processor")?.name, "六麦处理器");
 const sixMicWiredLine = getFormalWiredMicLines(sixMicWiredOutput)[0];
 assert.equal(sixMicWiredLine?.fromDevice, "利旧有线麦克风");
-assert.equal(sixMicWiredLine?.fromPort, "卡侬母头（XLR-3）");
+assert.equal(sixMicWiredLine?.fromPort, "卡侬公口（XLR-3）");
 assert.equal(sixMicWiredLine?.toDevice, "六麦处理器");
 assert.equal(sixMicWiredLine?.toPort, "MIC IN");
 assert.equal(sixMicWiredLine?.cableType, "音频线");
@@ -526,7 +556,7 @@ const highPerformanceWiredOutput = buildWiredMicProcessorOutput("highPerformance
 assert.equal(highPerformanceWiredOutput.productSelection.find((item) => item.category === "processor")?.name, "高性能处理器");
 const highPerformanceWiredLine = getFormalWiredMicLines(highPerformanceWiredOutput)[0];
 assert.equal(highPerformanceWiredLine?.fromDevice, "利旧有线麦克风");
-assert.equal(highPerformanceWiredLine?.fromPort, "卡侬母头（XLR-3）");
+assert.equal(highPerformanceWiredLine?.fromPort, "卡侬公口（XLR-3）");
 assert.equal(highPerformanceWiredLine?.toDevice, "高性能处理器");
 assert.equal(highPerformanceWiredLine?.toPort, "LINE IN");
 assert.equal(highPerformanceWiredLine?.cableType, "音频线");

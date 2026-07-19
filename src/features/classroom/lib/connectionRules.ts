@@ -42,8 +42,8 @@ export const DT_AUDIO_LINE_IN_LIMIT = 4;
 export const DT_AUDIO_LINE_OUT_LIMIT = 4;
 export const WIRED_MIC_LINE_IN_POWER_NOTE = "有线麦直连LINE IN时，需自供电或前级供电，仅提供音频信号。";
 
-const WIRED_MIC_TO_MIC_IN_NOTE = "卡侬母头按2=+、3=-、1=G接处理器MIC IN。";
-const WIRED_MIC_TO_LINE_IN_NOTE = `卡侬母头按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
+const WIRED_MIC_TO_MIC_IN_NOTE = "线缆卡侬母头插接设备卡侬公口，按2=+、3=-、1=G接处理器MIC IN。";
+const WIRED_MIC_TO_LINE_IN_NOTE = `线缆卡侬母头插接设备卡侬公口，按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
 
 export function filterUsbExclusiveAudioLines(lines: ConnectionLine[]) {
   const usbComputerDevices = new Set<string>();
@@ -197,7 +197,7 @@ export const generateConnectionLines = (
     lines.push({
       id: `microphone-line-dt-${index + 1}`,
       fromDevice: getWiredMicrophoneUnitLabel(device, index, wiredMicrophones.length),
-      fromPort: "卡侬母头（XLR-3）",
+      fromPort: "卡侬公口（XLR-3）",
       toDevice: dtName,
       toPort: "模拟输入 L/R/G",
       cableType: "音频线",
@@ -536,11 +536,11 @@ function generateProcessorDirectConnectionLines(
       lines.push({
         id: `hanging-mic-processor-${index}`,
         fromDevice: `吊麦 ${index}`,
-        fromPort: "卡侬母头（XLR-3）",
+        fromPort: "卡侬公口（XLR-3）",
         toDevice: coreName,
         toPort: `MIC IN ${index}`,
         cableType: "音频线",
-        note: "卡侬母头按2=+、3=-、1=G接处理器MIC IN。"
+        note: "线缆卡侬母头插接吊麦卡侬公口，按2=+、3=-、1=G接处理器MIC IN。"
       });
       return;
     }
@@ -577,11 +577,11 @@ function generateProcessorDirectConnectionLines(
     lines.push({
       id: `processor-control-host-${index + 1}`,
       fromDevice: coreName,
-      fromPort: "网络 / 控制接口",
+      fromPort: "RS232 凤凰端子（TX / RX / GND）",
       toDevice: device,
-      toPort: "网络控制接口",
-      cableType: "网线",
-      note: "中控主机通过网线接入智能音频处理主机控制接口。"
+      toPort: "RS232 凤凰端子（RX / TX / GND）",
+      cableType: "232线",
+      note: "处理器TX接中控RX，处理器RX接中控TX，GND对接GND。"
     });
   });
 
@@ -640,7 +640,7 @@ function generateProcessorDirectConnectionLines(
     lines.push({
       id: `processor-wired-mic-audio-${index + 1}`,
       fromDevice: getWiredMicrophoneUnitLabel(device, index, wiredMicrophones.length),
-      fromPort: "卡侬母头（XLR-3）",
+      fromPort: "卡侬公口（XLR-3）",
       toDevice: coreName,
       toPort: usesLineInput ? "LINE IN" : "MIC IN",
       cableType: "音频线",

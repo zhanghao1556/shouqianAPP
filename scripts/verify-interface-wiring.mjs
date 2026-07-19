@@ -19,6 +19,11 @@ import {
   filterUsbExclusiveAudioLines,
   WIRED_MIC_LINE_IN_POWER_NOTE
 } from "./src/features/classroom/lib/connectionRules.ts";
+import {
+  CABLE_MATERIAL_COLORS,
+  getCableMaterialColor,
+  getCableMaterialLabel
+} from "./src/features/classroom/lib/cablePresentation.ts";
 import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./src/features/classroom/lib/hangingMicRules.ts";
 import { getYinmanAjProcessorSpeakerPlan, LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./src/features/classroom/lib/speakerRules.ts";
@@ -923,6 +928,11 @@ const controlHost = buildModel(controlHostProfile);
 const controlHostNode = node(controlHost.model, "control-host");
 assert.equal(controlHostNode.productId, CONTROL_HOST_PORT_PROFILE_ID);
 assert.deepEqual(controlHostNode.ports.map((port) => port.capabilityId), ["rs232"]);
+const formalControlLine = controlHost.outputs.connectionLines.find((line) => line.id === "processor-control-host-1");
+assert.ok(formalControlLine);
+assert.equal(formalControlLine.fromPort, "RS232 凤凰端子（TX / RX / GND）");
+assert.equal(formalControlLine.toPort, "RS232 凤凰端子（RX / TX / GND）");
+assert.equal(formalControlLine.cableType, "232线");
 const controlEdge = controlHost.model.edges.find((edge) => edge.id === "external-control-rs232-control-host");
 assert.ok(controlEdge);
 assert.equal(controlEdge.cableType, "232线");
@@ -940,6 +950,16 @@ assert.deepEqual(
   ]
 );
 assert.match(controlEdge.connectionMethod, /TX接中控RX.*RX接中控TX.*GND对接GND/);
+assert.deepEqual(CABLE_MATERIAL_COLORS, {
+  speaker: "#b45309",
+  audio: "#0f766e",
+  serial: "#7c3aed",
+  network: "#2563eb",
+  usb: "#eab308",
+  other: "#475569"
+});
+assert.equal(getCableMaterialColor(controlEdge.cableType), "#7c3aed");
+assert.equal(getCableMaterialLabel("标配USB线"), "USB线");
 console.log("PASS control host uses three-core RS232 with TX/RX crossing and GND continuity");
 
 const conferenceProfile = makeProfile({
@@ -1096,9 +1116,9 @@ assert.doesNotMatch(wiringPreviewSource, /data-reference-side/);
 assert.match(wiringPreviewSource, /const progresses = \[0\.5, 0\.46, 0\.54/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringPortTable \{\s*max-height: none;\s*overflow: visible;/);
 assert.doesNotMatch(wiringPreviewStyles, /\.interfaceWiringPortTable \{\s*max-height: 520px/);
-assert.match(wiringPreviewSource, /const CABLE_SHEATH_COLORS: Record<CableLegendKind, string> = \{[\s\S]*?speaker: "#b45309"[\s\S]*?audio: "#0f766e"[\s\S]*?serial: "#7c3aed"[\s\S]*?network: "#2563eb"[\s\S]*?usb: "#eab308"/);
+assert.doesNotMatch(wiringPreviewSource, /const CABLE_SHEATH_COLORS/);
 assert.match(wiringPreviewSource, /<tr><th>胶套颜色<\/th><th>线材<\/th><th>接线关系<\/th><\/tr>/);
-assert.match(wiringPreviewSource, /<i style=\{\{ backgroundColor: CABLE_SHEATH_COLORS\[kind\] \}\} \/>/);
+assert.match(wiringPreviewSource, /<i style=\{\{ backgroundColor: CABLE_MATERIAL_COLORS\[kind\] \}\} \/>/);
 assert.match(wiringPreviewSource, /const color = getCableSheathColor\(edge\);/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch i \{[\s\S]*?height: 6px;[\s\S]*?border-radius: 3px;/);
 assert.doesNotMatch(wiringPreviewStyles, /interfaceWiringLegendSwatch\.speaker i:first-child/);
@@ -1179,8 +1199,8 @@ for (const [index, edge] of hangingEdges.entries()) {
   assert.doesNotMatch(edge.connectionMethod, /LINE IN/);
 }
 assert.deepEqual(hangingOutputLines.map((line) => line.toPort), ["MIC IN 1", "MIC IN 2"]);
-assert.ok(hangingOutputLines.every((line) => line.fromPort === "卡侬母头（XLR-3）"));
-assert.ok(hangingOutputLines.every((line) => /卡侬母头/.test(line.note) && /MIC IN/.test(line.note) && !/48V|供电/.test(line.note)));
+assert.ok(hangingOutputLines.every((line) => line.fromPort === "卡侬公口（XLR-3）"));
+assert.ok(hangingOutputLines.every((line) => /线缆卡侬母头.*吊麦卡侬公口/.test(line.note) && /MIC IN/.test(line.note) && !/48V|供电/.test(line.note)));
 assert.equal(hangingOutputLines.some((line) => /LINE IN/.test(line.toPort + " " + line.note)), false);
 assert.equal(hanging.model.findings.some((item) => /^interface-panel\.missing\.hanging-/.test(item.code)), false);
 const balancedEdge = hangingEdges[0];
@@ -1195,7 +1215,7 @@ assert.ok(hangingDeviceProfile);
 assert.ok(hangingInterfacePanel);
 assert.deepEqual(
   hangingDeviceProfile.ports.map((port) => [port.id, port.panelLabel, port.interfaceType, port.direction]),
-  [["xlr", "卡侬母头", "XLR-3 卡侬母头（1=G、2=+、3=-）", "output"]]
+  [["xlr", "卡侬公口", "XLR-3 卡侬公口（1=G、2=+、3=-）", "output"]]
 );
 assert.equal(hangingInterfacePanel.assetKey, "hangingMic");
 assert.equal(hangingInterfacePanel.aspectRatio, 760 / 1560);
@@ -1230,10 +1250,10 @@ for (const paintValue of hangingPanelPaintValues) {
 }
 assert.doesNotMatch(hangingPanelSvg, /\b(?:rgb|hsl)a?\s*\(/i);
 assert.deepEqual(
-  Array.from(hangingPanelSvg.matchAll(/<circle\s+id="(female-pin-[123]-hole)"\s+data-female-pin-hole="true"/g), (match) => match[1]).sort(),
-  ["female-pin-1-hole", "female-pin-2-hole", "female-pin-3-hole"]
+  Array.from(hangingPanelSvg.matchAll(/<circle\s+id="(male-pin-[123])"\s+data-male-pin="true"/g), (match) => match[1]).sort(),
+  ["male-pin-1", "male-pin-2", "male-pin-3"]
 );
-console.log("PASS two hanging microphones use separate XLR female panels and MIC IN ports without manual 48V instructions");
+console.log("PASS two hanging microphones expose XLR male ports for female cable heads and use separate MIC IN ports without manual 48V instructions");
 
 const wiredMicrophoneEdgeSort = (left, right) => left.id.localeCompare(right.id, "en", { numeric: true });
 const getWiredMicrophoneEdges = (model) => model.edges
@@ -1382,7 +1402,7 @@ assert.ok(wiredMicrophoneProfile);
 assert.ok(wiredMicrophonePanel);
 assert.deepEqual(
   wiredMicrophoneProfile.ports.map((port) => [port.id, port.panelLabel, port.interfaceType, port.direction]),
-  [["xlr", "卡侬母头", "XLR-3 卡侬母头（1=G、2=+、3=-）", "output"]]
+  [["xlr", "卡侬公口", "XLR-3 卡侬公口（1=G、2=+、3=-）", "output"]]
 );
 assert.equal(wiredMicrophonePanel.assetKey, "wiredMicrophone");
 assert.equal(wiredMicrophonePanel.aspectRatio, 760 / 1240);
@@ -1418,10 +1438,10 @@ for (const paintValue of wiredMicrophonePaintValues) {
 assert.doesNotMatch(wiredMicrophonePanelSvg, /\b(?:rgb|hsl)a?\s*\(/i);
 assert.deepEqual(
   Array.from(
-    wiredMicrophonePanelSvg.matchAll(/<circle\s+id="(wired-female-pin-[123]-hole)"\s+data-female-pin-hole="true"/g),
+    wiredMicrophonePanelSvg.matchAll(/<circle\s+id="(wired-male-pin-[123])"\s+data-male-pin="true"/g),
     (match) => match[1]
   ).sort(),
-  ["wired-female-pin-1-hole", "wired-female-pin-2-hole", "wired-female-pin-3-hole"]
+  ["wired-male-pin-1", "wired-male-pin-2", "wired-male-pin-3"]
 );
 for (const result of [aj200Wired, aj600Wired, aj350Wired]) {
   const wiredNodeIds = new Set(result.model.nodes
@@ -1798,7 +1818,7 @@ assert.match(wiringPreviewSource, /data-route-points=/);
 assert.doesNotMatch(wiringPreviewSource, /findOpenCableRoute|getCorridorCableRoute|getEdgeRoute|data-corridor-x/);
 assert.match(wiringPreviewSource, /const multicore = conductors\.length > 1/);
 assert.doesNotMatch(wiringPreviewSource, /multicore \? "#374151"/);
-assert.match(wiringPreviewSource, /CABLE_SHEATH_COLORS\[getCableLegendKind\(edge\)\]/);
+assert.match(wiringPreviewSource, /CABLE_MATERIAL_COLORS\[getCableLegendKind\(edge\)\]/);
 assert.doesNotMatch(wiringPreviewSource, /conductorColorLabel|interfaceWiringConductorColorLabel|getConductorColorLabel|getConductorColorName/);
 assert.match(wiringPreviewSource, /kind: "curve"/);
 assert.match(wiringPreviewSource, /path: [^\r\n]*\$\{from\.x\} \$\{from\.y\} C/);
@@ -1823,6 +1843,7 @@ assert.match(wiringPreviewSource, /function getCableConnectorKind/);
 assert.match(wiringPreviewSource, /6\\\.35[\s\S]*?return "jack635-ts"/);
 assert.match(wiringPreviewSource, /jack35-trrs[\s\S]*?jack35-ts[\s\S]*?jack35-trs/);
 assert.match(wiringPreviewSource, /xlr-male[\s\S]*?xlr-female/);
+assert.match(wiringPreviewSource, /if \(\/公\|[\s\S]*?return "xlr-female"/);
 assert.match(wiringPreviewSource, /data-connector-kind=\{head\.kind\}/);
 assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>TS<\/text>/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringEdgeTrunks\.is-dimmed,[\s\S]*?opacity: 0\.14;/);

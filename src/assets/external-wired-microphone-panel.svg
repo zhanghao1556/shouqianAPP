@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1240" width="760" height="1240" role="img" aria-label="利旧有线麦与卡侬母头说明书式线稿">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1240" width="760" height="1240" role="img" aria-label="利旧有线麦与卡侬公口说明书式线稿">
   <defs>
     <pattern id="wired-mic-mesh" width="10" height="10" patternUnits="userSpaceOnUse">
       <path d="M-2 2L2-2M0 10L10 0M8 12L12 8" fill="none" stroke="#111111" stroke-width="1.7"/>
@@ -9,6 +9,7 @@
     .detail{fill:none;stroke:#111111;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
     .fine{fill:none;stroke:#666666;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
     .dark{fill:#111111;stroke:#111111;stroke-width:3}
+    .pin{fill:#d1d1d1;stroke:#111111;stroke-width:5}
     .pinNumber{fill:#111111;font:700 22px Arial,sans-serif;letter-spacing:0;text-anchor:middle}
   </style>
 
@@ -43,16 +44,16 @@
     <path class="detail" d="M344 947H418M341 960H421"/>
   </g>
 
-  <g aria-label="三针卡侬母头">
+  <g aria-label="三针卡侬公口">
     <path class="outline" d="M326 974Q326 957 344 957H416Q434 957 434 974V1045Q434 1063 416 1072H344Q326 1063 326 1045Z"/>
     <path class="detail" d="M342 994H418M342 1013H418M342 1032H418"/>
     <circle class="outline" cx="380" cy="1120" r="88"/>
     <circle class="detail" cx="380" cy="1120" r="68"/>
     <path class="outline" d="M363 1043H397V1068H363Z"/>
 
-    <circle id="wired-female-pin-2-hole" data-female-pin-hole="true" class="dark" cx="347" cy="1092" r="12"/>
-    <circle id="wired-female-pin-3-hole" data-female-pin-hole="true" class="dark" cx="413" cy="1092" r="12"/>
-    <circle id="wired-female-pin-1-hole" data-female-pin-hole="true" class="dark" cx="380" cy="1146" r="12"/>
+    <circle id="wired-male-pin-2" data-male-pin="true" class="pin" cx="347" cy="1092" r="12"/>
+    <circle id="wired-male-pin-3" data-male-pin="true" class="pin" cx="413" cy="1092" r="12"/>
+    <circle id="wired-male-pin-1" data-male-pin="true" class="pin" cx="380" cy="1146" r="12"/>
     <text class="pinNumber" x="328" y="1085">2</text>
     <text class="pinNumber" x="432" y="1085">3</text>
     <text class="pinNumber" x="380" y="1188">1</text>

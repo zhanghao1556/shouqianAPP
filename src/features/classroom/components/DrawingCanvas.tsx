@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import type { ClassroomProfile, ConnectionLine, DrawingType, GeneratedPoint, LegacySpeakerPoint, LegacySpeakerType, LegacyWallAdjustability, Point } from "../types";
 import { DT_AUDIO_LINE_IN_LIMIT, DT_AUDIO_LINE_OUT_LIMIT, WIRED_MIC_LINE_IN_POWER_NOTE } from "../lib/connectionRules";
+import { getCableMaterialColor, getCableMaterialKind, getCableMaterialLabel } from "../lib/cablePresentation";
 import { generateEngineeringPoints, getArrayMicCentralAirRequiredClearance, getArrayMicEffectiveAmplificationRadius, getArrayMicInstallLabel, getCanvasRoomLayout, toCanvasPoint } from "../lib/drawingEngine";
 import { isMeetingScenario } from "../lib/scenarioRules";
 import { PODIUM_DEPTH_M, PODIUM_FRONT_CLEARANCE_M } from "../lib/podiumGeometry";
@@ -1717,7 +1718,7 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
     ensureNode(getTopologyNode(device, "", key, speakerCount, topologySpeakerType));
     if (hasConfirmedConnection) return;
     if (isLegacyFeedbackSuppressorWithoutChain(device)) return;
-    edges.push({ id: `pending-external-${index + 1}-${key}`, from: topologyRootKey, to: key, label: getPendingTopologyCableLabel(device) });
+    edges.push({ id: `pending-external-${index + 1}-${key}`, from: topologyRootKey, to: key, label: getPendingTopologyCableLabel(device, topologyRootKey) });
   });
 
   return { nodes: Array.from(nodes.values()), edges };
@@ -1758,6 +1759,8 @@ export function getTopologyLayoutSnapshot(profile: ClassroomProfile, connections
     nodes: topology.nodes,
     edges: topology.edges.map((edge) => ({
       ...edge,
+      cableKind: getTopologyEdgeCableKind(edge.label),
+      cableColor: getTopologyEdgeLineColor(edge.label),
       visibleCableLength: getTopologyVisibleCableLengthForLink(edge.from, edge.to, firstLevelDevices)
     })),
     imageCenters: Object.fromEntries(topology.nodes.map((node) => {
@@ -1841,8 +1844,8 @@ function getLegacyTopologyMicrophoneDevice(device: string) {
   return device.startsWith("利旧") ? device : `利旧${device}`;
 }
 
-function getPendingTopologyCableLabel(device: string) {
-  if (device.includes("中控")) return formatTopologyCableLabel("网线", 1);
+function getPendingTopologyCableLabel(device: string, topologyRootKey: string) {
+  if (device.includes("中控")) return formatTopologyCableLabel(topologyRootKey === "processorHost" ? "232线" : "网线", 1);
   if (device.includes("无源音箱")) return formatTopologyCableLabel("音箱线", 1);
   return formatTopologyCableLabel("音频线", 1);
 }
@@ -1861,7 +1864,7 @@ function shouldSkipTopologyConnection(connection: ConnectionLine, fromKey: strin
 function getTopologyCableLabel(connection: ConnectionLine, fromKey: string, toKey: string, speakerCount: number) {
   if (connection.cableType.includes("无线信号")) return "无线信号";
   const quantity = getTopologyCableQuantity(connection, fromKey, toKey, speakerCount);
-  const displayLabel = connection.cableType.includes("网线") ? "网线" : connection.cableType;
+  const displayLabel = getCableMaterialLabel(connection.cableType);
   return formatTopologyCableLabel(displayLabel, quantity);
 }
 
@@ -3025,7 +3028,7 @@ function TopologyEdgeLine({
   const labelX = (start.x + end.x) / 2 + (-dy / length) * labelOffset;
   const labelY = (start.y + end.y) / 2 + (dx / length) * labelOffset;
   const labelAngle = normalizeTopologyLabelAngle((Math.atan2(dy, dx) * 180) / Math.PI);
-  const lineClass = getTopologyEdgeLineClass(edge.label);
+  const cableKind = getTopologyEdgeCableKind(edge.label);
   const lineColor = getTopologyEdgeLineColor(edge.label);
   const markerId = getTopologyArrowMarkerId(edge, route);
   const isBidirectional = isBidirectionalTopologyEdge(edge.label);
@@ -3039,7 +3042,10 @@ function TopologyEdgeLine({
       </defs>
       <polyline
         points={route.map((point) => `${roundTopologyRouteValue(point.x)},${roundTopologyRouteValue(point.y)}`).join(" ")}
-        className={`cadLine ${lineClass}`}
+        className="cadLine"
+        data-cable-kind={cableKind}
+        style={{ stroke: lineColor }}
+        strokeDasharray={cableKind === "wireless" ? "6 5" : undefined}
         markerStart={isBidirectional ? `url(#${markerId})` : undefined}
         markerEnd={`url(#${markerId})`}
       />
@@ -3145,25 +3151,16 @@ function normalizeTopologyLabelAngle(angle: number) {
   return angle;
 }
 
-function getTopologyEdgeLineClass(label: string) {
-  if (label.includes("无法") || label.includes("待确认")) return "black";
-  if (label.includes("USB")) return "usb";
-  if (label.includes("网线")) return "ethernet";
+function getTopologyEdgeCableKind(label: string) {
   if (label.includes("无线信号")) return "wireless";
-  if (label.includes("音频")) return "audio";
-  if (label.includes("音箱")) return "speaker";
-  return "black";
+  return getCableMaterialKind(label);
 }
 
 function getTopologyEdgeLineColor(label: string) {
   if (label.includes("无法")) return "#dc2626";
   if (label.includes("待确认")) return "#b45309";
-  if (label.includes("USB")) return "#2563eb";
-  if (label.includes("网线")) return "#7c3aed";
   if (label.includes("无线信号")) return "#16a34a";
-  if (label.includes("音频")) return "#0f766e";
-  if (label.includes("音箱")) return "#b45309";
-  return "#111827";
+  return getCableMaterialColor(label);
 }
 
 function TopologyDeviceBlock({ x, y, w, node }: { x: number; y: number; w: number; h: number; node: TopologyNode }) {

@@ -2365,3 +2365,10 @@ PowerShell reminder:
 - Thin engineering lines need a separate invisible hit path wider than the visible stroke. Keep it visually inert and preserve the existing electrical path; interaction geometry must not become another routing rule.
 - Source-shape tests must be removed or updated when their named implementation was deliberately deleted. A stale assertion for an obsolete router is not useful protection and can mask the real contract that should be tested.
 - A regex inside a `String.raw` test-module template must not contain an unescaped template backtick. Prefer a backtick-free source pattern; this project has hit the same parse-time failure repeatedly, and a test that cannot parse protects nothing.
+
+### 2026-07-19 topology cable parity and XLR mating identity
+
+- Cable material, display name and sheath color must come from one shared definition for both interface wiring and topology. Independent label-based color switches already drifted: topology used purple for network and blue for USB while wiring used blue and yellow.
+- A control-host link must preserve its physical transport in the formal connection model. When the processor uses RS232 Phoenix terminals, calling the formal edge a network cable makes topology disagree with the interface-wiring projection even if the latter later replaces it with a managed RS232 edge.
+- Equipment-port gender and cable-head gender are opposite sides of one mating pair. Store the microphone device connector as XLR male, then let the renderer derive an XLR female cable head; do not label the equipment port with the required cable connector gender.
+- When an asset regression deliberately enforces grayscale line art, metallic fills must use equal RGB channels. A slate-tinted gray may look neutral on screen but is still chromatic and should fail that guard.

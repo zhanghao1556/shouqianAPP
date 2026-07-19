@@ -511,7 +511,7 @@ class CandidateWiringBuilder {
         toNode: processor,
         toPort: target,
         cableType: "音频线",
-        connectionMethod: "卡侬母头按2=+、3=-、1=G接处理器MIC IN"
+        connectionMethod: "线缆卡侬母头插接吊麦卡侬公口，按2=+、3=-、1=G接处理器MIC IN"
       });
     }
   }
@@ -2783,10 +2783,10 @@ function getConnectionMethod(
   toPort: DevicePortCapability
 ) {
   if (line.cableType.includes("USB")) return "USB直连；USB Audio一进一出；内置232串口信号，可用于连接调试软件";
-  if (fromPort.id === "xlr" && line.fromPort.includes("卡侬母头")) {
+  if (fromPort.id === "xlr" && /卡侬|XLR/i.test(line.fromPort)) {
     return toPort.id.startsWith("mic")
-      ? "卡侬母头按2=+、3=-、1=G接处理器MIC IN"
-      : `卡侬母头按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
+      ? "线缆卡侬母头插接设备卡侬公口，按2=+、3=-、1=G接处理器MIC IN"
+      : `线缆卡侬母头插接设备卡侬公口，按2=+、3=-、1=G接LINE IN。${WIRED_MIC_LINE_IN_POWER_NOTE}`;
   }
   if (fromPort.interfaceType.includes("RJ45") && toPort.interfaceType.includes("RJ45")) return "RJ45直连";
   if (line.cableType.includes("音箱线")) return "保持正负极一致";

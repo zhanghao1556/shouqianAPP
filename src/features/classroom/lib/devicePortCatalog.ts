@@ -345,10 +345,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     customerName: "吊麦",
     ports: [port(
       "xlr",
-      "卡侬母头",
-      "XLR-3 卡侬母头（1=G、2=+、3=-）",
+      "卡侬公口",
+      "XLR-3 卡侬公口（1=G、2=+、3=-）",
       "output",
-      "用户确认吊麦采用卡侬母头，针序1=G、2=+、3=-",
+      "用户确认吊麦设备端为卡侬公口，线缆端使用卡侬母头；针序1=G、2=+、3=-",
       true,
       xlrTerminals
     )],
@@ -358,17 +358,17 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
         pin3: { x: 415 / 760, y: 1400 / 1560 },
         pin1: { x: 380 / 760, y: 1455 / 1560 }
       })
-    }, "吊麦本体按用户提供实物图重构；卡侬母头与针序按用户确认")
+    }, "吊麦本体按用户提供实物图重构；设备端卡侬公口、线缆端卡侬母头与针序按用户确认")
   },
   [EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID]: {
     productId: EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
     customerName: "有线麦克风",
     ports: [port(
       "xlr",
-      "卡侬母头",
-      "XLR-3 卡侬母头（1=G、2=+、3=-）",
+      "卡侬公口",
+      "XLR-3 卡侬公口（1=G、2=+、3=-）",
       "output",
-      "用户确认利旧有线麦采用与吊麦相同的卡侬母头及针序",
+      "用户确认利旧有线麦设备端为卡侬公口，线缆端使用卡侬母头；针序1=G、2=+、3=-",
       true,
       xlrTerminals
     )],
@@ -378,7 +378,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
         pin3: { x: 413 / 760, y: 1092 / 1240 },
         pin1: { x: 380 / 760, y: 1146 / 1240 }
       })
-    }, "有线麦本体按现有实物图重构；卡侬母头与针序按用户确认")
+    }, "有线麦本体按现有实物图重构；设备端卡侬公口、线缆端卡侬母头与针序按用户确认")
   },
   [SMALL_DISC_01_PRODUCT_ID]: {
     productId: SMALL_DISC_01_PRODUCT_ID,
