@@ -62,6 +62,7 @@ import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
 import hangingMicInterfacePanel from "../../../assets/yinman-hanging-mic-interface-panel.svg";
 import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.svg";
 import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.svg";
+import legacyWirelessReceiverPanel from "../../../assets/external-legacy-wireless-receiver-panel.svg";
 import "./InterfaceWiringPreview.css";
 
 const CABLE_LEGEND_BASE_HEIGHT = 52;
@@ -108,7 +109,8 @@ const interfacePanelImages: Record<string, string> = {
   ring08: ring08RearPanel,
   hangingMic: hangingMicInterfacePanel,
   ringOfA: ringOfAInterfacePanel,
-  wirelessReceiver: wirelessReceiverRearPanel
+  wirelessReceiver: wirelessReceiverRearPanel,
+  legacyWirelessReceiver: legacyWirelessReceiverPanel
 };
 
 interface InterfaceWiringPreviewProps {
@@ -733,7 +735,7 @@ function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead 
     );
   }
   if (head.kind === "jack635-ts") {
-    const shaftEnd = head.length * 0.66;
+    const shaftEnd = head.length * 0.55;
     return (
       <g
         className="interfaceWiringConnectorHead"
@@ -741,28 +743,28 @@ function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead 
         data-endpoint={head.endpoint}
         transform={transform}
       >
-        <rect className="interfaceWiringConnectorHeadHitTarget" x="-4" y="-12" width={head.length + 8} height="24" rx="6" />
+        <rect className="interfaceWiringConnectorHeadHitTarget" x="-5" y="-15" width={head.length + 10} height="30" rx="7" />
         <g className="interfaceWiringConnectorHeadBody">
           <path
             className="interfaceWiringConnectorMetal"
-            d={`M 0 0 L 4 -3.2 H ${shaftEnd} V 3.2 H 4 Z`}
+            d={`M 0 0 L 5 -4.6 H ${shaftEnd} V 4.6 H 5 Z`}
           />
           <line
             className="interfaceWiringConnectorRing"
             x1={shaftEnd * 0.72}
             x2={shaftEnd * 0.72}
-            y1="-4"
-            y2="4"
+            y1="-5.5"
+            y2="5.5"
           />
           <rect
             className="interfaceWiringConnectorGrip"
             x={shaftEnd - 1}
-            y="-7"
+            y="-10"
             width={head.length - shaftEnd + 1}
-            height="14"
-            rx="3"
+            height="20"
+            rx="4"
           />
-          <text className="interfaceWiringConnectorLabel" x={shaftEnd + (head.length - shaftEnd) / 2} y="2.3">TS</text>
+          <text className="interfaceWiringConnectorLabel" x={shaftEnd + (head.length - shaftEnd) / 2} y="2.3">6.35 TS</text>
         </g>
       </g>
     );
@@ -1426,8 +1428,9 @@ function getCableConnectorPlacement(
   const deltaX = toward.x - port.x;
   const deltaY = toward.y - port.y;
   const distance = Math.hypot(deltaX, deltaY) || 1;
-  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 36 : 38;
-  const length = Math.max(8, Math.min(defaultLength, distance * 0.38));
+  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 52 : 38;
+  const minimumLength = kind === "jack635-ts" ? Math.min(40, distance * 0.8) : 8;
+  const length = Math.max(minimumLength, Math.min(defaultLength, distance * (kind === "jack635-ts" ? 0.5 : 0.38)));
   const cable = {
     x: port.x + deltaX / distance * length,
     y: port.y + deltaY / distance * length

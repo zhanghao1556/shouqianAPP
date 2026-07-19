@@ -2372,3 +2372,12 @@ PowerShell reminder:
 - A control-host link must preserve its physical transport in the formal connection model. When the processor uses RS232 Phoenix terminals, calling the formal edge a network cable makes topology disagree with the interface-wiring projection even if the latter later replaces it with a managed RS232 edge.
 - Equipment-port gender and cable-head gender are opposite sides of one mating pair. Store the microphone device connector as XLR male, then let the renderer derive an XLR female cable head; do not label the equipment port with the required cable connector gender.
 - When an asset regression deliberately enforces grayscale line art, metallic fills must use equal RGB channels. A slate-tinted gray may look neutral on screen but is still chromatic and should fail that guard.
+
+### 2026-07-19 legacy wireless receiver interface ownership
+
+- A legacy device that has a different physical rear panel must not reuse the current-product port profile merely because both share a generic customer name. The profile controls endpoint resolution as well as artwork, so an image-only replacement can still route the cable to the wrong connector.
+- Model per-channel microphone outputs and the mixed line output as separate capabilities. Keep the normally unused XLR male `MIC OUT` ports visible in the artwork, while the formal connection must select the single 6.35 `LINE OUT` that carries both handheld channels.
+- Preserve the current-product receiver as a control case. A legacy-profile test should assert both sides: the legacy node selects only `lineOut`, and the current receiver still resolves its original `LINE OUT RCA / BAL OUT` path.
+- An antenna drawn beside a chassis is ambiguous unless the chassis-side RF connector is visible. For a directly mounted whip antenna, show the BNC panel socket, mating collar and continuous antenna stem as one assembly; do not use a detached floor-stand silhouette.
+- Connector-family differences need a scale cue, not only a `TS` label. A 6.35 TS plug should be materially longer and thicker than a 3.5 plug and carry a `6.35 TS` mark so customers cannot infer the wrong cable diameter from a tiny drawing.
+- In `cmd.exe`, an unescaped `>` inside an `rg` pattern is shell redirection even when it was intended as JSX text. Use a safer source read or split the search pattern; always inspect `git status` so a zero-byte redirect artifact cannot enter a commit.

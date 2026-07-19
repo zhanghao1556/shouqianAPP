@@ -26,6 +26,7 @@ import {
   CONTROL_HOST_PORT_PROFILE_ID,
   EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
   HEADSET_SPLITTER_PORT_PROFILE_ID,
+  LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID,
   LAPTOP_PORT_PROFILE_ID,
   OPS_ALL_IN_ONE_PORT_PROFILE_ID,
   PASSIVE_SPEAKER_PORT_PROFILE_ID,
@@ -1189,10 +1190,11 @@ class CandidateWiringBuilder {
       };
     }
     if (clean.includes("无线接收机")) {
+      const isLegacy = clean.startsWith("利旧");
       return {
         id: "wireless-receiver",
-        productId: WIRELESS_RECEIVER_PORT_PROFILE_ID,
-        label: clean.replace(/^利旧/, ""),
+        productId: isLegacy ? LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID : WIRELESS_RECEIVER_PORT_PROFILE_ID,
+        label: clean,
         category: "external",
         quantity
       };
@@ -1295,9 +1297,11 @@ class CandidateWiringBuilder {
       if (/输入|LINE IN/i.test(originalPort)) return this.allocatePort(node, "lineIn", originalPort);
       if (/输出|CH\d|SPK/i.test(originalPort)) return this.allocatePort(node, "spk", originalPort);
     }
-    if (node.productId === WIRELESS_RECEIVER_PORT_PROFILE_ID) {
+    if (node.productId === WIRELESS_RECEIVER_PORT_PROFILE_ID || node.productId === LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID) {
       if (normalized.includes("BAL OUT")) return this.requirePort(node.productId, "balOut");
       if (normalized.includes("LINE OUT")) return this.requirePort(node.productId, "lineOut");
+      if (normalized.includes("MIC OUT 1")) return this.requirePort(node.productId, "micOut1");
+      if (normalized.includes("MIC OUT 2")) return this.requirePort(node.productId, "micOut2");
       if (normalized.includes("MIC OUT")) return this.requirePort(node.productId, "micOut");
       if (normalized.includes("无线接收")) return this.syntheticPort("wirelessReceive", "无线接收", "无线", "input");
     }

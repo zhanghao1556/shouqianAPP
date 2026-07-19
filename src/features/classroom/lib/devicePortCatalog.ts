@@ -33,6 +33,7 @@ export const VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID = "EXTERNAL-VIDEO-CONFERE
 export const HEADSET_SPLITTER_PORT_PROFILE_ID = "EXTERNAL-HEADSET-SPLITTER";
 export const PASSIVE_SPEAKER_PORT_PROFILE_ID = "PASSIVE-SPEAKER";
 export const WIRELESS_RECEIVER_PORT_PROFILE_ID = "WIRELESS-RECEIVER";
+export const LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID = "EXTERNAL-LEGACY-WIRELESS-RECEIVER";
 export const EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID = "EXTERNAL-WIRED-MICROPHONE";
 
 const confirmedSource = "用户确认口径与设备安装资料";
@@ -592,6 +593,32 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       micOut: anchor(0.586, 0.48),
       usb: anchor(0.174, 0.46)
     }, "《手持麦接收机说明书》完整后面板；按已确认接口位置重构清晰工程图")
+  },
+  [LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID]: {
+    productId: LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID,
+    customerName: "利旧无线接收机",
+    ports: [
+      port("antennaA", "ANT A", "BNC 天线接口", "input", confirmedSource),
+      port("micOut1", "MIC OUT 1", "XLR-3 卡侬公口", "output", confirmedSource, true, xlrTerminals),
+      port("lineOut", "LINE OUT（手持1+2）", "6.35mm TS（大二芯）", "output", confirmedSource),
+      port("micOut2", "MIC OUT 2", "XLR-3 卡侬公口", "output", confirmedSource, true, xlrTerminals),
+      port("antennaB", "ANT B", "BNC 天线接口", "input", confirmedSource)
+    ],
+    interfacePanel: panel("legacyWirelessReceiver", 1000 / 300, {
+      antennaA: anchor(120 / 1000, 144 / 300),
+      micOut1: anchor(300 / 1000, 144 / 300, {
+        pin2: { x: 281 / 1000, y: 132 / 300 },
+        pin3: { x: 319 / 1000, y: 132 / 300 },
+        pin1: { x: 300 / 1000, y: 163 / 300 }
+      }),
+      lineOut: anchor(500 / 1000, 144 / 300),
+      micOut2: anchor(700 / 1000, 144 / 300, {
+        pin2: { x: 681 / 1000, y: 132 / 300 },
+        pin3: { x: 719 / 1000, y: 132 / 300 },
+        pin1: { x: 700 / 1000, y: 163 / 300 }
+      }),
+      antennaB: anchor(880 / 1000, 144 / 300)
+    }, "用户确认利旧双通道无线接收机：两侧BNC接口直装立杆天线，双卡侬公MIC OUT单通道输出，中间6.35 LINE OUT汇总两只手持信号")
   }
 };
 

@@ -32,6 +32,7 @@ import {
   CONTROL_HOST_PORT_PROFILE_ID,
   EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
   HEADSET_SPLITTER_PORT_PROFILE_ID,
+  LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID,
   LAPTOP_PORT_PROFILE_ID,
   OPS_ALL_IN_ONE_PORT_PROFILE_ID,
   PROCESSOR_AJ200_PORT_PROFILE_ID,
@@ -580,6 +581,11 @@ const wirelessProfile = makeProfile({
 const wireless = buildModel(wirelessProfile, { "WIRELESS-HANDHELD": 1 });
 assert.ok(wireless.outputs.connectionLines.some((line) => line.cableType === "无线信号"));
 assert.ok(wireless.model.nodes.some((item) => item.id === "wireless-receiver"));
+assert.equal(node(wireless.model, "wireless-receiver").productId, WIRELESS_RECEIVER_PORT_PROFILE_ID);
+assert.equal(
+  wireless.outputs.connectionLines.find((line) => line.id === "processor-wireless-receiver-audio")?.fromPort,
+  "LINE OUT RCA / BAL OUT"
+);
 assert.equal(wireless.model.nodes.some((item) => item.id === "wireless-microphones"), false);
 assert.equal(wireless.model.edges.some((edge) => edge.cableType === "无线信号"), false);
 assert.equal(
@@ -595,6 +601,53 @@ assert.equal(node(wireless.model, wirelessReceiverAudioEdge.toNodeId).ports.find
 assert.equal(wireless.model.findings.some((item) => item.code === "processor.total-mic-capacity"), false);
 assert.equal(getExistingMicInputDemand(makeProfile({ legacyWirelessMic: "无线手持麦" })), 0);
 assert.equal(getExistingMicInputDemand(makeProfile({ legacyWirelessMic: "有线麦克风" })), 1);
+
+const legacyWirelessProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  legacyWirelessMic: "无线手持麦、无线手持麦"
+});
+const legacyWireless = buildModel(legacyWirelessProfile);
+const legacyWirelessFormalLine = legacyWireless.outputs.connectionLines.find(
+  (line) => line.id === "processor-wireless-receiver-audio"
+);
+assert.ok(legacyWirelessFormalLine);
+assert.equal(legacyWirelessFormalLine.fromPort, "LINE OUT 6.35（手持1+2混合输出）");
+assert.match(legacyWirelessFormalLine.note, /中间6\.35 LINE OUT.*两只手持信号/);
+const legacyWirelessNode = node(legacyWireless.model, "wireless-receiver");
+assert.equal(legacyWirelessNode.productId, LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID);
+assert.equal(legacyWirelessNode.label, "利旧无线接收机");
+assert.deepEqual(legacyWirelessNode.ports.map((item) => item.capabilityId), ["lineOut"]);
+const legacyWirelessAudioEdge = legacyWireless.model.edges.find(
+  (edge) => edge.fromNodeId === legacyWirelessNode.id && edge.cableType === "音频线"
+);
+assert.ok(legacyWirelessAudioEdge);
+assert.equal(legacyWirelessAudioEdge.fromPortId, legacyWirelessNode.ports[0].id);
+const legacyWirelessPortProfile = getDevicePortProfile(LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID);
+assert.ok(legacyWirelessPortProfile);
+assert.deepEqual(
+  legacyWirelessPortProfile.ports.map((item) => [item.id, item.panelLabel, item.interfaceType, item.direction]),
+  [
+    ["antennaA", "ANT A", "BNC 天线接口", "input"],
+    ["micOut1", "MIC OUT 1", "XLR-3 卡侬公口", "output"],
+    ["lineOut", "LINE OUT（手持1+2）", "6.35mm TS（大二芯）", "output"],
+    ["micOut2", "MIC OUT 2", "XLR-3 卡侬公口", "output"],
+    ["antennaB", "ANT B", "BNC 天线接口", "input"]
+  ]
+);
+assert.equal(legacyWirelessPortProfile.interfacePanel?.assetKey, "legacyWirelessReceiver");
+assert.equal(legacyWirelessPortProfile.interfacePanel?.aspectRatio, 1000 / 300);
+const legacyWirelessPanelSvg = readFileSync("src/assets/external-legacy-wireless-receiver-panel.svg", "utf8");
+assert.equal((legacyWirelessPanelSvg.match(/data-vertical-antenna="true"/g) ?? []).length, 2);
+assert.equal((legacyWirelessPanelSvg.match(/data-bnc-interface="true"/g) ?? []).length, 2);
+assert.match(legacyWirelessPanelSvg, /MIC OUT 1/);
+assert.match(legacyWirelessPanelSvg, /MIC OUT 2/);
+assert.match(legacyWirelessPanelSvg, /LINE OUT/);
+assert.equal((legacyWirelessPanelSvg.match(/data-male-pin="true"/g) ?? []).length, 6);
+console.log("PASS legacy dual-handheld receiver uses its own antenna/XLR/6.35 rear panel and connects only the mixed 6.35 LINE OUT");
 
 const oneLineWith02AndWireless = buildModel(oneLineWith02Profile, { "WIRELESS-HANDHELD": 1 });
 assert.equal(oneLineWith02AndWireless.model.candidateProcessor, "AJ200");
@@ -1773,7 +1826,8 @@ const reconstructedPanelFiles = [
   "yinman-ring03-interface-panel.svg",
   "yinman-ringof-a-interface-panel.svg",
   "yinman-passive-speaker-terminal.svg",
-  "yinman-wireless-receiver-rear-panel.svg"
+  "yinman-wireless-receiver-rear-panel.svg",
+  "external-legacy-wireless-receiver-panel.svg"
 ];
 for (const fileName of reconstructedPanelFiles) {
   const artwork = readFileSync("src/assets/" + fileName, "utf8");
@@ -1845,7 +1899,9 @@ assert.match(wiringPreviewSource, /jack35-trrs[\s\S]*?jack35-ts[\s\S]*?jack35-tr
 assert.match(wiringPreviewSource, /xlr-male[\s\S]*?xlr-female/);
 assert.match(wiringPreviewSource, /if \(\/公\|[\s\S]*?return "xlr-female"/);
 assert.match(wiringPreviewSource, /data-connector-kind=\{head\.kind\}/);
-assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>TS<\/text>/);
+assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>6\.35 TS<\/text>/);
+assert.match(wiringPreviewSource, /kind === "jack635-ts" \? 52 : 38/);
+assert.match(wiringPreviewSource, /minimumLength = kind === "jack635-ts" \? Math\.min\(40, distance \* 0\.8\) : 8/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringEdgeTrunks\.is-dimmed,[\s\S]*?opacity: 0\.14;/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringCanvas\[data-active-edge-id\] \.interfaceWiringPanelImage[\s\S]*?grayscale\(0\.6\)/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringPortImageFocus\.is-active[\s\S]*?opacity: 1;/);
@@ -2117,6 +2173,7 @@ const models = [
   smallDisc03.model,
   smallDiscUsb.model,
   wireless.model,
+  legacyWireless.model,
   unknownPort.model,
   recordingBalanced.model,
   recordingMixed.model,
@@ -2190,6 +2247,7 @@ for (const width of [520, 993, 1120]) {
     smallDisc03.model,
     smallDiscUsb.model,
     wireless.model,
+    legacyWireless.model,
     amplifierClusterCase.model,
     sixteenSpeakerCase.model,
     aj200Wired.model,

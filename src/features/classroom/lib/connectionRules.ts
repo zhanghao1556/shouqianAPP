@@ -164,6 +164,9 @@ export const generateConnectionLines = (
   const wirelessMicrophones = legacyWirelessMicrophones.length > 0 ? legacyWirelessMicrophones : hasWireless ? ["无线手持麦"] : [];
   const wiredMicrophones = existingMicrophoneDevices.filter((device) => !isWirelessMicrophoneDevice(device));
   const wirelessReceiverName = `${legacyWirelessMicrophones.length > 0 ? "利旧无线接收机" : "无线接收机"} × ${wirelessMicrophones.length}`;
+  const wirelessReceiverOutputPort = legacyWirelessMicrophones.length > 0
+    ? "LINE OUT 6.35（手持1+2混合输出）"
+    : "LINE OUT RCA / BAL OUT";
 
   wirelessMicrophones.forEach((device, index) => {
     lines.push({
@@ -184,11 +187,13 @@ export const generateConnectionLines = (
         : {
             id: "wireless-receiver-line-dt",
             fromDevice: wirelessReceiverName,
-            fromPort: "LINE OUT RCA / BAL OUT",
+            fromPort: wirelessReceiverOutputPort,
             toDevice: dtName,
             toPort: "模拟输入 L/R/G",
             cableType: "音频线",
-            note: getExternalMicrophoneConnectionNote("无线接收机")
+            note: legacyWirelessMicrophones.length > 0
+              ? "利旧无线接收机使用中间6.35 LINE OUT汇总两只手持信号并接入阵列麦主机。"
+              : getExternalMicrophoneConnectionNote("无线接收机")
           }
     );
   }
@@ -608,6 +613,9 @@ function generateProcessorDirectConnectionLines(
   const wirelessMicrophones = legacyWirelessMicrophones.length ? legacyWirelessMicrophones : hasNewWireless ? ["无线手持麦"] : [];
   const wiredMicrophones = existingMicrophoneDevices.filter((device) => !isWirelessMicrophoneDevice(device));
   const wirelessReceiverName = `${legacyWirelessMicrophones.length ? "利旧无线接收机" : "无线接收机"} × ${wirelessMicrophones.length}`;
+  const wirelessReceiverOutputPort = legacyWirelessMicrophones.length
+    ? "LINE OUT 6.35（手持1+2混合输出）"
+    : "LINE OUT RCA / BAL OUT";
 
   wirelessMicrophones.forEach((device, index) => {
     lines.push({
@@ -627,11 +635,13 @@ function generateProcessorDirectConnectionLines(
         : {
             id: "processor-wireless-receiver-audio",
             fromDevice: wirelessReceiverName,
-            fromPort: "LINE OUT RCA / BAL OUT",
+            fromPort: wirelessReceiverOutputPort,
             toDevice: coreName,
             toPort: "模拟音频输入",
             cableType: "音频线",
-            note: "无线接收机音频输出接入智能音频处理主机。"
+            note: legacyWirelessMicrophones.length
+              ? "利旧无线接收机使用中间6.35 LINE OUT汇总两只手持信号并接入智能音频处理主机。"
+              : "无线接收机音频输出接入智能音频处理主机。"
           }
     );
   }
@@ -790,6 +800,7 @@ function buildExternalToLegacyAudioLine(fromDevice: string, toDevice: string, id
 }
 
 function getExternalDeviceAudioOutputPort(device: string) {
+  if (device.includes("利旧无线接收机")) return "LINE OUT 6.35（手持1+2混合输出）";
   if (device.includes("无线接收机")) return "LINE OUT RCA / BAL OUT";
   return "音频输出";
 }
