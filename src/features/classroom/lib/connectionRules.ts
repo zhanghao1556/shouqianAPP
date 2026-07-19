@@ -200,7 +200,7 @@ export const generateConnectionLines = (
       fromPort: "卡侬母头（XLR-3）",
       toDevice: dtName,
       toPort: "模拟输入 L/R/G",
-      cableType: "麦克风线",
+      cableType: "音频线",
       note: WIRED_MIC_TO_LINE_IN_NOTE
     });
   });
@@ -539,7 +539,7 @@ function generateProcessorDirectConnectionLines(
         fromPort: "卡侬母头（XLR-3）",
         toDevice: coreName,
         toPort: `MIC IN ${index}`,
-        cableType: "麦克风线",
+        cableType: "音频线",
         note: "卡侬母头按2=+、3=-、1=G接处理器MIC IN。"
       });
       return;
@@ -643,7 +643,7 @@ function generateProcessorDirectConnectionLines(
       fromPort: "卡侬母头（XLR-3）",
       toDevice: coreName,
       toPort: usesLineInput ? "LINE IN" : "MIC IN",
-      cableType: "麦克风线",
+      cableType: "音频线",
       note: usesLineInput ? WIRED_MIC_TO_LINE_IN_NOTE : WIRED_MIC_TO_MIC_IN_NOTE
     });
   });

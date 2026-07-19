@@ -1656,7 +1656,7 @@ function getTopologyModel(profile: ClassroomProfile, connections: ConnectionLine
         isLineArray,
         isHangingMic
       });
-      edges.push({ id: `array-mic-processor-${index}`, from: key, to: topologyRootKey, label: formatTopologyCableLabel(isHangingMic ? "麦克风线" : "网线", 1) });
+      edges.push({ id: `array-mic-processor-${index}`, from: key, to: topologyRootKey, label: formatTopologyCableLabel(isHangingMic ? "音频线" : "网线", 1) });
     });
   } else {
     ensureNode({ key: "mainMic", label: arrayMicCount > 1 ? "主麦" : "阵麦", kind: "mainMic" });

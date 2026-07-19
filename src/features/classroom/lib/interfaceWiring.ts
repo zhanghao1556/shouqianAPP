@@ -108,6 +108,7 @@ interface ConnectionSeed {
 }
 
 const COMPACT_SPEAKER_NODE_WIDTH = 112;
+const HEADSET_SPLITTER_NODE_WIDTH = 180;
 const COMPACT_SPEAKER_GAP = 0;
 const LEVEL_TWO_NODE_GAP = 24;
 const LEVEL_TWO_MAX_NODE_WIDTH = 420;
@@ -509,7 +510,7 @@ class CandidateWiringBuilder {
         fromPort: this.requirePort(HANGING_MIC_PRODUCT_ID, "xlr"),
         toNode: processor,
         toPort: target,
-        cableType: "麦克风线",
+        cableType: "音频线",
         connectionMethod: "卡侬母头按2=+、3=-、1=G接处理器MIC IN"
       });
     }
@@ -1770,7 +1771,7 @@ export function getInterfaceWiringLayout(
 ): InterfaceWiringLayout {
   const width = Math.max(320, Math.floor(availableWidth));
   if (!model.rootNodeId || !model.nodes.length) return { width, height: 560, positions: {} };
-  const sidePadding = width < 720 ? 16 : 24;
+  const sidePadding = width < 560 ? 60 : width < 720 ? 48 : 72;
   const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
   const root = nodeMap.get(model.rootNodeId)!;
   const dimensions = new Map(model.nodes.map((node) => {
@@ -2006,7 +2007,7 @@ function placeDirectChildrenInCompactRows(
   const makeAffinityRows = (group: InterfaceWiringNode[]) => {
     const orderedGroup = orderRowNodes(group);
     if (group.some(isWideInterfacePanelNode)) {
-      return makeBalancedRows(orderedGroup, LEVEL_TWO_MAX_WIDE_NODES_PER_ROW);
+      return makeBalancedRows(orderedGroup, width < 560 ? 1 : LEVEL_TWO_MAX_WIDE_NODES_PER_ROW);
     }
     if (group.every(isCompactPortraitNode)) return makePackedRows(orderedGroup);
     return makeBalancedRows(orderedGroup, LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW);
@@ -2027,7 +2028,7 @@ function placeDirectChildrenInCompactRows(
   const rows = [
     ...affinityRows,
     ...makePackedRows(compactPortraitNodes),
-    ...makeBalancedRows(wideNodes, LEVEL_TWO_MAX_WIDE_NODES_PER_ROW),
+    ...makeBalancedRows(wideNodes, width < 560 ? 1 : LEVEL_TWO_MAX_WIDE_NODES_PER_ROW),
     ...makeBalancedRows(ordinaryNodes, LEVEL_TWO_MAX_ORDINARY_NODES_PER_ROW)
   ];
   const canShareRow = (row: InterfaceWiringNode[]) => (
@@ -2212,6 +2213,7 @@ function getCommonInterfaceWiringRowAffinity(row: InterfaceWiringNode[]) {
 const COMPACT_SPEAKER_ROW_GAP = 32;
 const COMPACT_SPEAKER_PARENT_GAP = 88;
 const COMPACT_SPEAKER_COLLISION_GAP = 48;
+const COMPACT_SPEAKER_SIDE_PADDING = 32;
 const MAX_COMPACT_SPEAKER_ICONS_PER_ROW = 8;
 
 function compareCompactSpeakerSequence(left: InterfaceWiringNode, right: InterfaceWiringNode) {
@@ -2266,7 +2268,8 @@ function placeProcessorSpeakerCluster(input: {
   const placedNodeIds = new Set<string>();
   if (!speakerNodes.length) return placedNodeIds;
 
-  const usableWidth = width - sidePadding * 2;
+  const speakerSidePadding = Math.min(sidePadding, COMPACT_SPEAKER_SIDE_PADDING);
+  const usableWidth = width - speakerSidePadding * 2;
   const rows = getCompactSpeakerRows(speakerNodes, dimensions, usableWidth);
   const getRowGap = (left: InterfaceWiringNode, right: InterfaceWiringNode) =>
     isCompactSpeakerGroup(left) && isCompactSpeakerGroup(right) ? COMPACT_SPEAKER_GAP : LEVEL_TWO_NODE_GAP;
@@ -2279,7 +2282,7 @@ function placeProcessorSpeakerCluster(input: {
   });
 
   let nextTopEdge = -rootSize.height / 2 - COMPACT_SPEAKER_PARENT_GAP;
-  rows.forEach((row) => {
+  [...rows].reverse().forEach((row) => {
     const rowHeight = Math.max(...row.map((node) => dimensions.get(node.id)!.height));
     const centerY = nextTopEdge - rowHeight / 2;
     const rowWidth = getRowWidth(row);
@@ -2324,7 +2327,8 @@ function placeCompactSpeakerChildRow(input: {
 }) {
   const { nodes, parentCenter, parentSize, rootCenter, dimensions, positions, placedRects, width, sidePadding } = input;
   const gap = COMPACT_SPEAKER_GAP;
-  const usableWidth = width - sidePadding * 2;
+  const speakerSidePadding = Math.min(sidePadding, COMPACT_SPEAKER_SIDE_PADDING);
+  const usableWidth = width - speakerSidePadding * 2;
   const rows = getCompactSpeakerRows(nodes, dimensions, usableWidth);
   const rowHeights = rows.map((items) => Math.max(...items.map((node) => dimensions.get(node.id)!.height)));
   const direction = parentCenter.y >= rootCenter.y ? 1 : -1;
@@ -2334,8 +2338,8 @@ function placeCompactSpeakerChildRow(input: {
     const candidates = rows.flatMap((items, rowIndex) => {
       const currentRowWidth = items.reduce((sum, node) => sum + dimensions.get(node.id)!.width, 0) + gap * (items.length - 1);
       const centerX = Math.max(
-        sidePadding + currentRowWidth / 2,
-        Math.min(width - sidePadding - currentRowWidth / 2, parentCenter.x)
+        speakerSidePadding + currentRowWidth / 2,
+        Math.min(width - speakerSidePadding - currentRowWidth / 2, parentCenter.x)
       );
       let cursorX = centerX - currentRowWidth / 2;
       const rowCandidates = items.map((node) => {
@@ -2481,6 +2485,9 @@ function getPreferredNodeWidth(node: InterfaceWiringNode, isRoot: boolean, canva
   if (isRoot) {
     const preferred = interfacePanel && interfacePanel.aspectRatio < 2.4 ? 420 : 760;
     return Math.min(preferred, maxWidth);
+  }
+  if (node.productId === HEADSET_SPLITTER_PORT_PROFILE_ID) {
+    return Math.min(HEADSET_SPLITTER_NODE_WIDTH, maxWidth);
   }
   if (isCompactSpeakerGroup(node)) return Math.min(COMPACT_SPEAKER_NODE_WIDTH, maxWidth);
   const wideInterfacePanel = Boolean(interfacePanel && isWideInterfacePanelNode(node));

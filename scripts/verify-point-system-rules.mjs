@@ -508,7 +508,7 @@ twoMicWiredLines.forEach((line) => {
   assert.equal(line.fromPort, "卡侬母头（XLR-3）");
   assert.equal(line.toDevice, "双麦处理器");
   assert.equal(line.toPort, "MIC IN");
-  assert.equal(line.cableType, "麦克风线");
+  assert.equal(line.cableType, "音频线");
   assert.equal(line.note.includes(wiredMicLineInWarning), false);
 });
 
@@ -519,7 +519,7 @@ assert.equal(sixMicWiredLine?.fromDevice, "利旧有线麦克风");
 assert.equal(sixMicWiredLine?.fromPort, "卡侬母头（XLR-3）");
 assert.equal(sixMicWiredLine?.toDevice, "六麦处理器");
 assert.equal(sixMicWiredLine?.toPort, "MIC IN");
-assert.equal(sixMicWiredLine?.cableType, "麦克风线");
+assert.equal(sixMicWiredLine?.cableType, "音频线");
 assert.equal(sixMicWiredLine?.note.includes(wiredMicLineInWarning), false);
 
 const highPerformanceWiredOutput = buildWiredMicProcessorOutput("highPerformance", "有线麦克风", "existingArray");
@@ -529,7 +529,7 @@ assert.equal(highPerformanceWiredLine?.fromDevice, "利旧有线麦克风");
 assert.equal(highPerformanceWiredLine?.fromPort, "卡侬母头（XLR-3）");
 assert.equal(highPerformanceWiredLine?.toDevice, "高性能处理器");
 assert.equal(highPerformanceWiredLine?.toPort, "LINE IN");
-assert.equal(highPerformanceWiredLine?.cableType, "麦克风线");
+assert.equal(highPerformanceWiredLine?.cableType, "音频线");
 assert.equal(highPerformanceWiredLine?.note.includes(wiredMicLineInWarning), true);
 
 const singleWiredMicTopologyProfile = makeProfile({

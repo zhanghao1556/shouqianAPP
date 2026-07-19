@@ -620,7 +620,11 @@ for (const width of [520, 993, 1120]) {
   const wirelessReceiverPosition = levelTwoLayout.positions["wireless-receiver"];
   assert.ok(lineArrayPosition.width <= 460 && wirelessReceiverPosition.width <= 460);
   if (width >= 993) {
-    assert.deepEqual([lineArrayPosition.width, wirelessReceiverPosition.width], [460, 460]);
+    const expectedWidePanelWidth = Math.min(460, Math.floor((width - 72 * 2 - 24) / 2));
+    assert.deepEqual(
+      [lineArrayPosition.width, wirelessReceiverPosition.width],
+      [expectedWidePanelWidth, expectedWidePanelWidth]
+    );
   }
   assert.equal(
     levelTwoNodes.some((item) => levelTwoLayout.positions[item.id].centerY === levelTwoLayout.positions[wireless.model.rootNodeId].centerY),
@@ -991,6 +995,10 @@ const laptopAnalogNode = node(laptopAnalog.model, "laptop-computer");
 const headsetSplitterNode = node(laptopAnalog.model, "headset-splitter-laptop-computer");
 assert.equal(laptopAnalogNode.productId, LAPTOP_PORT_PROFILE_ID);
 assert.equal(headsetSplitterNode.productId, HEADSET_SPLITTER_PORT_PROFILE_ID);
+const laptopAnalogLayout = getInterfaceWiringLayout(laptopAnalog.model, 1120);
+const headsetSplitterPosition = laptopAnalogLayout.positions[headsetSplitterNode.id];
+assert.equal(headsetSplitterPosition.width, 180);
+assert.ok(getInterfacePanelImageRect(headsetSplitterNode, headsetSplitterPosition).width <= 160);
 assert.deepEqual(laptopAnalogNode.ports.map((port) => port.capabilityId), ["headset"]);
 assert.deepEqual(headsetSplitterNode.ports.map((port) => port.capabilityId).sort(), ["headphoneOut", "micIn", "trrs"]);
 const splitterLink = laptopAnalog.model.edges.find((edge) => edge.id === "external-laptop-splitter-laptop-computer");
@@ -1063,7 +1071,8 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringPanelOptionButton \{[\s\S]*?
 assert.match(wiringPreviewStyles, /\.interfaceWiringPanelOptionButton\.active \{[\s\S]*?border-color: #0b5cad;/);
 assert.match(wiringPreviewSource, /getSharedTerminalFanOffset[\s\S]*?getTerminalFanPath/);
 assert.match(wiringPreviewSource, /sharedIndexes\.length < 2/);
-assert.match(wiringPreviewSource, /getInternalJumperRoute\(conductorFrom, conductorTo, fromPosition, edge\.jumperRoute, laneOffset \+ conductorOffset\)/);
+assert.match(wiringPreviewSource, /path: edge\.kind === "jumper" \? route\.path : getCompleteCableTrunkPath/);
+assert.doesNotMatch(wiringPreviewSource, /laneOffset \+ conductorOffset/);
 assert.match(wiringPreviewSource, /resolvedSide === "left"[\s\S]*?resolvedSide === "right"[\s\S]*?resolvedSide === "top"[\s\S]*?resolvedSide === "bottom"/);
 assert.match(wiringPreviewSource, /if \(edge\.kind === "jumper"\) \{\s*return \[getCollapsedCableConductor/);
 assert.match(wiringPreviewSource, /const bulge = 44 \+ laneOffset;[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
@@ -1081,7 +1090,7 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.speaker i:nth-
 assert.match(wiringPreviewStyles, /\.interfaceWiringLegendSwatch\.audio i:nth-child\(3\) \{\s*background: #6b7280;/);
 assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2"), "音箱线");
 assert.equal(getInterfaceWiringTableCableLabel("音箱线 ×2 ×2"), "音箱线");
-assert.equal(getInterfaceWiringTableCableLabel("麦克风音频线"), "麦克风音频线");
+assert.equal(getInterfaceWiringTableCableLabel("音频线 ×2"), "音频线");
 assert.match(wiringPreviewSource, /getInterfaceWiringTableCableLabel\(edge\.cableType\)/);
 assert.doesNotMatch(wiringPreviewSource, /edge\.cableType\}\{edge\.quantity/);
 console.log("PASS each cable has one centered reference and one fully expanded from-to usage row");
@@ -1237,9 +1246,11 @@ const aj200Wired = buildModel(aj200WiredProfile, {
 assert.equal(aj200Wired.model.candidateProcessor, "AJ200");
 const aj200HangingEdge = aj200Wired.model.edges.find((edge) => edge.id === "hanging-mic-1");
 assert.ok(aj200HangingEdge);
+assert.equal(aj200HangingEdge.cableType, "音频线");
 assert.equal(getTargetPort(aj200Wired.model, aj200HangingEdge)?.capabilityId, "mic1");
 const aj200WiredEdges = getWiredMicrophoneEdges(aj200Wired.model);
 assert.equal(aj200WiredEdges.length, 1);
+assert.equal(aj200WiredEdges[0].cableType, "音频线");
 assert.equal(getTargetPort(aj200Wired.model, aj200WiredEdges[0])?.capabilityId, "mic2");
 assert.equal(getTargetPort(aj200Wired.model, aj200WiredEdges[0])?.label, "MIC IN 2");
 assert.match(aj200WiredEdges[0].connectionMethod, /卡侬母头.*MIC IN/);
@@ -1757,12 +1768,25 @@ assert.ok(nodeLayerIndex >= 0 && nodeLayerIndex < trunkLayerIndex && trunkLayerI
 assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortPin|markerEnd=/);
 assert.doesNotMatch(wiringPreviewSource, /getNodeExitPoint/);
 assert.match(wiringPreviewSource, /function getCorridorCableRoute/);
-assert.match(wiringPreviewSource, /const corridorCandidates = \[/);
+assert.match(wiringPreviewSource, /const corridorCandidates = deduplicateCorridorCandidates/);
 assert.match(wiringPreviewSource, /route\.corridor/);
 assert.match(wiringPreviewSource, /canvasHeight: layout\.height/);
 assert.match(wiringPreviewSource, /if \(!edgeRouteStaysInsideDrawingFrame\(route, canvasWidth, canvasHeight\)\) continue;/);
 assert.match(wiringPreviewSource, /DRAWING_FRAME_LEFT \+ CABLE_FRAME_CLEARANCE/);
 assert.match(wiringPreviewSource, /canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE/);
+assert.match(wiringPreviewSource, /INTERFACE_WIRING_MIN_LOGICAL_WIDTH = 993/);
+assert.match(wiringPreviewSource, /Math\.max\(INTERFACE_WIRING_MIN_LOGICAL_WIDTH, availableWidth\)/);
+assert.match(wiringPreviewSource, /const routedCableRoutes: CableRoute\[\] = \[\];/);
+assert.match(wiringPreviewSource, /cableRouteConflictsWithReservations/);
+assert.match(wiringPreviewSource, /CABLE_CORRIDOR_LANE_SPACING = 30/);
+assert.match(wiringPreviewSource, /CABLE_CORRIDOR_CURVE_RATIO = 0\.5522848/);
+assert.match(wiringPreviewSource, /data-corridor-x=/);
+assert.match(wiringPreviewSource, /function getDeviceCableEscape/);
+assert.match(wiringPreviewSource, /function getCableEscapeCommands/);
+assert.match(wiringPreviewSource, /const multicore = conductors\.length > 1/);
+assert.match(wiringPreviewSource, /multicore \? "#374151"/);
+assert.match(wiringPreviewSource, /interfaceWiringConductorColorLabel/);
+assert.doesNotMatch(wiringPreviewSource, /C \$\{fromSplit\.x\} \$\{route\.corridor\.fromY\}/);
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
@@ -1844,7 +1868,11 @@ const amplifierClusterSpeakers = amplifierClusterCase.model.nodes.filter((item) 
 );
 assert.ok(amplifierClusterSpeakers.length >= 1);
 const amplifierClusterJumpers = amplifierClusterCase.model.edges.filter((edge) => edge.kind === "jumper");
-assert.equal(amplifierClusterJumpers.length, amplifierClusterSpeakers.length - 1);
+assert.equal(
+  amplifierClusterJumpers.length,
+  amplifierClusterSpeakers.length - 1,
+  "amplifier jumper count must follow the active amplifier speaker outputs"
+);
 assert.deepEqual(amplifierClusterJumpers.map((edge) => edge.connectionMethod), [
   "LINE IN 1跳接LINE IN 2，+/-/G一一对应；LINE IN 2驱动SPK2"
 ]);
@@ -1857,7 +1885,11 @@ const amplifierClusterAllSpeakers = amplifierClusterCase.model.nodes
 const amplifierClusterSpeakerPositions = amplifierClusterAllSpeakers.map((item) =>
   amplifierClusterLayout.positions[item.id]
 );
-assert.equal(new Set(amplifierClusterSpeakerPositions.map((item) => item.centerY)).size, 1);
+assert.equal(
+  new Set(amplifierClusterSpeakerPositions.map((item) => item.centerY)).size,
+  1,
+  "ten-speaker processor and amplifier groups must share one desktop row"
+);
 assert.ok(amplifierClusterAllSpeakers.some((item) => item.parentId === amplifierClusterCase.model.rootNodeId));
 assert.ok(amplifierClusterAllSpeakers.some((item) => item.parentId === amplifierClusterNode.id));
 for (let index = 1; index < amplifierClusterSpeakerPositions.length; index += 1) {
@@ -1912,7 +1944,11 @@ assert.deepEqual(
 );
 const sixteenSpeakerDesktopLayout = getInterfaceWiringLayout(sixteenSpeakerCase.model, 993);
 const sixteenSpeakerDesktopPositions = sixteenSpeakerGroups.map((item) => sixteenSpeakerDesktopLayout.positions[item.id]);
-assert.equal(new Set(sixteenSpeakerDesktopPositions.map((item) => item.centerY)).size, 1);
+assert.equal(
+  new Set(sixteenSpeakerDesktopPositions.map((item) => item.centerY)).size,
+  1,
+  "eight speaker icons must share one desktop row"
+);
 assert.ok(
   sixteenSpeakerDesktopLayout.positions[sixteenSpeakerAmplifier.id].centerY < sixteenSpeakerDesktopPositions[0].centerY &&
   sixteenSpeakerDesktopPositions[0].centerY < sixteenSpeakerDesktopLayout.positions[sixteenSpeakerCase.model.rootNodeId].centerY

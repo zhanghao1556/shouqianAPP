@@ -62,6 +62,18 @@ const DRAWING_FRAME_TOP = 18;
 const DRAWING_FRAME_RIGHT = 18;
 const DRAWING_FRAME_BOTTOM = 22;
 const CABLE_FRAME_CLEARANCE = 12;
+const INTERFACE_WIRING_MIN_LOGICAL_WIDTH = 993;
+const CABLE_CORRIDOR_LANE_SPACING = 30;
+const CABLE_CORRIDOR_MIN_LANE_SPACING = 12;
+const CABLE_CORRIDOR_VERTICAL_CLEARANCE = 18;
+const CABLE_CORRIDOR_CURVE_RATIO = 0.5522848;
+const CABLE_CORRIDOR_MIN_BEND = 18;
+const CABLE_CORRIDOR_MAX_BEND = 72;
+const CABLE_DEVICE_BREAKOUT_GAP = 10;
+const CABLE_HORIZONTAL_LANE_STEP = 12;
+const CABLE_HORIZONTAL_MIN_CLEARANCE = 10;
+const CABLE_ROUTE_INTERSECTION_GAP = 5;
+const CABLE_INTERNAL_MERGE_DISTANCE = 28;
 
 const interfacePanelImages: Record<string, string> = {
   aj200: aj200InterfacePanel,
@@ -167,9 +179,10 @@ function InterfaceWiringDiagram({
   const bottomPadding = cableLegendRows.length
     ? cableLegendHeight + CABLE_LEGEND_TOP_GAP + CABLE_LEGEND_BOTTOM_GAP
     : 44;
+  const logicalCanvasWidth = Math.max(INTERFACE_WIRING_MIN_LOGICAL_WIDTH, availableWidth);
   const layout = useMemo(
-    () => getInterfaceWiringLayout(model, availableWidth, bottomPadding),
-    [model, availableWidth, bottomPadding]
+    () => getInterfaceWiringLayout(model, logicalCanvasWidth, bottomPadding),
+    [model, logicalCanvasWidth, bottomPadding]
   );
   const edgeDrawings = useMemo(
     () => buildEdgeDrawings(model, layout, portReferenceNumbers),
@@ -241,19 +254,28 @@ function InterfaceWiringDiagram({
           const drawing = edgeDrawings.get(edge.id);
           if (!drawing) return null;
           return (
-            <g key={`${edge.id}-trunks`} className="interfaceWiringEdgeTrunks" data-edge-id={edge.id}>
-              {drawing.conductorRoutes.map(({ conductor, trunkPath, strokeWidth, needsOutline }) => (
+            <g
+              key={`${edge.id}-trunks`}
+              className="interfaceWiringEdgeTrunks"
+              data-edge-id={edge.id}
+              data-route-kind={drawing.route.horizontalCorridor ? "horizontal-corridor" : drawing.route.corridor ? "vertical-corridor" : "curve"}
+              data-corridor-x={drawing.route.corridor?.x}
+              data-corridor-y={drawing.route.horizontalCorridor?.y}
+              data-corridor-from-y={drawing.route.corridor?.fromY}
+              data-corridor-to-y={drawing.route.corridor?.toY}
+            >
+              {drawing.trunkRoutes.map(({ id, path, color, strokeWidth, confirmed, needsOutline }) => (
                 <path
-                  key={`${edge.id}-${conductor.id}-trunk`}
-                  d={trunkPath}
+                  key={`${edge.id}-${id}-trunk`}
+                  d={path}
                   fill="none"
-                  stroke={conductor.color}
+                  stroke={color}
                   strokeWidth={strokeWidth}
                   strokeLinecap="round"
-                  data-conductor-id={conductor.id}
+                  data-conductor-id={id}
                   data-segment="trunk"
                   className={[
-                    conductor.confirmed ? "" : "unconfirmedConductor",
+                    confirmed ? "" : "unconfirmedConductor",
                     needsOutline ? "lightConductor" : ""
                   ].filter(Boolean).join(" ")}
                 />
@@ -301,6 +323,33 @@ function InterfaceWiringDiagram({
                   />
                 ]
               ))}
+            </g>
+          );
+        })}
+
+        {model.edges.map((edge) => {
+          const drawing = edgeDrawings.get(edge.id);
+          const label = drawing?.conductorColorLabel;
+          if (!label) return null;
+          const width = label.items.length * 22 + 6;
+          return (
+            <g
+              key={`${edge.id}-conductor-colors`}
+              className="interfaceWiringConductorColorLabel"
+              transform={`translate(${label.x} ${label.y})`}
+              data-edge-id={edge.id}
+              aria-label={label.items.map((item) => item.label).join("、")}
+            >
+              <rect x={-width / 2} y="-8" width={width} height="16" fill="#ffffff" stroke="#9ca3af" />
+              {label.items.map((item, index) => {
+                const itemX = -width / 2 + 7 + index * 22;
+                return (
+                  <g key={`${edge.id}-${item.label}`} transform={`translate(${itemX} 0)`}>
+                    <circle r="3" fill={item.color} stroke={item.color === "#ffffff" ? "#9ca3af" : item.color} />
+                    <text x="5" y="0" dy="0.34em" fontSize="7" fill="#111827">{item.label}</text>
+                  </g>
+                );
+              })}
             </g>
           );
         })}
@@ -774,16 +823,29 @@ function buildEdgeDrawings(
     height: position.height
   }));
   const usedReferencePoints: Array<{ x: number; y: number }> = [];
+  const routedCableRoutes: CableRoute[] = [];
   const drawings = new Map<string, {
     route: CableRoute;
+    trunkRoutes: Array<{
+      id: string;
+      path: string;
+      color: string;
+      strokeWidth: number;
+      confirmed: boolean;
+      needsOutline: boolean;
+    }>;
     conductorRoutes: Array<{
       conductor: InterfaceWiringConductor;
-      trunkPath: string;
       fromLeadPath: string;
       toLeadPath: string;
       strokeWidth: number;
       needsOutline: boolean;
     }>;
+    conductorColorLabel?: {
+      x: number;
+      y: number;
+      items: Array<{ color: string; label: string }>;
+    };
     referenceBadges: Array<{
       x: number;
       y: number;
@@ -799,12 +861,19 @@ function buildEdgeDrawings(
     if (!fromNode || !toNode || !fromPosition || !toPosition) return;
     const from = getPortAnchor(fromNode, edge.fromPortId, fromPosition, undefined, toPosition);
     const to = getPortAnchor(toNode, edge.toPortId, toPosition, undefined, fromPosition);
+    const fromRoutingRect = fromPosition;
+    const toRoutingRect = toPosition;
     const pairKey = getPairKey(edge);
     const pairIndex = pairIndexes.get(pairKey) ?? 0;
     pairIndexes.set(pairKey, pairIndex + 1);
     const pairCount = pairCounts.get(pairKey) ?? 1;
     const laneOffset = (pairIndex - (pairCount - 1) / 2) * 34;
     const displayConductors = getDisplayConductors(edge);
+    const fromVerticalExit = getVerticalExitFan(edge, edge.fromNodeId, model.edges, layout.positions);
+    const toVerticalExit = getVerticalExitFan(edge, edge.toNodeId, model.edges, layout.positions);
+    const horizontalLaneBias = fromVerticalExit.count >= toVerticalExit.count
+      ? fromVerticalExit.laneBias
+      : toVerticalExit.laneBias;
     const route: CableRoute = edge.kind === "jumper"
       ? getInternalJumperRoute(from, to, fromPosition, edge.jumperRoute, laneOffset)
       : findOpenCableRoute({
@@ -814,10 +883,18 @@ function buildEdgeDrawings(
         nodeRects,
         endpointNodeIds: new Set([edge.fromNodeId, edge.toNodeId]),
         canvasWidth: layout.width,
-        canvasHeight: layout.height
+        canvasHeight: layout.height,
+        routedCableRoutes,
+        fromRoutingRect,
+        toRoutingRect,
+        fromNodeId: edge.fromNodeId,
+        toNodeId: edge.toNodeId,
+        fromVerticalExitOffset: fromVerticalExit.offset,
+        toVerticalExitOffset: toVerticalExit.offset,
+        horizontalLaneBias
       });
-    const conductorRoutes = displayConductors.map((conductor, conductorIndex) => {
-      const conductorOffset = (conductorIndex - (displayConductors.length - 1) / 2) * 5.2;
+    if (edge.kind !== "jumper") routedCableRoutes.push(route);
+    const terminalPairs = displayConductors.map((conductor, conductorIndex) => {
       const fromFanOffset = getSharedTerminalFanOffset(
         displayConductors,
         conductorIndex,
@@ -844,27 +921,28 @@ function buildEdgeDrawings(
         conductor.toTerminalId,
         fromPosition
       );
-      const bundledRoute = edge.kind === "jumper"
-        ? getInternalJumperRoute(conductorFrom, conductorTo, fromPosition, edge.jumperRoute, laneOffset + conductorOffset)
-        : route.corridor
-          ? getCorridorCableRoute(
-              conductorFrom,
-              conductorTo,
-              route.corridor.x + conductorOffset,
-              route.corridor.fromY,
-              route.corridor.toY
-            )
-          : getEdgeRoute(from, to, route.offset + conductorOffset);
-      const paths = edge.kind === "jumper"
-        ? { trunkPath: bundledRoute.path, fromLeadPath: "", toLeadPath: "" }
-        : getBundledConductorSegments(
-            conductorFrom,
-            conductorTo,
-            bundledRoute,
-            displayConductors.length > 1 ? 28 : 18,
-            fromFanOffset,
-            toFanOffset
-          );
+      return { conductor, fromFanOffset, toFanOffset, conductorFrom, conductorTo };
+    });
+    const multicore = displayConductors.length > 1 && edge.kind !== "jumper";
+    const fromMerge = multicore && route.endpointEscapes
+      ? getInternalCableMergePoint(terminalPairs.map((item) => item.conductorFrom), route.endpointEscapes.from, fromRoutingRect)
+      : from;
+    const toMerge = multicore && route.endpointEscapes
+      ? getInternalCableMergePoint(terminalPairs.map((item) => item.conductorTo), route.endpointEscapes.to, toRoutingRect)
+      : to;
+    const conductorRoutes = terminalPairs.map(({
+      conductor,
+      fromFanOffset,
+      toFanOffset,
+      conductorFrom,
+      conductorTo
+    }) => {
+      const paths = multicore
+        ? {
+            fromLeadPath: getTerminalFanPath(conductorFrom, fromMerge, fromFanOffset, false),
+            toLeadPath: getTerminalFanPath(conductorTo, toMerge, toFanOffset, true)
+          }
+        : { fromLeadPath: "", toLeadPath: "" };
       return {
         conductor,
         ...paths,
@@ -878,46 +956,30 @@ function buildEdgeDrawings(
       : undefined;
     if (referencePoint) usedReferencePoints.push(referencePoint);
     const referenceBadges = referencePoint ? [{ ...referencePoint, referenceNumber }] : [];
-    drawings.set(edge.id, { route, conductorRoutes, referenceBadges });
+    const trunkRoutes = getCableTrunkRoutes(edge, displayConductors, route, fromMerge, toMerge);
+    const conductorColorLabel = getConductorColorLabel({
+      conductors: displayConductors,
+      fromNode,
+      toNode,
+      fromMerge,
+      toMerge,
+      fromEscape: route.endpointEscapes?.from,
+      toEscape: route.endpointEscapes?.to,
+      fromRect: fromRoutingRect,
+      toRect: toRoutingRect
+    });
+    drawings.set(edge.id, { route, trunkRoutes, conductorRoutes, conductorColorLabel, referenceBadges });
   });
   return drawings;
 }
 
-function getBundledConductorSegments(
-  terminalFrom: { x: number; y: number },
-  terminalTo: { x: number; y: number },
-  route: CableRoute,
-  splitDistance: number,
-  fromFanOffset = 0,
-  toFanOffset = 0
-) {
-  if (route.corridor) {
-    const fromBend = { x: route.corridor.x, y: route.corridor.fromY };
-    const toBend = { x: route.corridor.x, y: route.corridor.toY };
-    const fromSplit = movePointToward(terminalFrom, fromBend, splitDistance);
-    const toSplit = movePointToward(terminalTo, toBend, splitDistance);
-    return {
-      trunkPath: [
-        `M ${fromSplit.x} ${fromSplit.y}`,
-        `C ${fromSplit.x} ${route.corridor.fromY}, ${route.corridor.x} ${fromSplit.y}, ${route.corridor.x} ${route.corridor.fromY}`,
-        `L ${route.corridor.x} ${route.corridor.toY}`,
-        `C ${route.corridor.x} ${toSplit.y}, ${toSplit.x} ${route.corridor.toY}, ${toSplit.x} ${toSplit.y}`
-      ].join(" "),
-      fromLeadPath: getTerminalFanPath(terminalFrom, fromSplit, fromFanOffset, false),
-      toLeadPath: getTerminalFanPath(terminalTo, toSplit, toFanOffset, true)
-    };
-  }
-  const fromSplit = movePointToward(route.from, route.control1, splitDistance);
-  const toSplit = movePointToward(route.to, route.control2, splitDistance);
-  return {
-    trunkPath: [
-      `M ${fromSplit.x} ${fromSplit.y}`,
-      `C ${route.control1.x} ${route.control1.y}, ${route.control2.x} ${route.control2.y}, ${toSplit.x} ${toSplit.y}`
-    ].join(" "),
-    fromLeadPath: getTerminalFanPath(terminalFrom, fromSplit, fromFanOffset, false),
-    toLeadPath: getTerminalFanPath(terminalTo, toSplit, toFanOffset, true)
-  };
-}
+type CableDeviceExitSide = "left" | "right" | "top" | "bottom";
+
+type CableDeviceEscape = {
+  side: CableDeviceExitSide;
+  edgePoint: { x: number; y: number };
+  routePoint: { x: number; y: number };
+};
 
 function getSharedTerminalFanOffset(
   conductors: InterfaceWiringConductor[],
@@ -959,27 +1021,24 @@ function getTerminalFanPath(
     : `M ${terminal.x} ${terminal.y} L ${fanPoint.x} ${fanPoint.y} L ${split.x} ${split.y}`;
 }
 
-function movePointToward(
-  from: { x: number; y: number },
-  to: { x: number; y: number },
-  distance: number
-) {
-  if (distance <= 0) return from;
-  const deltaX = to.x - from.x;
-  const deltaY = to.y - from.y;
-  const length = Math.hypot(deltaX, deltaY) || 1;
-  const ratio = Math.min(1, distance / length);
-  return {
-    x: from.x + deltaX * ratio,
-    y: from.y + deltaY * ratio
-  };
-}
-
 function findReferenceBadgePoint(
   route: CableRoute,
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
   usedReferencePoints: Array<{ x: number; y: number }>
 ) {
+  if (route.horizontalCorridor) {
+    const midpoint = (route.horizontalCorridor.fromX + route.horizontalCorridor.toX) / 2;
+    const candidates = [0, -28, 28, -56, 56].map((offset) => ({
+      x: midpoint + offset,
+      y: route.horizontalCorridor!.y
+    }));
+    const outsideNodes = candidates.filter((point) =>
+      !nodeRects.some((rect) => pointInsideRect(point, rect, 11))
+    );
+    return outsideNodes.find((point) =>
+      usedReferencePoints.every((used) => Math.hypot(point.x - used.x, point.y - used.y) >= 22)
+    ) ?? outsideNodes[0] ?? candidates[0];
+  }
   if (route.corridor) {
     const midpoint = (route.corridor.fromY + route.corridor.toY) / 2;
     const candidates = [0, -28, 28, -56, 56].map((offset) => ({
@@ -1014,6 +1073,161 @@ function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConduct
     return [getCollapsedCableConductor(edge, "usb", "USB线", "#eab308", "USB")];
   }
   return edge.conductors;
+}
+
+function getCableTrunkRoutes(
+  edge: InterfaceWiringEdge,
+  conductors: InterfaceWiringConductor[],
+  route: CableRoute,
+  fromMerge: { x: number; y: number },
+  toMerge: { x: number; y: number }
+) {
+  const multicore = conductors.length > 1 && edge.kind !== "jumper";
+  const conductor = conductors[0];
+  const color = multicore ? "#374151" : conductor.color;
+  return [{
+    id: multicore ? "display-sheath" : conductor.id,
+    path: edge.kind === "jumper" ? route.path : getCompleteCableTrunkPath(route, fromMerge, toMerge),
+    color,
+    strokeWidth: edge.kind === "jumper"
+      ? 3.2
+      : multicore ? 6 : isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
+    confirmed: conductors.every((item) => item.confirmed),
+    needsOutline: color.toLowerCase() === "#ffffff"
+  }];
+}
+
+function getCompleteCableTrunkPath(
+  route: CableRoute,
+  fromMerge: { x: number; y: number },
+  toMerge: { x: number; y: number }
+) {
+  if (!route.endpointEscapes) return route.path;
+  const centralPath = route.path.replace(/^M\s+[-+.\deE]+\s+[-+.\deE]+\s*/, "");
+  return [
+    `M ${fromMerge.x} ${fromMerge.y}`,
+    ...getCableEscapeCommands(fromMerge, route.endpointEscapes.from, false),
+    centralPath,
+    ...getCableEscapeCommands(toMerge, route.endpointEscapes.to, true)
+  ].join(" ");
+}
+
+function getCableEscapeCommands(
+  mergePoint: { x: number; y: number },
+  escape: CableDeviceEscape,
+  reverse: boolean
+) {
+  const sideVector = getCableExitVector(escape.side);
+  const distanceToEdge = Math.hypot(
+    escape.edgePoint.x - mergePoint.x,
+    escape.edgePoint.y - mergePoint.y
+  );
+  const controlDistance = Math.min(24, Math.max(6, distanceToEdge * 0.35));
+  const mergeControl = {
+    x: mergePoint.x + sideVector.x * controlDistance,
+    y: mergePoint.y + sideVector.y * controlDistance
+  };
+  const edgeControl = {
+    x: escape.edgePoint.x - sideVector.x * controlDistance,
+    y: escape.edgePoint.y - sideVector.y * controlDistance
+  };
+  const edgeCurve = `C ${mergeControl.x} ${mergeControl.y}, ${edgeControl.x} ${edgeControl.y}, ${escape.edgePoint.x} ${escape.edgePoint.y}`;
+  const returnEdgeCurve = `C ${edgeControl.x} ${edgeControl.y}, ${mergeControl.x} ${mergeControl.y}, ${mergePoint.x} ${mergePoint.y}`;
+  const turnDeltaX = escape.routePoint.x - escape.edgePoint.x;
+  const turnDeltaY = escape.routePoint.y - escape.edgePoint.y;
+  if (Math.hypot(turnDeltaX, turnDeltaY) < 0.5) {
+    return reverse ? [returnEdgeCurve] : [edgeCurve];
+  }
+  const turnControl1 = {
+    x: escape.edgePoint.x,
+    y: escape.edgePoint.y + turnDeltaY * CABLE_CORRIDOR_CURVE_RATIO
+  };
+  const turnControl2 = {
+    x: escape.routePoint.x - turnDeltaX * CABLE_CORRIDOR_CURVE_RATIO,
+    y: escape.routePoint.y
+  };
+  const turnCurve = `C ${turnControl1.x} ${turnControl1.y}, ${turnControl2.x} ${turnControl2.y}, ${escape.routePoint.x} ${escape.routePoint.y}`;
+  const returnTurnCurve = `C ${turnControl2.x} ${turnControl2.y}, ${turnControl1.x} ${turnControl1.y}, ${escape.edgePoint.x} ${escape.edgePoint.y}`;
+  return reverse
+    ? [returnTurnCurve, returnEdgeCurve]
+    : [edgeCurve, turnCurve];
+}
+
+function getCableExitVector(side: CableDeviceExitSide) {
+  if (side === "left") return { x: -1, y: 0 };
+  if (side === "right") return { x: 1, y: 0 };
+  if (side === "top") return { x: 0, y: -1 };
+  return { x: 0, y: 1 };
+}
+
+function getInternalCableMergePoint(
+  terminals: Array<{ x: number; y: number }>,
+  escape: CableDeviceEscape,
+  deviceRect: { x: number; y: number; width: number; height: number }
+) {
+  const center = terminals.reduce(
+    (sum, terminal) => ({ x: sum.x + terminal.x / terminals.length, y: sum.y + terminal.y / terminals.length }),
+    { x: 0, y: 0 }
+  );
+  const direction = getCableExitVector(escape.side);
+  return {
+    x: clamp(center.x + direction.x * CABLE_INTERNAL_MERGE_DISTANCE, deviceRect.x + 6, deviceRect.x + deviceRect.width - 6),
+    y: clamp(center.y + direction.y * CABLE_INTERNAL_MERGE_DISTANCE, deviceRect.y + 20, deviceRect.y + deviceRect.height - 6)
+  };
+}
+
+function getConductorColorLabel(input: {
+  conductors: InterfaceWiringConductor[];
+  fromNode: InterfaceWiringNode;
+  toNode: InterfaceWiringNode;
+  fromMerge: { x: number; y: number };
+  toMerge: { x: number; y: number };
+  fromEscape?: CableDeviceEscape;
+  toEscape?: CableDeviceEscape;
+  fromRect: { x: number; y: number; width: number; height: number };
+  toRect: { x: number; y: number; width: number; height: number };
+}) {
+  const {
+    conductors,
+    fromNode,
+    fromMerge,
+    toMerge,
+    fromEscape,
+    toEscape,
+    fromRect,
+    toRect
+  } = input;
+  if (conductors.length < 2) return undefined;
+  const useToEndpoint = fromNode.id === "processor" && Boolean(toEscape);
+  const mergePoint = useToEndpoint ? toMerge : fromMerge;
+  const escape = useToEndpoint ? toEscape : fromEscape;
+  const rect = useToEndpoint ? toRect : fromRect;
+  if (!escape) return undefined;
+  const direction = getCableExitVector(escape.side);
+  const labelWidth = conductors.length * 22 + 6;
+  const desired = {
+    x: mergePoint.x - direction.x * (labelWidth / 2 + 8),
+    y: mergePoint.y - direction.y * 13
+  };
+  return {
+    x: clamp(desired.x, rect.x + labelWidth / 2 + 4, rect.x + rect.width - labelWidth / 2 - 4),
+    y: clamp(desired.y, rect.y + 30, rect.y + rect.height - 10),
+    items: conductors.map((conductor) => ({
+      color: conductor.color,
+      label: getConductorColorName(conductor.color)
+    }))
+  };
+}
+
+function getConductorColorName(color: string) {
+  const normalized = color.toLowerCase();
+  if (normalized === "#dc2626") return "红";
+  if (normalized === "#ffffff") return "白";
+  if (normalized === "#6b7280" || normalized === "#64748b") return "灰";
+  if (normalized === "#eab308") return "黄";
+  if (normalized === "#22c55e") return "绿";
+  if (normalized === "#111827") return "黑";
+  return "芯";
 }
 
 function getCollapsedCableConductor(
@@ -1051,6 +1265,14 @@ function findOpenCableRoute(input: {
   endpointNodeIds: Set<string>;
   canvasWidth: number;
   canvasHeight: number;
+  routedCableRoutes: CableRoute[];
+  fromRoutingRect: { x: number; y: number; width: number; height: number };
+  toRoutingRect: { x: number; y: number; width: number; height: number };
+  fromNodeId: string;
+  toNodeId: string;
+  fromVerticalExitOffset: number;
+  toVerticalExitOffset: number;
+  horizontalLaneBias: number;
 }): CableRoute {
   const {
     from,
@@ -1059,7 +1281,15 @@ function findOpenCableRoute(input: {
     nodeRects,
     endpointNodeIds,
     canvasWidth,
-    canvasHeight
+    canvasHeight,
+    routedCableRoutes,
+    fromRoutingRect,
+    toRoutingRect,
+    fromNodeId,
+    toNodeId,
+    fromVerticalExitOffset,
+    toVerticalExitOffset,
+    horizontalLaneBias
   } = input;
   const offsets = [preferredOffset];
   for (let distance = 44; distance <= 440; distance += 44) {
@@ -1070,51 +1300,144 @@ function findOpenCableRoute(input: {
     const route = getEdgeRoute(from, to, offset);
     if (!edgeRouteStaysInsideDrawingFrame(route, canvasWidth, canvasHeight)) continue;
     firstBoundedRoute ??= route;
-    if (!edgeRouteCrossesNodes(route, nodeRects, endpointNodeIds)) return route;
+  }
+  let firstDistinctHorizontal: CableRoute | undefined;
+  let firstCollisionFreeHorizontal: CableRoute | undefined;
+  const fromIsAbove = fromRoutingRect.y + fromRoutingRect.height <= toRoutingRect.y;
+  const toIsAbove = toRoutingRect.y + toRoutingRect.height <= fromRoutingRect.y;
+  if (fromIsAbove || toIsAbove) {
+    const fromSide: CableDeviceExitSide = fromIsAbove ? "bottom" : "top";
+    const toSide: CableDeviceExitSide = fromIsAbove ? "top" : "bottom";
+    const fromEscape = getVerticalDeviceCableEscape(
+      from,
+      fromRoutingRect,
+      fromSide,
+      fromVerticalExitOffset,
+      nodeRects,
+      fromNodeId
+    );
+    const toEscape = getVerticalDeviceCableEscape(
+      to,
+      toRoutingRect,
+      toSide,
+      toVerticalExitOffset,
+      nodeRects,
+      toNodeId
+    );
+    const minEndpointY = Math.min(fromEscape.routePoint.y, toEscape.routePoint.y);
+    const maxEndpointY = Math.max(fromEscape.routePoint.y, toEscape.routePoint.y);
+    const minLaneY = minEndpointY + CABLE_HORIZONTAL_MIN_CLEARANCE;
+    const maxLaneY = maxEndpointY - CABLE_HORIZONTAL_MIN_CLEARANCE;
+    if (minLaneY <= maxLaneY) {
+      const laneCandidates = getHorizontalLaneCandidates(minLaneY, maxLaneY, horizontalLaneBias);
+      for (const laneSpacing of [CABLE_CORRIDOR_LANE_SPACING, CABLE_CORRIDOR_MIN_LANE_SPACING]) {
+        for (const corridorY of laneCandidates) {
+          const corridorRoute = getHorizontalCorridorCableRoute(fromEscape.routePoint, toEscape.routePoint, corridorY);
+          corridorRoute.endpointEscapes = { from: fromEscape, to: toEscape };
+          if (!edgeRouteStaysInsideDrawingFrame(corridorRoute, canvasWidth, canvasHeight)) continue;
+          if (edgeRouteCrossesNodes(corridorRoute, nodeRects, endpointNodeIds)) continue;
+          firstCollisionFreeHorizontal ??= corridorRoute;
+          if (!cableCorridorLaneConflicts(corridorRoute, routedCableRoutes, laneSpacing)) {
+            firstDistinctHorizontal ??= corridorRoute;
+          }
+          if (!cableRouteConflictsWithReservations(corridorRoute, routedCableRoutes, laneSpacing)) {
+            return corridorRoute;
+          }
+        }
+      }
+    }
   }
   const obstacles = nodeRects.filter((rect) =>
     !endpointNodeIds.has(rect.id) &&
     rect.y < Math.max(from.y, to.y) &&
     rect.y + rect.height > Math.min(from.y, to.y)
   );
-  if (!obstacles.length) return firstBoundedRoute ?? getEdgeRoute(from, to, 0);
-  const obstacleLeft = Math.min(...obstacles.map((rect) => rect.x));
-  const obstacleRight = Math.max(...obstacles.map((rect) => rect.x + rect.width));
-  const obstacleTop = Math.min(...obstacles.map((rect) => rect.y));
-  const obstacleBottom = Math.max(...obstacles.map((rect) => rect.y + rect.height));
-  const corridorGap = 18;
+  const routeBandRects = [fromRoutingRect, toRoutingRect, ...obstacles];
+  const obstacleLeft = Math.min(...routeBandRects.map((rect) => rect.x));
+  const obstacleRight = Math.max(...routeBandRects.map((rect) => rect.x + rect.width));
+  const corridorGap = 6;
   const minRouteX = DRAWING_FRAME_LEFT + CABLE_FRAME_CLEARANCE;
   const maxRouteX = canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE;
-  const minRouteY = DRAWING_FRAME_TOP + CABLE_FRAME_CLEARANCE;
-  const maxRouteY = canvasHeight - DRAWING_FRAME_BOTTOM - CABLE_FRAME_CLEARANCE;
-  const corridorCandidates = [
-    Math.max(minRouteX, obstacleLeft - corridorGap),
-    Math.min(maxRouteX, obstacleRight + corridorGap)
-  ].filter((x) => x <= obstacleLeft - 10 || x >= obstacleRight + 10);
-  const corridorX = corridorCandidates.sort((left, right) =>
+  const corridorCandidates = deduplicateCorridorCandidates([
+    ...getLocalCorridorCandidates(
+      (from.x + to.x) / 2 + preferredOffset,
+      minRouteX,
+      maxRouteX
+    ),
+    ...getCorridorLaneCandidates(
+      Math.max(minRouteX, obstacleLeft - corridorGap),
+      minRouteX,
+      -1
+    ),
+    ...getCorridorLaneCandidates(
+      Math.min(maxRouteX, obstacleRight + corridorGap),
+      maxRouteX,
+      1
+    )
+  ]);
+  corridorCandidates.sort((left, right) =>
     Math.abs(from.x - left) + Math.abs(to.x - left) -
     (Math.abs(from.x - right) + Math.abs(to.x - right))
-  )[0];
-  if (corridorX === undefined) return firstBoundedRoute ?? getEdgeRoute(from, to, 0);
-  const fromY = Math.min(maxRouteY, Math.max(
-    minRouteY,
-    from.y <= to.y ? obstacleTop - corridorGap : obstacleBottom + corridorGap
-  ));
-  const toY = Math.min(maxRouteY, Math.max(
-    minRouteY,
-    from.y <= to.y ? obstacleBottom + corridorGap : obstacleTop - corridorGap
-  ));
-  const corridorRoute = getCorridorCableRoute(from, to, corridorX, fromY, toY);
-  return edgeRouteStaysInsideDrawingFrame(corridorRoute, canvasWidth, canvasHeight)
-    ? corridorRoute
-    : firstBoundedRoute ?? getEdgeRoute(from, to, 0);
+  );
+  let firstDistinctCorridor: CableRoute | undefined;
+  let firstCollisionFreeCorridor: CableRoute | undefined;
+  for (const laneSpacing of [CABLE_CORRIDOR_LANE_SPACING, CABLE_CORRIDOR_MIN_LANE_SPACING]) {
+    for (const corridorX of corridorCandidates) {
+      const fromEscape = getDeviceCableEscape(from, fromRoutingRect, corridorX, 0, nodeRects, fromNodeId);
+      const toEscape = getDeviceCableEscape(to, toRoutingRect, corridorX, 0, nodeRects, toNodeId);
+      const corridorRoute = getCorridorCableRoute(fromEscape.routePoint, toEscape.routePoint, corridorX);
+      corridorRoute.endpointEscapes = { from: fromEscape, to: toEscape };
+      if (!edgeRouteStaysInsideDrawingFrame(corridorRoute, canvasWidth, canvasHeight)) continue;
+      if (edgeRouteCrossesNodes(corridorRoute, nodeRects, endpointNodeIds)) continue;
+      firstCollisionFreeCorridor ??= corridorRoute;
+      if (!cableCorridorLaneConflicts(corridorRoute, routedCableRoutes, laneSpacing)) {
+        firstDistinctCorridor ??= corridorRoute;
+      }
+      if (!cableRouteConflictsWithReservations(corridorRoute, routedCableRoutes, laneSpacing)) {
+        return corridorRoute;
+      }
+    }
+  }
+  const distinctRoutes = [firstDistinctHorizontal, firstDistinctCorridor]
+    .filter((route): route is CableRoute => Boolean(route));
+  if (distinctRoutes.length) {
+    return distinctRoutes.sort((left, right) => getCableRouteLength(left) - getCableRouteLength(right))[0];
+  }
+  const collisionFreeRoutes = [firstCollisionFreeHorizontal, firstCollisionFreeCorridor]
+    .filter((route): route is CableRoute => Boolean(route));
+  if (collisionFreeRoutes.length) {
+    return collisionFreeRoutes.sort((left, right) => getCableRouteLength(left) - getCableRouteLength(right))[0];
+  }
+  for (const offset of offsets) {
+    const route = getEdgeRoute(from, to, offset);
+    if (!edgeRouteStaysInsideDrawingFrame(route, canvasWidth, canvasHeight)) continue;
+    if (!edgeRouteCrossesNodes(route, nodeRects, endpointNodeIds)) return route;
+  }
+  return firstBoundedRoute ?? getEdgeRoute(from, to, 0);
 }
 
 type CableRoute = ReturnType<typeof getEdgeRoute> & {
+  endpointEscapes?: {
+    from: CableDeviceEscape;
+    to: CableDeviceEscape;
+  };
   corridor?: {
     x: number;
     fromY: number;
     toY: number;
+    entryControl1: { x: number; y: number };
+    entryControl2: { x: number; y: number };
+    exitControl1: { x: number; y: number };
+    exitControl2: { x: number; y: number };
+  };
+  horizontalCorridor?: {
+    y: number;
+    fromX: number;
+    toX: number;
+    entryControl1: { x: number; y: number };
+    entryControl2: { x: number; y: number };
+    exitControl1: { x: number; y: number };
+    exitControl2: { x: number; y: number };
   };
 };
 
@@ -1122,25 +1445,475 @@ function getCorridorCableRoute(
   from: { x: number; y: number },
   to: { x: number; y: number },
   corridorX: number,
-  fromY: number,
-  toY: number
+  fromY?: number,
+  toY?: number
 ): CableRoute {
+  const verticalSegment = fromY === undefined || toY === undefined
+    ? getCorridorVerticalSegment(from, to, corridorX)
+    : { fromY, toY };
+  const geometry = getSmoothCorridorGeometry(
+    from,
+    to,
+    corridorX,
+    verticalSegment.fromY,
+    verticalSegment.toY
+  );
   return {
-    path: [
-      `M ${from.x} ${from.y}`,
-      `C ${from.x} ${fromY}, ${corridorX} ${from.y}, ${corridorX} ${fromY}`,
-      `L ${corridorX} ${toY}`,
-      `C ${corridorX} ${to.y}, ${to.x} ${toY}, ${to.x} ${to.y}`
-    ].join(" "),
+    path: geometry.path,
     labelX: corridorX,
-    labelY: (fromY + toY) / 2,
+    labelY: (verticalSegment.fromY + verticalSegment.toY) / 2,
     offset: 0,
     labelProgress: 0.5,
     from,
     to,
-    control1: { x: corridorX, y: fromY },
-    control2: { x: corridorX, y: toY },
-    corridor: { x: corridorX, fromY, toY }
+    control1: geometry.entryControl1,
+    control2: geometry.exitControl2,
+    corridor: {
+      x: corridorX,
+      fromY: verticalSegment.fromY,
+      toY: verticalSegment.toY,
+      entryControl1: geometry.entryControl1,
+      entryControl2: geometry.entryControl2,
+      exitControl1: geometry.exitControl1,
+      exitControl2: geometry.exitControl2
+    }
+  };
+}
+
+function getHorizontalCorridorCableRoute(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorY: number
+): CableRoute {
+  const horizontalSegment = getCorridorHorizontalSegment(from, to, corridorY);
+  const geometry = getSmoothHorizontalCorridorGeometry(
+    from,
+    to,
+    corridorY,
+    horizontalSegment.fromX,
+    horizontalSegment.toX
+  );
+  return {
+    path: geometry.path,
+    labelX: (horizontalSegment.fromX + horizontalSegment.toX) / 2,
+    labelY: corridorY,
+    offset: 0,
+    labelProgress: 0.5,
+    from,
+    to,
+    control1: geometry.entryControl1,
+    control2: geometry.exitControl2,
+    horizontalCorridor: {
+      y: corridorY,
+      fromX: horizontalSegment.fromX,
+      toX: horizontalSegment.toX,
+      entryControl1: geometry.entryControl1,
+      entryControl2: geometry.entryControl2,
+      exitControl1: geometry.exitControl1,
+      exitControl2: geometry.exitControl2
+    }
+  };
+}
+
+function getHorizontalLaneCandidates(minY: number, maxY: number, laneBias: number) {
+  const centerY = minY + (maxY - minY) * clamp(laneBias, 0, 1);
+  const candidates: number[] = [];
+  const maxDistance = Math.max(centerY - minY, maxY - centerY);
+  for (let distance = 0; distance <= maxDistance + 0.5; distance += CABLE_HORIZONTAL_LANE_STEP) {
+    const offsets = distance ? [-distance, distance] : [0];
+    offsets.forEach((offset) => {
+      const y = centerY + offset;
+      if (y >= minY && y <= maxY) candidates.push(y);
+    });
+  }
+  if (!candidates.some((candidate) => Math.abs(candidate - minY) < 0.5)) candidates.push(minY);
+  if (!candidates.some((candidate) => Math.abs(candidate - maxY) < 0.5)) candidates.push(maxY);
+  return deduplicateCorridorCandidates(candidates);
+}
+
+function getVerticalDeviceCableEscape(
+  terminal: { x: number; y: number },
+  deviceRect: { x: number; y: number; width: number; height: number },
+  side: "top" | "bottom",
+  exitOffset: number,
+  obstacleRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
+  ownNodeId: string
+) {
+  const edgePoint = {
+    x: clamp(terminal.x + exitOffset, deviceRect.x + 8, deviceRect.x + deviceRect.width - 8),
+    y: side === "top"
+      ? deviceRect.y - CABLE_DEVICE_BREAKOUT_GAP
+      : deviceRect.y + deviceRect.height + CABLE_DEVICE_BREAKOUT_GAP
+  };
+  const escape: CableDeviceEscape = { side, edgePoint, routePoint: edgePoint };
+  return deviceEscapeIsOpen(terminal, escape, obstacleRects, ownNodeId)
+    ? escape
+    : { ...escape, edgePoint: { ...edgePoint, x: terminal.x }, routePoint: { ...edgePoint, x: terminal.x } };
+}
+
+function getVerticalExitFan(
+  edge: InterfaceWiringEdge,
+  nodeId: string,
+  edges: InterfaceWiringEdge[],
+  positions: WiringNodePositions
+) {
+  const nodePosition = positions[nodeId];
+  if (!nodePosition || edge.kind === "jumper") return { offset: 0, laneBias: 0.5, count: 1 };
+  const peerId = edge.fromNodeId === nodeId ? edge.toNodeId : edge.fromNodeId;
+  const peerPosition = positions[peerId];
+  if (!peerPosition) return { offset: 0, laneBias: 0.5, count: 1 };
+  const side = peerPosition.centerY < nodePosition.centerY ? "top" : "bottom";
+  const siblings = edges.flatMap((candidate) => {
+    if (candidate.kind === "jumper") return [];
+    const candidatePeerId = candidate.fromNodeId === nodeId
+      ? candidate.toNodeId
+      : candidate.toNodeId === nodeId ? candidate.fromNodeId : undefined;
+    const candidatePeer = candidatePeerId ? positions[candidatePeerId] : undefined;
+    if (!candidatePeer) return [];
+    const candidateSide = candidatePeer.centerY < nodePosition.centerY ? "top" : "bottom";
+    return candidateSide === side ? [{ edge: candidate, peer: candidatePeer }] : [];
+  }).sort((left, right) =>
+    left.peer.centerX - right.peer.centerX || left.peer.centerY - right.peer.centerY || left.edge.id.localeCompare(right.edge.id)
+  );
+  const index = siblings.findIndex((candidate) => candidate.edge.id === edge.id);
+  if (index < 0 || siblings.length < 2) return { offset: 0, laneBias: 0.5, count: 1 };
+  return {
+    offset: clamp((index - (siblings.length - 1) / 2) * 14, -70, 70),
+    laneBias: (index + 0.5) / siblings.length,
+    count: siblings.length
+  };
+}
+
+function getCorridorLaneCandidates(startX: number, boundaryX: number, direction: -1 | 1) {
+  const candidates: number[] = [];
+  const step = CABLE_CORRIDOR_LANE_SPACING / 5;
+  for (
+    let x = startX;
+    direction < 0 ? x >= boundaryX : x <= boundaryX;
+    x += direction * step
+  ) {
+    candidates.push(x);
+  }
+  if (!candidates.length || Math.abs(candidates[candidates.length - 1] - boundaryX) > 0.5) {
+    candidates.push(boundaryX);
+  }
+  return candidates;
+}
+
+function getLocalCorridorCandidates(centerX: number, minX: number, maxX: number) {
+  const candidates: number[] = [];
+  for (let distance = 0; distance <= 180; distance += CABLE_CORRIDOR_LANE_SPACING) {
+    const offsets = distance ? [-distance, distance] : [0];
+    offsets.forEach((offset) => {
+      const x = centerX + offset;
+      if (x >= minX && x <= maxX) candidates.push(x);
+    });
+  }
+  return candidates;
+}
+
+function deduplicateCorridorCandidates(candidates: number[]) {
+  return candidates.filter((candidate, index) =>
+    candidates.findIndex((other) => Math.abs(other - candidate) < 0.5) === index
+  );
+}
+
+function getDeviceCableEscape(
+  terminal: { x: number; y: number },
+  deviceRect: { x: number; y: number; width: number; height: number },
+  corridorX: number,
+  conductorOffset: number,
+  obstacleRects: Array<{ id: string; x: number; y: number; width: number; height: number }> = [],
+  ownNodeId = ""
+): CableDeviceEscape {
+  const deviceCenterX = deviceRect.x + deviceRect.width / 2;
+  const deviceCenterY = deviceRect.y + deviceRect.height / 2;
+  const sideCandidates = ([
+    { side: "left" as const, distance: Math.abs(terminal.x - deviceRect.x), preference: corridorX < deviceCenterX ? 0 : 2 },
+    { side: "right" as const, distance: Math.abs(deviceRect.x + deviceRect.width - terminal.x), preference: corridorX >= deviceCenterX ? 0 : 2 },
+    { side: "top" as const, distance: Math.abs(terminal.y - deviceRect.y), preference: terminal.y <= deviceCenterY ? 1 : 2 },
+    { side: "bottom" as const, distance: Math.abs(deviceRect.y + deviceRect.height - terminal.y), preference: terminal.y > deviceCenterY ? 1 : 2 }
+  ] satisfies Array<{ side: CableDeviceExitSide; distance: number; preference: number }>)
+    .sort((left, right) => left.distance - right.distance || left.preference - right.preference)
+    .map(({ side }) => {
+      if (side === "left" || side === "right") {
+        const edgePoint = {
+          x: side === "left"
+            ? deviceRect.x - CABLE_DEVICE_BREAKOUT_GAP
+            : deviceRect.x + deviceRect.width + CABLE_DEVICE_BREAKOUT_GAP,
+          y: terminal.y + conductorOffset
+        };
+        return { side, edgePoint, routePoint: edgePoint } satisfies CableDeviceEscape;
+      }
+      const verticalDirection = side === "top" ? -1 : 1;
+      const horizontalDirection = Math.sign(corridorX - terminal.x) || (corridorX < deviceCenterX ? -1 : 1);
+      const edgePoint = {
+        x: terminal.x + conductorOffset,
+        y: side === "top"
+          ? deviceRect.y - CABLE_DEVICE_BREAKOUT_GAP
+          : deviceRect.y + deviceRect.height + CABLE_DEVICE_BREAKOUT_GAP
+      };
+      return {
+        side,
+        edgePoint,
+        routePoint: {
+          x: edgePoint.x + horizontalDirection * CABLE_CORRIDOR_MIN_BEND,
+          y: edgePoint.y + verticalDirection * CABLE_CORRIDOR_MIN_BEND
+        }
+      } satisfies CableDeviceEscape;
+    });
+  return sideCandidates.find((escape) =>
+    deviceEscapeIsOpen(terminal, escape, obstacleRects, ownNodeId)
+  ) ?? sideCandidates[0];
+}
+
+function deviceEscapeIsOpen(
+  terminal: { x: number; y: number },
+  escape: CableDeviceEscape,
+  obstacleRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
+  ownNodeId: string
+) {
+  const samplePoints: Array<{ x: number; y: number }> = [];
+  for (let index = 1; index <= 12; index += 1) {
+    const progress = index / 12;
+    samplePoints.push({
+      x: terminal.x + (escape.edgePoint.x - terminal.x) * progress,
+      y: terminal.y + (escape.edgePoint.y - terminal.y) * progress
+    });
+    samplePoints.push({
+      x: escape.edgePoint.x + (escape.routePoint.x - escape.edgePoint.x) * progress,
+      y: escape.edgePoint.y + (escape.routePoint.y - escape.edgePoint.y) * progress
+    });
+  }
+  return obstacleRects
+    .filter((rect) => rect.id !== ownNodeId)
+    .every((rect) => samplePoints.every((point) => !pointInsideRect(point, rect, 2)));
+}
+
+function cableRouteConflictsWithReservations(
+  route: CableRoute,
+  reservations: CableRoute[],
+  laneSpacing: number
+) {
+  return cableCorridorLaneConflicts(route, reservations, laneSpacing) ||
+    reservations.some((reservation) => cableRoutesIntersect(route, reservation, CABLE_ROUTE_INTERSECTION_GAP));
+}
+
+function cableCorridorLaneConflicts(
+  route: CableRoute,
+  reservations: CableRoute[],
+  laneSpacing: number
+) {
+  return reservations.some((reservation) => {
+    if (route.corridor && reservation.corridor) {
+      const routeMinY = Math.min(route.corridor.fromY, route.corridor.toY);
+      const routeMaxY = Math.max(route.corridor.fromY, route.corridor.toY);
+      const reservationMinY = Math.min(reservation.corridor.fromY, reservation.corridor.toY);
+      const reservationMaxY = Math.max(reservation.corridor.fromY, reservation.corridor.toY);
+      const rangesOverlap =
+        routeMinY <= reservationMaxY + CABLE_CORRIDOR_VERTICAL_CLEARANCE &&
+        routeMaxY >= reservationMinY - CABLE_CORRIDOR_VERTICAL_CLEARANCE;
+      if (rangesOverlap && Math.abs(route.corridor.x - reservation.corridor.x) < laneSpacing) return true;
+    }
+    if (route.horizontalCorridor && reservation.horizontalCorridor) {
+      const routeMinX = Math.min(route.horizontalCorridor.fromX, route.horizontalCorridor.toX);
+      const routeMaxX = Math.max(route.horizontalCorridor.fromX, route.horizontalCorridor.toX);
+      const reservationMinX = Math.min(reservation.horizontalCorridor.fromX, reservation.horizontalCorridor.toX);
+      const reservationMaxX = Math.max(reservation.horizontalCorridor.fromX, reservation.horizontalCorridor.toX);
+      const rangesOverlap = routeMinX <= reservationMaxX + 12 && routeMaxX >= reservationMinX - 12;
+      if (rangesOverlap && Math.abs(route.horizontalCorridor.y - reservation.horizontalCorridor.y) < laneSpacing) return true;
+    }
+    return false;
+  });
+}
+
+function cableRoutesIntersect(route: CableRoute, reservation: CableRoute, gap: number) {
+  const routePoints = [route.from, ...getCableRouteSamplePoints(route), route.to];
+  const reservationPoints = [reservation.from, ...getCableRouteSamplePoints(reservation), reservation.to];
+  for (let routeIndex = 1; routeIndex < routePoints.length; routeIndex += 1) {
+    for (let reservationIndex = 1; reservationIndex < reservationPoints.length; reservationIndex += 1) {
+      if (lineSegmentsAreCloserThan(
+        routePoints[routeIndex - 1],
+        routePoints[routeIndex],
+        reservationPoints[reservationIndex - 1],
+        reservationPoints[reservationIndex],
+        gap
+      )) return true;
+    }
+  }
+  return false;
+}
+
+function lineSegmentsAreCloserThan(
+  a1: { x: number; y: number },
+  a2: { x: number; y: number },
+  b1: { x: number; y: number },
+  b2: { x: number; y: number },
+  gap: number
+) {
+  if (lineSegmentsIntersect(a1, a2, b1, b2)) return true;
+  return Math.min(
+    pointToSegmentDistance(a1, b1, b2),
+    pointToSegmentDistance(a2, b1, b2),
+    pointToSegmentDistance(b1, a1, a2),
+    pointToSegmentDistance(b2, a1, a2)
+  ) < gap;
+}
+
+function lineSegmentsIntersect(
+  a1: { x: number; y: number },
+  a2: { x: number; y: number },
+  b1: { x: number; y: number },
+  b2: { x: number; y: number }
+) {
+  const cross = (
+    origin: { x: number; y: number },
+    first: { x: number; y: number },
+    second: { x: number; y: number }
+  ) => (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x);
+  const d1 = cross(a1, a2, b1);
+  const d2 = cross(a1, a2, b2);
+  const d3 = cross(b1, b2, a1);
+  const d4 = cross(b1, b2, a2);
+  return d1 * d2 < 0 && d3 * d4 < 0;
+}
+
+function pointToSegmentDistance(
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+) {
+  const deltaX = end.x - start.x;
+  const deltaY = end.y - start.y;
+  const lengthSquared = deltaX ** 2 + deltaY ** 2;
+  if (!lengthSquared) return Math.hypot(point.x - start.x, point.y - start.y);
+  const progress = clamp(
+    ((point.x - start.x) * deltaX + (point.y - start.y) * deltaY) / lengthSquared,
+    0,
+    1
+  );
+  return Math.hypot(
+    point.x - (start.x + deltaX * progress),
+    point.y - (start.y + deltaY * progress)
+  );
+}
+
+function getCableRouteLength(route: CableRoute) {
+  const points = [route.from, ...getCableRouteSamplePoints(route), route.to];
+  return points.slice(1).reduce((length, point, index) =>
+    length + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0
+  );
+}
+
+function getCorridorVerticalSegment(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorX: number
+) {
+  const verticalDistance = Math.abs(to.y - from.y);
+  const horizontalDistance = Math.min(Math.abs(corridorX - from.x), Math.abs(to.x - corridorX));
+  const desiredBend = Math.min(
+    CABLE_CORRIDOR_MAX_BEND,
+    Math.max(CABLE_CORRIDOR_MIN_BEND, horizontalDistance * 0.34)
+  );
+  const bend = Math.min(desiredBend, horizontalDistance * 0.45, verticalDistance * 0.28);
+  const direction = Math.sign(to.y - from.y) || 1;
+  return {
+    fromY: from.y + direction * bend,
+    toY: to.y - direction * bend
+  };
+}
+
+function getCorridorHorizontalSegment(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorY: number
+) {
+  const horizontalDistance = Math.abs(to.x - from.x);
+  const verticalDistance = Math.min(Math.abs(corridorY - from.y), Math.abs(to.y - corridorY));
+  const desiredBend = Math.min(
+    CABLE_CORRIDOR_MAX_BEND,
+    Math.max(8, verticalDistance * 0.45)
+  );
+  const bend = Math.min(desiredBend, verticalDistance * 0.45, horizontalDistance * 0.28);
+  const direction = Math.sign(to.x - from.x) || 1;
+  return {
+    fromX: from.x + direction * bend,
+    toX: to.x - direction * bend
+  };
+}
+
+function getSmoothHorizontalCorridorGeometry(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorY: number,
+  fromX: number,
+  toX: number
+) {
+  const entryControl1 = {
+    x: from.x,
+    y: from.y + (corridorY - from.y) * CABLE_CORRIDOR_CURVE_RATIO
+  };
+  const entryControl2 = {
+    x: fromX - (fromX - from.x) * CABLE_CORRIDOR_CURVE_RATIO,
+    y: corridorY
+  };
+  const exitControl1 = {
+    x: toX + (to.x - toX) * CABLE_CORRIDOR_CURVE_RATIO,
+    y: corridorY
+  };
+  const exitControl2 = {
+    x: to.x,
+    y: to.y - (to.y - corridorY) * CABLE_CORRIDOR_CURVE_RATIO
+  };
+  return {
+    path: [
+      `M ${from.x} ${from.y}`,
+      `C ${entryControl1.x} ${entryControl1.y}, ${entryControl2.x} ${entryControl2.y}, ${fromX} ${corridorY}`,
+      `L ${toX} ${corridorY}`,
+      `C ${exitControl1.x} ${exitControl1.y}, ${exitControl2.x} ${exitControl2.y}, ${to.x} ${to.y}`
+    ].join(" "),
+    entryControl1,
+    entryControl2,
+    exitControl1,
+    exitControl2
+  };
+}
+
+function getSmoothCorridorGeometry(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  corridorX: number,
+  fromY: number,
+  toY: number
+) {
+  const entryControl1 = {
+    x: from.x + (corridorX - from.x) * CABLE_CORRIDOR_CURVE_RATIO,
+    y: from.y
+  };
+  const entryControl2 = {
+    x: corridorX,
+    y: fromY - (fromY - from.y) * CABLE_CORRIDOR_CURVE_RATIO
+  };
+  const exitControl1 = {
+    x: corridorX,
+    y: toY + (to.y - toY) * CABLE_CORRIDOR_CURVE_RATIO
+  };
+  const exitControl2 = {
+    x: to.x - (to.x - corridorX) * CABLE_CORRIDOR_CURVE_RATIO,
+    y: to.y
+  };
+  return {
+    path: [
+      `M ${from.x} ${from.y}`,
+      `C ${entryControl1.x} ${entryControl1.y}, ${entryControl2.x} ${entryControl2.y}, ${corridorX} ${fromY}`,
+      `L ${corridorX} ${toY}`,
+      `C ${exitControl1.x} ${exitControl1.y}, ${exitControl2.x} ${exitControl2.y}, ${to.x} ${to.y}`
+    ].join(" "),
+    entryControl1,
+    entryControl2,
+    exitControl1,
+    exitControl2
   };
 }
 
@@ -1212,17 +1985,14 @@ function getInternalJumperRoute(
 }
 
 function edgeRouteCrossesNodes(
-  route: ReturnType<typeof getEdgeRoute>,
+  route: CableRoute,
   nodeRects: Array<{ id: string; x: number; y: number; width: number; height: number }>,
   endpointNodeIds: Set<string>
 ) {
   const obstacles = nodeRects.filter((rect) => !endpointNodeIds.has(rect.id));
-  for (let index = 1; index < 20; index += 1) {
-    const time = index / 20;
-    const point = cubicPoint(route.from, route.control1, route.control2, route.to, time);
-    if (obstacles.some((rect) => pointInsideRect(point, rect, 5))) return true;
-  }
-  return false;
+  return getCableRouteSamplePoints(route).some((point) =>
+    obstacles.some((rect) => pointInsideRect(point, rect, 5))
+  );
 }
 
 function edgeRouteStaysInsideDrawingFrame(route: CableRoute, canvasWidth: number, canvasHeight: number) {
@@ -1230,9 +2000,95 @@ function edgeRouteStaysInsideDrawingFrame(route: CableRoute, canvasWidth: number
   const maxX = canvasWidth - DRAWING_FRAME_RIGHT - CABLE_FRAME_CLEARANCE;
   const minY = DRAWING_FRAME_TOP + CABLE_FRAME_CLEARANCE;
   const maxY = canvasHeight - DRAWING_FRAME_BOTTOM - CABLE_FRAME_CLEARANCE;
-  return [route.from, route.control1, route.control2, route.to, { x: route.labelX, y: route.labelY }].every(
+  const routePoints = route.horizontalCorridor
+    ? [
+        route.from,
+        route.horizontalCorridor.entryControl1,
+        route.horizontalCorridor.entryControl2,
+        { x: route.horizontalCorridor.fromX, y: route.horizontalCorridor.y },
+        { x: route.horizontalCorridor.toX, y: route.horizontalCorridor.y },
+        route.horizontalCorridor.exitControl1,
+        route.horizontalCorridor.exitControl2,
+        route.to,
+        { x: route.labelX, y: route.labelY }
+      ]
+    : route.corridor
+    ? [
+        route.from,
+        route.corridor.entryControl1,
+        route.corridor.entryControl2,
+        { x: route.corridor.x, y: route.corridor.fromY },
+        { x: route.corridor.x, y: route.corridor.toY },
+        route.corridor.exitControl1,
+        route.corridor.exitControl2,
+        route.to,
+        { x: route.labelX, y: route.labelY }
+      ]
+    : [route.from, route.control1, route.control2, route.to, { x: route.labelX, y: route.labelY }];
+  return routePoints.every(
     (point) => point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY
   );
+}
+
+function getCableRouteSamplePoints(route: CableRoute) {
+  if (route.horizontalCorridor) {
+    const entry = { x: route.horizontalCorridor.fromX, y: route.horizontalCorridor.y };
+    const exit = { x: route.horizontalCorridor.toX, y: route.horizontalCorridor.y };
+    const points: Array<{ x: number; y: number }> = [];
+    for (let index = 1; index < 20; index += 1) {
+      const time = index / 20;
+      points.push(cubicPoint(
+        route.from,
+        route.horizontalCorridor.entryControl1,
+        route.horizontalCorridor.entryControl2,
+        entry,
+        time
+      ));
+      points.push({
+        x: entry.x + (exit.x - entry.x) * time,
+        y: route.horizontalCorridor.y
+      });
+      points.push(cubicPoint(
+        exit,
+        route.horizontalCorridor.exitControl1,
+        route.horizontalCorridor.exitControl2,
+        route.to,
+        time
+      ));
+    }
+    return points;
+  }
+  if (!route.corridor) {
+    return Array.from({ length: 19 }, (_, index) => {
+      const time = (index + 1) / 20;
+      return cubicPoint(route.from, route.control1, route.control2, route.to, time);
+    });
+  }
+  const entry = { x: route.corridor.x, y: route.corridor.fromY };
+  const exit = { x: route.corridor.x, y: route.corridor.toY };
+  const points: Array<{ x: number; y: number }> = [];
+  for (let index = 1; index < 20; index += 1) {
+    const time = index / 20;
+    points.push(cubicPoint(
+      route.from,
+      route.corridor.entryControl1,
+      route.corridor.entryControl2,
+      entry,
+      time
+    ));
+    points.push({
+      x: route.corridor.x,
+      y: entry.y + (exit.y - entry.y) * time
+    });
+    points.push(cubicPoint(
+      exit,
+      route.corridor.exitControl1,
+      route.corridor.exitControl2,
+      route.to,
+      time
+    ));
+  }
+  return points;
 }
 
 function cubicPoint(
@@ -1256,6 +2112,11 @@ function pointInsideRect(
 ) {
   return point.x > rect.x - gap && point.x < rect.x + rect.width + gap &&
     point.y > rect.y - gap && point.y < rect.y + rect.height + gap;
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (max < min) return (min + max) / 2;
+  return Math.min(max, Math.max(min, value));
 }
 
 function getPairKey(edge: InterfaceWiringEdge) {
