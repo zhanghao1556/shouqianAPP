@@ -194,10 +194,16 @@
   z-index: 1;
   display: block;
   object-fit: contain;
+  transition: opacity 0.16s ease, filter 0.16s ease;
 }
 
 .interfaceWiringPanelImage.unconfirmed {
   opacity: 0.94;
+}
+
+.interfaceWiringCanvas[data-active-edge-id] .interfaceWiringPanelImage {
+  opacity: 0.5;
+  filter: grayscale(0.6) brightness(0.76);
 }
 
 .interfaceWiringMissingPanelLabel {
@@ -384,19 +390,108 @@
 
 .interfaceWiringEdgeTrunks,
 .interfaceWiringEdgeLeads,
-.interfaceWiringEdgeReference {
+.interfaceWiringEdgeReferences {
+  transition: opacity 0.16s ease;
+}
+
+.interfaceWiringEdgeTrunks.is-dimmed,
+.interfaceWiringEdgeLeads.is-dimmed,
+.interfaceWiringEdgeReferences.is-dimmed {
+  opacity: 0.14;
+}
+
+.interfaceWiringEdgeVisual,
+.interfaceWiringEdgeReferenceBadge,
+.interfaceWiringEdgeReference text {
   pointer-events: none;
 }
 
-.interfaceWiringEdgeReference circle {
+.interfaceWiringEdgeHitTarget {
+  pointer-events: stroke;
+  cursor: crosshair;
+}
+
+.interfaceWiringEdgeTrunks.is-active .interfaceWiringEdgeVisual,
+.interfaceWiringEdgeLeads.is-active .interfaceWiringEdgeVisual,
+.interfaceWiringEdgeLeads.is-active .interfaceWiringConnectorHeadBody {
+  filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.96)) drop-shadow(0 0 4px rgba(11, 92, 173, 0.72));
+  animation: interfaceWiringCableFocusPulse 0.9s ease-in-out infinite;
+}
+
+.interfaceWiringConnectorHead {
+  cursor: crosshair;
+}
+
+.interfaceWiringConnectorHeadHitTarget {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+}
+
+.interfaceWiringConnectorHeadBody,
+.interfaceWiringConnectorHeadBody * {
+  pointer-events: none;
+}
+
+.interfaceWiringConnectorMetal {
+  fill: #dbe3ea;
+  stroke: #172033;
+  stroke-width: 1;
+}
+
+.interfaceWiringConnectorSocket {
+  fill: #172033;
+  stroke: #dbe3ea;
+  stroke-width: 1.2;
+}
+
+.interfaceWiringConnectorXlrBody {
+  fill: #64748b;
+  stroke: #172033;
+  stroke-width: 1;
+}
+
+.interfaceWiringConnectorGrip {
+  fill: #334155;
+  stroke: #172033;
+  stroke-width: 1;
+}
+
+.interfaceWiringConnectorRing {
+  stroke: #111827;
+  stroke-width: 2;
+}
+
+.interfaceWiringConnectorLabel {
+  fill: #ffffff;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 6.5px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-anchor: middle;
+}
+
+.interfaceWiringEdgeReferenceBadge {
   fill: #0b5cad;
   stroke: #ffffff;
   stroke-width: 1.5;
   filter: drop-shadow(0 0 0.8px #172033);
 }
 
-.interfaceWiringEdgeReference.unconfirmed circle {
+.interfaceWiringEdgeReference.unconfirmed .interfaceWiringEdgeReferenceBadge {
   fill: #b7791f;
+}
+
+.interfaceWiringEdgeReferenceHitTarget {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.interfaceWiringEdgeReferences.is-active .interfaceWiringEdgeReferenceBadge {
+  filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.96)) drop-shadow(0 0 4px rgba(11, 92, 173, 0.72));
+  animation: interfaceWiringCableFocusPulse 0.9s ease-in-out infinite;
 }
 
 .interfaceWiringEdgeReference text {
@@ -405,6 +500,60 @@
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0;
+}
+
+.interfaceWiringPortFocusVisuals,
+.interfaceWiringPortImageFocus,
+.interfaceWiringPortInteractions,
+.interfaceWiringPortInteraction {
+  pointer-events: none;
+}
+
+.interfaceWiringPortImageFocus {
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.interfaceWiringPortImageFocus.is-active {
+  opacity: 1;
+}
+
+.interfaceWiringPortImageFocusLayer {
+  pointer-events: none;
+  filter: brightness(1.42) contrast(1.34) saturate(1.45) drop-shadow(0 0 1px rgba(255, 255, 255, 0.96));
+}
+
+.interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer {
+  animation: interfaceWiringPortImageFocusPulse 0.9s ease-in-out infinite;
+}
+
+.interfaceWiringPortHitTarget {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+@keyframes interfaceWiringCableFocusPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 1px rgba(245, 158, 11, 0.82)) drop-shadow(0 0 3px rgba(11, 92, 173, 0.58));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 3px rgba(245, 158, 11, 1)) drop-shadow(0 0 6px rgba(11, 92, 173, 0.82));
+  }
+}
+
+@keyframes interfaceWiringPortImageFocusPulse {
+  0%,
+  100% {
+    filter: brightness(1.34) contrast(1.28) saturate(1.34) drop-shadow(0 0 1px rgba(255, 255, 255, 0.92));
+  }
+
+  50% {
+    filter: brightness(1.82) contrast(1.46) saturate(1.7) drop-shadow(0 0 3px rgba(56, 189, 248, 0.9));
+  }
 }
 
 .interfaceWiringLegendObject {
@@ -566,5 +715,23 @@
 
   .interfaceWiringExternalControl {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interfaceWiringEdgeTrunks,
+  .interfaceWiringEdgeLeads,
+  .interfaceWiringEdgeReferences,
+  .interfaceWiringPanelImage,
+  .interfaceWiringPortImageFocus {
+    transition: none;
+  }
+
+  .interfaceWiringEdgeTrunks.is-active .interfaceWiringEdgeVisual,
+  .interfaceWiringEdgeLeads.is-active .interfaceWiringEdgeVisual,
+  .interfaceWiringEdgeLeads.is-active .interfaceWiringConnectorHeadBody,
+  .interfaceWiringEdgeReferences.is-active .interfaceWiringEdgeReferenceBadge,
+  .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer {
+    animation: none;
   }
 }

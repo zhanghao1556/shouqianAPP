@@ -1,14 +1,16 @@
 import { AlertTriangle, CheckCircle2, CircleAlert, Network } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AppBrandId } from "../brand";
 import type {
   ClassroomProfile,
+  DeviceInterfacePanel,
   GeneratedOutputs,
   InterfaceWiringConductor,
   InterfaceWiringEdge,
   InterfaceWiringFinding,
   InterfaceWiringModel,
-  InterfaceWiringNode
+  InterfaceWiringNode,
+  InterfaceWiringPort
 } from "../types";
 import {
   buildInterfaceWiringModel,
@@ -23,6 +25,7 @@ import {
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringTableCableLabel,
   getInterfaceWiringUsageDeviceLabel,
+  type InterfacePanelImageRect,
   type RecordingInputMode,
   type RecordingInputSelections
 } from "../lib/interfaceWiring";
@@ -68,6 +71,15 @@ const CABLE_INTERNAL_MERGE_DISTANCE = 28;
 
 type CablePoint = { x: number; y: number };
 type CableExitSide = "left" | "right" | "top" | "bottom";
+type CableConnectorKind = "jack35-ts" | "jack35-trs" | "jack35-trrs" | "jack635-ts" | "xlr-male" | "xlr-female";
+type CableConnectorHead = {
+  endpoint: "from" | "to";
+  kind: CableConnectorKind;
+  port: CablePoint;
+  cable: CablePoint;
+  angle: number;
+  length: number;
+};
 
 const interfacePanelImages: Record<string, string> = {
   aj200: aj200InterfacePanel,
@@ -167,7 +179,9 @@ function InterfaceWiringDiagram({
   onChange: (nodeId: string, mode: RecordingInputMode) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const portFocusIdPrefix = useId().replaceAll(":", "");
   const [availableWidth, setAvailableWidth] = useState(1120);
+  const [activeEdgeId, setActiveEdgeId] = useState<string | null>(null);
   const cableLegendRows = useMemo(() => getCableLegendRows(model.edges), [model.edges]);
   const cableLegendHeight = CABLE_LEGEND_BASE_HEIGHT + cableLegendRows.length * CABLE_LEGEND_ROW_HEIGHT;
   const bottomPadding = cableLegendRows.length
@@ -178,6 +192,14 @@ function InterfaceWiringDiagram({
     () => buildRoutedInterfaceWiringDiagram(model, logicalCanvasWidth, bottomPadding, portReferenceNumbers),
     [model, logicalCanvasWidth, bottomPadding, portReferenceNumbers]
   );
+  const highlightedEdgeId = activeEdgeId && edgeDrawings.has(activeEdgeId) ? activeEdgeId : null;
+  const portInteractionMarkers = useMemo(
+    () => getInterfaceWiringPortInteractionMarkers(model, layout.positions),
+    [model, layout.positions]
+  );
+  const stopHighlightingEdge = (edgeId: string) => {
+    setActiveEdgeId((current) => current === edgeId ? null : current);
+  };
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
@@ -204,6 +226,7 @@ function InterfaceWiringDiagram({
         aria-label="音曼接口接线图拟调整预览"
         data-routing-clearance={routingClearance}
         data-routing-failed={failedEdgeIds.join(",")}
+        data-active-edge-id={highlightedEdgeId ?? undefined}
       >
         <rect
           x={DRAWING_FRAME_LEFT}
@@ -242,18 +265,78 @@ function InterfaceWiringDiagram({
           );
         })}
 
+        <defs>
+          {portInteractionMarkers.flatMap((marker, index) => marker.panelImage ? [
+            <clipPath
+              id={getInterfaceWiringPortFocusClipId(portFocusIdPrefix, index)}
+              clipPathUnits="userSpaceOnUse"
+              key={`${marker.id}-focus-clip`}
+            >
+              <rect
+                x={marker.focusBounds.x}
+                y={marker.focusBounds.y}
+                width={marker.focusBounds.width}
+                height={marker.focusBounds.height}
+                rx={Math.min(5, marker.focusBounds.height / 2)}
+              />
+            </clipPath>
+          ] : [])}
+        </defs>
+
+        <g className="interfaceWiringPortFocusVisuals" aria-hidden="true">
+          {portInteractionMarkers.map((marker, index) => {
+            if (!marker.panelImage) return null;
+            return (
+              <g
+                key={`${marker.id}-focus`}
+                className={`interfaceWiringPortImageFocus${marker.edgeId === highlightedEdgeId ? " is-active" : ""}`}
+                clipPath={`url(#${getInterfaceWiringPortFocusClipId(portFocusIdPrefix, index)})`}
+                data-edge-id={marker.edgeId}
+                data-port-id={marker.portId}
+              >
+                {marker.panelImageRects.map((imageRect, imageIndex) => (
+                  <image
+                    href={marker.panelImage}
+                    x={imageRect.x}
+                    y={imageRect.y}
+                    width={imageRect.width}
+                    height={imageRect.height}
+                    preserveAspectRatio="none"
+                    className="interfaceWiringPortImageFocusLayer"
+                    key={`${marker.id}-focus-image-${imageIndex + 1}`}
+                  />
+                ))}
+              </g>
+            );
+          })}
+        </g>
+
         {model.edges.map((edge) => {
           const drawing = edgeDrawings.get(edge.id);
           if (!drawing) return null;
           return (
             <g
               key={`${edge.id}-trunks`}
-              className="interfaceWiringEdgeTrunks"
+              className={`interfaceWiringEdgeTrunks${getEdgeInteractionStateClass(edge.id, highlightedEdgeId)}`}
               data-edge-id={edge.id}
               data-route-kind={drawing.route.kind}
               data-route-points={drawing.route.points.map((point) => `${point.x},${point.y}`).join(" ")}
+              onPointerEnter={() => setActiveEdgeId(edge.id)}
+              onPointerLeave={() => stopHighlightingEdge(edge.id)}
             >
-              {drawing.trunkRoutes.map(({ id, path, color, strokeWidth, confirmed, needsOutline }) => (
+              {drawing.trunkRoutes.flatMap(({ id, path, color, strokeWidth, confirmed, needsOutline }) => ([
+                <path
+                  key={`${edge.id}-${id}-trunk-hit`}
+                  d={path}
+                  fill="none"
+                  stroke="transparent"
+                  strokeWidth={Math.max(18, strokeWidth + 12)}
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                  data-conductor-id={id}
+                  data-segment="trunk-hit"
+                  className="interfaceWiringEdgeHitTarget"
+                />,
                 <path
                   key={`${edge.id}-${id}-trunk`}
                   d={path}
@@ -264,11 +347,12 @@ function InterfaceWiringDiagram({
                   data-conductor-id={id}
                   data-segment="trunk"
                   className={[
+                    "interfaceWiringEdgeVisual",
                     confirmed ? "" : "unconfirmedConductor",
                     needsOutline ? "lightConductor" : ""
                   ].filter(Boolean).join(" ")}
                 />
-              ))}
+              ]))}
             </g>
           );
         })}
@@ -277,9 +361,28 @@ function InterfaceWiringDiagram({
           const drawing = edgeDrawings.get(edge.id);
           if (!drawing) return null;
           return (
-            <g key={`${edge.id}-leads`} className="interfaceWiringEdgeLeads" data-edge-id={edge.id}>
+            <g
+              key={`${edge.id}-leads`}
+              className={`interfaceWiringEdgeLeads${getEdgeInteractionStateClass(edge.id, highlightedEdgeId)}`}
+              data-edge-id={edge.id}
+              onPointerEnter={() => setActiveEdgeId(edge.id)}
+              onPointerLeave={() => stopHighlightingEdge(edge.id)}
+            >
               {drawing.conductorRoutes.flatMap(({ conductor, fromLeadPath, toLeadPath, strokeWidth, needsOutline }) => (
                 [
+                  <path
+                    key={`${edge.id}-${conductor.id}-from-lead-hit`}
+                    d={fromLeadPath}
+                    fill="none"
+                    stroke="transparent"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    data-conductor-id={conductor.id}
+                    data-terminal-id={conductor.fromTerminalId}
+                    data-segment="from-lead-hit"
+                    className="interfaceWiringEdgeHitTarget"
+                  />,
                   <path
                     key={`${edge.id}-${conductor.id}-from-lead`}
                     d={fromLeadPath}
@@ -291,9 +394,23 @@ function InterfaceWiringDiagram({
                     data-terminal-id={conductor.fromTerminalId}
                     data-segment="from-lead"
                     className={[
+                      "interfaceWiringEdgeVisual",
                       conductor.confirmed ? "" : "unconfirmedConductor",
                       needsOutline ? "lightConductor" : ""
                     ].filter(Boolean).join(" ")}
+                  />,
+                  <path
+                    key={`${edge.id}-${conductor.id}-to-lead-hit`}
+                    d={toLeadPath}
+                    fill="none"
+                    stroke="transparent"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    data-conductor-id={conductor.id}
+                    data-terminal-id={conductor.toTerminalId}
+                    data-segment="to-lead-hit"
+                    className="interfaceWiringEdgeHitTarget"
                   />,
                   <path
                     key={`${edge.id}-${conductor.id}-to-lead`}
@@ -306,11 +423,18 @@ function InterfaceWiringDiagram({
                     data-terminal-id={conductor.toTerminalId}
                     data-segment="to-lead"
                     className={[
+                      "interfaceWiringEdgeVisual",
                       conductor.confirmed ? "" : "unconfirmedConductor",
                       needsOutline ? "lightConductor" : ""
                     ].filter(Boolean).join(" ")}
                   />
                 ]
+              ))}
+              {drawing.connectorHeads.map((connectorHead) => (
+                <InterfaceWiringCableConnectorHead
+                  head={connectorHead}
+                  key={`${edge.id}-${connectorHead.endpoint}-${connectorHead.kind}`}
+                />
               ))}
             </g>
           );
@@ -321,7 +445,13 @@ function InterfaceWiringDiagram({
           if (!drawing) return null;
           const unconfirmed = edge.conductors.some((conductor) => !conductor.confirmed);
           return (
-            <g key={`${edge.id}-references`} className="interfaceWiringEdgeReferences" data-edge-id={edge.id}>
+            <g
+              key={`${edge.id}-references`}
+              className={`interfaceWiringEdgeReferences${getEdgeInteractionStateClass(edge.id, highlightedEdgeId)}`}
+              data-edge-id={edge.id}
+              onPointerEnter={() => setActiveEdgeId(edge.id)}
+              onPointerLeave={() => stopHighlightingEdge(edge.id)}
+            >
               {drawing.referenceBadges.map((badge) => (
                 <g
                   key={`${edge.id}-reference`}
@@ -329,13 +459,39 @@ function InterfaceWiringDiagram({
                   transform={`translate(${badge.x} ${badge.y})`}
                   data-reference-number={badge.referenceNumber}
                 >
-                  <circle r="9" />
+                  <circle r="16" className="interfaceWiringEdgeReferenceHitTarget" />
+                  <circle r="9" className="interfaceWiringEdgeReferenceBadge" />
                   <text textAnchor="middle" dy="0.34em">{badge.referenceNumber}</text>
                 </g>
               ))}
             </g>
           );
         })}
+
+        <g className="interfaceWiringPortInteractions" aria-hidden="true">
+          {portInteractionMarkers.map((marker) => (
+            <g
+              key={marker.id}
+              className={`interfaceWiringPortInteraction${marker.edgeId === highlightedEdgeId ? " is-active" : ""}`}
+              data-edge-id={marker.edgeId}
+              data-node-id={marker.nodeId}
+              data-port-id={marker.portId}
+              data-terminal-selective={marker.terminalSelective ? "true" : "false"}
+              data-terminal-ids={marker.points.map((point) => point.terminalId).filter(Boolean).join(",")}
+              onPointerEnter={() => setActiveEdgeId(marker.edgeId)}
+              onPointerLeave={() => stopHighlightingEdge(marker.edgeId)}
+            >
+              <rect
+                className="interfaceWiringPortHitTarget"
+                x={marker.hitBounds.x}
+                y={marker.hitBounds.y}
+                width={marker.hitBounds.width}
+                height={marker.hitBounds.height}
+                rx={Math.min(7, marker.hitBounds.height / 2)}
+              />
+            </g>
+          ))}
+        </g>
 
         {cableLegendRows.length > 0 && (
           <foreignObject
@@ -355,6 +511,296 @@ function InterfaceWiringDiagram({
 
 type WiringNodePosition = ReturnType<typeof getInterfaceWiringLayout>["positions"][string];
 type WiringNodePositions = ReturnType<typeof getInterfaceWiringLayout>["positions"];
+
+type InterfaceWiringPortInteractionMarker = {
+  id: string;
+  edgeId: string;
+  nodeId: string;
+  portId: string;
+  terminalSelective: boolean;
+  panelImage?: string;
+  panelImageRects: Array<{ x: number; y: number; width: number; height: number }>;
+  points: Array<{
+    id: string;
+    terminalId?: string;
+    x: number;
+    y: number;
+    radius: number;
+  }>;
+  hitBounds: { x: number; y: number; width: number; height: number };
+  focusBounds: { x: number; y: number; width: number; height: number };
+};
+
+function getEdgeInteractionStateClass(edgeId: string, activeEdgeId: string | null) {
+  if (!activeEdgeId) return "";
+  return activeEdgeId === edgeId ? " is-active" : " is-dimmed";
+}
+
+function getInterfaceWiringPortFocusClipId(prefix: string, markerIndex: number) {
+  return `${prefix}-interface-port-focus-${markerIndex + 1}`;
+}
+
+function getInterfaceWiringPortInteractionMarkers(
+  model: InterfaceWiringModel,
+  positions: WiringNodePositions
+): InterfaceWiringPortInteractionMarker[] {
+  const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
+  return model.edges.flatMap((edge) => (["from", "to"] as const).flatMap((endpoint) => {
+    const fromEndpoint = endpoint === "from";
+    const nodeId = fromEndpoint ? edge.fromNodeId : edge.toNodeId;
+    const portId = fromEndpoint ? edge.fromPortId : edge.toPortId;
+    const peerNodeId = fromEndpoint ? edge.toNodeId : edge.fromNodeId;
+    const node = nodeMap.get(nodeId);
+    const position = positions[nodeId];
+    const peerPosition = positions[peerNodeId];
+    const port = node?.ports.find((item) => item.id === portId);
+    if (!node || !position || !port) return [];
+    const portIndex = node.ports.indexOf(port);
+    const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
+    const panelImage = panelProfile ? interfacePanelImages[panelProfile.assetKey] : undefined;
+    const panelImageRect = panelProfile && panelImage ? getInterfacePanelImageRect(node, position) : undefined;
+    const panelAnchor = panelProfile
+      ? getInterfacePanelPortAnchor(panelProfile, port.capabilityId, portIndex, node.ports.length)
+      : undefined;
+    const locatedPanelPort = Boolean(panelImage && panelImageRect && panelAnchor);
+    const terminalSelective = isTerminalChannelPort(port);
+    const connectedTerminalIds = Array.from(new Set(edge.conductors.map((conductor) => (
+      fromEndpoint ? conductor.fromTerminalId : conductor.toTerminalId
+    )))).filter((terminalId) => port.terminals.some((terminal) => terminal.id === terminalId));
+    const fallbackTerminalIds = port.terminals.map((terminal) => terminal.id);
+    const terminalIds: Array<string | undefined> = terminalSelective
+      ? (connectedTerminalIds.length
+          ? connectedTerminalIds
+          : fallbackTerminalIds.length ? fallbackTerminalIds : [undefined])
+      : [undefined];
+    const points = terminalIds.map((terminalId, index) => {
+      const point = getInterfaceWiringPortDrawingAnchor(
+        node,
+        port.id,
+        position,
+        terminalId,
+        peerPosition
+      );
+      return {
+        id: terminalId ?? `connector-${index + 1}`,
+        terminalId,
+        ...point,
+        radius: terminalSelective ? 3.5 : getConnectorHighlightRadius(port)
+      };
+    });
+    const hitBounds = getPortInteractionHitBounds(points, terminalSelective ? 2.5 : 5);
+    const terminalBlockPoints = terminalSelective && panelProfile && panelImageRect
+      ? getTerminalBlockFocusPoints(node, port, panelProfile, panelImageRect)
+      : [];
+    return [{
+      id: `${edge.id}-${endpoint}-port`,
+      edgeId: edge.id,
+      nodeId,
+      portId,
+      terminalSelective,
+      panelImage: locatedPanelPort ? panelImage : undefined,
+      panelImageRects: locatedPanelPort && panelImageRect
+        ? (panelImageRect.unitRects ?? [panelImageRect])
+        : [],
+      points,
+      hitBounds,
+      focusBounds: terminalBlockPoints.length
+        ? getPortInteractionHitBounds(terminalBlockPoints, 7)
+        : hitBounds
+    }];
+  }));
+}
+
+function isTerminalChannelPort(port: Pick<InterfaceWiringPort, "interfaceType">) {
+  return /凤凰|接线端子|接线柱|多针|平衡输入/i.test(port.interfaceType) &&
+    !/3\.5|TRS|TRRS|XLR|卡侬|RJ45|USB/i.test(port.interfaceType);
+}
+
+function getConnectorHighlightRadius(port: InterfaceWiringPort) {
+  if (/XLR|卡侬/i.test(port.interfaceType)) return 15;
+  if (/RJ45|USB/i.test(port.interfaceType)) return 12;
+  if (/6\.35/i.test(port.interfaceType)) return 13;
+  if (/3\.5|TRS|TRRS/i.test(port.interfaceType)) return 10;
+  return 11;
+}
+
+function getTerminalBlockFocusPoints(
+  node: InterfaceWiringNode,
+  port: InterfaceWiringPort,
+  panelProfile: DeviceInterfacePanel,
+  imageRect: InterfacePanelImageRect
+): InterfaceWiringPortInteractionMarker["points"] {
+  const deviceProfile = getDevicePortProfile(node.productId);
+  const exactCapability = deviceProfile?.ports.find((capability) => capability.id === port.capabilityId);
+  const indexedCapability = deviceProfile?.ports
+    .filter((capability) => port.capabilityId.startsWith(`${capability.id}-`))
+    .sort((left, right) => right.id.length - left.id.length)[0];
+  const activeCapability = exactCapability ?? indexedCapability;
+  if (!deviceProfile || !activeCapability) return [];
+  const unitSuffix = port.capabilityId.slice(activeCapability.id.length);
+  const familyId = activeCapability.id.replace(/\d+$/, "");
+  const groupedCapabilities = deviceProfile.ports.filter((capability) => {
+    if (!isTerminalChannelPort(capability)) return false;
+    return activeCapability.physicalGroupId
+      ? capability.physicalGroupId === activeCapability.physicalGroupId
+      : capability.id.replace(/\d+$/, "") === familyId;
+  });
+  return groupedCapabilities.flatMap((capability, capabilityIndex) => {
+    const capabilityId = `${capability.id}${unitSuffix}`;
+    const anchor = getInterfacePanelPortAnchor(
+      panelProfile,
+      capabilityId,
+      capabilityIndex,
+      Math.max(node.ports.length, groupedCapabilities.length)
+    );
+    if (!anchor) return [];
+    const terminalAnchors = Object.entries(anchor.terminalAnchors ?? {});
+    if (!terminalAnchors.length) {
+      return [{
+        id: capabilityId,
+        x: imageRect.x + anchor.x * imageRect.width,
+        y: imageRect.y + anchor.y * imageRect.height,
+        radius: 3.5
+      }];
+    }
+    return terminalAnchors.map(([terminalId, terminalAnchor]) => ({
+      id: `${capabilityId}-${terminalId}`,
+      terminalId,
+      x: imageRect.x + terminalAnchor.x * imageRect.width,
+      y: imageRect.y + terminalAnchor.y * imageRect.height,
+      radius: 3.5
+    }));
+  });
+}
+
+function getPortInteractionHitBounds(
+  points: InterfaceWiringPortInteractionMarker["points"],
+  padding: number
+) {
+  const left = Math.min(...points.map((point) => point.x - point.radius)) - padding;
+  const top = Math.min(...points.map((point) => point.y - point.radius)) - padding;
+  const right = Math.max(...points.map((point) => point.x + point.radius)) + padding;
+  const bottom = Math.max(...points.map((point) => point.y + point.radius)) + padding;
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead }) {
+  const transform = `translate(${head.port.x} ${head.port.y}) rotate(${head.angle})`;
+  if (head.kind.startsWith("jack35")) {
+    const shaftEnd = head.length * 0.62;
+    const ringRatios = head.kind === "jack35-trrs"
+      ? [0.34, 0.56, 0.76]
+      : head.kind === "jack35-trs" ? [0.48, 0.76] : [0.72];
+    return (
+      <g
+        className="interfaceWiringConnectorHead"
+        data-connector-kind={head.kind}
+        data-endpoint={head.endpoint}
+        transform={transform}
+      >
+        <rect className="interfaceWiringConnectorHeadHitTarget" x="-4" y="-11" width={head.length + 8} height="22" rx="6" />
+        <g className="interfaceWiringConnectorHeadBody">
+          <path
+            className="interfaceWiringConnectorMetal"
+            d={`M 0 0 L 3 -2.2 H ${shaftEnd} V 2.2 H 3 Z`}
+          />
+          {ringRatios.map((ratio) => (
+            <line
+              className="interfaceWiringConnectorRing"
+              x1={shaftEnd * ratio}
+              x2={shaftEnd * ratio}
+              y1="-3"
+              y2="3"
+              key={ratio}
+            />
+          ))}
+          <rect
+            className="interfaceWiringConnectorGrip"
+            x={shaftEnd - 1}
+            y="-5.5"
+            width={head.length - shaftEnd + 1}
+            height="11"
+            rx="3"
+          />
+        </g>
+      </g>
+    );
+  }
+  if (head.kind === "jack635-ts") {
+    const shaftEnd = head.length * 0.66;
+    return (
+      <g
+        className="interfaceWiringConnectorHead"
+        data-connector-kind={head.kind}
+        data-endpoint={head.endpoint}
+        transform={transform}
+      >
+        <rect className="interfaceWiringConnectorHeadHitTarget" x="-4" y="-12" width={head.length + 8} height="24" rx="6" />
+        <g className="interfaceWiringConnectorHeadBody">
+          <path
+            className="interfaceWiringConnectorMetal"
+            d={`M 0 0 L 4 -3.2 H ${shaftEnd} V 3.2 H 4 Z`}
+          />
+          <line
+            className="interfaceWiringConnectorRing"
+            x1={shaftEnd * 0.72}
+            x2={shaftEnd * 0.72}
+            y1="-4"
+            y2="4"
+          />
+          <rect
+            className="interfaceWiringConnectorGrip"
+            x={shaftEnd - 1}
+            y="-7"
+            width={head.length - shaftEnd + 1}
+            height="14"
+            rx="3"
+          />
+          <text className="interfaceWiringConnectorLabel" x={shaftEnd + (head.length - shaftEnd) / 2} y="2.3">TS</text>
+        </g>
+      </g>
+    );
+  }
+  const cableConnectorGender = head.kind === "xlr-male" ? "公" : "母";
+  const barrelEnd = head.length * 0.76;
+  return (
+    <g
+      className="interfaceWiringConnectorHead"
+      data-connector-kind={head.kind}
+      data-endpoint={head.endpoint}
+      transform={transform}
+    >
+      <rect className="interfaceWiringConnectorHeadHitTarget" x="-4" y="-13" width={head.length + 8} height="26" rx="7" />
+      <g className="interfaceWiringConnectorHeadBody">
+        <rect
+          className={head.kind === "xlr-male" ? "interfaceWiringConnectorMetal" : "interfaceWiringConnectorSocket"}
+          x="0"
+          y="-5"
+          width="9"
+          height="10"
+          rx="2"
+        />
+        <rect
+          className="interfaceWiringConnectorXlrBody"
+          x="6"
+          y="-9"
+          width={barrelEnd - 6}
+          height="18"
+          rx="4"
+        />
+        <rect
+          className="interfaceWiringConnectorGrip"
+          x={barrelEnd - 1}
+          y="-5.5"
+          width={head.length - barrelEnd + 1}
+          height="11"
+          rx="3"
+        />
+        <text className="interfaceWiringConnectorLabel" x={(6 + barrelEnd) / 2} y="2.4">{cableConnectorGender}</text>
+      </g>
+    </g>
+  );
+}
 
 function InterfaceWiringNodeCard({
   node,
@@ -744,7 +1190,9 @@ function buildEdgeDrawings(
     const toNode = nodeMap.get(edge.toNodeId);
     const fromPosition = layout.positions[edge.fromNodeId];
     const toPosition = layout.positions[edge.toNodeId];
-    if (!fromNode || !toNode || !fromPosition || !toPosition) return [];
+    const fromPort = fromNode?.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = toNode?.ports.find((port) => port.id === edge.toPortId);
+    if (!fromNode || !toNode || !fromPort || !toPort || !fromPosition || !toPosition) return [];
     const pairKey = getPairKey(edge);
     const pairIndex = pairIndexes.get(pairKey) ?? 0;
     pairIndexes.set(pairKey, pairIndex + 1);
@@ -753,6 +1201,8 @@ function buildEdgeDrawings(
       edge,
       fromNode,
       toNode,
+      fromPort,
+      toPort,
       fromPosition,
       toPosition,
       from: getInterfaceWiringPortDrawingAnchor(fromNode, edge.fromPortId, fromPosition, undefined, toPosition),
@@ -800,6 +1250,7 @@ function buildEdgeDrawings(
       strokeWidth: number;
       needsOutline: boolean;
     }>;
+    connectorHeads: CableConnectorHead[];
     referenceBadges: Array<{
       x: number;
       y: number;
@@ -811,6 +1262,8 @@ function buildEdgeDrawings(
     edge,
     fromNode,
     toNode,
+    fromPort,
+    toPort,
     fromPosition,
     toPosition,
     from,
@@ -819,6 +1272,14 @@ function buildEdgeDrawings(
   }) => {
     const route = cableRoutes.get(edge.id);
     if (!route) return;
+    const fromConnectorKind = edge.kind === "jumper" ? undefined : getCableConnectorKind(fromPort);
+    const toConnectorKind = edge.kind === "jumper" ? undefined : getCableConnectorKind(toPort);
+    const fromConnector = fromConnectorKind
+      ? getCableConnectorPlacement(from, to, fromConnectorKind, "from")
+      : undefined;
+    const toConnector = toConnectorKind
+      ? getCableConnectorPlacement(to, from, toConnectorKind, "to")
+      : undefined;
     const terminalPairs = displayConductors.map((conductor, conductorIndex) => {
       const fromFanOffset = getSharedTerminalFanOffset(
         displayConductors,
@@ -849,22 +1310,24 @@ function buildEdgeDrawings(
       return { conductor, conductorIndex, fromFanOffset, toFanOffset, conductorFrom, conductorTo };
     });
     const multicore = displayConductors.length > 1 && edge.kind !== "jumper";
-    const fromMerge = multicore
+    const fromNeedsFanout = multicore && !fromConnector;
+    const toNeedsFanout = multicore && !toConnector;
+    const fromMerge = fromConnector?.cable ?? (fromNeedsFanout
       ? getTerminalFanMergePoint({
           terminals: terminalPairs.map((item) => item.conductorFrom),
           escapeSide: getNearestExitSide(fromPosition, toPosition),
           deviceRect: fromPosition,
           mergeDistance: CABLE_INTERNAL_MERGE_DISTANCE
         })
-      : from;
-    const toMerge = multicore
+      : from);
+    const toMerge = toConnector?.cable ?? (toNeedsFanout
       ? getTerminalFanMergePoint({
           terminals: terminalPairs.map((item) => item.conductorTo),
           escapeSide: getNearestExitSide(toPosition, fromPosition),
           deviceRect: toPosition,
           mergeDistance: CABLE_INTERNAL_MERGE_DISTANCE
         })
-      : to;
+      : to);
     const renderedRoute = edge.kind === "jumper"
       ? route
       : getDirectCableCurve(fromMerge, toMerge, route.curveRatio ?? 0.04);
@@ -876,22 +1339,24 @@ function buildEdgeDrawings(
       conductorFrom,
       conductorTo
     }) => {
-      const paths = multicore
-        ? {
-            fromLeadPath: getTerminalFanPath(
+      const paths = {
+        fromLeadPath: fromNeedsFanout
+          ? getTerminalFanPath(
               conductorFrom,
               fromMerge,
               fromFanOffset || (conductorIndex + 1) * 2.5,
               false
-            ),
-            toLeadPath: getTerminalFanPath(
+            )
+          : "",
+        toLeadPath: toNeedsFanout
+          ? getTerminalFanPath(
               conductorTo,
               toMerge,
               toFanOffset || -(conductorIndex + 1) * 2.5,
               true
             )
-          }
-        : { fromLeadPath: "", toLeadPath: "" };
+          : ""
+      };
       return {
         conductor,
         ...paths,
@@ -906,7 +1371,8 @@ function buildEdgeDrawings(
     if (referencePoint) usedReferencePoints.push(referencePoint);
     const referenceBadges = referencePoint ? [{ ...referencePoint, referenceNumber }] : [];
     const trunkRoutes = getCableTrunkRoutes(edge, displayConductors, renderedRoute);
-    drawings.set(edge.id, { route: renderedRoute, trunkRoutes, conductorRoutes, referenceBadges });
+    const connectorHeads = [fromConnector, toConnector].filter((item): item is CableConnectorHead => Boolean(item));
+    drawings.set(edge.id, { route: renderedRoute, trunkRoutes, conductorRoutes, connectorHeads, referenceBadges });
   });
   return { drawings };
 }
@@ -942,6 +1408,46 @@ function getTerminalFanPath(
   return reverse
     ? `M ${split.x} ${split.y} Q ${control.x} ${control.y} ${terminal.x} ${terminal.y}`
     : `M ${terminal.x} ${terminal.y} Q ${control.x} ${control.y} ${split.x} ${split.y}`;
+}
+
+function getCableConnectorKind(port: InterfaceWiringPort): CableConnectorKind | undefined {
+  const descriptor = `${port.interfaceType} ${port.label}`;
+  if (/6\.35/i.test(descriptor)) return "jack635-ts";
+  if (/3\.5/i.test(descriptor)) {
+    if (/TRRS/i.test(descriptor)) return "jack35-trrs";
+    if (/(?:^|[^A-Z])TS(?:[^A-Z]|$)/i.test(descriptor)) return "jack35-ts";
+    return "jack35-trs";
+  }
+  if (!/XLR|卡侬/i.test(descriptor)) return undefined;
+  // The cable head mates with the gender declared by the equipment port.
+  if (/母|female/i.test(descriptor)) return "xlr-male";
+  if (/公|(?:^|[^a-z])male(?:[^a-z]|$)/i.test(descriptor)) return "xlr-female";
+  return port.direction === "input" ? "xlr-male" : "xlr-female";
+}
+
+function getCableConnectorPlacement(
+  port: CablePoint,
+  toward: CablePoint,
+  kind: CableConnectorKind,
+  endpoint: CableConnectorHead["endpoint"]
+): CableConnectorHead {
+  const deltaX = toward.x - port.x;
+  const deltaY = toward.y - port.y;
+  const distance = Math.hypot(deltaX, deltaY) || 1;
+  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 36 : 38;
+  const length = Math.max(8, Math.min(defaultLength, distance * 0.38));
+  const cable = {
+    x: port.x + deltaX / distance * length,
+    y: port.y + deltaY / distance * length
+  };
+  return {
+    endpoint,
+    kind,
+    port,
+    cable,
+    angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI,
+    length
+  };
 }
 
 function findReferenceBadgePoint(

@@ -1083,7 +1083,7 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringPanelOptionButton \{[\s\S]*?
 assert.match(wiringPreviewStyles, /\.interfaceWiringPanelOptionButton\.active \{[\s\S]*?border-color: #0b5cad;/);
 assert.match(wiringPreviewSource, /getSharedTerminalFanOffset[\s\S]*?getTerminalFanPath/);
 assert.match(wiringPreviewSource, /sharedIndexes\.length < 2/);
-assert.match(wiringPreviewSource, /path: edge\.kind === "jumper" \? route\.path : getCompleteCableTrunkPath/);
+assert.match(wiringPreviewSource, /const renderedRoute = edge\.kind === "jumper"[\s\S]*?: getDirectCableCurve/);
 assert.doesNotMatch(wiringPreviewSource, /laneOffset \+ conductorOffset/);
 assert.match(wiringPreviewSource, /resolvedSide === "left"[\s\S]*?resolvedSide === "right"[\s\S]*?resolvedSide === "top"[\s\S]*?resolvedSide === "bottom"/);
 assert.match(wiringPreviewSource, /if \(edge\.kind === "jumper"\) \{\s*return \[getCollapsedCableConductor/);
@@ -1776,9 +1776,15 @@ for (const fileName of [
   assert.match(processorPanelSvg, />G<\/text>/);
 }
 const nodeLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringNodeObject"');
-const trunkLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringEdgeTrunks"');
-const leadLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringEdgeLeads"');
-assert.ok(nodeLayerIndex >= 0 && nodeLayerIndex < trunkLayerIndex && trunkLayerIndex < leadLayerIndex);
+const trunkLayerIndex = wiringPreviewSource.indexOf("interfaceWiringEdgeTrunks");
+const leadLayerIndex = wiringPreviewSource.indexOf("interfaceWiringEdgeLeads");
+const portInteractionLayerIndex = wiringPreviewSource.indexOf('className="interfaceWiringPortInteractions"');
+assert.ok(
+  nodeLayerIndex >= 0 &&
+    nodeLayerIndex < trunkLayerIndex &&
+    trunkLayerIndex < leadLayerIndex &&
+    leadLayerIndex < portInteractionLayerIndex
+);
 assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortPin|markerEnd=/);
 assert.doesNotMatch(wiringPreviewSource, /getNodeExitPoint/);
 assert.match(wiringPreviewSource, /function buildRoutedInterfaceWiringDiagram/);
@@ -1795,7 +1801,37 @@ assert.doesNotMatch(wiringPreviewSource, /multicore \? "#374151"/);
 assert.match(wiringPreviewSource, /CABLE_SHEATH_COLORS\[getCableLegendKind\(edge\)\]/);
 assert.doesNotMatch(wiringPreviewSource, /conductorColorLabel|interfaceWiringConductorColorLabel|getConductorColorLabel|getConductorColorName/);
 assert.match(wiringPreviewSource, /kind: "curve"/);
-assert.match(wiringPreviewSource, /path: `M \$\{from\.x\} \$\{from\.y\} C/);
+assert.match(wiringPreviewSource, /path: [^\r\n]*\$\{from\.x\} \$\{from\.y\} C/);
+assert.match(wiringPreviewSource, /const \[activeEdgeId, setActiveEdgeId\] = useState<string \| null>\(null\)/);
+assert.match(wiringPreviewSource, /className="interfaceWiringEdgeHitTarget"/);
+assert.match(wiringPreviewSource, /data-active-edge-id=\{highlightedEdgeId \?\? undefined\}/);
+assert.match(wiringPreviewSource, /function getInterfaceWiringPortInteractionMarkers/);
+assert.match(wiringPreviewSource, /const connectedTerminalIds = Array\.from\(new Set\(edge\.conductors\.map/);
+assert.match(wiringPreviewSource, /connectedTerminalIds\.length[\s\S]*?\? connectedTerminalIds[\s\S]*?: fallbackTerminalIds\.length/);
+assert.match(wiringPreviewSource, /data-terminal-selective=\{marker\.terminalSelective \? "true" : "false"\}/);
+assert.match(wiringPreviewSource, /function isTerminalChannelPort[\s\S]*?凤凰\|接线端子\|接线柱\|多针\|平衡输入/);
+assert.match(wiringPreviewSource, /!\/3\\\.5\|TRS\|TRRS\|XLR\|卡侬\|RJ45\|USB\/i/);
+assert.match(wiringPreviewSource, /className="interfaceWiringPortImageFocusLayer"/);
+assert.match(wiringPreviewSource, /href=\{marker\.panelImage\}/);
+assert.match(wiringPreviewSource, /getInterfaceWiringPortFocusClipId\(portFocusIdPrefix, index\)/);
+assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortHighlight/);
+assert.match(wiringPreviewSource, /function getTerminalBlockFocusPoints/);
+assert.match(wiringPreviewSource, /focusBounds: terminalBlockPoints\.length/);
+assert.match(wiringPreviewSource, /const fromNeedsFanout = multicore && !fromConnector/);
+assert.match(wiringPreviewSource, /const toNeedsFanout = multicore && !toConnector/);
+assert.match(wiringPreviewSource, /function getCableConnectorKind/);
+assert.match(wiringPreviewSource, /6\\\.35[\s\S]*?return "jack635-ts"/);
+assert.match(wiringPreviewSource, /jack35-trrs[\s\S]*?jack35-ts[\s\S]*?jack35-trs/);
+assert.match(wiringPreviewSource, /xlr-male[\s\S]*?xlr-female/);
+assert.match(wiringPreviewSource, /data-connector-kind=\{head\.kind\}/);
+assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>TS<\/text>/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringEdgeTrunks\.is-dimmed,[\s\S]*?opacity: 0\.14;/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringCanvas\[data-active-edge-id\] \.interfaceWiringPanelImage[\s\S]*?grayscale\(0\.6\)/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringPortImageFocus\.is-active[\s\S]*?opacity: 1;/);
+assert.match(wiringPreviewStyles, /@keyframes interfaceWiringPortImageFocusPulse/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringConnectorHeadHitTarget[\s\S]*?pointer-events: all;/);
+assert.match(wiringPreviewStyles, /@media \(prefers-reduced-motion: reduce\)/);
+console.log("PASS hover uses edge identity, whole terminal-block focus and finished 3.5/XLR/6.35 connector heads");
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);
