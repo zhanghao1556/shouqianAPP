@@ -31,12 +31,12 @@ try {
     const expected = await renderFixture(distUrl, brand, false);
     const releasePath = path.join(latestReleaseDir(appName), `${appName}-1.1.html`);
     const actual = await renderFixture(pathToFileUrl(releasePath), brand, true);
-    if (
-      actual.pointMap !== expected.pointMap ||
-      actual.deviceList !== expected.deviceList ||
-      actual.interfaceWiring !== expected.interfaceWiring ||
-      actual.interfaceUsage !== expected.interfaceUsage
-    ) {
+    const mismatches = Object.keys(expected)
+      .filter((key) => actual[key] !== expected[key]);
+    if (mismatches.length > 0) {
+      for (const key of mismatches) {
+        console.error(JSON.stringify(describeDifference(key, expected[key], actual[key]), null, 2));
+      }
       throw new Error(`${appName} final release behavior differs from current dist for the fixed classroom fixture.`);
     }
     console.log(`PASS ${appName}: final HTML matches current dist business output`);
@@ -65,21 +65,21 @@ async function renderFixture(url, brand, isRelease) {
   await page.getByRole("button", { name: "吊顶情况", exact: true }).click();
   await page.getByRole("option", { name: "无吊顶 / 裸顶", exact: true }).click();
 
-  const pointMap = await page.locator("svg.engineeringCanvas").first().evaluate((svg) => {
+  const pointMap = normalizeRuntimeSvgIds(await page.locator("svg.engineeringCanvas").first().evaluate((svg) => {
     const clone = svg.cloneNode(true);
     clone.querySelectorAll("image").forEach((image) => {
       image.removeAttribute("href");
       image.removeAttribute("xlink:href");
     });
     return clone.outerHTML;
-  });
+  }));
   const deviceList = await page.locator(".tableBox").first().textContent();
   let interfaceWiring = "";
   let interfaceUsage = "";
   if (brand === "yinman") {
     const wiringSelector = 'svg[aria-label="音曼接口接线图"]';
     await page.waitForSelector(wiringSelector);
-    interfaceWiring = await page.locator(wiringSelector).evaluate((svg) => {
+    interfaceWiring = normalizeRuntimeSvgIds(await page.locator(wiringSelector).evaluate((svg) => {
       const clone = svg.cloneNode(true);
       clone.querySelectorAll("image, img").forEach((image) => {
         image.removeAttribute("href");
@@ -87,7 +87,7 @@ async function renderFixture(url, brand, isRelease) {
         image.removeAttribute("src");
       });
       return clone.outerHTML;
-    });
+    }));
     interfaceUsage = (await page.locator(".interfaceWiringPortTable").textContent()).replace(/\s+/g, " ").trim();
     const customerText = await page.locator("body").innerText();
     for (const model of ["AJ200", "AJ350", "AJ600", "SA110", "AP150", "RING08"]) {
@@ -145,4 +145,28 @@ function escapeRegExp(value) {
 function getArgValue(name) {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : "";
+}
+
+function normalizeRuntimeSvgIds(value) {
+  const ids = new Map();
+  return value.replace(/_r_[a-z0-9]+_/gi, (id) => {
+    if (!ids.has(id)) ids.set(id, `__runtime_svg_id_${ids.size}__`);
+    return ids.get(id);
+  });
+}
+
+function describeDifference(key, expected, actual) {
+  const limit = Math.min(expected.length, actual.length);
+  let index = 0;
+  while (index < limit && expected[index] === actual[index]) index += 1;
+  const start = Math.max(0, index - 120);
+  const end = index + 240;
+  return {
+    key,
+    expectedLength: expected.length,
+    actualLength: actual.length,
+    firstDifference: index,
+    expectedContext: expected.slice(start, end),
+    actualContext: actual.slice(start, end)
+  };
 }
