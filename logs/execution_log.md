@@ -7114,3 +7114,10 @@ Verification:
 - 收工备份首次通过 Windows PowerShell 5.1 兼容运行时失败：现有 `scripts/new-daily-snapshot.ps1` 未显式加载 `System.IO.Compression.FileSystem`，导致找不到 `System.IO.Compression.ZipFile`。异常发生在创建临时 ZIP 前，旧快照未删除；该问题阻断每日备份，已记录并立即补充程序集加载后重跑。
 - 备份脚本补充 `System.IO.Compression` 与 `System.IO.Compression.FileSystem` 显式加载后运行成功；ZIP 文件清单和 `AGENTS.md / package.json / 两份日志` 均通过验证，共归档 251 个文件。旧快照在新快照验证后删除，`.codex-backups` 只保留 1 个最新有效 ZIP。
 - 收工清理通过：严格 TypeScript 与 `git diff --check` 无错误；目标接线组件、模型、USB规则和吊麦 SVG 未发现旧“开启48V / 带供电MIC / RS232软件调试”文案、`debugger` 或 `console.log` 残留。未借清理修改任何音箱、阵麦或接口业务规则。
+
+# 2026-07-19 开工恢复
+
+- 已按隔天继续规则重新读取 `AGENTS.md`、`logs/execution_log.md` 和 `logs/retrospective.md`；恢复边界为继续 5180 音曼接口接线候选，不推广正式页面、不打包、不发布。
+- 开工检查：工作区干净，`main` 与 `origin/main` 已同步；`http://127.0.0.1:5180/` 返回 HTTP 200，无需重启开发服务。
+- 今日唯一业务续接点仍为“原有音频系统”接口方向。公司 Agent 昨晚连接重置，未取得结论；在获得用户或 Agent 明确口径前，不生成外部设备接口或虚假连线。
+- 今日首次显式 PowerShell 7 调用再次被托管执行器重定向到无权限 WindowsApps 别名并报 `CreateProcessAsUserW failed: 5`。按底层规则不再重试该别名，本轮改用 `cmd.exe` 与 Node UTF-8 处理中文和结构化内容；该问题属于执行器启动限制，不代表项目或 PowerShell 安装损坏。

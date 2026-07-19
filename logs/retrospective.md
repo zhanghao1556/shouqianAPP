@@ -2250,3 +2250,8 @@ PowerShell reminder:
 - The next session should resume with only the original-audio-system input direction: confirm whether its `LINE OUT` feeds the processor `LINE IN`. Ask the reverse direction only after the first answer, keeping one concrete question at a time.
 - A finished visual calibration is not the end-of-day boundary. After the user says work is over, still record the handoff, create and verify the single retained snapshot, run cleanup checks and create the required timestamped daily commit.
 - PowerShell 7 can make compression types available implicitly while Windows PowerShell 5.1 does not. A backup script intended as the compatibility fallback must explicitly load both `System.IO.Compression` and `System.IO.Compression.FileSystem` before referencing `ZipArchiveMode` or `ZipFile`.
+
+### 2026-07-19 start-of-day recovery
+
+- Re-read the project rules and both closing logs before touching code after an overnight boundary. A clean synchronized branch and a healthy existing dev server should be reused rather than rebuilt or restarted.
+- The managed executor still redirects an explicit PowerShell 7 path to the inaccessible WindowsApps alias. Record the fallback once per work session, then use `cmd.exe` plus UTF-8-aware Node reads instead of repeatedly probing PowerShell paths.
