@@ -2381,3 +2381,13 @@ PowerShell reminder:
 - An antenna drawn beside a chassis is ambiguous unless the chassis-side RF connector is visible. For a directly mounted whip antenna, show the BNC panel socket, mating collar and continuous antenna stem as one assembly; do not use a detached floor-stand silhouette.
 - Connector-family differences need a scale cue, not only a `TS` label. A 6.35 TS plug should be materially longer and thicker than a 3.5 plug and carry a `6.35 TS` mark so customers cannot infer the wrong cable diameter from a tiny drawing.
 - In `cmd.exe`, an unescaped `>` inside an `rg` pattern is shell redirection even when it was intended as JSX text. Use a safer source read or split the search pattern; always inspect `git status` so a zero-byte redirect artifact cannot enter a commit.
+
+### 2026-07-20 6.35 TS connector length calibration
+
+- A connector-family scale cue must remain obvious after the entire engineering SVG is resized. Keep the 6.35 TS plug materially longer than the 3.5mm plug in logical coordinates, rather than relying only on thickness or a text label.
+- Length tuning belongs in the connector-placement contract, not in the legacy receiver asset. This keeps every 6.35 endpoint consistent while leaving port anchors, cable routing and 3.5mm geometry untouched.
+- The recurring managed-sandbox esbuild directory denial happens before source loading. Re-run the targeted test through the established elevated path and distinguish that environment failure from a renderer regression; strict TypeScript remains a useful in-sandbox control check.
+- A TS plug's single insulator is an identity cue as well as decoration. Place it near the tip before the long sleeve, matching the physical plug sequence; a rear-positioned ring can make the drawing read as the wrong connector structure even when the `TS` label is present.
+- When the user is actively performing visual acceptance, stop at automated contract, type and production-build checks. Do not add a redundant browser screenshot loop after a narrowly scoped connector correction.
+- In a workspace where `.git` is read-only inside the managed sandbox, an `index.lock` denial is an execution-boundary failure. Retry only the narrowly scoped staging or commit operation with Git-metadata permission; do not treat it as repository corruption.
+- If the managed `cmd.exe` wrapper preserves message quotes as literal characters, a spaced `git commit -m` value can become pathspec arguments. Use a concise hyphenated message for that compatibility path and verify that the index remains staged before retrying.

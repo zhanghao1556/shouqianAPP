@@ -736,6 +736,7 @@ function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead 
   }
   if (head.kind === "jack635-ts") {
     const shaftEnd = head.length * 0.55;
+    const insulatorX = shaftEnd * 0.24;
     return (
       <g
         className="interfaceWiringConnectorHead"
@@ -751,8 +752,8 @@ function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead 
           />
           <line
             className="interfaceWiringConnectorRing"
-            x1={shaftEnd * 0.72}
-            x2={shaftEnd * 0.72}
+            x1={insulatorX}
+            x2={insulatorX}
             y1="-5.5"
             y2="5.5"
           />
@@ -1428,9 +1429,9 @@ function getCableConnectorPlacement(
   const deltaX = toward.x - port.x;
   const deltaY = toward.y - port.y;
   const distance = Math.hypot(deltaX, deltaY) || 1;
-  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 52 : 38;
-  const minimumLength = kind === "jack635-ts" ? Math.min(40, distance * 0.8) : 8;
-  const length = Math.max(minimumLength, Math.min(defaultLength, distance * (kind === "jack635-ts" ? 0.5 : 0.38)));
+  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 76 : 38;
+  const minimumLength = kind === "jack635-ts" ? Math.min(58, distance * 0.8) : 8;
+  const length = Math.max(minimumLength, Math.min(defaultLength, distance * (kind === "jack635-ts" ? 0.68 : 0.38)));
   const cable = {
     x: port.x + deltaX / distance * length,
     y: port.y + deltaY / distance * length
