@@ -2316,3 +2316,9 @@ PowerShell reminder:
 - A global routing inset must not silently reduce the compact speaker-band capacity. Give the speaker band its own bounded side padding: eight `112px` icons fit in the `993px` logical canvas while remaining centered with enough real margin for the outer route lanes; keep the larger inset for ordinary equipment.
 - A responsive-line regression must be checked in screen pixels, not only SVG attributes. In this case the logical sheath remains `6px`, but the `441 / 993` viewBox scale correctly produces an approximately `2.66px` rendered line at a `520px` viewport.
 - Browser console collection is cumulative for a long-lived tab and can retain errors from incomplete hot-update states. Capture the reload start time and filter log timestamps when deciding whether the final render introduced a current error; do not report historical repaired exceptions as a present regression.
+
+### 2026-07-19 cable sheath color semantics
+
+- Cable sheath color and conductor color are separate visual semantics. Use one cable-type sheath color for the long trunk, then show red / white / gray or yellow / green / black only in the short terminal fan-out and its compact color key.
+- The drawing and legend must consume one shared cable-type color map. Duplicating colors in CSS and route code allows the legend to drift from the actual cable, which defeats the purpose of color coding.
+- A renderer test that hard-codes a neutral multicore sheath becomes an active regression after the user confirms colored sheaths. Replace it with a contract that rejects the old neutral fallback and verifies the shared mapping, rather than deleting coverage.

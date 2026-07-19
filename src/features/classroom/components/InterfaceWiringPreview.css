@@ -468,61 +468,16 @@
   box-sizing: border-box;
   width: 66px;
   height: 18px;
-  display: grid;
-  align-content: center;
-  gap: 2px;
-}
-
-.interfaceWiringLegendSwatch.speaker,
-.interfaceWiringLegendSwatch.audio {
-  padding: 2px 3px;
-  border-radius: 2px;
-  background: #e2e8f0;
+  display: flex;
+  align-items: center;
 }
 
 .interfaceWiringLegendSwatch i {
   display: block;
   width: 60px;
-  height: 3px;
-  border-radius: 1px;
-  background: #475569;
-}
-
-.interfaceWiringLegendSwatch.speaker i:first-child,
-.interfaceWiringLegendSwatch.audio i:first-child {
-  background: #dc2626;
-}
-
-.interfaceWiringLegendSwatch.speaker i:nth-child(2),
-.interfaceWiringLegendSwatch.audio i:nth-child(2) {
-  background: #ffffff;
-  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.38);
-}
-
-.interfaceWiringLegendSwatch.audio i:nth-child(3) {
-  background: #6b7280;
-}
-
-.interfaceWiringLegendSwatch.serial i:first-child {
-  background: #eab308;
-}
-
-.interfaceWiringLegendSwatch.serial i:nth-child(2) {
-  background: #22c55e;
-}
-
-.interfaceWiringLegendSwatch.serial i:nth-child(3) {
-  background: #111827;
-}
-
-.interfaceWiringLegendSwatch.network i {
-  height: 5px;
-  background: #2563eb;
-}
-
-.interfaceWiringLegendSwatch.usb i {
-  height: 5px;
-  background: #eab308;
+  height: 6px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
 }
 
 .interfaceWiringPortTable tr.unconfirmed td {

@@ -648,6 +648,15 @@ function ConnectionMethodCell({ value }: { value: string }) {
 
 type CableLegendKind = "speaker" | "audio" | "serial" | "network" | "usb" | "other";
 
+const CABLE_SHEATH_COLORS: Record<CableLegendKind, string> = {
+  speaker: "#b45309",
+  audio: "#0f766e",
+  serial: "#7c3aed",
+  network: "#2563eb",
+  usb: "#eab308",
+  other: "#475569"
+};
+
 interface CableLegendRow {
   kind: CableLegendKind;
   label: string;
@@ -661,7 +670,7 @@ function CableLegendTable({ rows }: { rows: CableLegendRow[] }) {
       <strong>线材图例</strong>
       <table>
         <thead>
-          <tr><th>显示</th><th>线材</th><th>接线关系</th></tr>
+          <tr><th>胶套颜色</th><th>线材</th><th>接线关系</th></tr>
         </thead>
         <tbody>
           {rows.map((row) => (
@@ -678,10 +687,9 @@ function CableLegendTable({ rows }: { rows: CableLegendRow[] }) {
 }
 
 function CableLegendSwatch({ kind }: { kind: CableLegendKind }) {
-  const lineCount = kind === "speaker" ? 2 : kind === "audio" || kind === "serial" ? 3 : 1;
   return (
-    <span className={`interfaceWiringLegendSwatch ${kind}`} aria-label={`${kind}线材图例`}>
-      {Array.from({ length: lineCount }, (_, index) => <i key={index} />)}
+    <span className="interfaceWiringLegendSwatch" aria-label={`${kind}线材胶套颜色`}>
+      <i style={{ backgroundColor: CABLE_SHEATH_COLORS[kind] }} />
     </span>
   );
 }
@@ -689,17 +697,7 @@ function CableLegendSwatch({ kind }: { kind: CableLegendKind }) {
 function getCableLegendRows(edges: InterfaceWiringEdge[]): CableLegendRow[] {
   const rows = new Map<CableLegendKind, CableLegendRow>();
   edges.forEach((edge) => {
-    const kind: CableLegendKind = isNetworkEdge(edge)
-      ? "network"
-      : isUsbEdge(edge)
-        ? "usb"
-        : /232/i.test(edge.cableType)
-          ? "serial"
-        : edge.cableType.includes("音箱线")
-          ? "speaker"
-          : /音频(?:跳)?线|话筒线/i.test(edge.cableType)
-            ? "audio"
-            : "other";
+    const kind = getCableLegendKind(edge);
     const definition = getCableLegendDefinition(kind, edge.cableType);
     const existing = rows.get(kind);
     if (existing) existing.quantity += edge.quantity;
@@ -709,11 +707,24 @@ function getCableLegendRows(edges: InterfaceWiringEdge[]): CableLegendRow[] {
   return order.flatMap((kind) => rows.get(kind) ?? []);
 }
 
+function getCableLegendKind(edge: InterfaceWiringEdge): CableLegendKind {
+  if (isNetworkEdge(edge)) return "network";
+  if (isUsbEdge(edge)) return "usb";
+  if (/232/i.test(edge.cableType)) return "serial";
+  if (edge.cableType.includes("音箱线")) return "speaker";
+  if (/音频(?:跳)?线|话筒线/i.test(edge.cableType)) return "audio";
+  return "other";
+}
+
+function getCableSheathColor(edge: InterfaceWiringEdge) {
+  return CABLE_SHEATH_COLORS[getCableLegendKind(edge)];
+}
+
 function getCableLegendDefinition(kind: CableLegendKind, fallbackLabel: string) {
   if (kind === "speaker") return { label: "音箱线", description: "红线接 +；白线接 -" };
   if (kind === "audio") return { label: "音频线", description: "红线接 +；白线接 -；屏蔽线接 G" };
   if (kind === "serial") return { label: "232线", description: "黄线 TX；绿线 RX；黑线 GND，TX/RX交叉" };
-  if (kind === "network") return { label: "网线", description: "粗蓝线；T568B 1-8芯直通" };
+  if (kind === "network") return { label: "网线", description: "T568B 1-8芯直通" };
   if (kind === "usb") return { label: "USB线", description: "音频双向；内置232串口信号，可用于连接调试软件" };
   return { label: fallbackLabel, description: "按图中接口方向直连" };
 }
@@ -1064,13 +1075,13 @@ function findReferenceBadgePoint(
 
 function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConductor[] {
   if (edge.kind === "jumper") {
-    return [getCollapsedCableConductor(edge, "jumper", "音频跳线", "#b91c1c", "+/-/G")];
+    return [getCollapsedCableConductor(edge, "jumper", "音频跳线", CABLE_SHEATH_COLORS.audio, "+/-/G")];
   }
   if (isNetworkEdge(edge)) {
-    return [getCollapsedCableConductor(edge, "network", "网线", "#2563eb", "RJ45")];
+    return [getCollapsedCableConductor(edge, "network", "网线", CABLE_SHEATH_COLORS.network, "RJ45")];
   }
   if (isUsbEdge(edge)) {
-    return [getCollapsedCableConductor(edge, "usb", "USB线", "#eab308", "USB")];
+    return [getCollapsedCableConductor(edge, "usb", "USB线", CABLE_SHEATH_COLORS.usb, "USB")];
   }
   return edge.conductors;
 }
@@ -1084,7 +1095,7 @@ function getCableTrunkRoutes(
 ) {
   const multicore = conductors.length > 1 && edge.kind !== "jumper";
   const conductor = conductors[0];
-  const color = multicore ? "#374151" : conductor.color;
+  const color = getCableSheathColor(edge);
   return [{
     id: multicore ? "display-sheath" : conductor.id,
     path: edge.kind === "jumper" ? route.path : getCompleteCableTrunkPath(route, fromMerge, toMerge),
