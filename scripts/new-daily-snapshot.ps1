@@ -16,8 +16,30 @@ $backupRoot = Join-Path $repoRoot ".codex-backups"
 $backupRootFull = [System.IO.Path]::GetFullPath($backupRoot)
 [System.IO.Directory]::CreateDirectory($backupRootFull) | Out-Null
 
+$gitListStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+$gitListStartInfo.FileName = "git"
+$gitListStartInfo.WorkingDirectory = $repoRoot
+$gitListStartInfo.Arguments = "-c core.quotepath=false ls-files --cached --others --exclude-standard -z"
+$gitListStartInfo.UseShellExecute = $false
+$gitListStartInfo.RedirectStandardOutput = $true
+$gitListStartInfo.CreateNoWindow = $true
+
+$gitListProcess = New-Object System.Diagnostics.Process
+$gitListProcess.StartInfo = $gitListStartInfo
+$gitListBytes = New-Object System.IO.MemoryStream
+try {
+  if (-not $gitListProcess.Start()) { throw "Unable to start git ls-files." }
+  $gitListProcess.StandardOutput.BaseStream.CopyTo($gitListBytes)
+  $gitListProcess.WaitForExit()
+  if ($gitListProcess.ExitCode -ne 0) { throw "git ls-files failed with exit code $($gitListProcess.ExitCode)" }
+} finally {
+  $gitListProcess.Dispose()
+}
+
+$gitListText = [System.Text.Encoding]::UTF8.GetString($gitListBytes.ToArray())
+$gitListBytes.Dispose()
 $relativeFiles = @(
-  git -C $repoRoot -c core.quotepath=false ls-files --cached --others --exclude-standard |
+  $gitListText.Split([char[]]@([char]0), [System.StringSplitOptions]::RemoveEmptyEntries) |
     ForEach-Object { $_.Replace("\", "/") } |
     Where-Object {
       $_ -and
@@ -27,7 +49,6 @@ $relativeFiles = @(
     Sort-Object -Unique
 )
 
-if ($LASTEXITCODE -ne 0) { throw "git ls-files failed with exit code $LASTEXITCODE" }
 if ($relativeFiles.Count -eq 0) { throw "No repository files were found for the snapshot." }
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss-fff"
