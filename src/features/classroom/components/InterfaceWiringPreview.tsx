@@ -1204,7 +1204,8 @@ function buildEdgeDrawings(
           context.to,
           context.fromPosition,
           context.edge.jumperRoute,
-          context.laneOffset
+          context.laneOffset,
+          context.edge.jumperBulge
         )
       );
       return;
@@ -1458,6 +1459,9 @@ function getDisplayConductors(edge: InterfaceWiringEdge): InterfaceWiringConduct
   if (edge.kind === "jumper") {
     return [getCollapsedCableConductor(edge, "jumper", "音频跳线", CABLE_MATERIAL_COLORS.audio, "+/-/G")];
   }
+  if (edge.conductorDisplay === "collapsed") {
+    return [getCollapsedCableConductor(edge, "assembled", edge.cableType, getCableSheathColor(edge), "成品线")];
+  }
   if (isNetworkEdge(edge)) {
     return [getCollapsedCableConductor(edge, "network", "网线", CABLE_MATERIAL_COLORS.network, "RJ45")];
   }
@@ -1481,6 +1485,7 @@ function getCableTrunkRoutes(
     color,
     strokeWidth: edge.kind === "jumper"
       ? 3.2
+      : edge.conductorDisplay === "collapsed" ? 6
       : multicore ? 6 : isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
     confirmed: conductors.every((item) => item.confirmed),
     needsOutline: color.toLowerCase() === "#ffffff"
@@ -1646,10 +1651,11 @@ function getInternalJumperRoute(
   to: { x: number; y: number },
   node: WiringNodePosition,
   routeSide?: InterfaceWiringEdge["jumperRoute"],
-  laneOffset = 0
+  laneOffset = 0,
+  requestedBulge?: number
 ) {
   const resolvedSide = routeSide ?? ((from.x + to.x) / 2 <= node.centerX ? "left" : "right");
-  const bulge = 44 + laneOffset;
+  const bulge = Math.max(12, (requestedBulge ?? 44) + laneOffset);
   const controlDistance = bulge * 4 / 3;
   const isHorizontalRoute = resolvedSide === "top" || resolvedSide === "bottom";
   const bendX = resolvedSide === "left"

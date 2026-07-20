@@ -274,7 +274,7 @@ export const generateConnectionLines = (
         toDevice: `${externalAmplifierName} × ${externalAmplifierCount}`,
         toPort: `音频输入 / ${externalAmplifierChannelCount} 个功放通道`,
         cableType: "音频线",
-        note: `${getExternalAmplifierSummary(speakerCount)}超过内置 SPK 的 ${externalSpeakerCount} 只音箱由扩展功放承载；阵麦 1 根 Line Out 音频线默认带 2 个功放通道，单台扩展功放最多占用 ${EXTERNAL_AMPLIFIER_MAX_LINE_OUT_COUNT} 根 Line Out 音频线。`
+        note: `${getExternalAmplifierSummary(speakerCount)}超过内置 SPK 的 ${externalSpeakerCount} 只音箱由扩展功放承载；阵麦每根 Line Out 音频线接功放奇数 LINE IN，再用端子短跳线接相邻偶数 LINE IN；单台扩展功放最多占用 ${EXTERNAL_AMPLIFIER_MAX_LINE_OUT_COUNT} 根 Line Out 音频线。`
       });
       lines.push({
         id: "amplifier-speaker-extension",

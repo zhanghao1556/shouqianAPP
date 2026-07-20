@@ -99,6 +99,8 @@ interface ConnectionSeed {
   kind?: InterfaceWiringEdge["kind"];
   jumperRoute?: InterfaceWiringEdge["jumperRoute"];
   fromNode: InterfaceWiringNode;
+  jumperBulge?: InterfaceWiringEdge["jumperBulge"];
+  conductorDisplay?: InterfaceWiringEdge["conductorDisplay"];
   fromPort: DevicePortCapability;
   fromPortInstanceId?: string;
   allowOccupiedFromPort?: boolean;
@@ -1074,26 +1076,34 @@ class CandidateWiringBuilder {
     const activeChannels = getExternalAmplifierChannelCountForSpeakers(speakerSelection.quantity);
     for (let pairIndex = 0; pairIndex < Math.ceil(activeChannels / 2); pairIndex += 1) {
       const channelsInPair = Math.min(2, activeChannels - pairIndex * 2);
-      const source = this.requireAvailablePort(main, `stereoOut${pairIndex + 1}`, `功放通道${pairIndex * 2 + 1}-${pairIndex * 2 + channelsInPair}`);
-      if (!source) continue;
-      const target = this.requireAvailablePort(amplifier, pairIndex === 0 ? "dualIn12" : "dualIn34", "阵麦主麦音频输出");
-      if (!target) continue;
       const firstChannel = pairIndex * 2 + 1;
       const lastChannel = firstChannel + channelsInPair - 1;
       this.addConnection({
         id: `dt-main-amplifier-input-${pairIndex + 1}`,
+      const source = this.allocatePort(main, "lineOut", `功放通道${firstChannel}-${lastChannel}`);
+      if (!source) continue;
+      const target = this.requireAvailablePort(amplifier, `lineIn${firstChannel}`, "阵麦主麦音频输出");
+      if (!target) continue;
         fromNode: main,
         fromPort: source,
         toNode: amplifier,
         toPort: target,
         cableType: "音频线",
-        connectionMethod: channelsInPair === 2
-          ? `LINE OUT的L/R分别接功放LINE IN ${firstChannel}/${lastChannel}正端，共地G分别接两通道负端和地端`
-          : `LINE OUT的L接功放LINE IN ${firstChannel}正端，共地G接该通道负端和地端；R保留`,
-        conductors: getYinyiStereoToAmplifierPairConductors(source, target, channelsInPair)
+        connectionMethod: `阵麦LINE OUT所选L或R接功放LINE IN ${firstChannel}正端，共地G并接该通道负端和地端；LINE IN ${firstChannel}驱动SPK${firstChannel}`,
+        conductors: getYinyiMonoToAmplifierConductors(source, target),
+        conductorDisplay: "collapsed"
       });
     }
     nextSpeaker = this.connectSpeakerOutputs(
+      if (channelsInPair > 1) {
+        this.addAmplifierInputJumper(
+          amplifier,
+          firstChannel - 1,
+          lastChannel - 1,
+          pairIndex === 0 ? "left" : "right",
+          18
+        );
+      }
       amplifier,
       speakerSelection.name,
       amplifierSpeakerCount,
@@ -1206,25 +1216,38 @@ class CandidateWiringBuilder {
         : lineInputs.length === 2
           ? [{ fromIndex: 0, toIndex: 1, route: "left" as const }]
           : [];
-    routes.forEach(({ fromIndex, toIndex, route }, index) => {
-      const fromInput = lineInputs[fromIndex];
-      const toInput = lineInputs[toIndex];
-      const fromChannel = fromIndex + 1;
-      const toChannel = toIndex + 1;
-      this.addConnection({
-        id: `amplifier-input-jumper-${fromChannel}-${toChannel}`,
-        kind: "jumper",
-        jumperRoute: route,
-        fromNode: amplifier,
-        fromPort: fromInput,
-        fromPortInstanceId: `${fromInput.id}-jumper-to-${toChannel}`,
-        allowOccupiedFromPort: true,
-        toNode: amplifier,
-        toPort: toInput,
-        toPortInstanceId: `${toInput.id}-jumper-from-${fromChannel}`,
-        cableType: "音频跳线",
-        connectionMethod: `LINE IN ${fromChannel}跳接LINE IN ${toChannel}，+/-/G一一对应；LINE IN ${toChannel}驱动SPK${toChannel}`
-      });
+    routes.forEach(({ fromIndex, toIndex, route }) => {
+      this.addAmplifierInputJumper(amplifier, fromIndex, toIndex, route);
+    });
+  }
+
+  private addAmplifierInputJumper(
+    amplifier: InterfaceWiringNode,
+    fromIndex: number,
+    toIndex: number,
+    route: NonNullable<InterfaceWiringEdge["jumperRoute"]>,
+    jumperBulge?: number
+  ) {
+    const lineInputs = getDevicePortsByPrefix(amplifier.productId, "lineIn").slice(0, 4);
+    const fromInput = lineInputs[fromIndex];
+    const toInput = lineInputs[toIndex];
+    if (!fromInput || !toInput) return;
+    const fromChannel = fromIndex + 1;
+    const toChannel = toIndex + 1;
+    this.addConnection({
+      id: `amplifier-input-jumper-${fromChannel}-${toChannel}`,
+      kind: "jumper",
+      jumperRoute: route,
+      jumperBulge,
+      fromNode: amplifier,
+      fromPort: fromInput,
+      fromPortInstanceId: `${fromInput.id}-jumper-to-${toChannel}`,
+      allowOccupiedFromPort: true,
+      toNode: amplifier,
+      toPort: toInput,
+      toPortInstanceId: `${toInput.id}-jumper-from-${fromChannel}`,
+      cableType: "音频跳线",
+      connectionMethod: `LINE IN ${fromChannel}跳接LINE IN ${toChannel}，+/-/G一一对应；LINE IN ${toChannel}驱动SPK${toChannel}`
     });
   }
 
@@ -1665,6 +1688,8 @@ class CandidateWiringBuilder {
       this.addFinding({
         code: `unconfirmed-port.${seed.id}`,
         severity: "review",
+      ...(seed.jumperBulge !== undefined ? { jumperBulge: seed.jumperBulge } : {}),
+      ...(seed.conductorDisplay ? { conductorDisplay: seed.conductorDisplay } : {}),
         title: "接口面板标识待补录",
         message: `${!seed.fromPort.confirmed ? seed.fromNode.label : seed.toNode.label}存在尚未确认的面板原始接口名称。`,
         nodeId: !seed.fromPort.confirmed ? seed.fromNode.id : seed.toNode.id
@@ -1968,24 +1993,15 @@ function getYinyiFormalConductorMappings(
   return fromYinyiMono && toBalanced ? getYinyiMonoToBalancedConductors(fromPort, toPort) : undefined;
 }
 
-function getYinyiStereoToAmplifierPairConductors(
+function getYinyiMonoToAmplifierConductors(
   fromPort: DevicePortCapability,
-  toPort: DevicePortCapability,
-  channelCount: number
+  toPort: DevicePortCapability
 ) {
-  const conductors = [
-    mappedConductor("left-positive1", "L到CH1+", "#dc2626", fromPort, "left", toPort, "positive1"),
-    mappedConductor("ground-negative1", "G到CH1-", "#ffffff", fromPort, "ground", toPort, "negative1"),
-    mappedConductor("ground-ground1", "G到CH1 G", "#64748b", fromPort, "ground", toPort, "ground1")
+  return [
+    mappedConductor("signal-positive", "所选L/R信号接+", "#dc2626", fromPort, "signal", toPort, "positive"),
+    mappedConductor("ground-negative", "共地G接-", "#ffffff", fromPort, "ground", toPort, "negative"),
+    mappedConductor("ground-ground", "共地G接G", "#64748b", fromPort, "ground", toPort, "ground")
   ];
-  if (channelCount > 1) {
-    conductors.push(
-      mappedConductor("right-positive2", "R到CH2+", "#ffffff", fromPort, "right", toPort, "positive2"),
-      mappedConductor("ground-negative2", "G到CH2-", "#94a3b8", fromPort, "ground", toPort, "negative2"),
-      mappedConductor("ground-ground2", "G到CH2 G", "#475569", fromPort, "ground", toPort, "ground2")
-    );
-  }
-  return conductors;
 }
 
 function getRs232Conductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {

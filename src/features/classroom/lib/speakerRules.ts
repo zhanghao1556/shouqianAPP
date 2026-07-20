@@ -194,7 +194,7 @@ export const hasRecommendedSpeakerSystemOverflow = (quantity: number) => quantit
 export const getUsedSpeakerOutputCount = (quantity: number) => Math.min(quantity, DT_SPK_OUTPUT_COUNT);
 
 export const getSpeakerCapacityText = (speakerName = "音箱") =>
-  `阵麦内置 ${DT_SPK_OUTPUT_COUNT} 个 SPK 功放输出口，每个输出口最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只${speakerName}，内置 SPK 可直接带 ${MAX_SPEAKERS_PER_DT} 只；加 1 台教学模拟功放主机后推荐上限为 ${RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER} 只。扩展功放为四通道功放，扩展音箱小于等于 4 只时一通道一只，大于 4 只时开始并线，单台扩展功放最多扩展 ${EXTERNAL_AMPLIFIER_SPEAKER_CAPACITY} 只，阵麦 1 根 Line Out 音频线默认带 2 个功放通道。`;
+  `阵麦内置 ${DT_SPK_OUTPUT_COUNT} 个 SPK 功放输出口，每个输出口最多并联 ${SPEAKERS_PER_SPK_OUTPUT} 只${speakerName}，内置 SPK 可直接带 ${MAX_SPEAKERS_PER_DT} 只；加 1 台教学模拟功放主机后推荐上限为 ${RECOMMENDED_MAX_SPEAKERS_WITH_EXTERNAL_AMPLIFIER} 只。扩展功放为四通道功放，扩展音箱小于等于 4 只时一通道一只，大于 4 只时开始并线，单台扩展功放最多扩展 ${EXTERNAL_AMPLIFIER_SPEAKER_CAPACITY} 只；阵麦每根 Line Out 音频线接功放奇数通道，再用端子短跳线带相邻偶数通道。`;
 
 export const getExternalAmplifierSummary = (quantity: number) => {
   const externalSpeakerCount = getExternalSpeakerCount(quantity);

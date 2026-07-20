@@ -286,6 +286,8 @@ export interface InterfaceWiringEdge {
   id: string;
   kind: "field" | "jumper";
   jumperRoute?: "left" | "right" | "top" | "bottom";
+  jumperBulge?: number;
+  conductorDisplay?: "split" | "collapsed";
   fromNodeId: string;
   fromPortId: string;
   toNodeId: string;

@@ -2493,3 +2493,10 @@ PowerShell reminder:
 - When a visual correction is ambiguous, inspect the feature's history before removing adjacent behavior. The original connector treatment was recoverable from Git and made the intended distinction concrete.
 - CSS source-shape assertions that start at one keyframe can accidentally consume later keyframes. Prefer positive assertions for the exact expected values inside the target rule instead of a broad negative pattern over the remaining stylesheet.
 - When the user has exercised the actual React hover and explicitly accepted it, treat that as stronger motion evidence than repeatedly retrying a browser automation path known not to retain `pointerenter`; keep DOM classification and focused regression tests as the reproducible contract.
+
+### 2026-07-20 paired amplifier-input jumpers
+
+- A product may expose L and R as independently routable signals without requiring both signals to feed adjacent amplifier channels. Preserve that capability in the port catalog, while letting the confirmed amplification route use one mono signal on the odd input and a local jumper to the paired even input.
+- Keep electrical truth separate from drawing density. The model and occupancy data should retain signal-to-positive plus shared-ground-to-negative/ground mappings, while an explicit collapsed display mode can render the installed audio cable as one assembled sheath with no misleading core fan-out.
+- Pair amplifier inputs deterministically: `1 -> 2` and, when needed, `3 -> 4`. A compact per-edge jumper bulge avoids changing the already accepted geometry of unrelated processor-to-amplifier jumpers.
+- When unrelated source edits arrive in a shared worktree during implementation, validate against the combined tree but stage only the current task's hunks. Do not absorb, revert or rewrite the other asset task merely because it overlaps a shared model file.

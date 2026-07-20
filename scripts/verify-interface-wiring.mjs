@@ -383,7 +383,34 @@ assert.equal(
   yinyiResult.model.nodes.filter((item) => item.id.startsWith("amplifier-speakers-group-")).reduce((sum, item) => sum + item.quantity, 0),
   8
 );
-assert.equal(yinyiResult.model.edges.filter((edge) => edge.id.startsWith("dt-main-amplifier-input-")).length, 2);
+const yinyiAmplifier = node(yinyiResult.model, "amplifier");
+const yinyiAmplifierInputs = yinyiResult.model.edges.filter((edge) => edge.id.startsWith("dt-main-amplifier-input-"));
+assert.deepEqual(
+  yinyiAmplifierInputs.map((edge) => {
+    const fromPort = yinyiMain.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = yinyiAmplifier.ports.find((port) => port.id === edge.toPortId);
+    return [
+      fromPort?.capabilityId,
+      toPort?.capabilityId,
+      edge.conductorDisplay,
+      edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color])
+    ];
+  }),
+  [
+    ["lineOut1", "lineIn1", "collapsed", [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]],
+    ["lineOut2", "lineIn3", "collapsed", [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]]
+  ]
+);
+const yinyiAmplifierJumpers = yinyiResult.model.edges.filter((edge) => edge.kind === "jumper");
+assert.deepEqual(
+  yinyiAmplifierJumpers.map((edge) => {
+    const fromPort = yinyiAmplifier.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = yinyiAmplifier.ports.find((port) => port.id === edge.toPortId);
+    return [fromPort?.capabilityId, toPort?.capabilityId, edge.jumperRoute, edge.jumperBulge];
+  }),
+  [["lineIn1", "lineIn2", "left", 18], ["lineIn3", "lineIn4", "right", 18]]
+);
+assert.ok(yinyiAmplifierJumpers.every((edge) => edge.cableType === "音频跳线"));
 assertNoDuplicatePortOccupancy(yinyiResult.model);
 assertNoPowerEdges(yinyiResult.model);
 const yinyiMainPanelSvg = readFileSync("src/assets/yinyi-array-mic-main-rear-panel.svg", "utf8");
@@ -1443,7 +1470,9 @@ assert.match(wiringPreviewSource, /const renderedRoute = edge\.kind === "jumper"
 assert.doesNotMatch(wiringPreviewSource, /laneOffset \+ conductorOffset/);
 assert.match(wiringPreviewSource, /resolvedSide === "left"[\s\S]*?resolvedSide === "right"[\s\S]*?resolvedSide === "top"[\s\S]*?resolvedSide === "bottom"/);
 assert.match(wiringPreviewSource, /if \(edge\.kind === "jumper"\) \{\s*return \[getCollapsedCableConductor/);
-assert.match(wiringPreviewSource, /const bulge = 44 \+ laneOffset;[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
+assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed"[\s\S]*?getCollapsedCableConductor/);
+assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed" \? 6/);
+assert.match(wiringPreviewSource, /const bulge = Math\.max\(12, \(requestedBulge \?\? 44\) \+ laneOffset\);[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
 assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(model, portReferenceNumbers\)/);
 assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
 assert.match(wiringPreviewSource, /aria-label="接口接线图与接口占用表"/);
