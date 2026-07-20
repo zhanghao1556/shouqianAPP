@@ -86,7 +86,9 @@ function verifyBrand(brand) {
     "高端教育空间声学方案",
     ".engineeringHeader .workspaceTitle",
     "viewport-fit=cover",
-    ...(brand.id === "yinman" ? ["接口接线图", "接口占用表", "音曼接口接线图"] : [])
+    "接口接线图",
+    "接口占用表",
+    `${brand.label}接口接线图`
   ];
 
   return {

@@ -23,12 +23,16 @@ const microphoneOverrideIds = new Set(["DT1", "DT2", "DT2-Pro", "ARRAY-MIC-PROCE
 const speakerOverrideIds = new Set(["CEILING-SPEAKER", "COLUMN-SPEAKER", "YY-POWER-AMP"]);
 const processorOverrideIds = new Set(["AUDIO-PROCESSOR-HOST"]);
 const connectionOverrideIds = new Set(["YINMAN-AUDIO-EXTENDER", "USB-AUDIO-CABLE"]);
+const YinyiInterfaceWiring = __ENABLE_YINYI_INTERFACE_WIRING__
+  ? lazy(() => import("./components/YinyiInterfaceWiringPreview"))
+  : null;
 const YinmanInterfaceWiring = __ENABLE_YINMAN_INTERFACE_WIRING__
-  ? lazy(() => import("./components/InterfaceWiringPreview").then((module) => ({ default: module.InterfaceWiringPreview })))
+  ? lazy(() => import("./components/YinmanInterfaceWiringPreview"))
   : null;
 
 export function ClassroomEngineeringApp() {
   const brand = getAppBrand();
+  const BrandInterfaceWiring = brand.id === "yinman" ? YinmanInterfaceWiring : YinyiInterfaceWiring;
   const [initialDraft] = useState(() => (isReleaseBuild() ? createCleanReleasePresalesDraft() : loadSavedPresalesDraft()));
   const [profile, setProfile] = useState<ClassroomProfile>(() => sanitizeHiddenProfileState(initialDraft.profile));
   const [quantityOverrides, setQuantityOverrides] = useState<QuantityOverrides>(() => initialDraft.quantityOverrides);
@@ -199,9 +203,9 @@ export function ClassroomEngineeringApp() {
             onLegacySpeakerPointRemoveLast={removeLastLegacySpeakerPoint}
             onLegacySpeakerPointTargetChange={updateLegacySpeakerPointTarget}
           />
-          {brand.id === "yinman" && YinmanInterfaceWiring && (
+          {BrandInterfaceWiring && (
             <Suspense fallback={<div className="interfaceWiringLoading">正在生成接口接线图...</div>}>
-              <YinmanInterfaceWiring
+              <BrandInterfaceWiring
                 profile={profile}
                 outputs={outputs}
                 brandId={brand.id}

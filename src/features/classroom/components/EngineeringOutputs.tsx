@@ -42,10 +42,13 @@ export function EngineeringOutputs({
   onLegacySpeakerPointRemoveLast,
   onLegacySpeakerPointTargetChange
 }: EngineeringOutputsProps) {
-  const readyOutputSummary = __ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman"
+  const brand = getAppBrand();
+  const interfaceWiringEnabled = brand.id === "yinman"
+    ? __ENABLE_YINMAN_INTERFACE_WIRING__
+    : __ENABLE_YINYI_INTERFACE_WIRING__;
+  const readyOutputSummary = interfaceWiringEnabled
     ? "已生成设备清单、点位图、拓扑图、接口接线图和接口占用表。"
     : "已生成设备清单、点位图和拓扑图。";
-  const brand = getAppBrand();
   const selectedSpeakerProductId = outputs.solutionSelection.speaker.selected === "ceiling" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
   const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId, outputs.solutionSelection.microphone.selected);
   const exportDrawingImage = (type: "installation" | "topology") => {

@@ -70,7 +70,7 @@ const capabilities: Record<AppBrandId, BrandSystemCapability> = {
     localAmplificationRadiusM: 5,
     integratedSpeakerCapacity: 8,
     totalSpeakerCapacity: 16,
-    cascadeRouteLimitM: 40,
+    cascadeRouteLimitM: 10,
     requiresAudioProcessorHost: false
   },
   yinman: {

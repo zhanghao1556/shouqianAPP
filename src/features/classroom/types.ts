@@ -203,6 +203,7 @@ export interface DevicePortVisualAnchor {
   x: number;
   y: number;
   terminalAnchors?: Record<string, { x: number; y: number }>;
+  focusBounds?: { x: number; y: number; width: number; height: number };
 }
 
 export interface DeviceInterfacePanel {

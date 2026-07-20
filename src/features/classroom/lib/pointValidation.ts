@@ -477,14 +477,19 @@ function addCascadeRouteFinding(findings: PointValidationFinding[], brandId: App
   if (capability.arrayMicTopology !== "cascade" || mics.length <= 1 || capability.cascadeRouteLimitM === undefined) return;
   const route = getShortestManhattanCascadeRoute(mics.map((mic) => mic.position));
   const routeText = route.pointOrder.map((point) => `(${point.x.toFixed(1)}, ${point.y.toFixed(1)})`).join(" -> ");
-  const overLimit = route.lengthM > capability.cascadeRouteLimitM;
+  const segmentLengths = route.pointOrder.slice(1).map((point, index) => {
+    const previous = route.pointOrder[index];
+    return Math.abs(point.x - previous.x) + Math.abs(point.y - previous.y);
+  });
+  const longestSegment = Math.max(0, ...segmentLengths);
+  const overLimit = longestSegment > capability.cascadeRouteLimitM;
   findings.push({
     code: "array.cascade-route",
     severity: overLimit ? "hard" : "info",
-    title: "阵麦级联施工折线",
-    actual: `${route.lengthM.toFixed(1)}m`,
-    limit: `${capability.cascadeRouteLimitM}m`,
-    internalMessage: `按最短串联顺序累计 |Δx| + |Δy|，路径 ${routeText}，估算总长 ${route.lengthM.toFixed(1)}m。`,
+    title: "阵麦级联单段线长",
+    actual: `最长${longestSegment.toFixed(1)}m；总长${route.lengthM.toFixed(1)}m`,
+    limit: `单段<=${capability.cascadeRouteLimitM}m`,
+    internalMessage: `按最短串联顺序检查每段 |Δx| + |Δy|，路径 ${routeText}，最长单段 ${longestSegment.toFixed(1)}m，估算总长 ${route.lengthM.toFixed(1)}m。`,
     customerMessage: overLimit ? "阵麦级联网线长度会影响系统连接，当前方案需专项复核。" : undefined,
     sourceRefs: ["阵列麦安装与级联网线资料", "用户确认的施工折线路径口径"]
   });

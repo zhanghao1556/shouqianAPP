@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 declare const __ENABLE_CALIBRATION_WORKBENCHES__: boolean;
+declare const __ENABLE_YINYI_INTERFACE_WIRING__: boolean;
 declare const __ENABLE_YINMAN_INTERFACE_WIRING__: boolean;
 
 interface Window {

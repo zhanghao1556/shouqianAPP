@@ -74,27 +74,27 @@ async function renderFixture(url, brand, isRelease) {
     return clone.outerHTML;
   }));
   const deviceList = await page.locator(".tableBox").first().textContent();
-  let interfaceWiring = "";
-  let interfaceUsage = "";
-  if (brand === "yinman") {
-    const wiringSelector = 'svg[aria-label="音曼接口接线图"]';
-    await page.waitForSelector(wiringSelector);
-    interfaceWiring = normalizeRuntimeSvgIds(await page.locator(wiringSelector).evaluate((svg) => {
-      const clone = svg.cloneNode(true);
-      clone.querySelectorAll("image, img").forEach((image) => {
-        image.removeAttribute("href");
-        image.removeAttribute("xlink:href");
-        image.removeAttribute("src");
-      });
-      return clone.outerHTML;
-    }));
-    interfaceUsage = (await page.locator(".interfaceWiringPortTable").textContent()).replace(/\s+/g, " ").trim();
-    const customerText = await page.locator("body").innerText();
-    for (const model of ["AJ200", "AJ350", "AJ600", "SA110", "AP150", "RING08"]) {
-      if (customerText.includes(model)) throw new Error(`Customer-visible Yinman output exposes internal model: ${model}`);
+  const brandLabel = brand === "yinman" ? "音曼" : "音翼";
+  const wiringSelector = `svg[aria-label="${brandLabel}接口接线图"]`;
+  await page.waitForSelector(wiringSelector);
+  const interfaceWiring = normalizeRuntimeSvgIds(await page.locator(wiringSelector).evaluate((svg) => {
+    const clone = svg.cloneNode(true);
+    clone.querySelectorAll("image, img").forEach((image) => {
+      image.removeAttribute("href");
+      image.removeAttribute("xlink:href");
+      image.removeAttribute("src");
+    });
+    return clone.outerHTML;
+  }));
+  const interfaceUsage = (await page.locator(".interfaceWiringPortTable").textContent()).replace(/\s+/g, " ").trim();
+  const customerText = await page.locator("body").innerText();
+  const internalModels = brand === "yinman"
+    ? ["AJ200", "AJ350", "AJ600", "SA110", "AP150", "RING08"]
+    : ["DT1", "DT2", "DT2 Pro"];
+  for (const model of internalModels) {
+    if (customerText.includes(model)) {
+      throw new Error(`Customer-visible ${brandLabel} output exposes internal model: ${model}`);
     }
-  } else if (await page.locator(".interfaceWiringPreview").count()) {
-    throw new Error("Yinyi release unexpectedly renders the Yinman interface-wiring module.");
   }
   await context.close();
   return {

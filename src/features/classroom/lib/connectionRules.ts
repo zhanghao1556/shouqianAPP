@@ -92,7 +92,19 @@ export const generateConnectionLines = (
   if (!dt) return [];
 
   const lines: ConnectionLine[] = [];
-  const dtName = dt.name;
+  const dtBaseName = dt.name;
+  const dtName = `${dtBaseName}（主麦）`;
+  for (let index = 1; index < dt.quantity; index += 1) {
+    lines.push({
+      id: `dt-array-cascade-${index}`,
+      fromDevice: `${dtBaseName}（从麦 ${index}）`,
+      fromPort: "EXT MIC OUT",
+      toDevice: index === 1 ? dtName : `${dtBaseName}（从麦 ${index - 1}）`,
+      toPort: "EXT MIC IN",
+      cableType: "配套阵麦级联网线",
+      note: "从麦EXT MIC OUT接上一级EXT MIC IN；每段不超过10m；插拔级联网线后重启主麦。"
+    });
+  }
   const hasRemoteOrRecording =
     profile.needs.includes("videoConference") || profile.needs.includes("remoteTeaching") || profile.needs.includes("recording");
   const hasSpeaker = selection.some((item) => item.category === "speaker" && item.quantity > 0);
@@ -124,13 +136,13 @@ export const generateConnectionLines = (
 
   mediaDevices.filter(isControlHostDevice).forEach((device, index) => {
     lines.push({
-      id: `control-host-network-${index + 1}`,
+      id: `control-host-rs232-${index + 1}`,
       fromDevice: dtName,
-      fromPort: "网络 / 控制接口",
+      fromPort: "EXT MIC OUT（RS232控制）",
       toDevice: device,
-      toPort: "网络控制接口",
-      cableType: "网线",
-      note: "中控主机使用网线接入主麦控制接口。"
+      toPort: "RS232 RX / TX / GND",
+      cableType: "232线",
+      note: "白橙TX接中控RX，橙RX接中控TX，白绿/绿GND并接中控GND；串口参数115200、8N1。"
     });
   });
 

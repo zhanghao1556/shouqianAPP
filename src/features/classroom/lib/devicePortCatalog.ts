@@ -23,6 +23,8 @@ import {
 export const PROCESSOR_AJ200_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ200";
 export const PROCESSOR_AJ350_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ350";
 export const PROCESSOR_AJ600_PORT_PROFILE_ID = "YINMAN-PROCESSOR-AJ600";
+export const YINYI_DT2_PRO_PORT_PROFILE_ID = "YINYI-DT2-PRO-INTERFACE";
+export const YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID = "YINYI-DT2-PRO-SLAVE-INTERFACE";
 export const COMPUTER_REAR_PANEL_PORT_PROFILE_ID = "COMPUTER-REAR-PANEL";
 export const RECORDING_HOST_PORT_PROFILE_ID = "EXTERNAL-RECORDING-HOST";
 export const RECORDING_CAMERA_PORT_PROFILE_ID = "EXTERNAL-RECORDING-CAMERA";
@@ -56,6 +58,20 @@ const stereoTerminals: DevicePortTerminal[] = [
   { id: "ground", label: "G", role: "ground", color: "#6b7280" }
 ];
 
+const monoSignalTerminals = (label: string): DevicePortTerminal[] => [
+  { id: "signal", label, role: "signal", color: "#dc2626" },
+  { id: "ground", label: "G", role: "ground", color: "#6b7280" }
+];
+
+const amplifierDualInputTerminals: DevicePortTerminal[] = [
+  { id: "positive1", label: "CH1 +", role: "positive", color: "#dc2626" },
+  { id: "negative1", label: "CH1 -", role: "negative", color: "#ffffff" },
+  { id: "ground1", label: "CH1 G", role: "ground", color: "#64748b" },
+  { id: "positive2", label: "CH2 +", role: "positive", color: "#dc2626" },
+  { id: "negative2", label: "CH2 -", role: "negative", color: "#ffffff" },
+  { id: "ground2", label: "CH2 G", role: "ground", color: "#64748b" }
+];
+
 const rs232Terminals: DevicePortTerminal[] = [
   { id: "rx", label: "RX", role: "signal", color: "#22c55e" },
   { id: "tx", label: "TX", role: "signal", color: "#eab308" },
@@ -82,6 +98,25 @@ const anchor = (
   y: number,
   terminalAnchors?: DevicePortVisualAnchor["terminalAnchors"]
 ): DevicePortVisualAnchor => ({ x, y, terminalAnchors });
+
+const focusRect = (
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  focusWidth: number,
+  focusHeight: number
+): NonNullable<DevicePortVisualAnchor["focusBounds"]> => ({
+  x: x / width,
+  y: y / height,
+  width: focusWidth / width,
+  height: focusHeight / height
+});
+
+const withFocusBounds = (
+  visualAnchor: DevicePortVisualAnchor,
+  focusBounds: NonNullable<DevicePortVisualAnchor["focusBounds"]>
+): DevicePortVisualAnchor => ({ ...visualAnchor, focusBounds });
 
 const calibratedBalancedAnchor = (
   width: number,
@@ -192,6 +227,63 @@ function numberedPorts(
 }
 
 export const devicePortCatalog: Record<string, DevicePortProfile> = {
+  [YINYI_DT2_PRO_PORT_PROFILE_ID]: {
+    productId: YINYI_DT2_PRO_PORT_PROFILE_ID,
+    internalModel: "DT2 Pro",
+    customerName: "智能天花阵列麦克风",
+    ports: [
+      port("extMicOut", "EXT MIC OUT", "RJ45（RS232控制 / 上一级级联）", "bidirectional", confirmedSource, true, rj45Terminals),
+      port("extMicIn", "EXT MIC IN", "RJ45（下一级级联及供电）", "bidirectional", confirmedSource, true, rj45Terminals),
+      port("usb", "USB", "USB-B（USB Audio输入输出 / 调试控制）", "bidirectional", confirmedSource),
+      port("lineIn1", "LINE IN 1-L", "6Pin凤凰端子（L/G，共地组1）", "input", confirmedSource, true, monoSignalTerminals("L"), "line-in-group-1"),
+      port("lineIn2", "LINE IN 1-R", "6Pin凤凰端子（R/G，共地组1）", "input", confirmedSource, true, monoSignalTerminals("R"), "line-in-group-1"),
+      port("lineIn3", "LINE IN 2-L", "6Pin凤凰端子（L/G，共地组2）", "input", confirmedSource, true, monoSignalTerminals("L"), "line-in-group-2"),
+      port("lineIn4", "LINE IN 2-R", "6Pin凤凰端子（R/G，共地组2）", "input", confirmedSource, true, monoSignalTerminals("R"), "line-in-group-2"),
+      port("stereoIn1", "LINE IN 1（L/R/G）", "6Pin凤凰端子（L/R/G，两路信号共地）", "input", confirmedSource, true, stereoTerminals, "line-in-group-1"),
+      port("stereoIn2", "LINE IN 2（L/R/G）", "6Pin凤凰端子（L/R/G，两路信号共地）", "input", confirmedSource, true, stereoTerminals, "line-in-group-2"),
+      port("lineOut1", "LINE OUT 1-L", "6Pin凤凰端子（L/G，共地组1）", "output", confirmedSource, true, monoSignalTerminals("L"), "line-out-group-1"),
+      port("lineOut2", "LINE OUT 1-R", "6Pin凤凰端子（R/G，共地组1）", "output", confirmedSource, true, monoSignalTerminals("R"), "line-out-group-1"),
+      port("lineOut3", "LINE OUT 2-L", "6Pin凤凰端子（L/G，共地组2）", "output", confirmedSource, true, monoSignalTerminals("L"), "line-out-group-2"),
+      port("lineOut4", "LINE OUT 2-R", "6Pin凤凰端子（R/G，共地组2）", "output", confirmedSource, true, monoSignalTerminals("R"), "line-out-group-2"),
+      port("stereoOut1", "LINE OUT 1（L/R/G）", "6Pin凤凰端子（L/R/G，两路信号共地）", "output", confirmedSource, true, stereoTerminals, "line-out-group-1"),
+      port("stereoOut2", "LINE OUT 2（L/R/G）", "6Pin凤凰端子（L/R/G，两路信号共地）", "output", confirmedSource, true, stereoTerminals, "line-out-group-2"),
+      ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals, "spk-block")
+    ],
+    interfacePanel: panel("yinyiArrayMicMain", 1280 / 320, {
+      extMicOut: anchor(222 / 1280, 146 / 320),
+      extMicIn: anchor(354 / 1280, 146 / 320),
+      usb: anchor(476 / 1280, 146 / 320),
+      lineIn1: anchor(874 / 1280, 146 / 320, { signal: { x: 874 / 1280, y: 146 / 320 }, ground: { x: 846 / 1280, y: 146 / 320 } }),
+      lineIn2: anchor(902 / 1280, 146 / 320, { signal: { x: 902 / 1280, y: 146 / 320 }, ground: { x: 846 / 1280, y: 146 / 320 } }),
+      lineIn3: anchor(962 / 1280, 146 / 320, { signal: { x: 962 / 1280, y: 146 / 320 }, ground: { x: 934 / 1280, y: 146 / 320 } }),
+      lineIn4: anchor(990 / 1280, 146 / 320, { signal: { x: 990 / 1280, y: 146 / 320 }, ground: { x: 934 / 1280, y: 146 / 320 } }),
+      stereoIn1: anchor(874 / 1280, 146 / 320, { left: { x: 874 / 1280, y: 146 / 320 }, right: { x: 902 / 1280, y: 146 / 320 }, ground: { x: 846 / 1280, y: 146 / 320 } }),
+      stereoIn2: anchor(962 / 1280, 146 / 320, { left: { x: 962 / 1280, y: 146 / 320 }, right: { x: 990 / 1280, y: 146 / 320 }, ground: { x: 934 / 1280, y: 146 / 320 } }),
+      lineOut1: anchor(678 / 1280, 146 / 320, { signal: { x: 678 / 1280, y: 146 / 320 }, ground: { x: 650 / 1280, y: 146 / 320 } }),
+      lineOut2: anchor(706 / 1280, 146 / 320, { signal: { x: 706 / 1280, y: 146 / 320 }, ground: { x: 650 / 1280, y: 146 / 320 } }),
+      lineOut3: anchor(766 / 1280, 146 / 320, { signal: { x: 766 / 1280, y: 146 / 320 }, ground: { x: 738 / 1280, y: 146 / 320 } }),
+      lineOut4: anchor(794 / 1280, 146 / 320, { signal: { x: 794 / 1280, y: 146 / 320 }, ground: { x: 738 / 1280, y: 146 / 320 } }),
+      stereoOut1: anchor(678 / 1280, 146 / 320, { left: { x: 678 / 1280, y: 146 / 320 }, right: { x: 706 / 1280, y: 146 / 320 }, ground: { x: 650 / 1280, y: 146 / 320 } }),
+      stereoOut2: anchor(766 / 1280, 146 / 320, { left: { x: 766 / 1280, y: 146 / 320 }, right: { x: 794 / 1280, y: 146 / 320 }, ground: { x: 738 / 1280, y: 146 / 320 } }),
+      spk1: speakerAnchor(1059 / 1280, 146 / 320, { x: 1046 / 1280, y: 146 / 320 }, { x: 1072 / 1280, y: 146 / 320 }),
+      spk2: speakerAnchor(1115 / 1280, 146 / 320, { x: 1102 / 1280, y: 146 / 320 }, { x: 1128 / 1280, y: 146 / 320 }),
+      spk3: speakerAnchor(1171 / 1280, 146 / 320, { x: 1158 / 1280, y: 146 / 320 }, { x: 1184 / 1280, y: 146 / 320 }),
+      spk4: speakerAnchor(1227 / 1280, 146 / 320, { x: 1214 / 1280, y: 146 / 320 }, { x: 1240 / 1280, y: 146 / 320 })
+    }, "用户提供《阵列麦接口说明（含级联）》；主麦接口位置与主从用途按实物标注图重构")
+  },
+  [YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID]: {
+    productId: YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID,
+    internalModel: "DT2 Pro",
+    customerName: "智能天花阵列麦克风",
+    ports: [
+      port("extMicOut", "EXT MIC OUT", "RJ45（接主麦 / 上一级从麦）", "bidirectional", confirmedSource, true, rj45Terminals),
+      port("extMicIn", "EXT MIC IN", "RJ45（接下一级从麦）", "bidirectional", confirmedSource, true, rj45Terminals)
+    ],
+    interfacePanel: panel("yinyiArrayMicSlave", 1280 / 320, {
+      extMicOut: anchor(222 / 1280, 146 / 320),
+      extMicIn: anchor(354 / 1280, 146 / 320)
+    }, "用户提供《阵列麦接口说明（含级联）》；从麦拨码置S，仅保留上下级级联接口")
+  },
   [PROCESSOR_AJ200_PORT_PROFILE_ID]: {
     productId: PROCESSOR_AJ200_PORT_PROFILE_ID,
     internalModel: "AJ200",
@@ -241,23 +333,23 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       ...numberedPorts("spk", "SPK", 4, "扬声器接线端子（+/-）", "output", confirmedSource, speakerTerminals)
     ],
     interfacePanel: panel("aj350", 1268 / 206, {
-      spk1: speakerAnchor(305 / 1268, 64 / 206, { x: 290 / 1268, y: 64 / 206 }, { x: 320 / 1268, y: 64 / 206 }),
-      spk2: speakerAnchor(393.5 / 1268, 64 / 206, { x: 379 / 1268, y: 64 / 206 }, { x: 408 / 1268, y: 64 / 206 }),
-      spk3: speakerAnchor(305 / 1268, 132 / 206, { x: 290 / 1268, y: 132 / 206 }, { x: 320 / 1268, y: 132 / 206 }),
-      spk4: speakerAnchor(393.5 / 1268, 132 / 206, { x: 379 / 1268, y: 132 / 206 }, { x: 408 / 1268, y: 132 / 206 }),
-      lineIn1: aj350BalancedAnchor(531.5, 551.5, 571, 87.5),
-      lineIn2: aj350BalancedAnchor(591, 611, 631, 87.5),
-      lineIn3: aj350BalancedAnchor(532, 552, 572, 125.5),
-      lineIn4: aj350BalancedAnchor(590.5, 610.5, 631, 125.5),
-      lineOut1: aj350BalancedAnchor(668, 688, 708, 87.5),
-      lineOut2: aj350BalancedAnchor(727.5, 747, 767, 87.5),
-      lineOut3: aj350BalancedAnchor(668, 688, 708, 125.5),
-      lineOut4: aj350BalancedAnchor(727, 747, 767, 125.5),
+      spk1: withFocusBounds(speakerAnchor(305 / 1268, 64 / 206, { x: 290 / 1268, y: 64 / 206 }, { x: 320 / 1268, y: 64 / 206 }), focusRect(1268, 206, 266, 44, 81, 59)),
+      spk2: withFocusBounds(speakerAnchor(393.5 / 1268, 64 / 206, { x: 379 / 1268, y: 64 / 206 }, { x: 408 / 1268, y: 64 / 206 }), focusRect(1268, 206, 347, 44, 81, 59)),
+      spk3: withFocusBounds(speakerAnchor(305 / 1268, 132 / 206, { x: 290 / 1268, y: 132 / 206 }, { x: 320 / 1268, y: 132 / 206 }), focusRect(1268, 206, 266, 103, 81, 59)),
+      spk4: withFocusBounds(speakerAnchor(393.5 / 1268, 132 / 206, { x: 379 / 1268, y: 132 / 206 }, { x: 408 / 1268, y: 132 / 206 }), focusRect(1268, 206, 347, 103, 81, 59)),
+      lineIn1: withFocusBounds(aj350BalancedAnchor(531.5, 551.5, 571, 87.5), focusRect(1268, 206, 516, 52, 66, 52)),
+      lineIn2: withFocusBounds(aj350BalancedAnchor(591, 611, 631, 87.5), focusRect(1268, 206, 582, 52, 66, 52)),
+      lineIn3: withFocusBounds(aj350BalancedAnchor(532, 552, 572, 125.5), focusRect(1268, 206, 516, 104, 66, 52)),
+      lineIn4: withFocusBounds(aj350BalancedAnchor(590.5, 610.5, 631, 125.5), focusRect(1268, 206, 582, 104, 66, 52)),
+      lineOut1: withFocusBounds(aj350BalancedAnchor(668, 688, 708, 87.5), focusRect(1268, 206, 653, 52, 66, 52)),
+      lineOut2: withFocusBounds(aj350BalancedAnchor(727.5, 747, 767, 87.5), focusRect(1268, 206, 719, 52, 66, 52)),
+      lineOut3: withFocusBounds(aj350BalancedAnchor(668, 688, 708, 125.5), focusRect(1268, 206, 653, 104, 66, 52)),
+      lineOut4: withFocusBounds(aj350BalancedAnchor(727, 747, 767, 125.5), focusRect(1268, 206, 719, 104, 66, 52)),
       amic: anchor(837 / 1268, 103 / 206),
       a1: anchor(913 / 1268, 103 / 206),
       a2: anchor(989 / 1268, 103 / 206),
       lan: anchor(1065 / 1268, 103 / 206),
-      rs232: calibratedRs232Anchor(1268, 206, 1138, 1148, 1158, 101),
+      rs232: withFocusBounds(calibratedRs232Anchor(1268, 206, 1138, 1148, 1158, 101), focusRect(1268, 206, 1126, 81, 44, 44)),
       usb: anchor(1205 / 1268, 103 / 206)
     }, "用户确认接口能力；按清晰工程面板重构并以孔位中心标定")
   },
@@ -443,6 +535,8 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     customerName: "教学模拟功放主机",
     ports: [
       ...numberedPorts("lineIn", "LINE IN ", 4, "平衡输入（+/-/G）", "input", agentSource, balancedTerminals),
+      port("dualIn12", "LINE IN 1-2", "双通道平衡输入端子（+/-/G）", "input", confirmedSource, true, amplifierDualInputTerminals),
+      port("dualIn34", "LINE IN 3-4", "双通道平衡输入端子（+/-/G）", "input", confirmedSource, true, amplifierDualInputTerminals),
       ...numberedPorts("spk", "SPK", 4, "扬声器接线柱（+/-）", "output", agentSource, speakerTerminals)
     ],
     interfacePanel: panel("ap150", 1200 / 500, {
@@ -450,6 +544,14 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
       lineIn2: calibratedBalancedAnchor(1200, 500, 160, 184, 208, 374),
       lineIn3: calibratedBalancedAnchor(1200, 500, 244, 268, 292, 294),
       lineIn4: calibratedBalancedAnchor(1200, 500, 244, 268, 292, 374),
+      dualIn12: anchor(184 / 1200, 334 / 500, {
+        positive1: { x: 160 / 1200, y: 294 / 500 }, negative1: { x: 184 / 1200, y: 294 / 500 }, ground1: { x: 208 / 1200, y: 294 / 500 },
+        positive2: { x: 160 / 1200, y: 374 / 500 }, negative2: { x: 184 / 1200, y: 374 / 500 }, ground2: { x: 208 / 1200, y: 374 / 500 }
+      }),
+      dualIn34: anchor(268 / 1200, 334 / 500, {
+        positive1: { x: 244 / 1200, y: 294 / 500 }, negative1: { x: 268 / 1200, y: 294 / 500 }, ground1: { x: 292 / 1200, y: 294 / 500 },
+        positive2: { x: 244 / 1200, y: 374 / 500 }, negative2: { x: 268 / 1200, y: 374 / 500 }, ground2: { x: 292 / 1200, y: 374 / 500 }
+      }),
       spk1: speakerAnchor(516 / 1200, 222 / 500, { x: 516 / 1200, y: 128 / 500 }, { x: 516 / 1200, y: 316 / 500 }),
       spk2: speakerAnchor(668 / 1200, 222 / 500, { x: 668 / 1200, y: 128 / 500 }, { x: 668 / 1200, y: 316 / 500 }),
       spk3: speakerAnchor(822 / 1200, 222 / 500, { x: 822 / 1200, y: 128 / 500 }, { x: 822 / 1200, y: 316 / 500 }),

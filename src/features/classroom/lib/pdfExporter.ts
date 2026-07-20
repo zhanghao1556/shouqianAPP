@@ -23,7 +23,10 @@ const getInstallationSelector = () => {
   return `svg[aria-label^="${prefix}"][aria-label$="点位图"]`;
 };
 const getTopologySelector = () => `svg[aria-label="${getAppBrand().id === "yinman" ? "音曼" : "音翼"}系统拓扑图"]`;
-const getInterfaceWiringSelector = () => 'svg[aria-label="音曼接口接线图"]';
+const getInterfaceWiringSelector = () => `svg[aria-label="${getAppBrand().id === "yinman" ? "音曼" : "音翼"}接口接线图"]`;
+const isInterfaceWiringEnabled = () => getAppBrand().id === "yinman"
+  ? __ENABLE_YINMAN_INTERFACE_WIRING__
+  : __ENABLE_YINYI_INTERFACE_WIRING__;
 const pdfPageWidthPx = 1240;
 const pdfPageHeightPx = 1754;
 const pdfPageWidthPt = 595.28;
@@ -95,7 +98,7 @@ export const exportPdfReport = async (
   const topologyImage = topologySvg ? await svgToPngDataUrl(topologySvg) : "";
   let interfaceWiringImage = "";
   let interfaceWiringRows: InterfaceWiringUsageRow[] = [];
-  if (__ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman") {
+  if (isInterfaceWiringEnabled()) {
     const interfaceWiringSvg = await waitForInterfaceWiringSvg();
     interfaceWiringImage = interfaceWiringSvg ? await svgToPngDataUrl(interfaceWiringSvg) : "";
     interfaceWiringRows = await buildInterfaceWiringReportRows(profile, outputs, recordingInputSelections);
@@ -120,7 +123,7 @@ export const exportPdfReport = async (
 };
 
 async function waitForInterfaceWiringSvg() {
-  if (!__ENABLE_YINMAN_INTERFACE_WIRING__ || getAppBrand().id !== "yinman") return null;
+  if (!isInterfaceWiringEnabled()) return null;
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const svg = document.querySelector<SVGSVGElement>(getInterfaceWiringSelector());
     if (svg) return svg;
@@ -134,12 +137,13 @@ async function buildInterfaceWiringReportRows(
   outputs: GeneratedOutputs,
   recordingInputSelections: RecordingInputSelections
 ) {
-  if (!__ENABLE_YINMAN_INTERFACE_WIRING__ || getAppBrand().id !== "yinman") return [];
+  if (!isInterfaceWiringEnabled()) return [];
   const { buildInterfaceWiringModel, getInterfaceWiringUsageRows } = await import("./interfaceWiring");
+  const brandId = getAppBrand().id;
   const model = buildInterfaceWiringModel({
     profile,
     outputs,
-    brandId: "yinman",
+    brandId,
     recordingInputSelections
   });
   return getInterfaceWiringUsageRows(model);
@@ -167,7 +171,7 @@ async function renderReportPages(
   if (topologyImage) {
     pages.push(await renderImagePage("系统拓扑图", topologyImage));
   }
-  if (__ENABLE_YINMAN_INTERFACE_WIRING__ && getAppBrand().id === "yinman") {
+  if (isInterfaceWiringEnabled()) {
     if (!interfaceWiringImage) throw new Error("接口接线图尚未生成，请稍后重试导出。");
     pages.push(await renderImagePage("接口接线图", interfaceWiringImage));
     pages.push(...renderInterfaceUsagePages(interfaceWiringRows));

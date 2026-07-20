@@ -44,6 +44,8 @@ import {
   RECORDING_HOST_PORT_PROFILE_ID,
   VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID,
   WIRELESS_RECEIVER_PORT_PROFILE_ID,
+  YINYI_DT2_PRO_PORT_PROFILE_ID,
+  YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID,
   devicePortCatalog,
   getDevicePortProfile
 } from "./src/features/classroom/lib/devicePortCatalog.ts";
@@ -111,6 +113,14 @@ function buildModel(profile, overrides = {}, recordingInputSelections = {}) {
   };
 }
 
+function buildYinyiModel(profile, overrides = {}, recordingInputSelections = {}) {
+  const outputs = generateEngineeringOutputs(profile, overrides, "yinyi");
+  return {
+    outputs,
+    model: buildInterfaceWiringModel({ profile, outputs, brandId: "yinyi", recordingInputSelections })
+  };
+}
+
 function node(model, id) {
   const value = model.nodes.find((item) => item.id === id);
   assert.ok(value, "Missing wiring node " + id);
@@ -149,6 +159,74 @@ function assertNoPowerEdges(model) {
     /POWER|AC\s*220|DC\s*12|电源|适配器/i
   );
 }
+
+const yinyiProfile = makeProfile({
+  length: 12,
+  width: 8,
+  needs: ["interactiveClass", "localAmplification"],
+  scope: "full",
+  microphoneSolution: "existingArray",
+  computer: "讲台电脑",
+  recordingHost: "中控主机",
+  speakerProductOverride: "wall"
+});
+const yinyiResult = buildYinyiModel(yinyiProfile, { "DT2-Pro": 2, "COLUMN-SPEAKER": 16 });
+assert.equal(yinyiResult.model.rootNodeId, "dt-main");
+assert.equal(yinyiResult.model.candidateProcessor, undefined);
+const yinyiMain = node(yinyiResult.model, "dt-main");
+const yinyiSlave = node(yinyiResult.model, "dt-slave-1");
+assert.equal(yinyiMain.productId, YINYI_DT2_PRO_PORT_PROFILE_ID);
+assert.equal(yinyiSlave.productId, YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID);
+assert.ok(yinyiSlave.ports.every((port) => port.capabilityId === "extMicOut" || port.capabilityId === "extMicIn"));
+const yinyiCascade = yinyiResult.model.edges.find((edge) => edge.id === "dt-array-cascade-1");
+assert.ok(yinyiCascade);
+assert.equal(yinyiCascade.fromNodeId, "dt-slave-1");
+assert.equal(yinyiCascade.toNodeId, "dt-main");
+assert.equal(yinyiCascade.cableType, "配套阵麦级联网线");
+assert.equal(yinyiCascade.conductors.length, 8);
+
+const yinyiPortProfile = getDevicePortProfile(YINYI_DT2_PRO_PORT_PROFILE_ID);
+assert.ok(yinyiPortProfile);
+assert.equal(yinyiPortProfile.ports.filter((port) => /^lineIn\d+$/.test(port.id)).length, 4);
+assert.equal(yinyiPortProfile.ports.filter((port) => /^lineOut\d+$/.test(port.id)).length, 4);
+assert.equal(yinyiPortProfile.ports.filter((port) => /^spk\d+$/.test(port.id)).length, 4);
+assert.deepEqual(
+  yinyiPortProfile.interfacePanel.portAnchors.lineOut1.terminalAnchors.ground,
+  yinyiPortProfile.interfacePanel.portAnchors.lineOut2.terminalAnchors.ground
+);
+assert.deepEqual(
+  yinyiPortProfile.interfacePanel.portAnchors.lineOut3.terminalAnchors.ground,
+  yinyiPortProfile.interfacePanel.portAnchors.lineOut4.terminalAnchors.ground
+);
+const yinyiControlEdge = yinyiResult.model.edges.find((edge) => edge.id === "external-control-rs232-control-host");
+assert.ok(yinyiControlEdge);
+assert.equal(yinyiControlEdge.cableType, "232线");
+assert.deepEqual(
+  yinyiControlEdge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId]),
+  [["pin1", "rx"], ["pin2", "tx"], ["pin3", "ground"], ["pin6", "ground"]]
+);
+assert.equal(
+  yinyiResult.model.nodes.filter((item) => item.id.startsWith("dt-main-speakers-group-")).reduce((sum, item) => sum + item.quantity, 0),
+  8
+);
+assert.equal(
+  yinyiResult.model.nodes.filter((item) => item.id.startsWith("amplifier-speakers-group-")).reduce((sum, item) => sum + item.quantity, 0),
+  8
+);
+assert.equal(yinyiResult.model.edges.filter((edge) => edge.id.startsWith("dt-main-amplifier-input-")).length, 2);
+assertNoDuplicatePortOccupancy(yinyiResult.model);
+assertNoPowerEdges(yinyiResult.model);
+const yinyiMainPanelSvg = readFileSync("src/assets/yinyi-array-mic-main-rear-panel.svg", "utf8");
+const yinyiSlavePanelSvg = readFileSync("src/assets/yinyi-array-mic-slave-rear-panel.svg", "utf8");
+assert.match(yinyiMainPanelSvg, /LINE OUT/);
+assert.match(yinyiMainPanelSvg, />G<.*?>L<.*?>R<.*?>G<.*?>L<.*?>R</s);
+assert.doesNotMatch(yinyiMainPanelSvg, />1<|>2<|>3<|>4</);
+assert.match(yinyiMainPanelSvg, /data-switch-layout="left-m-right-s" data-selected-mode="M"/);
+assert.match(yinyiSlavePanelSvg, /data-switch-layout="left-m-right-s" data-selected-mode="S"/);
+for (const terminalLabel of ["1+", "1-", "2+", "2-", "3+", "3-", "4+", "4-"]) {
+  assert.ok(yinyiMainPanelSvg.includes(">" + terminalLabel + "<"));
+}
+console.log("PASS Yinyi main/slave wiring uses GLR shared-ground channels, four SPK outputs and RJ45-to-RS232 control");
 
 const ringProfiles = Array.from({ length: 18 }, (_, index) => makeProfile({
   length: 6 + index,
@@ -1154,6 +1232,9 @@ assert.equal(new Set(singleLineUsageRows.map((row) => row.referenceNumber)).size
 console.log("PASS interface usage rows provide one structured report row per physical cable");
 
 const wiringPreviewSource = readFileSync("src/features/classroom/components/InterfaceWiringPreview.tsx", "utf8");
+const yinmanWiringPreviewSource = readFileSync("src/features/classroom/components/YinmanInterfaceWiringPreview.tsx", "utf8");
+const yinyiWiringPreviewSource = readFileSync("src/features/classroom/components/YinyiInterfaceWiringPreview.tsx", "utf8");
+const wiringPreviewAssetSources = wiringPreviewSource + yinmanWiringPreviewSource + yinyiWiringPreviewSource;
 const wiringPreviewStyles = readFileSync("src/features/classroom/components/InterfaceWiringPreview.css", "utf8");
 const engineeringAppSource = readFileSync("src/features/classroom/ClassroomEngineeringApp.tsx", "utf8");
 const interfaceWiringSource = readFileSync("src/features/classroom/lib/interfaceWiring.ts", "utf8");
@@ -1161,9 +1242,12 @@ const pdfExporterSource = readFileSync("src/features/classroom/lib/pdfExporter.t
 const imageExporterSource = readFileSync("src/features/classroom/lib/imageExporter.ts", "utf8");
 const viteConfigSource = readFileSync("vite.config.ts", "utf8");
 const packageJsonSource = readFileSync("package.json", "utf8");
+const universalReleaseSource = readFileSync("scripts/build-universal-release.mjs", "utf8");
+const releaseCurrentSource = readFileSync("scripts/verify-release-current.mjs", "utf8");
+const releaseBehaviorSource = readFileSync("scripts/verify-release-behavior-parity.mjs", "utf8");
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
-assert.match(wiringPreviewSource, /external-podium-computer-panel\.svg/);
-assert.match(wiringPreviewSource, /podiumComputer:\s*podiumComputerRearPanel/);
+assert.match(wiringPreviewAssetSources, /external-podium-computer-panel\.svg/);
+assert.match(wiringPreviewAssetSources, /podiumComputer:\s*podiumComputerRearPanel/);
 assert.match(wiringPreviewSource, /<td><ConnectionMethodCell value=\{row\.connectionMethod\} \/><\/td>/);
 assert.match(
   wiringPreviewSource,
@@ -1192,14 +1276,15 @@ assert.match(wiringPreviewSource, /const bulge = 44 \+ laneOffset;[\s\S]*?const 
 assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(model, portReferenceNumbers\)/);
 assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
 assert.match(wiringPreviewSource, /aria-label="接口接线图与接口占用表"/);
-assert.match(wiringPreviewSource, /aria-label="音曼接口接线图"/);
+assert.match(wiringPreviewSource, /aria-label=\{[^\r\n]*brandId === "yinman"[^\r\n]*"音曼"[^\r\n]*"音翼"/);
 assert.doesNotMatch(wiringPreviewSource, /拟调整预览|尚未写入正式规则|内部校准|当前候选|候选主机/);
+assert.match(engineeringAppSource, /const YinyiInterfaceWiring = __ENABLE_YINYI_INTERFACE_WIRING__/);
 assert.match(engineeringAppSource, /const YinmanInterfaceWiring = __ENABLE_YINMAN_INTERFACE_WIRING__/);
-assert.match(engineeringAppSource, /brand\.id === "yinman" && YinmanInterfaceWiring/);
+assert.match(engineeringAppSource, /const BrandInterfaceWiring = brand\.id === "yinman" \? YinmanInterfaceWiring : YinyiInterfaceWiring/);
 assert.doesNotMatch(engineeringAppSource, /brand\.id === "yinman" && !isReleaseBuild\(\)/);
 assert.match(engineeringAppSource, /exportPdfReport\(profile, outputs, quantityOverrides, recordingInputSelections\)/);
 assert.doesNotMatch(interfaceWiringSource, /接口接线图拟调整预览|音曼内部校准|接口接线候选|候选图仅保留|AJ350只有A1、A2|候选处理器调整/);
-assert.match(pdfExporterSource, /svg\[aria-label="音曼接口接线图"\]/);
+assert.match(pdfExporterSource, /getAppBrand\(\)\.id === "yinman" \? "音曼" : "音翼"/);
 assert.match(pdfExporterSource, /svg\[aria-label\^="\$\{prefix\}"\]\[aria-label\$="点位图"\]/);
 assert.match(pdfExporterSource, /buildInterfaceWiringReportRows[\s\S]*?getInterfaceWiringUsageRows/);
 assert.match(pdfExporterSource, /renderImagePage\("接口接线图", interfaceWiringImage\)/);
@@ -1211,10 +1296,15 @@ assert.match(imageExporterSource, /getInterfaceWiringExportCss\(svg\)/);
 assert.match(imageExporterSource, /convertInterfaceForeignObjects\(svg, clone\)/);
 assert.match(imageExporterSource, /data-interface-export-object/);
 assert.match(viteConfigSource, /__ENABLE_YINMAN_INTERFACE_WIRING__/);
+assert.match(viteConfigSource, /__ENABLE_YINYI_INTERFACE_WIRING__/);
 assert.match(viteConfigSource, /inlineDynamicImports: true/);
 assert.match(packageJsonSource, /set APP_BRAND=yinyi&& npm\.cmd run build/);
 assert.match(packageJsonSource, /set APP_BRAND=yinman&& npm\.cmd run build/);
-console.log("PASS formal Yinman wiring is release-enabled, report-backed and build-isolated from Yinyi");
+assert.doesNotMatch(universalReleaseSource, /音翼 1\.1 当前不显示音曼专属接口接线图/);
+assert.match(releaseCurrentSource, /brand\.label[^\r\n]*接口接线图/);
+assert.match(releaseBehaviorSource, /const wiringSelector = [^\r\n]*brandLabel[^\r\n]*接口接线图/);
+assert.doesNotMatch(releaseBehaviorSource, /Yinyi release unexpectedly renders/);
+console.log("PASS formal Yinyi and Yinman wiring are report-backed with brand-isolated component entry points");
 assert.match(wiringPreviewSource, /设备（从 \/ 到）/);
 assert.match(wiringPreviewSource, /接口（从 \/ 到）/);
 assert.doesNotMatch(wiringPreviewSource, /data-reference-side/);
@@ -1630,6 +1720,23 @@ assert.deepEqual(
     ["ground", 0.55836, 0.424757]
   ]
 );
+assert.deepEqual(
+  ["spk1", "spk2", "spk3", "spk4"].map((portId) => aj350Panel.portAnchors[portId].focusBounds),
+  [
+    { x: 266 / 1268, y: 44 / 206, width: 81 / 1268, height: 59 / 206 },
+    { x: 347 / 1268, y: 44 / 206, width: 81 / 1268, height: 59 / 206 },
+    { x: 266 / 1268, y: 103 / 206, width: 81 / 1268, height: 59 / 206 },
+    { x: 347 / 1268, y: 103 / 206, width: 81 / 1268, height: 59 / 206 }
+  ]
+);
+assert.deepEqual(aj350Panel.portAnchors.rs232.focusBounds, {
+  x: 1126 / 1268,
+  y: 81 / 206,
+  width: 44 / 1268,
+  height: 44 / 206
+});
+assert.match(wiringPreviewSource, /terminalFocusBounds \?\? \(terminalBlockPoints\.length/);
+assert.doesNotMatch(wiringPreviewSource, /groupedCapabilities\.flatMap/);
 const podiumComputerProfile = getDevicePortProfile(COMPUTER_REAR_PANEL_PORT_PROFILE_ID);
 assert.ok(podiumComputerProfile?.interfacePanel);
 assert.equal(podiumComputerProfile.interfacePanel.assetKey, "podiumComputer");
@@ -1888,7 +1995,7 @@ for (const fileName of reconstructedPanelFiles) {
   assert.doesNotMatch(artwork, /<image[\s>]/, fileName + " embeds a blurry raster image");
 }
 for (const fileName of reconstructedPanelFiles) {
-  assert.match(wiringPreviewSource, new RegExp(fileName.replaceAll(".", "\\.")));
+  assert.match(wiringPreviewAssetSources, new RegExp(fileName.replaceAll(".", "\\.")));
 }
 for (const fileName of [
   "yinman-aj200-interface-panel.svg",
@@ -1942,7 +2049,7 @@ assert.match(wiringPreviewSource, /href=\{marker\.panelImage\}/);
 assert.match(wiringPreviewSource, /getInterfaceWiringPortFocusClipId\(portFocusIdPrefix, index\)/);
 assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortHighlight/);
 assert.match(wiringPreviewSource, /function getTerminalBlockFocusPoints/);
-assert.match(wiringPreviewSource, /focusBounds: terminalBlockPoints\.length/);
+assert.match(wiringPreviewSource, /focusBounds: terminalFocusBounds \?\? \(terminalBlockPoints\.length/);
 assert.match(wiringPreviewSource, /const fromNeedsFanout = multicore && !fromConnector/);
 assert.match(wiringPreviewSource, /const toNeedsFanout = multicore && !toConnector/);
 assert.match(wiringPreviewSource, /function getCableConnectorKind/);
@@ -1960,9 +2067,11 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringEdgeTrunks\.is-dimmed,[\s\S]
 assert.match(wiringPreviewStyles, /\.interfaceWiringCanvas\[data-active-edge-id\] \.interfaceWiringPanelImage[\s\S]*?grayscale\(0\.6\)/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringPortImageFocus\.is-active[\s\S]*?opacity: 1;/);
 assert.match(wiringPreviewStyles, /@keyframes interfaceWiringPortImageFocusPulse/);
+assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusLayer[\s\S]*?rgba\(34, 197, 94, 0\.96\)/);
+assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusPulse[\s\S]*?rgba\(34, 197, 94, 1\)/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringConnectorHeadHitTarget[\s\S]*?pointer-events: all;/);
 assert.match(wiringPreviewStyles, /@media \(prefers-reduced-motion: reduce\)/);
-console.log("PASS hover uses edge identity, whole terminal-block focus and finished 3.5/XLR/6.35 connector heads");
+console.log("PASS hover uses edge identity, green per-port terminal focus and finished 3.5/XLR/6.35 connector heads");
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
 
 assert.equal(singleLine.model.findings.some((item) => item.code === "interface-panel.missing.line-array"), false);

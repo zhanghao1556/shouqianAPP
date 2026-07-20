@@ -74,7 +74,8 @@ export const downloadSvgAsPng = async (svg: SVGSVGElement, filename: string) => 
 export const svgToPngDataUrl = async (svg: SVGSVGElement) => {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  if (__ENABLE_YINMAN_INTERFACE_WIRING__ && clone.classList.contains("interfaceWiringCanvas")) {
+  const interfaceWiringEnabled = __ENABLE_YINYI_INTERFACE_WIRING__ || __ENABLE_YINMAN_INTERFACE_WIRING__;
+  if (interfaceWiringEnabled && clone.classList.contains("interfaceWiringCanvas")) {
     clone.removeAttribute("data-active-edge-id");
     clone.querySelectorAll(".is-active, .is-dimmed").forEach((element) => {
       element.classList.remove("is-active", "is-dimmed");
@@ -89,7 +90,7 @@ export const svgToPngDataUrl = async (svg: SVGSVGElement) => {
   clone.setAttribute("height", String(height));
 
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
-  style.textContent = `${svgExportStyle}\n${__ENABLE_YINMAN_INTERFACE_WIRING__ ? getInterfaceWiringExportCss(svg) : ""}`;
+  style.textContent = `${svgExportStyle}\n${interfaceWiringEnabled ? getInterfaceWiringExportCss(svg) : ""}`;
   clone.insertBefore(style, clone.firstChild);
 
   await inlineSvgImages(clone);

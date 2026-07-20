@@ -2427,3 +2427,22 @@ PowerShell reminder:
 - Two RJ45-shaped paths have different semantics. Microphone-to-microphone cascade is the matched network cable with a `10m` per-segment limit and power delivery; main-microphone-to-control-host is an RJ45-to-RS232 control cable with crossed TX/RX and mapped GND. Connector shape alone must not choose the topology cable type.
 - Product artwork should be reconstructed as clean vector geometry from the rear-panel photo. Keep main/slave switch state and unavailable slave ports visible enough to explain the connection, while customer-facing names continue to hide the concrete model.
 - Agent prompts should request the exact artifact or conclusion needed. Do not append a blanket “answer only yes or no” phrase when the requested evidence is a rear-panel image, pin map or conditional product fact.
+
+### 2026-07-20 terminal highlight ownership
+
+- Physical terminal grouping is not the same as interaction ownership. A shared green housing may contain several independently connected ports, so hover focus must use the active port's visual cell rather than the union of every capability in that housing.
+- Store exact normalized focus bounds with calibrated panel anchors when the artwork has a visible housing boundary. This makes 2×2 partitions follow the real panel while allowing a standalone 3Pin connector to illuminate as one complete terminal.
+- A managed executor that rewrites an explicit PowerShell 7 path to the blocked WindowsApps alias should fall back once to `cmd.exe`; repeated alias retries do not test the project and only add noise.
+- When shared-workspace edits land during a diagnostic pass, re-read the affected entry points before patching. A missing prop can already be resolved by the brand wrapper that was added moments later; duplicating that wrapper would create conflicting ownership instead of fixing the build.
+- Source-shape tests must follow asset ownership after a renderer is split from brand wrappers. Assert shared interaction behavior against the renderer and asset presence against the combined wrapper sources; requiring every asset import in the shared file directly conflicts with package isolation.
+- This repository's generated test module already lives inside a `String.raw` template. Never put a literal template backtick in a source-shape regex there; match the stable same-line tokens around it instead.
+- Large generated regression modules share one top-level scope. Prefix new fixture variables by brand or scenario so a distant existing declaration cannot make the entire suite fail before assertions run.
+- Optional visual metadata should be absent on legacy anchors, not present with an `undefined` value. Preserving the old object shape keeps deep contracts stable and makes explicit calibration distinguishable from fallback behavior.
+
+### 2026-07-20 Yinyi physical silk screen and switch orientation
+
+- Physical silk-screen labels and logical allocation names serve different purposes. Keep the rear artwork faithful to `G L R G L R`, while internal group-qualified IDs distinguish four routable L/R signals and preserve each adjacent shared ground.
+- A selector's mode order is part of the product drawing contract. Record left-M/right-S and the selected main/slave state as semantic SVG attributes so a later visual cleanup cannot silently rotate the switch back to a vertical layout.
+- When a brand-specific preview becomes a shared released feature, update the package description, static required markers and fresh-browser behavior comparison together. UI inclusion alone is not enough if release tooling still treats the feature as forbidden or absent for one brand.
+- Terminal focus color is a presentation contract independent of cable material colors. Keep the focus glow consistently green while preserving each cable's engineering color and the selected edge identity.
+- When browser pointer emulation does not retain a React hover state, separate the evidence: verify exact clip geometry and computed green CSS in the live page, keep console/page checks authoritative, and leave the final motion impression to the user's already-open localhost tab rather than mutating application state for a screenshot.

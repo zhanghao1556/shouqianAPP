@@ -1511,13 +1511,13 @@ for (const profile of [
 }
 console.log("PASS scoped front/back-wall aiming preserves full-room and long-room boundaries");
 
-const exactRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }]);
-const overRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 20.1, y: 0 }, { x: 20.1, y: 20 }]);
-assert.equal(exactRoute.lengthM, 40);
-assert.equal(overRoute.lengthM, 40.1);
+const exactRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }]);
+const overRoute = getShortestManhattanCascadeRoute([{ x: 0, y: 0 }, { x: 10.1, y: 0 }, { x: 10.1, y: 10.1 }]);
+assert.equal(exactRoute.lengthM, 20);
+assert.equal(overRoute.lengthM, 20.2);
 for (const [points, expectedSeverity] of [
-  [[{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }], "info"],
-  [[{ x: 0, y: 0 }, { x: 20.1, y: 0 }, { x: 20.1, y: 20 }], "hard"]
+  [[{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }], "info"],
+  [[{ x: 0, y: 0 }, { x: 10.1, y: 0 }, { x: 10.1, y: 10.1 }], "hard"]
 ]) {
   const result = validatePointPlan({
     profile: makeProfile({ length: 25, width: 25 }),
@@ -1528,7 +1528,7 @@ for (const [points, expectedSeverity] of [
   });
   assert.equal(result.findings.find((finding) => finding.code === "array.cascade-route")?.severity, expectedSeverity);
 }
-console.log("PASS Yinyi Manhattan cascade boundary 40m / 40.1m");
+console.log("PASS Yinyi per-segment cascade boundary 10m / 10.1m");
 
 const candidateProfiles = Array.from({ length: 16 }, (_, index) => makeProfile({ length: 6 + index * 2, width: 8, needs: ["interactiveClass"], scope: "full" }));
 const profileByNeed = new Map();

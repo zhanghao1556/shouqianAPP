@@ -41,28 +41,6 @@ import {
   RECORDING_CAMERA_PORT_PROFILE_ID,
   RECORDING_HOST_PORT_PROFILE_ID
 } from "../lib/devicePortCatalog";
-import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.svg";
-import aj350InterfacePanel from "../../../assets/yinman-aj350-interface-panel.svg";
-import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.svg";
-import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.svg";
-import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.svg";
-import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
-import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.svg";
-import podiumComputerRearPanel from "../../../assets/external-podium-computer-panel.svg";
-import recordingLineInputPanel from "../../../assets/external-recording-line-input-panel.svg";
-import controlHostPanel from "../../../assets/external-control-host-rs232-panel.svg";
-import laptopPanel from "../../../assets/external-laptop-panel.svg";
-import opsAllInOnePanel from "../../../assets/external-ops-panel.svg";
-import conferenceTerminalPanel from "../../../assets/external-conference-terminal-panel.svg";
-import headsetSplitterPanel from "../../../assets/external-headset-splitter-panel.svg";
-import wiredMicrophonePanel from "../../../assets/external-wired-microphone-panel.svg";
-import ring01InterfacePanel from "../../../assets/yinman-ring01-interface-panel.svg";
-import ring03InterfacePanel from "../../../assets/yinman-ring03-interface-panel.svg";
-import ring08RearPanel from "../../../assets/yinman-ring08-rear-panel.svg";
-import hangingMicInterfacePanel from "../../../assets/yinman-hanging-mic-interface-panel.svg";
-import ringOfAInterfacePanel from "../../../assets/yinman-ringof-a-interface-panel.svg";
-import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.svg";
-import legacyWirelessReceiverPanel from "../../../assets/external-legacy-wireless-receiver-panel.svg";
 import "./InterfaceWiringPreview.css";
 
 const CABLE_LEGEND_BASE_HEIGHT = 52;
@@ -88,32 +66,9 @@ type CableConnectorHead = {
   length: number;
 };
 
-const interfacePanelImages: Record<string, string> = {
-  aj200: aj200InterfacePanel,
-  aj350: aj350InterfacePanel,
-  aj600: aj600InterfacePanel,
-  ap150: ap150RearPanel,
-  lineArray: lineArrayRearPanel,
-  lineArrayConverter: lineArrayConverterPanel,
-  passiveSpeaker: passiveSpeakerTerminal,
-  podiumComputer: podiumComputerRearPanel,
-  recordingLineInput: recordingLineInputPanel,
-  controlHost: controlHostPanel,
-  laptop: laptopPanel,
-  opsAllInOne: opsAllInOnePanel,
-  conferenceTerminal: conferenceTerminalPanel,
-  headsetSplitter: headsetSplitterPanel,
-  wiredMicrophone: wiredMicrophonePanel,
-  ring01: ring01InterfacePanel,
-  ring03: ring03InterfacePanel,
-  ring08: ring08RearPanel,
-  hangingMic: hangingMicInterfacePanel,
-  ringOfA: ringOfAInterfacePanel,
-  wirelessReceiver: wirelessReceiverRearPanel,
-  legacyWirelessReceiver: legacyWirelessReceiverPanel
-};
+export type InterfacePanelImageMap = Record<string, string>;
 
-interface InterfaceWiringPreviewProps {
+export interface InterfaceWiringPreviewProps {
   profile: ClassroomProfile;
   outputs: GeneratedOutputs;
   brandId: AppBrandId;
@@ -121,13 +76,18 @@ interface InterfaceWiringPreviewProps {
   onRecordingInputSelectionChange: (nodeId: string, mode: RecordingInputMode) => void;
 }
 
+interface InterfaceWiringPreviewRendererProps extends InterfaceWiringPreviewProps {
+  interfacePanelImages: InterfacePanelImageMap;
+}
+
 export function InterfaceWiringPreview({
   profile,
   outputs,
   brandId,
   recordingInputSelections,
-  onRecordingInputSelectionChange
-}: InterfaceWiringPreviewProps) {
+  onRecordingInputSelectionChange,
+  interfacePanelImages
+}: InterfaceWiringPreviewRendererProps) {
   const model = useMemo(
     () => buildInterfaceWiringModel({ profile, outputs, brandId, recordingInputSelections }),
     [profile, outputs, brandId, recordingInputSelections]
@@ -156,6 +116,8 @@ export function InterfaceWiringPreview({
         portReferenceNumbers={portReferenceNumbers}
         selections={recordingInputSelections}
         onChange={onRecordingInputSelectionChange}
+        brandId={brandId}
+        interfacePanelImages={interfacePanelImages}
       />
 
       <div className="interfaceWiringDataGrid">
@@ -184,12 +146,16 @@ function InterfaceWiringDiagram({
   model,
   portReferenceNumbers,
   selections,
-  onChange
+  onChange,
+  brandId,
+  interfacePanelImages
 }: {
   model: InterfaceWiringModel;
   portReferenceNumbers: Record<string, number>;
   selections: RecordingInputSelections;
   onChange: (nodeId: string, mode: RecordingInputMode) => void;
+  brandId: AppBrandId;
+  interfacePanelImages: InterfacePanelImageMap;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const portFocusIdPrefix = useId().replaceAll(":", "");
@@ -207,8 +173,8 @@ function InterfaceWiringDiagram({
   );
   const highlightedEdgeId = activeEdgeId && edgeDrawings.has(activeEdgeId) ? activeEdgeId : null;
   const portInteractionMarkers = useMemo(
-    () => getInterfaceWiringPortInteractionMarkers(model, layout.positions),
-    [model, layout.positions]
+    () => getInterfaceWiringPortInteractionMarkers(model, layout.positions, interfacePanelImages),
+    [model, layout.positions, interfacePanelImages]
   );
   const stopHighlightingEdge = (edgeId: string) => {
     setActiveEdgeId((current) => current === edgeId ? null : current);
@@ -236,7 +202,7 @@ function InterfaceWiringDiagram({
           width: "100%"
         }}
         role="img"
-        aria-label="音曼接口接线图"
+        aria-label={`${brandId === "yinman" ? "音曼" : "音翼"}接口接线图`}
         data-routing-clearance={routingClearance}
         data-routing-failed={failedEdgeIds.join(",")}
         data-active-edge-id={highlightedEdgeId ?? undefined}
@@ -269,6 +235,7 @@ function InterfaceWiringDiagram({
                 positions={layout.positions}
                 recordingInputMode={selections[node.id] ?? "balanced"}
                 onRecordingInputChange={onChange}
+                interfacePanelImages={interfacePanelImages}
               />
             </foreignObject>
           );
@@ -551,7 +518,8 @@ function getInterfaceWiringPortFocusClipId(prefix: string, markerIndex: number) 
 
 function getInterfaceWiringPortInteractionMarkers(
   model: InterfaceWiringModel,
-  positions: WiringNodePositions
+  positions: WiringNodePositions,
+  interfacePanelImages: InterfacePanelImageMap
 ): InterfaceWiringPortInteractionMarker[] {
   const nodeMap = new Map(model.nodes.map((node) => [node.id, node]));
   return model.edges.flatMap((edge) => (["from", "to"] as const).flatMap((endpoint) => {
@@ -598,7 +566,15 @@ function getInterfaceWiringPortInteractionMarkers(
       };
     });
     const hitBounds = getPortInteractionHitBounds(points, terminalSelective ? 2.5 : 5);
-    const terminalBlockPoints = terminalSelective && panelProfile && panelImageRect
+    const terminalFocusBounds = terminalSelective && panelAnchor?.focusBounds && panelImageRect
+      ? {
+          x: panelImageRect.x + panelAnchor.focusBounds.x * panelImageRect.width,
+          y: panelImageRect.y + panelAnchor.focusBounds.y * panelImageRect.height,
+          width: panelAnchor.focusBounds.width * panelImageRect.width,
+          height: panelAnchor.focusBounds.height * panelImageRect.height
+        }
+      : undefined;
+    const terminalBlockPoints = terminalSelective && !terminalFocusBounds && panelProfile && panelImageRect
       ? getTerminalBlockFocusPoints(node, port, panelProfile, panelImageRect)
       : [];
     return [{
@@ -613,9 +589,9 @@ function getInterfaceWiringPortInteractionMarkers(
         : [],
       points,
       hitBounds,
-      focusBounds: terminalBlockPoints.length
+      focusBounds: terminalFocusBounds ?? (terminalBlockPoints.length
         ? getPortInteractionHitBounds(terminalBlockPoints, 7)
-        : hitBounds
+        : hitBounds)
     }];
   }));
 }
@@ -647,39 +623,30 @@ function getTerminalBlockFocusPoints(
   const activeCapability = exactCapability ?? indexedCapability;
   if (!deviceProfile || !activeCapability) return [];
   const unitSuffix = port.capabilityId.slice(activeCapability.id.length);
-  const familyId = activeCapability.id.replace(/\d+$/, "");
-  const groupedCapabilities = deviceProfile.ports.filter((capability) => {
-    if (!isTerminalChannelPort(capability)) return false;
-    return activeCapability.physicalGroupId
-      ? capability.physicalGroupId === activeCapability.physicalGroupId
-      : capability.id.replace(/\d+$/, "") === familyId;
-  });
-  return groupedCapabilities.flatMap((capability, capabilityIndex) => {
-    const capabilityId = `${capability.id}${unitSuffix}`;
-    const anchor = getInterfacePanelPortAnchor(
-      panelProfile,
-      capabilityId,
-      capabilityIndex,
-      Math.max(node.ports.length, groupedCapabilities.length)
-    );
-    if (!anchor) return [];
-    const terminalAnchors = Object.entries(anchor.terminalAnchors ?? {});
-    if (!terminalAnchors.length) {
-      return [{
-        id: capabilityId,
-        x: imageRect.x + anchor.x * imageRect.width,
-        y: imageRect.y + anchor.y * imageRect.height,
-        radius: 3.5
-      }];
-    }
-    return terminalAnchors.map(([terminalId, terminalAnchor]) => ({
-      id: `${capabilityId}-${terminalId}`,
-      terminalId,
-      x: imageRect.x + terminalAnchor.x * imageRect.width,
-      y: imageRect.y + terminalAnchor.y * imageRect.height,
+  const capabilityId = `${activeCapability.id}${unitSuffix}`;
+  const anchor = getInterfacePanelPortAnchor(
+    panelProfile,
+    capabilityId,
+    deviceProfile.ports.indexOf(activeCapability),
+    node.ports.length
+  );
+  if (!anchor) return [];
+  const terminalAnchors = Object.entries(anchor.terminalAnchors ?? {});
+  if (!terminalAnchors.length) {
+    return [{
+      id: capabilityId,
+      x: imageRect.x + anchor.x * imageRect.width,
+      y: imageRect.y + anchor.y * imageRect.height,
       radius: 3.5
-    }));
-  });
+    }];
+  }
+  return terminalAnchors.map(([terminalId, terminalAnchor]) => ({
+    id: `${capabilityId}-${terminalId}`,
+    terminalId,
+    x: imageRect.x + terminalAnchor.x * imageRect.width,
+    y: imageRect.y + terminalAnchor.y * imageRect.height,
+    radius: 3.5
+  }));
 }
 
 function getPortInteractionHitBounds(
@@ -817,13 +784,15 @@ function InterfaceWiringNodeCard({
   position,
   positions,
   recordingInputMode,
-  onRecordingInputChange
+  onRecordingInputChange,
+  interfacePanelImages
 }: {
   node: InterfaceWiringNode;
   position: WiringNodePosition;
   positions: WiringNodePositions;
   recordingInputMode: RecordingInputMode;
   onRecordingInputChange: (nodeId: string, mode: RecordingInputMode) => void;
+  interfacePanelImages: InterfacePanelImageMap;
 }) {
   const panelProfile = getDevicePortProfile(node.productId)?.interfacePanel;
   const panelImage = panelProfile ? interfacePanelImages[panelProfile.assetKey] : undefined;
