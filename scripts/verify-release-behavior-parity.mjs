@@ -2,10 +2,11 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { chromium } from "playwright";
+import { getReleaseVersion } from "./release-version.mjs";
 
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
-const releaseVersion = "2.0";
+const releaseVersion = getReleaseVersion(root);
 const requestedBrand = getArgValue("--brand");
 const browser = await launchBrowser();
 const server = http.createServer((request, response) => {

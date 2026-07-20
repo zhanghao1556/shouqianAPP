@@ -1,16 +1,19 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { getReleaseVersion } from "./scripts/release-version.mjs";
 
 export default defineConfig(({ command }) => {
   const buildBrand = process.env.APP_BRAND;
   const includeBothBrands = command === "serve" || !buildBrand;
+  const appVersion = getReleaseVersion();
   return {
     base: "./",
     plugins: [react()],
     define: {
       __ENABLE_CALIBRATION_WORKBENCHES__: JSON.stringify(command === "serve"),
       __ENABLE_YINYI_INTERFACE_WIRING__: JSON.stringify(includeBothBrands || buildBrand === "yinyi"),
-      __ENABLE_YINMAN_INTERFACE_WIRING__: JSON.stringify(includeBothBrands || buildBrand === "yinman")
+      __ENABLE_YINMAN_INTERFACE_WIRING__: JSON.stringify(includeBothBrands || buildBrand === "yinman"),
+      __APP_VERSION__: JSON.stringify(appVersion)
     },
     build: {
       sourcemap: false,

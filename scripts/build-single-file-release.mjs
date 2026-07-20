@@ -1,10 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { getReleaseVersion } from "./release-version.mjs";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const version = "2.0";
+const version = getReleaseVersion(root);
 const args = new Set(process.argv.slice(2));
 const brand = args.has("--brand") ? getArgValue("--brand") : "yinyi";
 const arrayMicImage = getArgValue("--arrayMicImage");

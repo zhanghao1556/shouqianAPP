@@ -108,7 +108,7 @@ export const exportPdfReport = async (
     interfaceWiringRows = await buildInterfaceWiringReportRows(profile, outputs, recordingInputSelections);
   }
   const payload = encodeReportPayload({
-    version: "2.0",
+    version: __APP_VERSION__,
     exportedAt: new Date().toISOString(),
     importScope: "profile-only",
     profile,

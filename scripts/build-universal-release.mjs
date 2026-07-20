@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { getReleaseVersion } from "./release-version.mjs";
 
 const root = process.cwd();
-const version = "2.0";
+const version = getReleaseVersion(root);
 const brand = getArgValue("--brand") || "yinyi";
 const brandConfig = getBrandConfig(brand);
 const releasePrefix = `${brandConfig.appName}-${version}`;
@@ -16,8 +17,13 @@ const outDir = path.join(root, "outputs", outDirName);
 const outZip = path.join(root, "outputs", `${outDirName}.zip`);
 const outHtml = path.join(outDir, `${brandConfig.appName}-${version}.html`);
 const outReadme = path.join(outDir, "README-打开说明.txt");
-const outOutline = path.join(outDir, `${brandConfig.appName}-${version}-软件大纲.md`);
-const mirrorOutlines = [
+const productManualFileName = `${brandConfig.appName}-${version}-产品说明书.md`;
+const outProductManual = path.join(outDir, productManualFileName);
+const mirrorProductManuals = [
+  path.join(root, "outputs", productManualFileName),
+  path.join(root, "outputs", `${brandConfig.slug}-${version}-release`, productManualFileName)
+];
+const legacyOutlinePaths = [
   path.join(root, "outputs", `${brandConfig.appName}-${version}-软件大纲.md`),
   path.join(root, "outputs", `${brandConfig.slug}-${version}-release`, `${brandConfig.appName}-${version}-软件大纲.md`)
 ];
@@ -113,6 +119,7 @@ const readme = `${brandConfig.appName} ${version} 正式版（${releaseLabel}）
 
 交付文件：
 - ${brandConfig.appName}-${version}.html
+- ${productManualFileName}
 
 打开方式：
 1. 电脑：直接用 Chrome、Edge、Safari 等浏览器打开 HTML 文件。
@@ -127,76 +134,69 @@ const readme = `${brandConfig.appName} ${version} 正式版（${releaseLabel}）
 - 如需多人稳定访问，后续可以把同一个 HTML 放到 HTTPS 静态网页地址。
 `;
 
-const outline = `# ${brandConfig.appName}软件开发大纲
+const productManual = `# ${brandConfig.appName} 产品说明书
 
-## 总方向
+版本：${version}
 
-这套软件最终不是单纯做“方案生成”，而是做成一套完整链路：
+发布标识：${releaseLabel}
 
-售前采集 -> 项目档案 -> 自动方案 -> 点位图 -> 接线拓扑 -> 建设方案 -> 调试参数 -> 现场反馈
+## 1 产品用途
 
-后续开发按这条路线控制边界：
+本产品用于智能音频项目的售前信息采集与工程方案输出。用户填写房间、场景、需求、现场条件和已有设备后，可获得设备清单、点位图、系统拓扑图、接口接线图、接口占用表及 PDF 方案报告。
 
-- 当前正式版本为 2.0，重点保证接线、拓扑和报告输出稳定。
-- 3.0 解决正式文档输出。
-- 4.0 做成核心差异化能力。
+## 2 运行环境
 
-## 1.x 售前方案基础版
+- 电脑端建议使用最新版 Chrome、Edge 或 Safari。
+- 安卓 / 鸿蒙建议使用系统浏览器、Chrome、Edge 或华为浏览器。
+- iOS 建议先把 HTML 文件保存到“文件”，再用 Safari 打开。
+- 单文件版本可离线打开；导入、导出和本地草稿需要浏览器允许文件下载与本地存储。
 
-目标：把售前采集、项目档案、方案清单、点位图跑通，形成最小可用闭环。
+## 3 基本操作流程
 
-主要功能：
+1. 打开“${brandConfig.appName}-${version}.html”。
+2. 填写项目名称、客户名称和房间长宽高。
+3. 选择使用场景、使用需求、现场条件和外接设备。
+4. 查看项目档案完整度与复勘提醒，补齐未确认参数。
+5. 核对系统推荐的麦克风、音箱及其他设备数量；有明确现场条件时可手动调整。
+6. 依次核对点位图、系统拓扑图、接口接线图和接口占用表。
+7. 导出 PDF 报告并保存项目资料。
 
-- 售前信息采集：房间类型、尺寸、吊顶、用途、扩声需求、现有设备、备注。
-- 项目档案管理：客户、学校、项目、房间、联系人、现场记录。
-- 自动方案清单：根据采集信息生成设备型号、数量、基础说明。
-- 点位图输出：展示阵麦、音箱、主机等安装位置。
-- 方案校准记录：保留规则判断依据，方便后续修正。
+## 4 主要功能
 
-验收标准：能从一个房间的售前信息，生成一套可沟通的初步方案。
+### 4.1 售前采集
 
-## 2.0 接线、拓扑与报告正式版
+采集使用场景、功能需求、房间尺寸、吊顶与声学条件、已有设备和现场备注。房间尺寸、需求和现场条件会同步影响设备清单与图纸结果。
 
-目标：让售前方案具备清晰的工程表达和施工沟通价值。
+### 4.2 项目档案
 
-当前 2.0 正式版发布边界：
+汇总项目、客户、场景、尺寸、扩声范围和声学提示，并显示仍需补充的参数。复勘提醒用于标识可能影响拾音、扩声、安装或接口确认的现场条件。
 
-- 显示售前采集、项目档案、设备清单、点位图、系统拓扑图、接口接线图与接口占用表。
-- 支持导入 / 导出 PDF 报告，导出报告包含项目档案、非零设备清单、点位图、系统拓扑图、接口接线图与自动分页的接口占用表，并保留可回导的内部校准数据。
-- 接口接线图与接口占用表采用当前页面相同的接口选择和接线结果。
-- 接口接线图报告页使用高清输出，放大时仍可辨认端口、线材和端子线芯。
-- 隐藏校准台、总文字报告预览、规则变更锁、推荐原因、工程依据和校准依据等内部规则说明。
-- 提供电脑 / 手机共用的单文件 HTML，发布包内主文件为“${brandConfig.appName}-${version}.html”。
+### 4.3 设备清单
 
-## 3.0 建设方案生成版
+显示当前方案采用的通用设备名称和数量。手动调整数量后，点位图、拓扑图、接线图和接口占用表会按当前方案重新生成。
 
-目标：从“单房间方案工具”升级为“完整项目方案工具”。
+### 4.4 点位图与系统拓扑图
 
-新增功能：
+点位图显示阵列麦克风、音箱和讲台等位置及工程标注；系统拓扑图显示设备之间的信号方向、线材类型和数量。
 
-- 建设方案文档自动生成。
-- 多房间、多楼层、多场景汇总。
-- 设备清单和项目档案汇总导出。
-- 标准方案话术库。
-- 项目版本管理和历史记录。
-- 不同场景模板：普通教室、合班教室、会议室、报告厅等。
+### 4.5 接口接线图与接口占用表
 
-验收标准：能自动生成一份接近正式交付标准的建设方案文档。
+接口接线图按设备背面接口显示线材两端、编号和接头形式；接口占用表与图中编号一一对应，列出设备、接口、线材和接线方式。
 
-## 4.0 售前数据驱动调试版
+### 4.6 报告与项目数据
 
-目标：把售前数据和后期调试打通，形成真正的闭环。
+导出报告包含项目档案、设备清单和当前图纸。导入由本产品导出的项目资料后，应重新核对项目名称、房间尺寸、需求、数量和全部图纸。
 
-新增功能：
+## 5 使用注意事项
 
-- 根据房间尺寸、混响、材质、使用场景，生成初始调试参数建议。
-- 混响大小对应参数建议，比如 AEC、降噪、增益、抑制等级等。
-- 阵麦区域自动调整，比如讲台区、学生区、会议桌区、屏蔽区。
-- 根据扩声模式自动匹配参数模板。
-- 调试参数导出，供现场调试人员使用。
-- 现场调试反馈回流，用真实项目反向优化规则。
+- 每次修改房间尺寸、需求、现场条件或设备数量后，都要重新核对全部输出。
+- 图纸与清单用于售前方案沟通，最终安装位置、供电、负载和施工条件应结合现场复勘确认。
+- 接入原有音频系统、复杂接口或特殊安装结构时，建议联系 FAE 处理。
+- 不建议长期使用微信、QQ 等内置文件预览器，以免导入、导出或本地存储受限。
 
-验收标准：售前录入的信息不仅生成方案，还能直接辅助现场调试。
+## 6 技术支持
+
+反馈问题时，请同时提供项目参数、问题所在页面、相关图纸和复现步骤，以便快速核对。
 `;
 
 if (fs.existsSync(outDir)) {
@@ -205,10 +205,22 @@ if (fs.existsSync(outDir)) {
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(outHtml, transformBrandText(html), "utf8");
 fs.writeFileSync(outReadme, transformBrandText(readme), "utf8");
-fs.writeFileSync(outOutline, transformBrandText(outline), "utf8");
-for (const mirrorOutline of mirrorOutlines) {
-  fs.mkdirSync(path.dirname(mirrorOutline), { recursive: true });
-  fs.writeFileSync(mirrorOutline, transformBrandText(outline), "utf8");
+fs.writeFileSync(outProductManual, transformBrandText(productManual), "utf8");
+for (const mirrorProductManual of mirrorProductManuals) {
+  fs.mkdirSync(path.dirname(mirrorProductManual), { recursive: true });
+  fs.writeFileSync(mirrorProductManual, transformBrandText(productManual), "utf8");
+}
+for (const legacyOutlinePath of legacyOutlinePaths) {
+  fs.rmSync(legacyOutlinePath, { force: true });
+}
+const expectedReleaseFiles = [
+  path.basename(outHtml),
+  path.basename(outReadme),
+  path.basename(outProductManual)
+].sort();
+const actualReleaseFiles = fs.readdirSync(outDir).sort();
+if (JSON.stringify(actualReleaseFiles) !== JSON.stringify(expectedReleaseFiles)) {
+  throw new Error(`Unexpected release files: ${actualReleaseFiles.join(", ")}`);
 }
 writeReleaseZip(outDir, outZip);
 
@@ -216,7 +228,7 @@ console.log(`Universal release dir: ${outDir}`);
 console.log(`Universal release zip: ${outZip}`);
 console.log(`Universal HTML written: ${outHtml}`);
 console.log(`Universal readme written: ${outReadme}`);
-console.log(`Universal outline written: ${outOutline}`);
+console.log(`Universal product manual written: ${outProductManual}`);
 
 function writeReleaseZip(sourceDir, zipPath) {
   if (fs.existsSync(zipPath)) {
@@ -230,7 +242,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead(${quotePowerShell(zipPath)})
 $entryCount = $zip.Entries.Count
 $zip.Dispose()
-if ($entryCount -lt 3) { throw "Release zip has too few entries: $entryCount" }
+if ($entryCount -ne 3) { throw "Release zip must contain exactly 3 entries: $entryCount" }
 `;
 
   const result = spawnSync("pwsh", ["-NoProfile", "-Command", command], { stdio: "pipe", encoding: "utf8" });

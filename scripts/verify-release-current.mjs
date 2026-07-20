@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { getReleaseVersion } from "./release-version.mjs";
 
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
 const distDir = path.join(root, "dist");
-const releaseVersion = "2.0";
+const releaseVersion = getReleaseVersion(root);
 const requestedBrand = getArgValue("--brand");
 
 const brands = [
@@ -47,6 +48,7 @@ if (!selectedBrands.length) throw new Error(`Unknown release brand: ${requestedB
 const results = selectedBrands.map(verifyBrand);
 
 const summary = {
+  releaseVersion,
   scriptChecks,
   distWorkspaceTitleRule,
   results
@@ -62,8 +64,16 @@ if (
       result.missingRequired.length > 0 ||
       result.forbiddenMatches.length > 0 ||
       result.forbiddenAssetMatches.length > 0 ||
+      result.productManualMissingRequired.length > 0 ||
+      result.productManualForbiddenMatches.length > 0 ||
+      result.readmeForbiddenMatches.length > 0 ||
+      !result.releaseFilesAreExact ||
+      !result.hasNoSoftwareOutlineFile ||
+      !result.readmeIncludesProductManual ||
       !result.releaseHtmlIsFreshForSource ||
       !result.singleFileHtmlIsFreshForSource ||
+      !result.readmeIsFreshForSource ||
+      !result.productManualIsFreshForSource ||
       !result.headerCssMatchesDist
   )
 ) {
@@ -73,11 +83,24 @@ if (
 function verifyBrand(brand) {
   const releaseDir = latestReleaseDir(brand.appName);
   const releaseHtmlPath = path.join(releaseDir, `${brand.appName}-${releaseVersion}.html`);
+  const readmePath = path.join(releaseDir, "README-打开说明.txt");
+  const productManualName = `${brand.appName}-${releaseVersion}-产品说明书.md`;
+  const productManualPath = path.join(releaseDir, productManualName);
   const singleFileHtmlPath = path.join(outputsDir, `${brand.slug}-${releaseVersion}-release`, `${brand.appName}-${releaseVersion}.html`);
   const releaseHtml = fs.readFileSync(releaseHtmlPath, "utf8");
+  const readme = fs.readFileSync(readmePath, "utf8");
+  const productManual = fs.readFileSync(productManualPath, "utf8");
   const singleFileHtml = fs.readFileSync(singleFileHtmlPath, "utf8");
   const releaseStat = fs.statSync(releaseHtmlPath);
+  const readmeStat = fs.statSync(readmePath);
+  const productManualStat = fs.statSync(productManualPath);
   const singleFileStat = fs.statSync(singleFileHtmlPath);
+  const expectedReleaseFiles = [
+    path.basename(releaseHtmlPath),
+    path.basename(readmePath),
+    productManualName
+  ].sort();
+  const releaseFiles = fs.readdirSync(releaseDir).sort();
   const releaseWorkspaceTitleRule = extractCssRule(releaseHtml, ".engineeringHeader .workspaceTitle");
   const required = [
     `<title>${brand.appName}</title>`,
@@ -91,6 +114,18 @@ function verifyBrand(brand) {
     "接口接线图",
     "接口占用表"
   ];
+  const productManualRequired = [
+    `# ${brand.appName} 产品说明书`,
+    `版本：${releaseVersion}`,
+    "售前采集",
+    "项目档案",
+    "设备清单",
+    "点位图与系统拓扑图",
+    "接口接线图与接口占用表",
+    "报告与项目数据",
+    "联系 FAE"
+  ];
+  const productManualForbidden = [...brand.forbidden, "软件大纲", "软件开发大纲"];
 
   return {
     brand: brand.id,
@@ -99,10 +134,19 @@ function verifyBrand(brand) {
     singleFileHtml: path.relative(root, singleFileHtmlPath),
     releaseHtmlIsFreshForSource: releaseStat.mtimeMs >= newestSourceStat.mtimeMs,
     singleFileHtmlIsFreshForSource: singleFileStat.mtimeMs >= newestSourceStat.mtimeMs,
+    readmeIsFreshForSource: readmeStat.mtimeMs >= newestSourceStat.mtimeMs,
+    productManualIsFreshForSource: productManualStat.mtimeMs >= newestSourceStat.mtimeMs,
+    releaseFiles,
+    releaseFilesAreExact: JSON.stringify(releaseFiles) === JSON.stringify(expectedReleaseFiles),
+    hasNoSoftwareOutlineFile: !releaseFiles.some((name) => name.includes("软件大纲")),
     headerCssMatchesDist: releaseWorkspaceTitleRule === distWorkspaceTitleRule,
     missingRequired: required.filter((token) => !releaseHtml.includes(token)),
     forbiddenMatches: brand.forbidden.filter((token) => releaseHtml.includes(token)),
     forbiddenAssetMatches: findForbiddenAssetMatches(releaseHtml, brand.forbiddenAssets),
+    readmeIncludesProductManual: readme.includes(productManualName),
+    readmeForbiddenMatches: brand.forbidden.filter((token) => readme.includes(token)),
+    productManualMissingRequired: productManualRequired.filter((token) => !productManual.includes(token)),
+    productManualForbiddenMatches: productManualForbidden.filter((token) => productManual.includes(token)),
     releaseWorkspaceTitleRule
   };
 }
@@ -128,6 +172,8 @@ function newestRelevantSourceStat() {
     path.join(root, "src"),
     path.join(root, "scripts", "build-single-file-release.mjs"),
     path.join(root, "scripts", "build-universal-release.mjs"),
+    path.join(root, "scripts", "release-version.mjs"),
+    path.join(root, "scripts", "bump-release-version.mjs"),
     path.join(root, "package.json"),
     path.join(root, "index.html")
   ];
@@ -177,18 +223,28 @@ function extractCssRule(css, selector) {
 
 function checkReleaseScripts(scripts) {
   const releaseAll = scripts["release:all"] ?? "";
+  const yinyiPackage = scripts["release:package:yinyi"] ?? "";
+  const yinmanPackage = scripts["release:package:yinman"] ?? "";
   return {
+    yinyiAutoVersionsOnce:
+      /bump-release-version\.mjs --brand yinyi/.test(scripts["release:yinyi"] ?? "") &&
+      /release:package:yinyi/.test(scripts["release:yinyi"] ?? ""),
+    yinmanAutoVersionsOnce:
+      /bump-release-version\.mjs --brand yinman/.test(scripts["release:yinman"] ?? "") &&
+      /release:package:yinman/.test(scripts["release:yinman"] ?? ""),
     yinyiRebuildsBeforePackaging:
-      /npm\.cmd run build/.test(scripts["release:yinyi"] ?? "") &&
-      /build-single-file-release\.mjs --brand yinyi/.test(scripts["release:yinyi"] ?? "") &&
-      /build-universal-release\.mjs --brand yinyi/.test(scripts["release:yinyi"] ?? ""),
+      /npm\.cmd run build/.test(yinyiPackage) &&
+      /build-single-file-release\.mjs --brand yinyi/.test(yinyiPackage) &&
+      /build-universal-release\.mjs --brand yinyi/.test(yinyiPackage),
     yinmanRebuildsBeforePackaging:
-      /npm\.cmd run build/.test(scripts["release:yinman"] ?? "") &&
-      /build-single-file-release\.mjs --brand yinman/.test(scripts["release:yinman"] ?? "") &&
-      /build-universal-release\.mjs --brand yinman/.test(scripts["release:yinman"] ?? ""),
+      /npm\.cmd run build/.test(yinmanPackage) &&
+      /build-single-file-release\.mjs --brand yinman/.test(yinmanPackage) &&
+      /build-universal-release\.mjs --brand yinman/.test(yinmanPackage),
+    allAutoVersionsOnce:
+      (releaseAll.match(/bump-release-version\.mjs --brand all/g) ?? []).length === 1,
     allRunsBothBrands:
-      /release:yinyi/.test(releaseAll) &&
-      /release:yinman/.test(releaseAll),
+      /release:package:yinyi/.test(releaseAll) &&
+      /release:package:yinman/.test(releaseAll),
     allRunsBehaviorParity:
       /verify:release-behavior/.test(releaseAll),
     allVerifiesMatchingBrandDist: [

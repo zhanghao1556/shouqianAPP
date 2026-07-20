@@ -2,10 +2,11 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { chromium, devices, webkit } from "playwright";
+import { getReleaseVersion } from "./release-version.mjs";
 
 const root = process.cwd();
 const args = process.argv.slice(2);
-const releaseVersion = "2.0";
+const releaseVersion = getReleaseVersion(root);
 const brand = getArgValue("--brand") ?? "yinyi";
 if (brand !== "yinyi" && brand !== "yinman") {
   throw new Error(`Unsupported brand: ${brand}`);
