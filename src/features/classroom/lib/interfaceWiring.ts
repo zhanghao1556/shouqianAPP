@@ -130,6 +130,9 @@ const GENERIC_BALANCED_AUDIO_TERMINALS: DevicePortTerminal[] = [
   { id: "ground", label: "G", role: "ground", color: "#64748b" }
 ];
 
+export const LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE = "legacy-audio-system.fae-required";
+export const LEGACY_AUDIO_SYSTEM_WIRING_NOTICE = "接入原有音频系统较为复杂，建议联系对应FAE处理。";
+
 interface MutableLayoutPosition {
   x: number;
   y: number;
@@ -221,6 +224,7 @@ class CandidateWiringBuilder {
     this.addManagedExternalConnections();
     this.addComputerFallbackConnections();
     this.addSpeakerRoutes(state);
+    this.addLegacyAudioSystemFinding();
     this.addKnownBlockingFindings();
     const rootNodeId = this.finalizeHierarchy();
     this.addMissingInterfacePanelFindings();
@@ -636,8 +640,31 @@ class CandidateWiringBuilder {
     return splitExternalDeviceText(this.profile.existingDevices.computer);
   }
 
+  private hasLegacyAudioSystem() {
+    return Boolean(this.profile.existingDevices.legacySoundSystem.trim());
+  }
+
+  private isLegacyAudioSystemConnection(line: ConnectionLine) {
+    if (!this.hasLegacyAudioSystem()) return false;
+    if (line.id.includes("legacy")) return true;
+    const legacyDevices = splitExternalDeviceText(this.profile.existingDevices.legacySoundSystem)
+      .filter((device) => !/原有音频系统|原有扩声系统/.test(device));
+    return [line.fromDevice, line.toDevice].some((endpoint) =>
+      legacyDevices.includes(stripQuantity(endpoint).trim())
+    );
+  }
+
+  private isExternalDeviceRoutedToLegacyAudio(device: string) {
+    const normalizedDevice = stripQuantity(device).trim();
+    return this.outputs.connectionLines.some((line) =>
+      this.isLegacyAudioSystemConnection(line) &&
+      [line.fromDevice, line.toDevice].some((endpoint) => stripQuantity(endpoint).trim() === normalizedDevice)
+    );
+  }
+
   private ensureSelectedExternalNodes() {
     [...this.getRecordingDevices(), ...this.getComputerDevices()].forEach((device) => {
+      if (this.isExternalDeviceRoutedToLegacyAudio(device)) return;
       this.ensureNode(this.describeDevice(device));
     });
   }
@@ -652,6 +679,7 @@ class CandidateWiringBuilder {
     filterUsbExclusiveAudioLines(this.outputs.connectionLines).forEach((line) => {
       if (candidateOwnedConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
       if (generatedSpeakerConnectionPrefixes.some((prefix) => line.id.startsWith(prefix))) return;
+      if (this.isLegacyAudioSystemConnection(line)) return;
       if (this.isPowerConnection(line)) return;
       if (this.isWirelessAirLink(line)) return;
       if (this.isManagedExternalConnection(line)) return;
@@ -687,6 +715,7 @@ class CandidateWiringBuilder {
 
   private addManagedExternalConnections() {
     this.getRecordingDevices().forEach((device) => {
+      if (this.isExternalDeviceRoutedToLegacyAudio(device)) return;
       const node = this.ensureNode(this.describeDevice(device));
       if (isRecordingInputDevice(device)) {
         this.connectRecordingInputDevice(node);
@@ -827,6 +856,7 @@ class CandidateWiringBuilder {
 
   private addComputerFallbackConnections() {
     this.getComputerDevices().forEach((device) => {
+      if (this.isExternalDeviceRoutedToLegacyAudio(device)) return;
       const node = this.ensureNode(this.describeDevice(device));
       if (this.edges.some((edge) => edge.fromNodeId === node.id || edge.toNodeId === node.id)) return;
       const hubInput = this.allocateExternalHubPort("input", `${node.label}音频输出`, "stereo");
@@ -1735,6 +1765,16 @@ class CandidateWiringBuilder {
     if (this.findingKeys.has(key)) return;
     this.findingKeys.add(key);
     this.findings.push(finding);
+  }
+
+  private addLegacyAudioSystemFinding() {
+    if (!this.hasLegacyAudioSystem()) return;
+    this.addFinding({
+      code: LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE,
+      severity: "review",
+      title: "原有音频系统接线暂不生成",
+      message: LEGACY_AUDIO_SYSTEM_WIRING_NOTICE
+    });
   }
 
   private finalizeHierarchy() {

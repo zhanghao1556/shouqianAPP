@@ -2476,3 +2476,12 @@ PowerShell reminder:
 - Parallel cores are unnecessary for a mono-to-mono adapter and make hidden connector wiring easier to misread. Keep the source connector convention intact, but draw only the electrically continuous hot core and shield at the array-microphone terminal end.
 - An XLR or balanced source may retain white on pin 3 / negative inside the source connector while the array end of that white core is insulated and left open. A 6.35 TS source has no cold contact, so the spare white core is unused at both ends.
 - The active conductor model should contain only red signal continuity and shield continuity. Preserve the open white-core instruction in the usage row instead of inventing a destination terminal for a wire that physically lands nowhere.
+
+### 2026-07-20 suppressing legacy-audio interface projections
+
+- A legacy audio system can own several generated links: the new-system handoff, its internal chain, and external devices redirected to its first input. Suppressing only the obvious root edge leaves a misleading partial diagram.
+- Interface-only suppression belongs in the interface model, not the shared connection generator. This keeps topology and other business outputs intact while removing legacy nodes, edges and occupancy rows from both brand wiring diagrams.
+- Managed recording and computer fallbacks must consult the suppressed formal routes. Otherwise a device intentionally routed to legacy audio is silently reconnected to the new processor after its formal edge is filtered.
+- A customer warning that must survive PNG/PDF export should be pure SVG text and geometry inside the drawing title band, with the same message also represented as a structured review finding.
+- A device endpoint can participate in both the suppressed legacy chain and a retained new-system link. Assert suppression by formal edge ownership and legacy-exclusive nodes, not by a broad label blacklist; otherwise a valid USB-connected computer becomes a false failure.
+- When the managed executor rewrites an explicit PowerShell 7 path to the blocked WindowsApps alias, follow the documented one-time `cmd.exe` fallback and record it. Repeatedly retrying alternate PowerShell paths does not add evidence about the source tree.

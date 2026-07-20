@@ -13,7 +13,9 @@ import {
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringTableCableLabel,
   getInterfaceWiringUsageRows,
-  getInterfaceWiringUsageDeviceLabel
+  getInterfaceWiringUsageDeviceLabel,
+  LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE,
+  LEGACY_AUDIO_SYSTEM_WIRING_NOTICE
 } from "./src/features/classroom/lib/interfaceWiring.ts";
 import { normalizeProfile } from "./src/features/classroom/lib/profileNormalization.ts";
 import {
@@ -73,6 +75,7 @@ function makeProfile({
   teachingDepth = 4,
   computer = "",
   recordingHost = "",
+  legacySoundSystem = "",
   legacyWirelessMic = "",
   speakerProductOverride = "wall",
   processorTier = "auto",
@@ -90,6 +93,7 @@ function makeProfile({
       ...base.existingDevices,
       computer,
       recordingHost,
+      legacySoundSystem,
       legacyWirelessMic
     },
     acousticEnvironment: { ...base.acousticEnvironment, measuredRt60 },
@@ -218,6 +222,56 @@ assert.deepEqual(
   yinyiControlEdge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId]),
   [["pin1", "rx"], ["pin2", "tx"], ["pin3", "ground"], ["pin6", "ground"]]
 );
+const legacyAudioSuppressionProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "existingArray",
+  computer: "讲台电脑",
+  recordingHost: "录播主机",
+  legacySoundSystem: "原有音频系统、调音台、功放、无源音箱"
+});
+const legacyAudioSuppressionResults = [
+  ["Yinyi", buildYinyiModel(legacyAudioSuppressionProfile, { "DT2-Pro": 1, "COLUMN-SPEAKER": 4 })],
+  ["Yinman", buildModel(legacyAudioSuppressionProfile, { "COLUMN-SPEAKER": 4 })]
+];
+for (const [brand, result] of legacyAudioSuppressionResults) {
+  const suppressedLegacyEdgeIds = new Set(
+    result.outputs.connectionLines.filter((line) => line.id.includes("legacy")).map((line) => line.id)
+  );
+  assert.ok(suppressedLegacyEdgeIds.size > 0);
+  const residualLegacyEdges = result.model.edges.filter((edge) => suppressedLegacyEdgeIds.has(edge.id));
+  assert.equal(
+    residualLegacyEdges.length > 0,
+    false,
+    brand + " residual legacy edges: " + residualLegacyEdges.map((edge) => edge.id).join(", ")
+  );
+  const residualLegacyUsageRows = getInterfaceWiringUsageRows(result.model).filter((row) =>
+    suppressedLegacyEdgeIds.has(row.edgeId)
+  );
+  assert.equal(
+    residualLegacyUsageRows.length > 0,
+    false,
+    brand + " residual legacy usage rows: " + residualLegacyUsageRows.map((row) => row.edgeId).join(", ")
+  );
+  const residualLegacyNodes = result.model.nodes.filter((item) =>
+    ["调音台", "音频处理器", "反馈抑制器", "功放", "无源音箱", "有源音箱"].includes(item.label)
+  );
+  assert.equal(
+    residualLegacyNodes.length > 0,
+    false,
+    brand + " residual legacy nodes: " + residualLegacyNodes.map((item) => item.id + "/" + item.label + "/" + (item.productId ?? "")).join(", ")
+  );
+  const legacyAudioFinding = result.model.findings.find(
+    (finding) => finding.code === LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE
+  );
+  assert.ok(legacyAudioFinding);
+  assert.equal(legacyAudioFinding.severity, "review");
+  assert.equal(legacyAudioFinding.message, LEGACY_AUDIO_SYSTEM_WIRING_NOTICE);
+  assert.ok(result.model.edges.length > 0);
+}
+console.log("PASS Yinyi and Yinman suppress legacy-audio nodes, links and usage rows while preserving a shared FAE review notice");
 const yinyiBalancedInputResult = buildYinyiModel(yinyiProfile, {
   "DT2-Pro": 1,
   "COLUMN-SPEAKER": 4,
@@ -1394,6 +1448,10 @@ assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(mod
 assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
 assert.match(wiringPreviewSource, /aria-label="接口接线图与接口占用表"/);
 assert.match(wiringPreviewSource, /aria-label=\{[^\r\n]*brandId === "yinman"[^\r\n]*"音曼"[^\r\n]*"音翼"/);
+assert.match(interfaceWiringSource, /接入原有音频系统较为复杂，建议联系对应FAE处理。/);
+assert.match(wiringPreviewSource, /data-notice-kind="legacy-audio-system"/);
+assert.match(wiringPreviewSource, /legacyAudioSystemNotice\.message/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringLegacyAudioNotice rect \{[\s\S]*?fill: #fff7ed;[\s\S]*?stroke: #d97706;/);
 assert.doesNotMatch(wiringPreviewSource, /拟调整预览|尚未写入正式规则|内部校准|当前候选|候选主机/);
 assert.match(engineeringAppSource, /const YinyiInterfaceWiring = __ENABLE_YINYI_INTERFACE_WIRING__/);
 assert.match(engineeringAppSource, /const YinmanInterfaceWiring = __ENABLE_YINMAN_INTERFACE_WIRING__/);

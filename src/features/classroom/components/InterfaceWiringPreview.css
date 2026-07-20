@@ -154,6 +154,24 @@
   background: #ffffff;
 }
 
+.interfaceWiringLegacyAudioNotice {
+  pointer-events: none;
+}
+
+.interfaceWiringLegacyAudioNotice rect {
+  fill: #fff7ed;
+  stroke: #d97706;
+  stroke-width: 1;
+}
+
+.interfaceWiringLegacyAudioNotice text {
+  fill: #9a3412;
+  font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
 .interfaceWiringNodeObject {
   overflow: visible;
 }

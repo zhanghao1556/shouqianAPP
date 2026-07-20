@@ -25,6 +25,7 @@ import {
   getInterfaceWiringPortReferenceNumbers,
   getInterfaceWiringUsageRows,
   getInterfaceWiringUsageDeviceLabel,
+  LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE,
   type InterfacePanelImageRect,
   type RecordingInputMode,
   type RecordingInputSelections
@@ -171,6 +172,10 @@ function InterfaceWiringDiagram({
     () => buildRoutedInterfaceWiringDiagram(model, logicalCanvasWidth, bottomPadding, portReferenceNumbers),
     [model, logicalCanvasWidth, bottomPadding, portReferenceNumbers]
   );
+  const legacyAudioSystemNotice = model.findings.find(
+    (finding) => finding.code === LEGACY_AUDIO_SYSTEM_WIRING_FINDING_CODE
+  );
+  const legacyAudioSystemNoticeWidth = Math.min(720, layout.width - 96);
   const highlightedEdgeId = activeEdgeId && edgeDrawings.has(activeEdgeId) ? activeEdgeId : null;
   const portInteractionMarkers = useMemo(
     () => getInterfaceWiringPortInteractionMarkers(model, layout.positions, interfacePanelImages),
@@ -217,6 +222,16 @@ function InterfaceWiringDiagram({
           strokeWidth="1"
         />
         <text x={layout.width / 2} y="48" textAnchor="middle" className="cadTitle">接口接线图</text>
+        {legacyAudioSystemNotice ? (
+          <g
+            className="interfaceWiringLegacyAudioNotice"
+            data-notice-kind="legacy-audio-system"
+            transform={`translate(${layout.width / 2} 76)`}
+          >
+            <rect x={-legacyAudioSystemNoticeWidth / 2} y="-14" width={legacyAudioSystemNoticeWidth} height="24" rx="4" />
+            <text textAnchor="middle" y="3">{legacyAudioSystemNotice.message}</text>
+          </g>
+        ) : null}
         {model.nodes.map((node) => {
           const position = layout.positions[node.id];
           if (!position) return null;
