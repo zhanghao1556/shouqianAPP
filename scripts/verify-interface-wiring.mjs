@@ -31,6 +31,7 @@ import { getExistingMicInputDemand, HANGING_MIC_PRODUCT_ID } from "./src/feature
 import { getYinmanAjProcessorSpeakerPlan, LINE_ARRAY_PRODUCT_ID } from "./src/features/classroom/lib/lineArrayRules.ts";
 import { EXTERNAL_AMPLIFIER_PRODUCT_ID } from "./src/features/classroom/lib/speakerRules.ts";
 import {
+  CEILING_SPEAKER_PORT_PROFILE_ID,
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   CONTROL_HOST_PORT_PROFILE_ID,
   EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
@@ -163,6 +164,36 @@ function assertNoPowerEdges(model) {
     JSON.stringify(model.edges.map((edge) => [edge.cableType, edge.connectionMethod])),
     /POWER|AC\s*220|DC\s*12|电源|适配器/i
   );
+}
+
+function assertAudioCableIntegrity(model) {
+  const nodes = new Map(model.nodes.map((item) => [item.id, item]));
+  for (const edge of model.edges) {
+    if (edge.kind === "jumper" || /USB/i.test(edge.cableType) || !/音频线|话筒线/.test(edge.cableType)) continue;
+    assert.ok(edge.conductors.length >= 2, edge.id + " must not render as a single-core audio cable");
+    const fromPort = nodes.get(edge.fromNodeId)?.ports.find((port) => port.id === edge.fromPortId);
+    const toPort = nodes.get(edge.toNodeId)?.ports.find((port) => port.id === edge.toPortId);
+    assert.ok(fromPort && toPort, edge.id + " must retain both physical ports");
+    for (const conductor of edge.conductors) {
+      if (fromPort.terminals.length) {
+        assert.ok(fromPort.terminals.some((terminal) => terminal.id === conductor.fromTerminalId), edge.id + " has an invalid source terminal");
+      }
+      if (toPort.terminals.length) {
+        assert.ok(toPort.terminals.some((terminal) => terminal.id === conductor.toTerminalId), edge.id + " has an invalid destination terminal");
+      }
+    }
+    const fromRole = (conductor) => fromPort.terminals.find((terminal) => terminal.id === conductor.fromTerminalId)?.role;
+    const toRole = (conductor) => toPort.terminals.find((terminal) => terminal.id === conductor.toTerminalId)?.role;
+    const fromRoles = fromPort.terminals.map((terminal) => terminal.role);
+    const toRoles = toPort.terminals.map((terminal) => terminal.role);
+    const monoToBalanced = fromRoles.filter((role) => role === "signal").length === 1 &&
+      fromRoles.includes("ground") && toRoles.includes("positive") && toRoles.includes("negative") && toRoles.includes("ground");
+    if (monoToBalanced) {
+      assert.ok(edge.conductors.some((conductor) => fromRole(conductor) === "signal" && toRole(conductor) === "positive"));
+      assert.ok(edge.conductors.some((conductor) => fromRole(conductor) === "ground" && toRole(conductor) === "ground"));
+      assert.equal(edge.conductors.some((conductor) => toRole(conductor) === "negative"), false, edge.id + " must leave the balanced negative input open");
+    }
+  }
 }
 
 function assertYinyiMonoInputConductors(edge, expectedSourceSignal, expectedSourceGround) {
@@ -1002,6 +1033,12 @@ const legacyWirelessAudioEdge = legacyWireless.model.edges.find(
 );
 assert.ok(legacyWirelessAudioEdge);
 assert.equal(legacyWirelessAudioEdge.fromPortId, legacyWirelessNode.ports[0].id);
+assert.deepEqual(
+  legacyWirelessAudioEdge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId]),
+  [["tip", "positive"], ["sleeve", "ground"]]
+);
+assert.equal(legacyWirelessAudioEdge.conductors.some((conductor) => conductor.toTerminalId === "negative"), false);
+assert.match(legacyWirelessAudioEdge.connectionMethod, /TIP接LINE IN \+.*SLEEVE接G.*LINE IN -悬空/);
 const legacyWirelessPortProfile = getDevicePortProfile(LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID);
 assert.ok(legacyWirelessPortProfile);
 assert.deepEqual(
@@ -1551,6 +1588,10 @@ const releaseBehaviorSource = readFileSync("scripts/verify-release-behavior-pari
 assert.doesNotMatch(wiringPreviewSource, /<marker\b|markerStart=|markerEnd=/);
 assert.match(wiringPreviewAssetSources, /external-podium-computer-panel\.svg/);
 assert.match(wiringPreviewAssetSources, /podiumComputer:\s*podiumComputerRearPanel/);
+assert.match(yinmanWiringPreviewSource, /ceiling-speaker-rear\.svg/);
+assert.match(yinyiWiringPreviewSource, /ceiling-speaker-rear\.svg/);
+assert.match(yinmanWiringPreviewSource, /ceilingSpeaker:\s*ceilingSpeakerRearPanel/);
+assert.match(yinyiWiringPreviewSource, /ceilingSpeaker:\s*ceilingSpeakerRearPanel/);
 assert.match(wiringPreviewSource, /<td><ConnectionMethodCell value=\{row\.connectionMethod\} \/><\/td>/);
 assert.match(
   wiringPreviewSource,
@@ -1579,7 +1620,7 @@ assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed"[\s\S]*
 assert.match(wiringPreviewSource, /if \(isNetworkEdge\(edge\)\)[\s\S]*?getCollapsedCableConductor/);
 assert.match(wiringPreviewSource, /function getConductorStripeColor[\s\S]*?白橙[\s\S]*?#f97316[\s\S]*?白绿[\s\S]*?#16a34a/);
 assert.match(wiringPreviewSource, /stroke=\{stripeColor \? "#ffffff" : conductor\.color\}/);
-assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed" \? 6/);
+assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed" \|\| getCableLegendKind\(edge\) === "audio"\) \? 6/);
 assert.match(wiringPreviewSource, /const bulge = Math\.max\(12, \(requestedBulge \?\? 44\) \+ laneOffset\);[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
 assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(model, portReferenceNumbers\)/);
 assert.match(wiringPreviewSource, /每根线一行，只列当前方案已用接口/);
@@ -2136,6 +2177,28 @@ assert.deepEqual([
   Number(passiveSpeakerPanel.portAnchors.terminals.terminalAnchors.negative.x.toFixed(2))
 ], [0.5, 0.64, 0.58, 0.42]);
 assert.match(passiveSpeakerPanel.source, /完整背面接口重构工程图/);
+const ceilingSpeakerPanel = getDevicePortProfile(CEILING_SPEAKER_PORT_PROFILE_ID)?.interfacePanel;
+assert.ok(ceilingSpeakerPanel);
+assert.equal(ceilingSpeakerPanel.assetKey, "ceilingSpeaker");
+assert.equal(ceilingSpeakerPanel.aspectRatio, 1);
+assert.deepEqual([
+  Number(ceilingSpeakerPanel.portAnchors.terminals.x.toFixed(3)),
+  Number(ceilingSpeakerPanel.portAnchors.terminals.y.toFixed(3)),
+  Number(ceilingSpeakerPanel.portAnchors.terminals.terminalAnchors.positive.x.toFixed(2)),
+  Number(ceilingSpeakerPanel.portAnchors.terminals.terminalAnchors.negative.x.toFixed(2))
+], [0.5, 0.724, 0.56, 0.44]);
+assert.match(ceilingSpeakerPanel.source, /端子与壁挂音箱相同/);
+const ceilingSpeakerPanelSvg = readFileSync("src/assets/ceiling-speaker-rear.svg", "utf8");
+assert.match(ceilingSpeakerPanelSvg, /viewBox="0 0 1000 1000"/);
+assert.match(ceilingSpeakerPanelSvg, />-<\/text>/);
+assert.match(ceilingSpeakerPanelSvg, />\+<\/text>/);
+assert.doesNotMatch(ceilingSpeakerPanelSvg, /<image\b|data:image/i);
+const ceilingSpeakerPaints = Array.from(
+  ceilingSpeakerPanelSvg.matchAll(/(?:fill|stroke):([^;}]+)/g),
+  (match) => match[1].trim()
+);
+assert.ok(ceilingSpeakerPaints.length > 0);
+assert.ok(ceilingSpeakerPaints.every((paint) => ["none", "#fff", "#111", "#555", "#999", "#f7f7f7", "#333"].includes(paint)));
 const groupedSpeakerAnchors = Array.from({ length: 4 }, (_, index) =>
   getInterfacePanelPortAnchor(passiveSpeakerPanel, "terminals-direct-speaker-" + (index + 1), index, 4)
 );
@@ -2369,6 +2432,7 @@ assert.doesNotMatch(wiringPreviewSource, /findOpenCableRoute|getCorridorCableRou
 assert.match(wiringPreviewSource, /const multicore = conductors\.length > 1/);
 assert.doesNotMatch(wiringPreviewSource, /multicore \? "#374151"/);
 assert.match(wiringPreviewSource, /CABLE_MATERIAL_COLORS\[getCableLegendKind\(edge\)\]/);
+assert.match(wiringPreviewSource, /getCableLegendKind\(edge\) === "audio"\) \? 6/);
 assert.doesNotMatch(wiringPreviewSource, /conductorColorLabel|interfaceWiringConductorColorLabel|getConductorColorLabel|getConductorColorName/);
 assert.match(wiringPreviewSource, /kind: "curve"/);
 assert.match(wiringPreviewSource, /path: [^\r\n]*\$\{from\.x\} \$\{from\.y\} C/);
@@ -2539,6 +2603,40 @@ assert.notEqual(amplifierClusterPosition.centerY, amplifierClusterSpeakerRowY);
 assert.notEqual(amplifierClusterSpeakerRowY, amplifierClusterRootPosition.centerY);
 assert.equal(amplifierClusterRootPosition.centerY, amplifierClusterLayout.height / 2);
 
+const yinyiRelayLayoutCase = buildYinyiModel(makeProfile({
+  length: 12,
+  width: 8,
+  needs: ["interactiveClass", "localAmplification"],
+  scope: "full",
+  microphoneSolution: "existingArray",
+  computer: "讲台电脑",
+  recordingHost: "中控主机",
+  speakerProductOverride: "wall"
+}), { "DT2-Pro": 3, "COLUMN-SPEAKER": 12 });
+const yinyiRelayLayout = getInterfaceWiringLayout(yinyiRelayLayoutCase.model, 993);
+const yinyiRelayRootPosition = yinyiRelayLayout.positions[yinyiRelayLayoutCase.model.rootNodeId];
+const yinyiRelayAmplifier = node(yinyiRelayLayoutCase.model, "amplifier");
+const yinyiRelayAmplifierPosition = yinyiRelayLayout.positions[yinyiRelayAmplifier.id];
+const yinyiRelayOwnedSpeakers = yinyiRelayLayoutCase.model.nodes
+  .filter((item) => item.category === "speaker" && item.parentId === yinyiRelayAmplifier.id)
+  .sort((left, right) => left.ports[0].deviceSequenceRange.start - right.ports[0].deviceSequenceRange.start);
+const yinyiRelayOwnedPositions = yinyiRelayOwnedSpeakers.map((item) => yinyiRelayLayout.positions[item.id]);
+assert.ok(yinyiRelayOwnedPositions.length > 0);
+const yinyiRelaySpeakerDirection = Math.sign(yinyiRelayOwnedPositions[0].centerY - yinyiRelayRootPosition.centerY);
+assert.equal(Math.sign(yinyiRelayAmplifierPosition.centerY - yinyiRelayRootPosition.centerY), yinyiRelaySpeakerDirection);
+assert.ok(
+  Math.abs(yinyiRelayAmplifierPosition.centerY - yinyiRelayRootPosition.centerY) <
+    Math.abs(yinyiRelayOwnedPositions[0].centerY - yinyiRelayRootPosition.centerY),
+  "amplifier must sit between the level-one device and its owned speaker band"
+);
+const yinyiRelayOwnedLeft = Math.min(...yinyiRelayOwnedPositions.map((item) => item.x));
+const yinyiRelayOwnedRight = Math.max(...yinyiRelayOwnedPositions.map((item) => item.x + item.width));
+assert.ok(yinyiRelayAmplifierPosition.centerX >= yinyiRelayOwnedLeft);
+assert.ok(yinyiRelayAmplifierPosition.centerX <= yinyiRelayOwnedRight);
+assert.ok(yinyiRelayAmplifierPosition.centerX > yinyiRelayRootPosition.centerX);
+assert.equal(yinyiRelayRootPosition.centerY, yinyiRelayLayout.height / 2);
+console.log("PASS amplifiers sit between the level-one device and their owned speaker span");
+
 const compactPriorityRoot = node(amplifierClusterCase.model, amplifierClusterCase.model.rootNodeId);
 const compactPrioritySpeakers = amplifierClusterAllSpeakers.slice(0, 2);
 const compactPriorityModel = {
@@ -2672,7 +2770,29 @@ const ceilingSpeakerCase = buildModel(makeProfile({
 }));
 const ceilingSpeakerGroups = ceilingSpeakerCase.model.nodes.filter((item) => item.category === "speaker");
 assert.ok(ceilingSpeakerGroups.length > 1);
-assert.ok(ceilingSpeakerGroups.every((item) => item.label.includes("吸顶音箱") && item.ports.length === 1));
+assert.ok(ceilingSpeakerGroups.every((item) => (
+  item.label.includes("吸顶音箱")
+  && item.productId === CEILING_SPEAKER_PORT_PROFILE_ID
+  && item.ports.length === 1
+)));
+assert.ok(crossingSpeakerGroups.every((item) => item.productId === PASSIVE_SPEAKER_PORT_PROFILE_ID));
+const ceilingSpeakerEdges = ceilingSpeakerCase.model.edges.filter((edge) => edge.cableType.includes("音箱线"));
+assert.equal(ceilingSpeakerEdges.length, ceilingSpeakerGroups.length);
+for (const edge of ceilingSpeakerEdges) {
+  assert.equal(edge.connectionMethod, "保持正负极一致");
+  assert.deepEqual(
+    edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color]),
+    [["positive", "positive", "#dc2626"], ["negative", "negative", "#ffffff"]]
+  );
+}
+const ceilingSpeakerLayout = getInterfaceWiringLayout(ceilingSpeakerCase.model, 520);
+for (const item of ceilingSpeakerGroups) {
+  const position = ceilingSpeakerLayout.positions[item.id];
+  const imageRect = getInterfacePanelImageRect(item, position);
+  assert.ok(imageRect);
+  assert.ok(imageRect.x >= position.x);
+  assert.ok(imageRect.x + imageRect.width <= position.x + position.width);
+}
 console.log("PASS each cable shares one endpoint reference while wall and ceiling speakers split into compact SPK groups");
 
 const models = [
@@ -2700,6 +2820,7 @@ const models = [
   aj200Wired.model,
   aj600Wired.model,
   aj350Wired.model,
+  ceilingSpeakerCase.model,
   crossingCase.model,
   amplifierClusterCase.model,
   sixteenSpeakerCase.model
@@ -2707,6 +2828,7 @@ const models = [
 for (const model of models) {
   assertNoDuplicatePortOccupancy(model);
   assertNoPowerEdges(model);
+  assertAudioCableIntegrity(model);
   assert.equal(new Set(model.nodes.map((item) => item.id)).size, model.nodes.length, "Duplicate wiring nodes");
 }
 const deterministicModel = buildModel(oneLineWith02Profile).model;
@@ -2766,7 +2888,8 @@ for (const width of [520, 993, 1120]) {
     sixteenSpeakerCase.model,
     aj200Wired.model,
     aj600Wired.model,
-    aj350Wired.model
+    aj350Wired.model,
+    ceilingSpeakerCase.model
   ]) {
     assertLayoutFitsWidth(model, width);
     assert.deepEqual(getInterfaceWiringLayout(model, width), getInterfaceWiringLayout(model, width));

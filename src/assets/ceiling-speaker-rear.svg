@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="Ceiling speaker rear wiring line drawing">
+  <style>
+    .body{fill:#fff;stroke:#111;stroke-width:12}
+    .detail{fill:none;stroke:#555;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+    .fine{fill:none;stroke:#999;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+    .plate{fill:#fff;stroke:#111;stroke-width:9}
+    .terminal{fill:#f7f7f7;stroke:#111;stroke-width:8}
+    .label{fill:#111;font:700 48px Arial,sans-serif;text-anchor:middle}
+    .caption{fill:#333;font:700 28px Arial,sans-serif;text-anchor:middle}
+  </style>
+  <circle class="body" cx="500" cy="500" r="456"/>
+  <circle class="detail" cx="500" cy="500" r="390"/>
+  <circle class="fine" cx="500" cy="500" r="354"/>
+
+  <circle class="body" cx="500" cy="470" r="196"/>
+  <circle class="detail" cx="500" cy="470" r="156"/>
+  <circle class="fine" cx="500" cy="470" r="112"/>
+  <path class="fine" d="M414 315c51-30 121-30 172 0M414 625c51 30 121 30 172 0"/>
+
+  <rect class="plate" x="326" y="628" width="348" height="194" rx="10"/>
+  <path class="fine" d="M350 654h300M350 796h300"/>
+  <circle class="detail" cx="500" cy="724" r="132"/>
+  <circle class="fine" cx="500" cy="724" r="120"/>
+  <path class="detail" d="M368 716l22-36c10-16 25-24 44-24h132c19 0 34 8 44 24l22 36c7 10 7 22 0 32l-22 34c-10 16-25 24-44 24H434c-19 0-34-8-44-24l-22-34c-7-10-7-22 0-32z"/>
+  <rect class="terminal" x="396" y="674" width="82" height="70" rx="6"/>
+  <path class="terminal" d="M405 734v65q0 9 9 9h46q9 0 9-9v-65z"/>
+  <path class="fine" d="M413 754h48M413 766h48M413 778h48M413 790h48"/>
+  <rect class="terminal" x="522" y="674" width="82" height="70" rx="6"/>
+  <path class="terminal" d="M531 734v65q0 9 9 9h46q9 0 9-9v-65z"/>
+  <path class="fine" d="M539 754h48M539 766h48M539 778h48M539 790h48"/>
+  <text class="label" x="437" y="664">-</text>
+  <text class="label" x="563" y="664">+</text>
+  <text class="caption" x="500" y="818">INPUT</text>
+</svg>

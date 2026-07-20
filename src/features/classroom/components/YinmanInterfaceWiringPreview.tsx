@@ -5,6 +5,7 @@ import ap150RearPanel from "../../../assets/yinman-ap150-rear-panel.svg";
 import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.svg";
 import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.svg";
+import ceilingSpeakerRearPanel from "../../../assets/ceiling-speaker-rear.svg";
 import podiumComputerRearPanel from "../../../assets/external-podium-computer-panel.svg";
 import recordingLineInputPanel from "../../../assets/external-recording-line-input-panel.svg";
 import controlHostPanel from "../../../assets/external-control-host-rs232-panel.svg";
@@ -34,6 +35,7 @@ const panelImages: InterfacePanelImageMap = {
   lineArray: lineArrayRearPanel,
   lineArrayConverter: lineArrayConverterPanel,
   passiveSpeaker: passiveSpeakerTerminal,
+  ceilingSpeaker: ceilingSpeakerRearPanel,
   podiumComputer: podiumComputerRearPanel,
   recordingLineInput: recordingLineInputPanel,
   controlHost: controlHostPanel,

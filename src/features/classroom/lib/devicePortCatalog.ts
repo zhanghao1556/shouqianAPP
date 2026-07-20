@@ -33,6 +33,7 @@ export const LAPTOP_PORT_PROFILE_ID = "EXTERNAL-LAPTOP";
 export const OPS_ALL_IN_ONE_PORT_PROFILE_ID = "EXTERNAL-OPS-ALL-IN-ONE";
 export const VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID = "EXTERNAL-VIDEO-CONFERENCE-TERMINAL";
 export const HEADSET_SPLITTER_PORT_PROFILE_ID = "EXTERNAL-HEADSET-SPLITTER";
+export const CEILING_SPEAKER_PORT_PROFILE_ID = "CEILING-SPEAKER";
 export const PASSIVE_SPEAKER_PORT_PROFILE_ID = "PASSIVE-SPEAKER";
 export const WIRELESS_RECEIVER_PORT_PROFILE_ID = "WIRELESS-RECEIVER";
 export const LEGACY_WIRELESS_RECEIVER_PORT_PROFILE_ID = "EXTERNAL-LEGACY-WIRELESS-RECEIVER";
@@ -672,6 +673,14 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
         ground: { x: 562 / 760, y: 172 / 240 }
       })
     }, "用户确认笔记本模拟接线需使用耳麦分线器")
+  },
+  [CEILING_SPEAKER_PORT_PROFILE_ID]: {
+    productId: CEILING_SPEAKER_PORT_PROFILE_ID,
+    customerName: "吸顶音箱",
+    ports: [port("terminals", "+ / -", "扬声器接线端子", "input", confirmedSource, true, speakerTerminals)],
+    interfacePanel: panel("ceilingSpeaker", 1, {
+      terminals: speakerAnchor(0.5, 0.724, { x: 0.56, y: 0.724 }, { x: 0.44, y: 0.724 })
+    }, "吸顶音箱背面接线工程图；扬声器端子与壁挂音箱相同")
   },
   [PASSIVE_SPEAKER_PORT_PROFILE_ID]: {
     productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,

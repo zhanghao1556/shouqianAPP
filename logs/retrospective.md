@@ -2500,6 +2500,15 @@ PowerShell reminder:
 - Keep electrical truth separate from drawing density. The model and occupancy data should retain signal-to-positive plus shared-ground-to-negative/ground mappings, while an explicit collapsed display mode can render the installed audio cable as one assembled sheath with no misleading core fan-out.
 - Pair amplifier inputs deterministically: `1 -> 2` and, when needed, `3 -> 4`. A compact per-edge jumper bulge avoids changing the already accepted geometry of unrelated processor-to-amplifier jumpers.
 - When unrelated source edits arrive in a shared worktree during implementation, validate against the combined tree but stage only the current task's hunks. Do not absorb, revert or rewrite the other asset task merely because it overlaps a shared model file.
+
+### 2026-07-20 ceiling-speaker rear wiring artwork
+
+- A front product image can establish silhouette and proportion, but it cannot justify rear clamps, screws or magnet geometry. Keep unsupported mechanical details schematic and minimal; do not present them as a traced physical rear view.
+- Device artwork identity belongs in the interface profile and must follow the selected product ID. A Chinese display label is useful as a fallback for imported connection text, but it should not drive formal speaker-group rendering.
+- Keep physical artwork and electrical conductors separate. The grayscale SVG stays empty, while the wiring layer applies the confirmed red positive and white negative cores to calibrated terminal anchors.
+- A square panel exposed a hidden compact-layout assumption: `availableWidth` could exceed `nodeWidth`. Cap rendered image width to the node rectangle and assert both model geometry and real browser overflow at the narrow breakpoint.
+- When the managed runner redirects PowerShell 7 to the blocked WindowsApps alias or esbuild cannot traverse the sandbox root, use the documented one-time `cmd.exe` and approved test fallback. Record those environment failures without treating them as source corruption.
+
 ### 2026-07-20 formal processor selection must reach wiring unchanged
 
 - The interface-wiring builder must not silently replace the processor already selected by the formal product-selection chain. A persisted manual dual-mic choice means AJ200 everywhere; a manual six-mic choice means AJ600 everywhere; the automatic standalone-line-array choice remains AJ350.
@@ -2532,3 +2541,22 @@ PowerShell reminder:
 - Restoring a node and its edges is not enough when the brand wrapper owns interface artwork separately. A valid wiring model can still render as “interface image pending” if the wrapper omits the profile's `assetKey`.
 - When two brands share a physical product, register the shared panel in both brand entry points and keep the true brand restriction explicit. For Yinyi standalone line arrays this means reusing the line-array and converter panels while continuing to exclude AJ350.
 - Browser verification should assert both model facts and rendered asset facts: required nodes/edges, no forbidden processor, no missing-panel placeholder and the expected panel image alt. This catches the gap that a model-only regression cannot see.
+
+### 2026-07-20 amplifier is a layout relay, not an ordinary peer
+
+- A graph can be compact in height while still producing visibly long cables. Lexicographically scoring height before route length allows a relay device to occupy any spare peer-row slot even when every downstream cable then crosses the root area.
+- Treat devices such as an amplifier by graph role during layout: place the relay between its upstream root and its owned downstream speaker span. Keep the root centered and the complete speaker sequence contiguous, but reserve a relay position before packing unrelated peers.
+- Direct-root speaker cables and relay-owned speaker cables need separate visual sectors. This preserves numbered speaker order and electrical ownership without forcing all speaker routes into one indistinguishable bundle.
+
+### 2026-07-20 collision-aware relay alignment
+
+- Reserving a relay band does not guarantee an empty visual row when compact packing can still add ordinary devices to that row. Any post-packing horizontal alignment must treat every vertically overlapping node as an obstacle.
+- The nearest valid relay position is a one-dimensional constrained placement problem: clamp the owned-speaker center to canvas padding, evaluate the original safe position and both sides of each blocker, preserve the established device gap, then choose the legal candidate closest to the desired center.
+- Keep the original packed position as the deterministic fallback. This preserves compactness and prevents a downstream alignment preference from invalidating the row packer's no-overlap guarantee.
+
+### 2026-07-20 audio cable rendering regression under investigation
+
+- A cable can be electrically modeled and still become a misleading customer drawing if connector collapsing removes the assembled sheath or if a terminal anchor is chosen from the wrong logical role. Audit audio edges at both the model and rendered-SVG levels before changing either side.
+- A partial role match is not a valid audio conversion. Returning one shared ground conductor from a mono-to-balanced comparison silently discards the signal conductor; known terminal forms need an explicit conversion matrix before generic same-role matching runs.
+- Keep assembled cable identity independent from conductor count. Every field audio cable uses the audio sheath width, while only the short device-internal jumper keeps its compact stroke; individual terminal leads remain thin so the drawing still shows exact occupied holes.
+- Add a cross-model invariant in addition to the reported fixture: every non-USB field audio edge has at least two active conductors, all known endpoints exist on the selected physical ports, and mono-to-balanced conversion never occupies the negative input.

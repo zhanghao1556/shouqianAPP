@@ -26,6 +26,7 @@ import {
   getDevicePortCapability,
   getDevicePortProfile,
   getDevicePortsByPrefix,
+  CEILING_SPEAKER_PORT_PROFILE_ID,
   COMPUTER_REAR_PANEL_PORT_PROFILE_ID,
   CONTROL_HOST_PORT_PROFILE_ID,
   EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID,
@@ -1078,6 +1079,7 @@ class CandidateWiringBuilder {
     let nextSpeaker = this.connectSpeakerOutputs(
       main,
       speakerSelection.name,
+      speakerSelection.productId,
       directCount,
       "dt-main-speakers",
       1
@@ -1124,6 +1126,7 @@ class CandidateWiringBuilder {
     nextSpeaker = this.connectSpeakerOutputs(
       amplifier,
       speakerSelection.name,
+      speakerSelection.productId,
       amplifierSpeakerCount,
       "amplifier-speakers",
       nextSpeaker
@@ -1153,6 +1156,7 @@ class CandidateWiringBuilder {
         nextSpeaker = this.connectSpeakerOutputs(
           processor,
           speakerSelection.name,
+          speakerSelection.productId,
           directCount,
           "processor-speakers",
           nextSpeaker
@@ -1210,6 +1214,7 @@ class CandidateWiringBuilder {
       this.connectSpeakerOutputs(
         amp,
         speakerSelection.name,
+        speakerSelection.productId,
         amplifierSpeakerCount,
         "amplifier-speakers",
         nextSpeaker
@@ -1272,11 +1277,15 @@ class CandidateWiringBuilder {
   private connectSpeakerOutputs(
     source: InterfaceWiringNode,
     speakerName: string,
+    speakerProductId: string,
     quantity: number,
     idPrefix: string,
     firstSpeakerIndex: number
   ) {
     if (quantity <= 0) return firstSpeakerIndex;
+    const speakerPortProfileId = speakerProductId === "CEILING-SPEAKER"
+      ? CEILING_SPEAKER_PORT_PROFILE_ID
+      : PASSIVE_SPEAKER_PORT_PROFILE_ID;
     const available = getDevicePortsByPrefix(source.productId, "spk").filter((port) => !this.isPortOccupied(source.id, port.id));
     if (!available.length) {
       this.addFinding({
@@ -1304,11 +1313,11 @@ class CandidateWiringBuilder {
         "扬声器接线端子",
         "input",
         true,
-        this.requirePort(PASSIVE_SPEAKER_PORT_PROFILE_ID, "terminals").terminals
+        this.requirePort(speakerPortProfileId, "terminals").terminals
       );
       const speakerGroup = this.ensureNode({
         id: `${idPrefix}-group-${index + 1}`,
-        productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
+        productId: speakerPortProfileId,
         label: speakerName,
         category: "speaker",
         quantity: channelQuantity
@@ -1432,9 +1441,12 @@ class CandidateWiringBuilder {
     }
     if (isSpeakerName(clean)) {
       const selected = this.outputs.productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
+      const speakerPortProfileId = selected?.productId === "CEILING-SPEAKER" || clean.includes("吸顶音箱")
+        ? CEILING_SPEAKER_PORT_PROFILE_ID
+        : PASSIVE_SPEAKER_PORT_PROFILE_ID;
       return {
         id: "speakers",
-        productId: PASSIVE_SPEAKER_PORT_PROFILE_ID,
+        productId: speakerPortProfileId,
         label: selected?.name ?? clean.replace(/主机直驱分组|扩展分组|AFC扩声分组|不送线阵AFC分组|后墙中置AFC补声分组/g, "").trim(),
         category: "speaker",
         quantity: selected?.quantity ?? quantity
@@ -1625,7 +1637,9 @@ class CandidateWiringBuilder {
     if (this.isComputerNode(node) && normalized.includes("USB")) {
       return this.syntheticPort("usbAudio", "USB Audio", "USB", "bidirectional");
     }
-    if (node.productId === PASSIVE_SPEAKER_PORT_PROFILE_ID) return this.requirePort(node.productId, "terminals");
+    if (node.productId === PASSIVE_SPEAKER_PORT_PROFILE_ID || node.productId === CEILING_SPEAKER_PORT_PROFILE_ID) {
+      return this.requirePort(node.productId, "terminals");
+    }
 
     const isAudio = /音频|LINE|RCA|3\.5|6\.35/i.test(originalPort);
     const label = isAudio
@@ -1919,6 +1933,14 @@ function getTerminalLabel(port: DevicePortCapability, terminalId: string, fallba
   return port.terminals.find((terminal) => terminal.id === terminalId)?.label ?? fallback;
 }
 
+function getTerminalIdByRole(
+  port: DevicePortCapability,
+  role: DevicePortTerminal["role"],
+  fallback: string
+) {
+  return port.terminals.find((terminal) => terminal.role === role)?.id ?? fallback;
+}
+
 function mappedConductor(
   id: string,
   label: string,
@@ -1941,18 +1963,22 @@ function mappedConductor(
 }
 
 function getBalancedToStereoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const positive = getTerminalIdByRole(fromPort, "positive", "positive");
+  const ground = getTerminalIdByRole(fromPort, "ground", "ground");
   return [
-    mappedConductor("positive-left", "红线", "#dc2626", fromPort, "positive", toPort, "left"),
-    mappedConductor("positive-right", "白线", "#ffffff", fromPort, "positive", toPort, "right"),
-    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+    mappedConductor("positive-left", "红线", "#dc2626", fromPort, positive, toPort, "left"),
+    mappedConductor("positive-right", "白线", "#ffffff", fromPort, positive, toPort, "right"),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, ground, toPort, "ground")
   ];
 }
 
 function getStereoToBalancedConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const positive = getTerminalIdByRole(toPort, "positive", "positive");
+  const ground = getTerminalIdByRole(toPort, "ground", "ground");
   return [
-    mappedConductor("left-positive", "红线", "#dc2626", fromPort, "left", toPort, "positive"),
-    mappedConductor("right-positive", "白线", "#ffffff", fromPort, "right", toPort, "positive"),
-    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+    mappedConductor("left-positive", "红线", "#dc2626", fromPort, "left", toPort, positive),
+    mappedConductor("right-positive", "白线", "#ffffff", fromPort, "right", toPort, positive),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, ground)
   ];
 }
 
@@ -1973,11 +1999,61 @@ function getStereoToMonoConductors(fromPort: DevicePortCapability, toPort: Devic
 }
 
 function getBalancedToMonoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const positive = getTerminalIdByRole(fromPort, "positive", "positive");
+  const ground = getTerminalIdByRole(fromPort, "ground", "ground");
   return [
-    mappedConductor("positive-signal-red", "红线", "#dc2626", fromPort, "positive", toPort, "signal"),
-    mappedConductor("positive-signal-white", "白线", "#ffffff", fromPort, "positive", toPort, "signal"),
-    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, "ground", toPort, "ground")
+    mappedConductor("positive-signal-red", "红线", "#dc2626", fromPort, positive, toPort, "signal"),
+    mappedConductor("positive-signal-white", "白线", "#ffffff", fromPort, positive, toPort, "signal"),
+    mappedConductor("ground-ground", "屏蔽线", "#6b7280", fromPort, ground, toPort, "ground")
   ];
+}
+
+function getMonoToBalancedConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const signal = getTerminalIdByRole(fromPort, "signal", "signal");
+  const fromGround = getTerminalIdByRole(fromPort, "ground", "ground");
+  const positive = getTerminalIdByRole(toPort, "positive", "positive");
+  const toGround = getTerminalIdByRole(toPort, "ground", "ground");
+  return [
+    mappedConductor("signal-positive", "红线", "#dc2626", fromPort, signal, toPort, positive),
+    mappedConductor("ground-ground", "屏蔽线", "#64748b", fromPort, fromGround, toPort, toGround)
+  ];
+}
+
+function getMonoToStereoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const signal = getTerminalIdByRole(fromPort, "signal", "signal");
+  const ground = getTerminalIdByRole(fromPort, "ground", "ground");
+  return [
+    mappedConductor("signal-left", "红线", "#dc2626", fromPort, signal, toPort, "left"),
+    mappedConductor("signal-right", "白线", "#ffffff", fromPort, signal, toPort, "right"),
+    mappedConductor("ground-ground", "屏蔽线", "#64748b", fromPort, ground, toPort, "ground")
+  ];
+}
+
+type AudioTerminalForm = "balanced" | "stereo" | "mono";
+
+function getAudioTerminalForm(port: DevicePortCapability): AudioTerminalForm | undefined {
+  const ids = new Set(port.terminals.map((terminal) => terminal.id));
+  if (["left", "right", "ground"].every((id) => ids.has(id))) return "stereo";
+  const roles = new Set(port.terminals.map((terminal) => terminal.role));
+  if (["positive", "negative", "ground"].every((role) => roles.has(role as DevicePortTerminal["role"]))) {
+    return "balanced";
+  }
+  const signalCount = port.terminals.filter((terminal) => terminal.role === "signal").length;
+  return signalCount === 1 && roles.has("ground") ? "mono" : undefined;
+}
+
+function getAudioConductorMappings(
+  fromPort: DevicePortCapability,
+  toPort: DevicePortCapability
+): InterfaceWiringConductor[] | undefined {
+  const conversion = `${getAudioTerminalForm(fromPort) ?? "unknown"}-${getAudioTerminalForm(toPort) ?? "unknown"}`;
+  if (conversion === "mono-balanced") return getMonoToBalancedConductors(fromPort, toPort);
+  if (conversion === "balanced-mono") return getBalancedToMonoConductors(fromPort, toPort);
+  if (conversion === "mono-stereo") return getMonoToStereoConductors(fromPort, toPort);
+  if (conversion === "stereo-mono") return getStereoToMonoConductors(fromPort, toPort);
+  if (conversion === "stereo-balanced") return getStereoToBalancedConductors(fromPort, toPort);
+  if (conversion === "balanced-stereo") return getBalancedToStereoConductors(fromPort, toPort);
+  return undefined;
 }
 
 function isStereoPortCapability(port: DevicePortCapability) {
@@ -2071,6 +2147,9 @@ function getConductorMappings(
   toPort: DevicePortCapability,
   cableType: string
 ): InterfaceWiringConductor[] {
+  const isAudioCable = !/USB/i.test(cableType) && /音频线|话筒线/i.test(cableType);
+  const convertedAudioMappings = isAudioCable ? getAudioConductorMappings(fromPort, toPort) : undefined;
+  if (convertedAudioMappings) return convertedAudioMappings;
   const mappings = fromPort.terminals.flatMap((fromTerminal) => {
     const toTerminal = toPort.terminals.find((candidate) => candidate.id === fromTerminal.id) ??
       (fromTerminal.role !== "pin"
@@ -2088,8 +2167,8 @@ function getConductorMappings(
       confirmed: fromPort.confirmed && toPort.confirmed
     } satisfies InterfaceWiringConductor];
   });
-  if (mappings.length) return mappings;
-  if (!/USB/i.test(cableType) && /音频线|话筒线/i.test(cableType)) {
+  if (mappings.length && (!isAudioCable || mappings.length === fromPort.terminals.length)) return mappings;
+  if (isAudioCable) {
     return GENERIC_BALANCED_AUDIO_TERMINALS.map((fallbackTerminal) => {
       const fromTerminal = fromPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
       const toTerminal = toPort.terminals.find((terminal) => terminal.role === fallbackTerminal.role) ?? fallbackTerminal;
@@ -2337,7 +2416,7 @@ function buildCompactInterfaceWiringLayout(input: {
   const rootSize = preferredDimensions.get(root.id)!;
   const packedRows = packCompactLayoutRows(model, root, width, sidePadding, preferredDimensions);
   const fittedRows = packedRows.map((row) => fitCompactLayoutRow(row, width, sidePadding, preferredDimensions)!);
-  const bands = getCompactLayoutBands(fittedRows);
+  const bands = getCompactLayoutBands(fittedRows, model);
   const assignments = getCompactLayoutSideAssignments(bands, rootSize, bottomPadding);
   let best: {
     height: number;
@@ -2346,7 +2425,7 @@ function buildCompactInterfaceWiringLayout(input: {
   } | undefined;
 
   assignments.forEach((assignment) => {
-    const relativePositions = placeCompactLayoutRows({ model, root, rootSize, width, assignment });
+    const relativePositions = placeCompactLayoutRows({ model, root, rootSize, width, sidePadding, assignment });
     const rawPositions = Array.from(relativePositions.values());
     const minY = Math.min(...rawPositions.map((position) => position.y));
     const maxY = Math.max(...rawPositions.map((position) => position.y + position.height));
@@ -2412,7 +2491,7 @@ function packCompactLayoutRows(
     }]
   }));
   const modelOrder = new Map(model.nodes.map((node, index) => [node.id, index]));
-  const unplaced = model.nodes
+  const candidateItems = model.nodes
     .filter((node) => node.id !== root.id && !isCompactSpeakerGroup(node))
     .map((node) => ({
       key: node.id,
@@ -2420,6 +2499,9 @@ function packCompactLayoutRows(
       speakerBlock: false,
       wide: isWideInterfacePanelNode(node)
     } satisfies CompactLayoutItem));
+  const relayItems = candidateItems.filter((item) => isCompactSpeakerRelayNode(model, item.nodes[0]));
+  let unplaced = candidateItems.filter((item) => !relayItems.includes(item));
+  rows.push(...relayItems.map((item) => ({ items: [item] })));
 
   while (unplaced.length) {
     let best: {
@@ -2544,14 +2626,19 @@ function getCompactLayoutMinimumNodeWidth(node: InterfaceWiringNode, preferredWi
   return Math.min(preferredWidth, 200);
 }
 
-function getCompactLayoutBands(rows: FittedCompactLayoutRow[]) {
+function getCompactLayoutBands(rows: FittedCompactLayoutRow[], model: InterfaceWiringModel) {
   const speakerRows = rows
     .filter((row) => row.row.items.some((item) => item.speakerBlock))
     .sort((left, right) => getCompactLayoutSpeakerSequence(left) - getCompactLayoutSpeakerSequence(right));
   const regularRows = rows.filter((row) => !row.row.items.some((item) => item.speakerBlock));
+  const relayRows = regularRows.filter((row) => row.row.items.some((item) =>
+    item.nodes.some((node) => isCompactSpeakerRelayNode(model, node))
+  ));
+  const equipmentRows = regularRows.filter((row) => !relayRows.includes(row));
   const bands: CompactLayoutBand[] = [];
   if (speakerRows.length) bands.push(makeCompactLayoutBand("speaker-band", speakerRows));
-  regularRows.forEach((row, index) => bands.push(makeCompactLayoutBand(`equipment-row-${index}`, [row])));
+  relayRows.forEach((row, index) => bands.push(makeCompactLayoutBand(`speaker-relay-band-${index}`, [row])));
+  equipmentRows.forEach((row, index) => bands.push(makeCompactLayoutBand(`equipment-row-${index}`, [row])));
   return bands;
 }
 
@@ -2578,11 +2665,13 @@ function getCompactLayoutSideAssignments(
 ) {
   if (!bands.length) return [{ top: [], bottom: [], order: 0 } satisfies CompactLayoutSideAssignment];
   const assignments: CompactLayoutSideAssignment[] = [];
+  const hasSpeakerRelayChain = bands.some((band) => band.id === "speaker-band") &&
+    bands.some((band) => band.id.startsWith("speaker-relay-band-"));
   if (bands.length <= 10) {
     for (let mask = 0; mask < 2 ** bands.length; mask += 1) {
       const top = bands.filter((_, index) => Boolean(mask & (1 << index)));
       const bottom = bands.filter((_, index) => !Boolean(mask & (1 << index)));
-      if (bands.length > 1 && (!top.length || !bottom.length)) continue;
+      if (bands.length > 1 && (!top.length || !bottom.length) && !hasSpeakerRelayChain) continue;
       assignments.push({ top, bottom, order: mask });
     }
   } else {
@@ -2601,12 +2690,23 @@ function getCompactLayoutSideAssignments(
       });
     assignments.push({ top, bottom, order: 0 });
   }
-  const minimumHalfHeight = Math.min(...assignments.map((assignment) =>
+  const relayAssignments = assignments.filter(compactSpeakerRelayBandsShareSide);
+  const eligibleAssignments = relayAssignments.length ? relayAssignments : assignments;
+  const minimumHalfHeight = Math.min(...eligibleAssignments.map((assignment) =>
     getCompactLayoutRequiredHalfHeight(assignment.top, assignment.bottom, rootSize, bottomPadding)
   ));
-  return assignments.filter((assignment) =>
+  return eligibleAssignments.filter((assignment) =>
     Math.abs(getCompactLayoutRequiredHalfHeight(assignment.top, assignment.bottom, rootSize, bottomPadding) - minimumHalfHeight) < 0.001
   );
+}
+
+function compactSpeakerRelayBandsShareSide(assignment: CompactLayoutSideAssignment) {
+  const speakerOnTop = assignment.top.some((band) => band.id === "speaker-band");
+  const speakerOnBottom = assignment.bottom.some((band) => band.id === "speaker-band");
+  const relayOnTop = assignment.top.some((band) => band.id.startsWith("speaker-relay-band-"));
+  const relayOnBottom = assignment.bottom.some((band) => band.id.startsWith("speaker-relay-band-"));
+  if ((!relayOnTop && !relayOnBottom) || (!speakerOnTop && !speakerOnBottom)) return true;
+  return (speakerOnTop && relayOnTop && !relayOnBottom) || (speakerOnBottom && relayOnBottom && !relayOnTop);
 }
 
 function getCompactLayoutRequiredHalfHeight(
@@ -2631,9 +2731,10 @@ function placeCompactLayoutRows(input: {
   root: InterfaceWiringNode;
   rootSize: { width: number; height: number };
   width: number;
+  sidePadding: number;
   assignment: CompactLayoutSideAssignment;
 }) {
-  const { model, root, rootSize, width, assignment } = input;
+  const { model, root, rootSize, width, sidePadding, assignment } = input;
   const positions = new Map<string, MutableLayoutPosition>();
   positions.set(root.id, {
     x: width / 2 - rootSize.width / 2,
@@ -2715,7 +2816,58 @@ function placeCompactLayoutRows(input: {
       placeRow(row);
     });
   }
+  alignCompactSpeakerRelayNodes(model, positions, width, sidePadding);
   return positions;
+}
+
+function alignCompactSpeakerRelayNodes(
+  model: InterfaceWiringModel,
+  positions: Map<string, MutableLayoutPosition>,
+  width: number,
+  sidePadding: number
+) {
+  model.nodes.filter((node) => isCompactSpeakerRelayNode(model, node)).forEach((relay) => {
+    const position = positions.get(relay.id);
+    const ownedSpeakerPositions = model.nodes
+      .filter((node) => isCompactSpeakerGroup(node) && node.parentId === relay.id)
+      .map((node) => positions.get(node.id))
+      .filter((candidate): candidate is MutableLayoutPosition => Boolean(candidate));
+    if (!position || !ownedSpeakerPositions.length) return;
+    const ownedLeft = Math.min(...ownedSpeakerPositions.map((candidate) => candidate.x));
+    const ownedRight = Math.max(...ownedSpeakerPositions.map((candidate) => candidate.x + candidate.width));
+    const targetCenterX = (ownedLeft + ownedRight) / 2;
+    const minimumX = sidePadding;
+    const maximumX = width - sidePadding - position.width;
+    const clampX = (value: number) => Math.max(minimumX, Math.min(maximumX, value));
+    const blockers = Array.from(positions.entries()).flatMap(([id, candidate]) => {
+      if (id === relay.id) return [];
+      const verticallyOverlaps = candidate.y < position.y + position.height &&
+        candidate.y + candidate.height > position.y;
+      return verticallyOverlaps ? [candidate] : [];
+    });
+    const candidates = [
+      clampX(targetCenterX - position.width / 2),
+      clampX(position.x),
+      minimumX,
+      maximumX,
+      ...blockers.flatMap((blocker) => [
+        clampX(blocker.x - LEVEL_TWO_NODE_GAP - position.width),
+        clampX(blocker.x + blocker.width + LEVEL_TWO_NODE_GAP)
+      ])
+    ];
+    const legalPositions = candidates.filter((candidateX) => blockers.every((blocker) => (
+      candidateX + position.width + LEVEL_TWO_NODE_GAP <= blocker.x ||
+      blocker.x + blocker.width + LEVEL_TWO_NODE_GAP <= candidateX
+    )));
+    const nextX = legalPositions.sort((left, right) =>
+      Math.abs(left + position.width / 2 - targetCenterX) -
+        Math.abs(right + position.width / 2 - targetCenterX) ||
+      Math.abs(left - position.x) - Math.abs(right - position.x) ||
+      left - right
+    )[0] ?? position.x;
+    position.x = nextX;
+    position.centerX = nextX + position.width / 2;
+  });
 }
 
 function getInitialCompactLayoutItemOrder(
@@ -2765,6 +2917,18 @@ function orderCompactLayoutBandsFromRoot(
 ) {
   const remaining = [...bands];
   const ordered: CompactLayoutBand[] = [];
+  const speakerBand = remaining.find((band) => band.id === "speaker-band");
+  const relayBands = remaining
+    .filter((band) => band.id.startsWith("speaker-relay-band-"))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  if (speakerBand && relayBands.length) {
+    relayBands.forEach((band) => {
+      ordered.push(band);
+      remaining.splice(remaining.indexOf(band), 1);
+    });
+    ordered.push(speakerBand);
+    remaining.splice(remaining.indexOf(speakerBand), 1);
+  }
   while (remaining.length) {
     const placedNodeIds = new Set(ordered.flatMap((band) => Array.from(band.nodeIds)));
     const previousNodeIds = ordered.at(-1)?.nodeIds ?? new Set<string>();
@@ -2886,6 +3050,12 @@ function compareCompactLayoutScores(left: number[], right: number[]) {
 
 function isCompactSpeakerGroup(node: InterfaceWiringNode) {
   return node.category === "speaker" && node.ports.length === 1 && Boolean(node.ports[0]?.deviceSequenceRange);
+}
+
+function isCompactSpeakerRelayNode(model: InterfaceWiringModel, node: InterfaceWiringNode) {
+  return node.category === "amplifier" && model.nodes.some((candidate) =>
+    isCompactSpeakerGroup(candidate) && candidate.parentId === node.id
+  );
 }
 
 function isCompactPortraitNode(node: InterfaceWiringNode) {
@@ -3080,7 +3250,7 @@ export function getInterfacePanelPortAnchor(
         : undefined
     };
   }
-  if (panelProfile.assetKey === "passiveSpeaker" && baseId === "terminals" && portCount > 1) {
+  if ((panelProfile.assetKey === "passiveSpeaker" || panelProfile.assetKey === "ceilingSpeaker") && baseId === "terminals" && portCount > 1) {
     const rowCount = Math.ceil(portCount / 2);
     const column = portIndex % 2;
     const row = Math.floor(portIndex / 2);
@@ -3187,7 +3357,7 @@ function getDrawingPeerDelta(point: { x: number; y: number }, peer?: MutableLayo
 
 function getInterfacePanelImageSize(aspectRatio: number, nodeWidth: number) {
   const availableWidth = Math.max(120, nodeWidth - 20);
-  const width = Math.min(availableWidth, 220 * aspectRatio);
+  const width = Math.min(nodeWidth, availableWidth, 220 * aspectRatio);
   return {
     width,
     height: width / aspectRatio
@@ -3242,6 +3412,19 @@ function getConnectionMethod(
     return fromPort.interfaceType.includes("3.5mm") && toPort.interfaceType.includes("3.5mm")
       ? "成品双头3.5mm线，L/R/G一一对应"
       : "L/R/G一一对应";
+  }
+  const fromAudioForm = getAudioTerminalForm(fromPort);
+  const toAudioForm = getAudioTerminalForm(toPort);
+  if (fromAudioForm === "mono" && toAudioForm === "balanced") {
+    return /6\.35/i.test(`${fromPort.interfaceType} ${fromPort.panelLabel}`)
+      ? "6.35 TS端TIP接LINE IN +，SLEEVE接G，LINE IN -悬空"
+      : "单声道信号端接LINE IN +，地端接G，LINE IN -悬空";
+  }
+  if (fromAudioForm === "stereo" && toAudioForm === "balanced") {
+    return "L/R并接LINE IN +，G接G，LINE IN -悬空";
+  }
+  if (fromAudioForm === "balanced" && toAudioForm === "mono") {
+    return "LINE OUT +接单声道信号端，G接地端，LINE OUT -悬空";
   }
   if (line.cableType.includes("音频")) return "按输入/输出方向连接";
   return "按标注接口直连";

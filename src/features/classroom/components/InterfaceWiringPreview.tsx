@@ -1519,7 +1519,7 @@ function getCableTrunkRoutes(
     color,
     strokeWidth: edge.kind === "jumper"
       ? 3.2
-      : edge.conductorDisplay === "collapsed" ? 6
+      : (edge.conductorDisplay === "collapsed" || getCableLegendKind(edge) === "audio") ? 6
       : multicore ? 6 : isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
     confirmed: conductors.every((item) => item.confirmed),
     needsOutline: color.toLowerCase() === "#ffffff"
