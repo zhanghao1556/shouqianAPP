@@ -2412,3 +2412,18 @@ PowerShell reminder:
 - A parity verifier that reports only a final boolean turns a release gate into guesswork. On mismatch, identify the failing surface and print bounded first-difference context and lengths; keep full customer diagrams out of the terminal while making stale selectors, runtime-only attributes and real business drift distinguishable.
 - React-generated SVG IDs are document-instance state, not business output. Canonicalize each runtime ID and every matching reference by first-occurrence order before comparing two independently rendered SVGs; never strip IDs blindly or ignore the surrounding geometry, because clip-path ownership still matters.
 - When a browser surface explicitly blocks `file://`, respect that boundary and do not stand up an HTTP shim merely to recreate the navigation. A dedicated fresh-context release verifier can remain the authoritative behavior check when it already opened the exact final HTML before the UI-browser attempt.
+
+### 2026-07-20 Yinyi DT2 Pro shared-ground outputs
+
+- A terminal group labeled L/R/G is not inherently one balanced channel. Preserve the product-specific electrical meaning: when the user confirms L and R are separate mono signals, model two logical outputs sharing one physical ground instead of reusing generic balanced `+/-/G` mapping.
+- Physical connector capacity and logical signal capacity are different. One 6P block can contain two three-position groups, and each group can expose two separately routable signals; the occupancy model must count logical L/R channels while the drawing keeps both grounds landed on the shared G hole.
+- When Agent evidence and the user's wording differ only in terminal order, keep both facts explicit: use the verified physical panel order for artwork, but let the user-confirmed electrical semantics govern conductor mapping and allocation.
+
+### 2026-07-20 Yinyi array-microphone source sheet
+
+- When the user supplies an annotated physical-interface sheet, pause a slow Agent lookup and treat the sheet as the working source. Extract only facts visible in the source, keep user-confirmed electrical semantics above both the sheet and Agent wording, and do not implement while the user has asked only for review.
+- Main/slave identity is an electrical ownership rule, not just a label. External USB, Line, speaker and control connections terminate on the main microphone; slave microphones participate only in the ordered `EXT MIC OUT -> EXT MIC IN` cascade and receive power through that cascade.
+- The two operating modes of each six-position Line block must remain explicit: two balanced channels as `G/+/-` pairs, or four unbalanced channels as two shared-ground groups. The drawing may show both legends, but allocation must select one mode per actual connection and must never double-count the same holes.
+- Two RJ45-shaped paths have different semantics. Microphone-to-microphone cascade is the matched network cable with a `10m` per-segment limit and power delivery; main-microphone-to-control-host is an RJ45-to-RS232 control cable with crossed TX/RX and mapped GND. Connector shape alone must not choose the topology cable type.
+- Product artwork should be reconstructed as clean vector geometry from the rear-panel photo. Keep main/slave switch state and unavailable slave ports visible enough to explain the connection, while customer-facing names continue to hide the concrete model.
+- Agent prompts should request the exact artifact or conclusion needed. Do not append a blanket “answer only yes or no” phrase when the requested evidence is a rear-panel image, pin map or conditional product fact.
