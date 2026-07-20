@@ -2485,3 +2485,11 @@ PowerShell reminder:
 - A customer warning that must survive PNG/PDF export should be pure SVG text and geometry inside the drawing title band, with the same message also represented as a structured review finding.
 - A device endpoint can participate in both the suppressed legacy chain and a retained new-system link. Assert suppression by formal edge ownership and legacy-exclusive nodes, not by a broad label blacklist; otherwise a valid USB-connected computer becomes a false failure.
 - When the managed executor rewrites an explicit PowerShell 7 path to the blocked WindowsApps alias, follow the documented one-time `cmd.exe` fallback and record it. Repeatedly retrying alternate PowerShell paths does not add evidence about the source tree.
+
+### 2026-07-20 connector-specific hover color
+
+- “Terminal” in the user's correction meant Phoenix / wiring terminal blocks, not every physical connector endpoint. Do not generalize a green terminal treatment to RJ45, USB, jack or XLR ports merely because they share one interaction marker renderer.
+- Preserve the established drawing-level hover feedback and branch only the endpoint overlay: terminal blocks receive the clipped green tint, while ordinary connectors retain the earlier white-to-cyan clipped image pulse.
+- When a visual correction is ambiguous, inspect the feature's history before removing adjacent behavior. The original connector treatment was recoverable from Git and made the intended distinction concrete.
+- CSS source-shape assertions that start at one keyframe can accidentally consume later keyframes. Prefer positive assertions for the exact expected values inside the target rule instead of a broad negative pattern over the remaining stylesheet.
+- When the user has exercised the actual React hover and explicitly accepted it, treat that as stronger motion evidence than repeatedly retrying a browser automation path known not to retain `pointerenter`; keep DOM classification and focused regression tests as the reproducible contract.

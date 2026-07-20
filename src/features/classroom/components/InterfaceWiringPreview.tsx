@@ -280,10 +280,11 @@ function InterfaceWiringDiagram({
             return (
               <g
                 key={`${marker.id}-focus`}
-                className={`interfaceWiringPortImageFocus${marker.edgeId === highlightedEdgeId ? " is-active" : ""}`}
+                className={`interfaceWiringPortImageFocus${marker.terminalSelective ? " is-terminal-block" : " is-connector"}${marker.edgeId === highlightedEdgeId ? " is-active" : ""}`}
                 clipPath={`url(#${getInterfaceWiringPortFocusClipId(portFocusIdPrefix, index)})`}
                 data-edge-id={marker.edgeId}
                 data-port-id={marker.portId}
+                data-focus-kind={marker.terminalSelective ? "terminal" : "connector"}
               >
                 {marker.panelImageRects.map((imageRect, imageIndex) => (
                   <image
@@ -297,14 +298,16 @@ function InterfaceWiringDiagram({
                     key={`${marker.id}-focus-image-${imageIndex + 1}`}
                   />
                 ))}
-                <rect
-                  x={marker.focusBounds.x}
-                  y={marker.focusBounds.y}
-                  width={marker.focusBounds.width}
-                  height={marker.focusBounds.height}
-                  rx={Math.min(5, marker.focusBounds.height / 2)}
-                  className="interfaceWiringPortImageFocusTint"
-                />
+                {marker.terminalSelective ? (
+                  <rect
+                    x={marker.focusBounds.x}
+                    y={marker.focusBounds.y}
+                    width={marker.focusBounds.width}
+                    height={marker.focusBounds.height}
+                    rx={Math.min(5, marker.focusBounds.height / 2)}
+                    className="interfaceWiringPortImageFocusTint"
+                  />
+                ) : null}
               </g>
             );
           })}

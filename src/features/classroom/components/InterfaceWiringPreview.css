@@ -538,11 +538,19 @@
 
 .interfaceWiringPortImageFocusLayer {
   pointer-events: none;
-  filter: brightness(1.02) contrast(1.12) saturate(1.18);
+  filter: brightness(1.42) contrast(1.34) saturate(1.45) drop-shadow(0 0 1px rgba(255, 255, 255, 0.96));
 }
 
 .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer {
   animation: interfaceWiringPortImageFocusPulse 0.9s ease-in-out infinite;
+}
+
+.interfaceWiringPortImageFocus.is-terminal-block .interfaceWiringPortImageFocusLayer {
+  filter: brightness(1.02) contrast(1.12) saturate(1.18);
+}
+
+.interfaceWiringPortImageFocus.is-terminal-block.is-active .interfaceWiringPortImageFocusLayer {
+  animation: interfaceWiringTerminalFocusPulse 0.9s ease-in-out infinite;
 }
 
 .interfaceWiringPortImageFocusTint {
@@ -577,6 +585,17 @@
 }
 
 @keyframes interfaceWiringPortImageFocusPulse {
+  0%,
+  100% {
+    filter: brightness(1.34) contrast(1.28) saturate(1.34) drop-shadow(0 0 1px rgba(255, 255, 255, 0.92));
+  }
+
+  50% {
+    filter: brightness(1.82) contrast(1.46) saturate(1.7) drop-shadow(0 0 3px rgba(56, 189, 248, 0.9));
+  }
+}
+
+@keyframes interfaceWiringTerminalFocusPulse {
   0%,
   100% {
     filter: brightness(1.02) contrast(1.12) saturate(1.18);
