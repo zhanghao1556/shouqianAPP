@@ -3,6 +3,8 @@ import arrayMicSlavePanel from "../../../assets/yinyi-array-mic-slave-rear-panel
 import aj200InterfacePanel from "../../../assets/yinman-aj200-interface-panel.svg";
 import aj600InterfacePanel from "../../../assets/yinman-aj600-interface-panel.svg";
 import amplifierRearPanel from "../../../assets/yinman-ap150-rear-panel.svg";
+import lineArrayRearPanel from "../../../assets/yinman-sa110-rear-panel.svg";
+import lineArrayConverterPanel from "../../../assets/yinman-line-array-converter-interface-panel.svg";
 import passiveSpeakerTerminal from "../../../assets/yinman-passive-speaker-terminal.svg";
 import wirelessReceiverRearPanel from "../../../assets/yinman-wireless-receiver-rear-panel.svg";
 import podiumComputerRearPanel from "../../../assets/external-podium-computer-panel.svg";
@@ -26,6 +28,8 @@ const panelImages: InterfacePanelImageMap = {
   aj200: aj200InterfacePanel,
   aj600: aj600InterfacePanel,
   ap150: amplifierRearPanel,
+  lineArray: lineArrayRearPanel,
+  lineArrayConverter: lineArrayConverterPanel,
   passiveSpeaker: passiveSpeakerTerminal,
   wirelessReceiver: wirelessReceiverRearPanel,
   podiumComputer: podiumComputerRearPanel,

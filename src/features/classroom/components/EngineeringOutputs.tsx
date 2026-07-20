@@ -1,4 +1,5 @@
 ﻿import { Download } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import type { ClassroomProfile, DrawingType, GeneratedOutputs, LegacySpeakerType, LegacyWallAdjustability, Point, ProcessorTier, ProductRecommendation, QuantityOverrides } from "../types";
 import { downloadSvgAsPng } from "../lib/imageExporter";
 import { getCustomerVisibleConnectionLines } from "../lib/customerOutput";
@@ -51,6 +52,16 @@ export function EngineeringOutputs({
     : "已生成设备清单、点位图和拓扑图。";
   const selectedSpeakerProductId = outputs.solutionSelection.speaker.selected === "ceiling" ? "CEILING-SPEAKER" : "COLUMN-SPEAKER";
   const equipmentRows = getEquipmentRows(outputs.productSelection, brand.id, selectedSpeakerProductId, outputs.solutionSelection.microphone.selected);
+  const hasManualEquipmentRecommendation = Object.keys(quantityOverrides).length > 0 ||
+    (profile.engineeringConstraints.processorTier ?? "auto") !== "auto";
+  const restoreAutomaticEquipmentRecommendation = () => {
+    onQuantityOverride({});
+    if ((profile.engineeringConstraints.processorTier ?? "auto") === "auto") return;
+    onSolutionChange({
+      ...profile,
+      engineeringConstraints: { ...profile.engineeringConstraints, processorTier: "auto" }
+    }, "processor");
+  };
   const exportDrawingImage = (type: "installation" | "topology") => {
       const selector =
         type === "installation"
@@ -82,7 +93,20 @@ export function EngineeringOutputs({
       <CustomerSolutionSelector profile={profile} selection={outputs.solutionSelection} onChange={onSolutionChange} />
 
       <div className="stackedOutputs">
-        <OutputSection title="设备清单">
+        <OutputSection
+          title="设备清单"
+          action={(
+            <button
+              type="button"
+              className="equipmentRecommendationResetButton"
+              onClick={restoreAutomaticEquipmentRecommendation}
+              disabled={!hasManualEquipmentRecommendation}
+              title="清除设备数量和处理器手动选择"
+            >
+              <RotateCcw size={15} /> 恢复自动推荐
+            </button>
+          )}
+        >
         <div className="tableBox">
           {outputs.productSelection.length ? (
             <table>
@@ -256,10 +280,13 @@ function DrawingBlock({
   );
 }
 
-function OutputSection({ title, children }: { title: string; children: React.ReactNode }) {
+function OutputSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="outputSection">
-      <h3>{title}</h3>
+      <div className="outputSectionHeader">
+        <h3>{title}</h3>
+        {action}
+      </div>
       {children}
     </section>
   );

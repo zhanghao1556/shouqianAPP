@@ -469,6 +469,25 @@
   stroke-width: 1;
 }
 
+.interfaceWiringConnectorRj45Body {
+  fill: #d9f0f5;
+  stroke: #172033;
+  stroke-width: 1;
+}
+
+.interfaceWiringConnectorRj45Contact {
+  stroke: #b7791f;
+  stroke-width: 1.15;
+}
+
+.interfaceWiringConnectorRj45Latch {
+  fill: none;
+  stroke: #172033;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .interfaceWiringConnectorGrip {
   fill: #334155;
   stroke: #172033;

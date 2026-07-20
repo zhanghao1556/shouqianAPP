@@ -98,9 +98,9 @@ interface ConnectionSeed {
   id: string;
   kind?: InterfaceWiringEdge["kind"];
   jumperRoute?: InterfaceWiringEdge["jumperRoute"];
-  fromNode: InterfaceWiringNode;
   jumperBulge?: InterfaceWiringEdge["jumperBulge"];
   conductorDisplay?: InterfaceWiringEdge["conductorDisplay"];
+  fromNode: InterfaceWiringNode;
   fromPort: DevicePortCapability;
   fromPortInstanceId?: string;
   allowOccupiedFromPort?: boolean;
@@ -215,11 +215,11 @@ class CandidateWiringBuilder {
 
   build(): InterfaceWiringModel {
     const state = this.getSystemState();
-    if (this.brandId === "yinyi") {
+    if (this.brandId === "yinyi" && state.yinyiDtCount > 0) {
       this.prepareYinyiArrayMicrophones(state);
     } else {
       this.prepareCandidateMicrophoneSystem(state);
-      this.prepareSmallDiscSystem(state);
+      if (this.brandId === "yinman") this.prepareSmallDiscSystem(state);
     }
     this.ensureSelectedExternalNodes();
     this.addFormalConnections();
@@ -324,21 +324,39 @@ class CandidateWiringBuilder {
   }
 
   private selectCandidateProcessor(state: SystemState): CandidateProcessor {
+    if (this.brandId === "yinyi") {
+      if (state.lineArrayCount > 1) return "AJ600";
+      return this.getFormalProcessorModel() === "AJ600" ? "AJ600" : "AJ200";
+    }
     if (state.ring08Count > 0) return "AJ350";
     if (state.lineArrayCount > 1) return "AJ600";
     if (state.lineArrayCount === 1 && state.supplementCount > 0) {
       const speakerCount = this.outputs.productSelection.find((item) => item.category === "speaker" && item.quantity > 0)?.quantity ?? 0;
       return getYinmanHybridProcessorTier(this.profile, speakerCount) === "sixMic" ? "AJ600" : "AJ200";
     }
-    if (state.lineArrayCount === 1) return "AJ350";
-    const formalProcessor = this.outputs.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name ?? "";
-    return formalProcessor.includes("六麦") ? "AJ600" : formalProcessor.includes("高性能") ? "AJ350" : "AJ200";
+    const formalProcessor = this.getFormalProcessorModel();
+    if (state.lineArrayCount === 1) return formalProcessor ?? "AJ350";
+    return formalProcessor ?? "AJ200";
+  }
+
+  private getFormalProcessorModel(): CandidateProcessor | undefined {
+    const formalName = this.getFormalProcessorName() ?? "";
+    return formalName.includes("高性能")
+      ? "AJ350"
+      : formalName.includes("六麦")
+        ? "AJ600"
+        : formalName.includes("双麦")
+          ? "AJ200"
+          : undefined;
+  }
+
+  private getFormalProcessorName() {
+    return this.outputs.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name;
   }
 
   private recordProcessorDifference() {
-    const formalName = this.outputs.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name;
-    if (!formalName || !this.candidateProcessor) return;
-    const formalModel = formalName.includes("高性能") ? "AJ350" : formalName.includes("六麦") ? "AJ600" : formalName.includes("双麦") ? "AJ200" : undefined;
+    const formalModel = this.getFormalProcessorModel();
+    if (!formalModel || !this.candidateProcessor) return;
     if (formalModel && formalModel !== this.candidateProcessor) {
       this.addFinding({
         code: "processor.candidate-difference",
@@ -775,7 +793,8 @@ class CandidateWiringBuilder {
   }
 
   private connectControlHost(node: InterfaceWiringNode) {
-    const controller = this.brandId === "yinyi" ? this.nodes.get("dt-main") : this.nodes.get("processor");
+    const yinyiMain = this.nodes.get("dt-main");
+    const controller = yinyiMain ?? this.nodes.get("processor");
     if (!controller) {
       this.addFinding({
         code: "external.control.rs232-unavailable",
@@ -788,7 +807,7 @@ class CandidateWiringBuilder {
     }
     const controllerPort = this.requireAvailablePort(
       controller,
-      this.brandId === "yinyi" ? "extMicOut" : "rs232",
+      yinyiMain ? "extMicOut" : "rs232",
       "中控主机RS232"
     );
     if (!controllerPort) return;
@@ -801,11 +820,11 @@ class CandidateWiringBuilder {
       toNode: node,
       toPort: controlPort,
       cableType: "232线",
-      connectionMethod: this.brandId === "yinyi"
+      connectionMethod: yinyiMain
         ? "RJ45白橙TX接中控RX，橙RX接中控TX，白绿/绿GND并接中控GND；115200、8N1"
         : "处理器TX接中控RX，处理器RX接中控TX，GND对接GND",
       signalDirection: "bidirectional",
-      conductors: this.brandId === "yinyi"
+      conductors: yinyiMain
         ? getYinyiRs232Conductors(controllerPort, controlPort)
         : getRs232Conductors(controllerPort, controlPort)
     });
@@ -1078,23 +1097,20 @@ class CandidateWiringBuilder {
       const channelsInPair = Math.min(2, activeChannels - pairIndex * 2);
       const firstChannel = pairIndex * 2 + 1;
       const lastChannel = firstChannel + channelsInPair - 1;
-      this.addConnection({
-        id: `dt-main-amplifier-input-${pairIndex + 1}`,
       const source = this.allocatePort(main, "lineOut", `功放通道${firstChannel}-${lastChannel}`);
       if (!source) continue;
       const target = this.requireAvailablePort(amplifier, `lineIn${firstChannel}`, "阵麦主麦音频输出");
       if (!target) continue;
+      this.addConnection({
+        id: `dt-main-amplifier-input-${pairIndex + 1}`,
         fromNode: main,
         fromPort: source,
         toNode: amplifier,
         toPort: target,
         cableType: "音频线",
         connectionMethod: `阵麦LINE OUT所选L或R接功放LINE IN ${firstChannel}正端，共地G并接该通道负端和地端；LINE IN ${firstChannel}驱动SPK${firstChannel}`,
-        conductors: getYinyiMonoToAmplifierConductors(source, target),
-        conductorDisplay: "collapsed"
+        conductors: getYinyiMonoToAmplifierConductors(source, target)
       });
-    }
-    nextSpeaker = this.connectSpeakerOutputs(
       if (channelsInPair > 1) {
         this.addAmplifierInputJumper(
           amplifier,
@@ -1104,6 +1120,8 @@ class CandidateWiringBuilder {
           18
         );
       }
+    }
+    nextSpeaker = this.connectSpeakerOutputs(
       amplifier,
       speakerSelection.name,
       amplifierSpeakerCount,
@@ -1117,7 +1135,7 @@ class CandidateWiringBuilder {
     const speakerSelection = this.outputs.productSelection.find((item) => item.category === "speaker" && item.quantity > 0);
     if (!speakerSelection) return;
     const amplifierSelection = this.outputs.productSelection.find((item) => item.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID && item.quantity > 0);
-    if (this.brandId === "yinyi") {
+    if (this.brandId === "yinyi" && this.nodes.has("dt-main")) {
       this.addYinyiSpeakerRoutes(speakerSelection, amplifierSelection);
       return;
     }
@@ -1469,6 +1487,32 @@ class CandidateWiringBuilder {
     };
   }
 
+  private getTopologyAlignedNodeLabel(seed: NodeSeed) {
+    if (seed.productId === YINYI_DT2_PRO_PORT_PROFILE_ID) {
+      return this.getSystemState().yinyiDtCount > 1 ? "主麦" : "阵麦";
+    }
+    if (seed.productId === YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID) {
+      const sequence = /-(\d+)$/.exec(seed.id)?.[1];
+      return sequence ? `从麦 ${sequence}` : "从麦";
+    }
+    if (seed.id === "processor") return this.getFormalProcessorName() ?? seed.label;
+    if (seed.productId === PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID) {
+      const sequence = /-(\d+)$/.exec(seed.id)?.[1];
+      return sequence ? `阵麦 ${sequence}` : "阵麦";
+    }
+    if (seed.productId === EXTERNAL_AMPLIFIER_PRODUCT_ID) return "功放";
+    if (seed.productId === EXTERNAL_WIRED_MICROPHONE_PORT_PROFILE_ID) return "有线麦";
+    if (seed.productId === "WIRELESS-MICROPHONE") return "手持麦";
+    if (seed.productId === LAPTOP_PORT_PROFILE_ID) return "笔记本";
+    if (seed.productId === VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID) return "会议终端";
+    if (seed.productId === OPS_ALL_IN_ONE_PORT_PROFILE_ID) {
+      if (seed.label.includes("ClassIn")) return "ClassIn";
+      if (seed.label.includes("会议")) return "会议屏";
+      return "一体机";
+    }
+    return seed.label;
+  }
+
   private ensureNode(seed: NodeSeed): InterfaceWiringNode {
     const existing = this.nodes.get(seed.id);
     if (existing) {
@@ -1478,6 +1522,7 @@ class CandidateWiringBuilder {
     }
     const node: InterfaceWiringNode = {
       ...seed,
+      label: this.getTopologyAlignedNodeLabel(seed),
       level: 1,
       ports: []
     };
@@ -1674,6 +1719,8 @@ class CandidateWiringBuilder {
       id: seed.id,
       kind: seed.kind ?? "field",
       jumperRoute: seed.jumperRoute,
+      ...(seed.jumperBulge !== undefined ? { jumperBulge: seed.jumperBulge } : {}),
+      ...(seed.conductorDisplay ? { conductorDisplay: seed.conductorDisplay } : {}),
       fromNodeId: seed.fromNode.id,
       fromPortId,
       toNodeId: seed.toNode.id,
@@ -1688,8 +1735,6 @@ class CandidateWiringBuilder {
       this.addFinding({
         code: `unconfirmed-port.${seed.id}`,
         severity: "review",
-      ...(seed.jumperBulge !== undefined ? { jumperBulge: seed.jumperBulge } : {}),
-      ...(seed.conductorDisplay ? { conductorDisplay: seed.conductorDisplay } : {}),
         title: "接口面板标识待补录",
         message: `${!seed.fromPort.confirmed ? seed.fromNode.label : seed.toNode.label}存在尚未确认的面板原始接口名称。`,
         nodeId: !seed.fromPort.confirmed ? seed.fromNode.id : seed.toNode.id

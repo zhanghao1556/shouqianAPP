@@ -52,6 +52,7 @@ import {
   getDevicePortProfile
 } from "./src/features/classroom/lib/devicePortCatalog.ts";
 import {
+  AUDIO_PROCESSOR_HOST_PRODUCT_ID,
   LINE_ARRAY_MIC_CONVERTER_PRODUCT_ID,
   PROCESSOR_DEPENDENT_ARRAY_PRODUCT_ID
 } from "./src/features/classroom/lib/systemCapabilities.ts";
@@ -192,6 +193,8 @@ assert.equal(yinyiResult.model.rootNodeId, "dt-main");
 assert.equal(yinyiResult.model.candidateProcessor, undefined);
 const yinyiMain = node(yinyiResult.model, "dt-main");
 const yinyiSlave = node(yinyiResult.model, "dt-slave-1");
+assert.equal(yinyiMain.label, "主麦");
+assert.equal(yinyiSlave.label, "从麦 1");
 assert.equal(yinyiMain.productId, YINYI_DT2_PRO_PORT_PROFILE_ID);
 assert.equal(yinyiSlave.productId, YINYI_DT2_PRO_SLAVE_PORT_PROFILE_ID);
 assert.ok(yinyiSlave.ports.every((port) => port.capabilityId === "extMicOut" || port.capabilityId === "extMicIn"));
@@ -280,6 +283,7 @@ const yinyiBalancedInputResult = buildYinyiModel(yinyiProfile, {
 const yinyiBalancedInputEdge = yinyiBalancedInputResult.model.edges.find(
   (edge) => edge.id === "candidate-wireless-receiver-line-dt"
 );
+assert.equal(node(yinyiBalancedInputResult.model, "dt-main").label, "阵麦");
 assert.ok(
   yinyiBalancedInputEdge,
   "Missing Yinyi balanced input edge; edges=" + yinyiBalancedInputResult.model.edges.map((edge) => edge.id).join(",") +
@@ -384,6 +388,7 @@ assert.equal(
   8
 );
 const yinyiAmplifier = node(yinyiResult.model, "amplifier");
+assert.equal(yinyiAmplifier.label, "功放");
 const yinyiAmplifierInputs = yinyiResult.model.edges.filter((edge) => edge.id.startsWith("dt-main-amplifier-input-"));
 assert.deepEqual(
   yinyiAmplifierInputs.map((edge) => {
@@ -397,8 +402,8 @@ assert.deepEqual(
     ];
   }),
   [
-    ["lineOut1", "lineIn1", "collapsed", [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]],
-    ["lineOut2", "lineIn3", "collapsed", [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]]
+    ["lineOut1", "lineIn1", undefined, [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]],
+    ["lineOut2", "lineIn3", undefined, [["signal", "positive", "#dc2626"], ["ground", "negative", "#ffffff"], ["ground", "ground", "#64748b"]]]
   ]
 );
 const yinyiAmplifierJumpers = yinyiResult.model.edges.filter((edge) => edge.kind === "jumper");
@@ -426,6 +431,47 @@ for (const terminalLabel of ["1+", "1-", "2+", "2-", "3+", "3-", "4+", "4-"]) {
 }
 console.log("PASS Yinyi main/slave wiring uses GLR shared-ground channels, four SPK outputs and RJ45-to-RS232 control");
 
+const yinyiLineArrayProfile = makeProfile({
+  length: 8,
+  width: 8,
+  needs: ["localAmplification"],
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  processorTier: "twoMic",
+  computer: "讲台电脑",
+  recordingHost: "中控主机",
+  speakerProductOverride: "wall"
+});
+const yinyiLineArray = buildYinyiModel(yinyiLineArrayProfile, { "COLUMN-SPEAKER": 6 });
+assert.equal(yinyiLineArray.model.rootNodeId, "processor");
+assert.equal(yinyiLineArray.model.candidateProcessor, "AJ200");
+assert.equal(node(yinyiLineArray.model, "processor").productId, PROCESSOR_AJ200_PORT_PROFILE_ID);
+assert.equal(yinyiLineArray.model.nodes.some((item) => item.productId === PROCESSOR_AJ350_PORT_PROFILE_ID), false);
+assert.equal(node(yinyiLineArray.model, "line-array").parentId, "processor");
+assert.equal(
+  yinyiLineArray.model.edges.find((edge) => edge.id === "line-array-direct-1")?.toPortId,
+  "processor:extmic"
+);
+assert.equal(
+  yinyiLineArray.model.nodes
+    .filter((item) => item.id.startsWith("processor-speakers-group-"))
+    .reduce((sum, item) => sum + item.quantity, 0),
+  4
+);
+assert.equal(
+  yinyiLineArray.model.nodes
+    .filter((item) => item.id.startsWith("amplifier-speakers-group-"))
+    .reduce((sum, item) => sum + item.quantity, 0),
+  2
+);
+const yinyiLineArrayControlEdge = yinyiLineArray.model.edges.find(
+  (edge) => edge.id === "external-control-rs232-control-host"
+);
+assert.ok(yinyiLineArrayControlEdge);
+assert.equal(yinyiLineArrayControlEdge.fromPortId, "processor:rs232");
+assert.equal(yinyiLineArrayControlEdge.cableType, "232线");
+console.log("PASS Yinyi standalone line-array wiring uses the shared AJ200 chain with microphone, speaker and RS232 routes and never selects AJ350");
+
 const ringProfiles = Array.from({ length: 18 }, (_, index) => makeProfile({
   length: 6 + index,
   width: 8,
@@ -448,8 +494,8 @@ for (const count of [1, 2]) {
   assert.deepEqual(
     microphones.map((item) => [item.id, item.label, item.quantity, item.parentId]),
     count === 1
-      ? [["ring08", "大圆盘阵麦", 1, "processor"]]
-      : [["ring08-1", "大圆盘阵麦 1", 1, "processor"], ["ring08-2", "大圆盘阵麦 2", 1, "processor"]]
+      ? [["ring08", "阵麦", 1, "processor"]]
+      : [["ring08-1", "阵麦 1", 1, "processor"], ["ring08-2", "阵麦 2", 1, "processor"]]
   );
   assert.ok(microphones.every((item) => item.ports.length === 1 && item.ports[0].capabilityId === "lan"));
   assert.equal(new Set(model.edges.filter((edge) => edge.id.startsWith("ring08-aj350-")).map((edge) => edge.fromNodeId)).size, count);
@@ -522,6 +568,51 @@ assert.equal(singleLine.model.nodes.some((item) => item.id === "line-array-conve
 assert.ok(processorPortLabels(singleLine.model).includes("AMIC"));
 assert.equal(node(singleLine.model, "line-array").parentId, "processor");
 console.log("PASS one SA110 directly uses AJ350 AMIC");
+
+const manualDualLineProfile = makeProfile({
+  length: 8,
+  width: 8,
+  scope: "podium",
+  microphoneSolution: "lineArray",
+  processorTier: "twoMic",
+  legacyWirelessMic: "有线麦克风",
+  speakerProductOverride: "wall"
+});
+const manualDualLine = buildModel(manualDualLineProfile, { "COLUMN-SPEAKER": 6 });
+const manualDualProcessor = node(manualDualLine.model, "processor");
+const manualDualProfile = getDevicePortProfile(manualDualProcessor.productId);
+assert.ok(manualDualProfile);
+assert.match(
+  manualDualLine.outputs.productSelection.find((item) => item.productId === AUDIO_PROCESSOR_HOST_PRODUCT_ID)?.name ?? "",
+  /双麦/
+);
+assert.equal(manualDualLine.model.candidateProcessor, "AJ200");
+assert.equal(manualDualProcessor.productId, PROCESSOR_AJ200_PORT_PROFILE_ID);
+assert.equal(manualDualProcessor.label, "双麦处理器");
+assert.equal(node(manualDualLine.model, "amplifier").label, "功放");
+assert.equal(node(manualDualLine.model, "existing-wired-microphone").label, "有线麦");
+assert.equal(manualDualProfile.ports.filter((port) => /^mic\d+$/.test(port.id)).length, 2);
+assert.equal(manualDualProfile.ports.filter((port) => /^spk\d+$/.test(port.id)).length, 2);
+assert.equal(manualDualLine.model.edges.find((edge) => edge.id === "line-array-direct-1")?.toPortId, "processor:extmic");
+assert.equal(
+  manualDualLine.model.edges.find((edge) => edge.id.endsWith("processor-wired-mic-audio-1"))?.toPortId,
+  "processor:mic1"
+);
+assert.equal(
+  manualDualLine.model.nodes
+    .filter((item) => item.id.startsWith("processor-speakers-group-"))
+    .reduce((sum, item) => sum + item.quantity, 0),
+  4
+);
+assert.equal(
+  manualDualLine.model.nodes
+    .filter((item) => item.id.startsWith("amplifier-speakers-group-"))
+    .reduce((sum, item) => sum + item.quantity, 0),
+  2
+);
+assert.equal(manualDualLine.model.findings.some((item) => item.code === "processor.candidate-difference"), false);
+assert.equal(manualDualLine.model.findings.some((item) => item.code.startsWith("port-capacity.processor.mic.")), false);
+console.log("PASS automatic single-line-array selection stays AJ350 while manual dual-mic selection uses AJ200 across the wiring chain");
 
 const oneLineWith02Profile = makeProfile({
   length: 12.4,
@@ -763,8 +854,8 @@ const notebookUsbProfile = makeProfile({
   smallDiscConnectionMode: "usb"
 });
 const notebookUsb = buildModel(notebookUsbProfile);
-const notebookNode = notebookUsb.model.nodes.find((item) => item.label === "笔记本电脑");
-assert.ok(notebookNode);
+const notebookNode = node(notebookUsb.model, "laptop-computer");
+assert.equal(notebookNode.label, "笔记本");
 assert.equal(notebookNode.productId, LAPTOP_PORT_PROFILE_ID);
 assert.deepEqual(notebookNode.ports.map((port) => port.capabilityId), ["usbAudio"]);
 assert.equal(notebookUsb.model.findings.some((item) => item.code === "interface-panel.missing." + notebookNode.id), false);
@@ -779,8 +870,8 @@ const allInOneUsbProfile = makeProfile({
   smallDiscConnectionMode: "usb"
 });
 const allInOneUsb = buildModel(allInOneUsbProfile);
-const allInOneNode = allInOneUsb.model.nodes.find((item) => item.label === "ClassIn 一体机");
-assert.ok(allInOneNode);
+const allInOneNode = node(allInOneUsb.model, "classin-all-in-one");
+assert.equal(allInOneNode.label, "ClassIn");
 assert.equal(allInOneNode.productId, OPS_ALL_IN_ONE_PORT_PROFILE_ID);
 assert.equal(allInOneNode.ports.find((port) => port.capabilityId === "usbAudio")?.label, "USB Audio");
 assert.equal(allInOneUsb.model.findings.some((item) => item.code === "interface-panel.missing." + allInOneNode.id), false);
@@ -789,17 +880,20 @@ const usbPriorityCases = [
   {
     name: "all-in-one over podium and laptop",
     computer: "讲台电脑、笔记本电脑、ClassIn 一体机",
-    expectedTarget: "ClassIn 一体机"
+    expectedTarget: "ClassIn 一体机",
+    expectedNodeLabel: "ClassIn"
   },
   {
     name: "podium over laptop",
     computer: "笔记本电脑、讲台电脑",
-    expectedTarget: "讲台电脑"
+    expectedTarget: "讲台电脑",
+    expectedNodeLabel: "讲台电脑"
   },
   {
     name: "laptop only",
     computer: "笔记本电脑",
-    expectedTarget: "笔记本电脑"
+    expectedTarget: "笔记本电脑",
+    expectedNodeLabel: "笔记本"
   }
 ];
 for (const usbPriorityCase of usbPriorityCases) {
@@ -814,7 +908,12 @@ for (const usbPriorityCase of usbPriorityCases) {
   const usbEdges = result.model.edges.filter((edge) => /USB/i.test(edge.cableType));
   assert.equal(usbEdges.length, 1, usbPriorityCase.name + " must allocate exactly one USB Audio edge");
   const target = node(result.model, usbEdges[0].toNodeId);
-  assert.equal(target.label, usbPriorityCase.expectedTarget, usbPriorityCase.name);
+  assert.equal(target.label, usbPriorityCase.expectedNodeLabel, usbPriorityCase.name);
+  assert.equal(
+    result.outputs.connectionLines.find((line) => /USB/i.test(line.cableType))?.toDevice,
+    usbPriorityCase.expectedTarget,
+    usbPriorityCase.name + " must preserve the formal connection device name"
+  );
   assert.deepEqual(target.ports.map((port) => port.capabilityId), ["usbAudio"]);
 }
 
@@ -1303,6 +1402,7 @@ const conferenceProfile = makeProfile({
 });
 const conferenceTerminal = buildModel(conferenceProfile);
 const conferenceNode = node(conferenceTerminal.model, "video-conference-terminal");
+assert.equal(conferenceNode.label, "会议终端");
 assert.equal(conferenceNode.productId, VIDEO_CONFERENCE_TERMINAL_PORT_PROFILE_ID);
 assert.deepEqual(conferenceNode.ports.map((port) => port.capabilityId).sort(), ["audioIn", "audioOut"]);
 const conferenceInputEdge = conferenceTerminal.model.edges.find((edge) => edge.id === "external-conference-input-video-conference-terminal");
@@ -1343,6 +1443,7 @@ const laptopAnalog = {
 };
 const laptopAnalogNode = node(laptopAnalog.model, "laptop-computer");
 const headsetSplitterNode = node(laptopAnalog.model, "headset-splitter-laptop-computer");
+assert.equal(laptopAnalogNode.label, "笔记本");
 assert.equal(laptopAnalogNode.productId, LAPTOP_PORT_PROFILE_ID);
 assert.equal(headsetSplitterNode.productId, HEADSET_SPLITTER_PORT_PROFILE_ID);
 const laptopAnalogLayout = getInterfaceWiringLayout(laptopAnalog.model, 1120);
@@ -1393,6 +1494,7 @@ const opsAnalog = {
   model: buildInterfaceWiringModel({ profile: opsAnalogProfile, outputs: opsAnalogOutputs, brandId: "yinman" })
 };
 const opsAnalogNode = node(opsAnalog.model, "classin-all-in-one");
+assert.equal(opsAnalogNode.label, "ClassIn");
 assert.equal(opsAnalogNode.productId, OPS_ALL_IN_ONE_PORT_PROFILE_ID);
 assert.deepEqual(opsAnalogNode.ports.map((port) => port.capabilityId).sort(), ["audioIn", "audioOut"]);
 assert.equal(opsAnalog.model.edges.filter((edge) => edge.id.startsWith("external-computer-")).length, 2);
@@ -1406,6 +1508,7 @@ const meetingAllInOneUsb = buildModel(makeProfile({
   smallDiscConnectionMode: "usb"
 }));
 assert.equal(node(meetingAllInOneUsb.model, "meeting-all-in-one").productId, OPS_ALL_IN_ONE_PORT_PROFILE_ID);
+assert.equal(node(meetingAllInOneUsb.model, "meeting-all-in-one").label, "会议屏");
 console.log("PASS ClassIn and meeting all-in-ones share the OPS panel, prefer USB Audio and retain analog input/output fallback");
 
 const singleLineUsageRows = getInterfaceWiringUsageRows(singleLine.model);
@@ -1435,6 +1538,8 @@ const yinyiWiringPreviewSource = readFileSync("src/features/classroom/components
 const wiringPreviewAssetSources = wiringPreviewSource + yinmanWiringPreviewSource + yinyiWiringPreviewSource;
 const wiringPreviewStyles = readFileSync("src/features/classroom/components/InterfaceWiringPreview.css", "utf8");
 const engineeringAppSource = readFileSync("src/features/classroom/ClassroomEngineeringApp.tsx", "utf8");
+const engineeringOutputsSource = readFileSync("src/features/classroom/components/EngineeringOutputs.tsx", "utf8");
+const appStylesSource = readFileSync("src/styles.css", "utf8");
 const interfaceWiringSource = readFileSync("src/features/classroom/lib/interfaceWiring.ts", "utf8");
 const pdfExporterSource = readFileSync("src/features/classroom/lib/pdfExporter.ts", "utf8");
 const imageExporterSource = readFileSync("src/features/classroom/lib/imageExporter.ts", "utf8");
@@ -1471,6 +1576,9 @@ assert.doesNotMatch(wiringPreviewSource, /laneOffset \+ conductorOffset/);
 assert.match(wiringPreviewSource, /resolvedSide === "left"[\s\S]*?resolvedSide === "right"[\s\S]*?resolvedSide === "top"[\s\S]*?resolvedSide === "bottom"/);
 assert.match(wiringPreviewSource, /if \(edge\.kind === "jumper"\) \{\s*return \[getCollapsedCableConductor/);
 assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed"[\s\S]*?getCollapsedCableConductor/);
+assert.match(wiringPreviewSource, /if \(isNetworkEdge\(edge\)\)[\s\S]*?getCollapsedCableConductor/);
+assert.match(wiringPreviewSource, /function getConductorStripeColor[\s\S]*?白橙[\s\S]*?#f97316[\s\S]*?白绿[\s\S]*?#16a34a/);
+assert.match(wiringPreviewSource, /stroke=\{stripeColor \? "#ffffff" : conductor\.color\}/);
 assert.match(wiringPreviewSource, /edge\.conductorDisplay === "collapsed" \? 6/);
 assert.match(wiringPreviewSource, /const bulge = Math\.max\(12, \(requestedBulge \?\? 44\) \+ laneOffset\);[\s\S]*?const controlDistance = bulge \* 4 \/ 3/);
 assert.match(wiringPreviewSource, /const rows = getInterfaceWiringUsageRows\(model, portReferenceNumbers\)/);
@@ -1487,6 +1595,10 @@ assert.match(engineeringAppSource, /const YinmanInterfaceWiring = __ENABLE_YINMA
 assert.match(engineeringAppSource, /const BrandInterfaceWiring = brand\.id === "yinman" \? YinmanInterfaceWiring : YinyiInterfaceWiring/);
 assert.doesNotMatch(engineeringAppSource, /brand\.id === "yinman" && !isReleaseBuild\(\)/);
 assert.match(engineeringAppSource, /exportPdfReport\(profile, outputs, quantityOverrides, recordingInputSelections\)/);
+assert.match(engineeringOutputsSource, /恢复自动推荐/);
+assert.match(engineeringOutputsSource, /onQuantityOverride\(\{\}\)/);
+assert.match(engineeringOutputsSource, /processorTier: "auto"/);
+assert.match(appStylesSource, /\.equipmentRecommendationResetButton:disabled/);
 assert.doesNotMatch(interfaceWiringSource, /接口接线图拟调整预览|音曼内部校准|接口接线候选|候选图仅保留|AJ350只有A1、A2|候选处理器调整/);
 assert.match(pdfExporterSource, /getAppBrand\(\)\.id === "yinman" \? "音曼" : "音翼"/);
 assert.match(pdfExporterSource, /svg\[aria-label\^="\$\{prefix\}"\]\[aria-label\$="点位图"\]/);
@@ -1506,9 +1618,13 @@ assert.match(packageJsonSource, /set APP_BRAND=yinyi&& npm\.cmd run build/);
 assert.match(packageJsonSource, /set APP_BRAND=yinman&& npm\.cmd run build/);
 assert.match(yinyiWiringPreviewSource, /yinman-aj200-interface-panel\.svg/);
 assert.match(yinyiWiringPreviewSource, /yinman-aj600-interface-panel\.svg/);
+assert.match(yinyiWiringPreviewSource, /yinman-sa110-rear-panel\.svg/);
+assert.match(yinyiWiringPreviewSource, /yinman-line-array-converter-interface-panel\.svg/);
 assert.doesNotMatch(yinyiWiringPreviewSource, /yinman-aj350-interface-panel\.svg/);
 assert.match(yinyiWiringPreviewSource, /aj200:\s*aj200InterfacePanel/);
 assert.match(yinyiWiringPreviewSource, /aj600:\s*aj600InterfacePanel/);
+assert.match(yinyiWiringPreviewSource, /lineArray:\s*lineArrayRearPanel/);
+assert.match(yinyiWiringPreviewSource, /lineArrayConverter:\s*lineArrayConverterPanel/);
 assert.doesNotMatch(universalReleaseSource, /音翼 1\.1 当前不显示音曼专属接口接线图/);
 assert.match(releaseCurrentSource, /brand\.label[^\r\n]*接口接线图/);
 assert.match(releaseBehaviorSource, /const wiringSelector = [^\r\n]*brandLabel[^\r\n]*接口接线图/);
@@ -1752,8 +1868,8 @@ const aj600WiredNodes = aj600Wired.model.nodes.filter(
 assert.deepEqual(
   aj600WiredNodes.map((item) => [item.id, item.label, item.quantity, item.parentId]),
   [
-    ["existing-wired-microphone-1", "利旧有线麦克风 1", 1, "processor"],
-    ["existing-wired-microphone-2", "利旧有线麦克风 2", 1, "processor"]
+    ["existing-wired-microphone-1", "有线麦", 1, "processor"],
+    ["existing-wired-microphone-2", "有线麦", 1, "processor"]
   ]
 );
 assert.ok(aj600WiredNodes.every((item) =>
@@ -2032,6 +2148,18 @@ assert.deepEqual(groupedSpeakerAnchors.map((anchor) => [
   [0.44, 0.68],
   [0.56, 0.68]
 ]);
+const groupedCeilingSpeakerAnchors = Array.from({ length: 4 }, (_, index) =>
+  getInterfacePanelPortAnchor(ceilingSpeakerPanel, "terminals-direct-speaker-" + (index + 1), index, 4)
+);
+assert.deepEqual(groupedCeilingSpeakerAnchors.map((anchor) => [
+  Number(anchor?.x.toFixed(2)),
+  Number(anchor?.y.toFixed(2))
+]), [
+  [0.44, 0.6],
+  [0.56, 0.6],
+  [0.44, 0.68],
+  [0.56, 0.68]
+]);
 const amplifierProfile = getDevicePortProfile(EXTERNAL_AMPLIFIER_PRODUCT_ID);
 const amplifierPanel = amplifierProfile?.interfacePanel;
 assert.ok(amplifierProfile);
@@ -2263,13 +2391,15 @@ assert.match(wiringPreviewSource, /focusBounds: terminalFocusBounds \?\? \(termi
 assert.match(wiringPreviewSource, /const fromNeedsFanout = multicore && !fromConnector/);
 assert.match(wiringPreviewSource, /const toNeedsFanout = multicore && !toConnector/);
 assert.match(wiringPreviewSource, /function getCableConnectorKind/);
+assert.match(wiringPreviewSource, /if \(\/RJ45\/i\.test\(descriptor\)\) return "rj45"/);
 assert.match(wiringPreviewSource, /6\\\.35[\s\S]*?return "jack635-ts"/);
 assert.match(wiringPreviewSource, /jack35-trrs[\s\S]*?jack35-ts[\s\S]*?jack35-trs/);
 assert.match(wiringPreviewSource, /xlr-male[\s\S]*?xlr-female/);
 assert.match(wiringPreviewSource, /if \(\/公\|[\s\S]*?return "xlr-female"/);
 assert.match(wiringPreviewSource, /data-connector-kind=\{head\.kind\}/);
+assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>RJ45<\/text>/);
 assert.match(wiringPreviewSource, /className="interfaceWiringConnectorLabel"[\s\S]*?>6\.35 TS<\/text>/);
-assert.match(wiringPreviewSource, /kind === "jack635-ts" \? 76 : 38/);
+assert.match(wiringPreviewSource, /kind === "jack635-ts" \? 76 : kind === "rj45" \? 42 : 38/);
 assert.match(wiringPreviewSource, /minimumLength = kind === "jack635-ts" \? Math\.min\(58, distance \* 0\.8\) : 8/);
 assert.match(wiringPreviewSource, /kind === "jack635-ts" \? 0\.68 : 0\.38/);
 assert.match(wiringPreviewSource, /const insulatorX = shaftEnd \* 0\.24/);
@@ -2288,6 +2418,7 @@ assert.match(wiringPreviewStyles, /@keyframes interfaceWiringTerminalFocusPulse[
 assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusTint[\s\S]*?fill: rgba\(34, 197, 94, 0\.48\)/);
 assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusTintPulse[\s\S]*?fill: rgba\(34, 197, 94, 0\.64\)/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringConnectorHeadHitTarget[\s\S]*?pointer-events: all;/);
+assert.match(wiringPreviewStyles, /\.interfaceWiringConnectorRj45Body[\s\S]*?fill: #d9f0f5;/);
 assert.match(wiringPreviewStyles, /@media \(prefers-reduced-motion: reduce\)/);
 console.log("PASS hover keeps the original cable focus, restores white-blue connector focus and limits green tint to terminal blocks");
 console.log("PASS interface-panel anchors are normalized, physical rear panels are mapped and grouped speakers use a 2x2 anchor grid");
@@ -2545,6 +2676,7 @@ assert.ok(ceilingSpeakerGroups.every((item) => item.label.includes("吸顶音箱
 console.log("PASS each cable shares one endpoint reference while wall and ceiling speakers split into compact SPK groups");
 
 const models = [
+  yinyiLineArray.model,
   ...Array.from(ringCases.values()).map((item) => item.model),
   singleLine.model,
   oneLineWith02.model,
@@ -2623,6 +2755,7 @@ function assertLayoutFitsWidth(model, width) {
 
 for (const width of [520, 993, 1120]) {
   for (const model of [
+    yinyiLineArray.model,
     oneLineWith02.model,
     smallDisc01.model,
     smallDisc03.model,

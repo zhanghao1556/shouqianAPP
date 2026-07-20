@@ -57,7 +57,7 @@ const CABLE_INTERNAL_MERGE_DISTANCE = 28;
 
 type CablePoint = { x: number; y: number };
 type CableExitSide = "left" | "right" | "top" | "bottom";
-type CableConnectorKind = "jack35-ts" | "jack35-trs" | "jack35-trrs" | "jack635-ts" | "xlr-male" | "xlr-female";
+type CableConnectorKind = "jack35-ts" | "jack35-trs" | "jack35-trrs" | "jack635-ts" | "rj45" | "xlr-male" | "xlr-female";
 type CableConnectorHead = {
   endpoint: "from" | "to";
   kind: CableConnectorKind;
@@ -370,68 +370,58 @@ function InterfaceWiringDiagram({
               onPointerEnter={() => setActiveEdgeId(edge.id)}
               onPointerLeave={() => stopHighlightingEdge(edge.id)}
             >
-              {drawing.conductorRoutes.flatMap(({ conductor, fromLeadPath, toLeadPath, strokeWidth, needsOutline }) => (
-                [
+              {drawing.conductorRoutes.flatMap(({ conductor, fromLeadPath, toLeadPath, strokeWidth, needsOutline, stripeColor }) => {
+                const leadClassName = [
+                  "interfaceWiringEdgeVisual",
+                  conductor.confirmed ? "" : "unconfirmedConductor",
+                  needsOutline ? "lightConductor" : ""
+                ].filter(Boolean).join(" ");
+                const leadSegments = [
+                  { endpoint: "from", path: fromLeadPath, terminalId: conductor.fromTerminalId },
+                  { endpoint: "to", path: toLeadPath, terminalId: conductor.toTerminalId }
+                ];
+                return leadSegments.flatMap(({ endpoint, path, terminalId }) => [
                   <path
-                    key={`${edge.id}-${conductor.id}-from-lead-hit`}
-                    d={fromLeadPath}
+                    key={`${edge.id}-${conductor.id}-${endpoint}-lead-hit`}
+                    d={path}
                     fill="none"
                     stroke="transparent"
                     strokeWidth="14"
                     strokeLinecap="round"
                     vectorEffect="non-scaling-stroke"
                     data-conductor-id={conductor.id}
-                    data-terminal-id={conductor.fromTerminalId}
-                    data-segment="from-lead-hit"
+                    data-terminal-id={terminalId}
+                    data-segment={`${endpoint}-lead-hit`}
                     className="interfaceWiringEdgeHitTarget"
                   />,
                   <path
-                    key={`${edge.id}-${conductor.id}-from-lead`}
-                    d={fromLeadPath}
+                    key={`${edge.id}-${conductor.id}-${endpoint}-lead`}
+                    d={path}
                     fill="none"
-                    stroke={conductor.color}
-                    strokeWidth={strokeWidth}
+                    stroke={stripeColor ? "#ffffff" : conductor.color}
+                    strokeWidth={stripeColor ? strokeWidth + 1.2 : strokeWidth}
                     strokeLinecap="round"
                     data-conductor-id={conductor.id}
-                    data-terminal-id={conductor.fromTerminalId}
-                    data-segment="from-lead"
-                    className={[
-                      "interfaceWiringEdgeVisual",
-                      conductor.confirmed ? "" : "unconfirmedConductor",
-                      needsOutline ? "lightConductor" : ""
-                    ].filter(Boolean).join(" ")}
+                    data-terminal-id={terminalId}
+                    data-segment={`${endpoint}-lead`}
+                    className={leadClassName}
                   />,
-                  <path
-                    key={`${edge.id}-${conductor.id}-to-lead-hit`}
-                    d={toLeadPath}
-                    fill="none"
-                    stroke="transparent"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                    vectorEffect="non-scaling-stroke"
-                    data-conductor-id={conductor.id}
-                    data-terminal-id={conductor.toTerminalId}
-                    data-segment="to-lead-hit"
-                    className="interfaceWiringEdgeHitTarget"
-                  />,
-                  <path
-                    key={`${edge.id}-${conductor.id}-to-lead`}
-                    d={toLeadPath}
-                    fill="none"
-                    stroke={conductor.color}
-                    strokeWidth={strokeWidth}
-                    strokeLinecap="round"
-                    data-conductor-id={conductor.id}
-                    data-terminal-id={conductor.toTerminalId}
-                    data-segment="to-lead"
-                    className={[
-                      "interfaceWiringEdgeVisual",
-                      conductor.confirmed ? "" : "unconfirmedConductor",
-                      needsOutline ? "lightConductor" : ""
-                    ].filter(Boolean).join(" ")}
-                  />
-                ]
-              ))}
+                  ...(stripeColor ? [
+                    <path
+                      key={`${edge.id}-${conductor.id}-${endpoint}-lead-stripe`}
+                      d={path}
+                      fill="none"
+                      stroke={stripeColor}
+                      strokeWidth={Math.max(0.9, strokeWidth * 0.45)}
+                      strokeLinecap="round"
+                      data-conductor-id={conductor.id}
+                      data-terminal-id={terminalId}
+                      data-segment={`${endpoint}-lead-stripe`}
+                      className={leadClassName}
+                    />
+                  ] : [])
+                ]);
+              })}
               {drawing.connectorHeads.map((connectorHead) => (
                 <InterfaceWiringCableConnectorHead
                   head={connectorHead}
@@ -760,6 +750,39 @@ function InterfaceWiringCableConnectorHead({ head }: { head: CableConnectorHead 
             rx="4"
           />
           <text className="interfaceWiringConnectorLabel" x={shaftEnd + (head.length - shaftEnd) / 2} y="2.3">6.35 TS</text>
+        </g>
+      </g>
+    );
+  }
+  if (head.kind === "rj45") {
+    const plugEnd = head.length * 0.62;
+    const contactGap = Math.max(0.75, (plugEnd - 8) / 7);
+    return (
+      <g
+        className="interfaceWiringConnectorHead"
+        data-connector-kind={head.kind}
+        data-endpoint={head.endpoint}
+        transform={transform}
+      >
+        <rect className="interfaceWiringConnectorHeadHitTarget" x="-4" y="-12" width={head.length + 8} height="24" rx="5" />
+        <g className="interfaceWiringConnectorHeadBody">
+          <path
+            className="interfaceWiringConnectorRj45Body"
+            d={`M 0 -6 H ${plugEnd - 3} L ${plugEnd} -3 V 6 H 0 Z`}
+          />
+          {Array.from({ length: 8 }, (_, index) => (
+            <line
+              className="interfaceWiringConnectorRj45Contact"
+              key={index}
+              x1={3 + index * contactGap}
+              x2={3 + index * contactGap}
+              y1="-5"
+              y2="-1"
+            />
+          ))}
+          <path className="interfaceWiringConnectorRj45Latch" d={`M ${plugEnd * 0.28} 6 L ${plugEnd * 0.5} 10 L ${plugEnd * 0.72} 6`} />
+          <rect className="interfaceWiringConnectorGrip" x={plugEnd} y="-7" width={head.length - plugEnd} height="14" rx="3" />
+          <text className="interfaceWiringConnectorLabel" x={plugEnd + (head.length - plugEnd) / 2} y="2.3">RJ45</text>
         </g>
       </g>
     );
@@ -1232,6 +1255,7 @@ function buildEdgeDrawings(
       toLeadPath: string;
       strokeWidth: number;
       needsOutline: boolean;
+      stripeColor?: string;
     }>;
     connectorHeads: CableConnectorHead[];
     referenceBadges: Array<{
@@ -1344,7 +1368,8 @@ function buildEdgeDrawings(
         conductor,
         ...paths,
         strokeWidth: edge.kind === "jumper" ? 3.2 : isNetworkEdge(edge) || isUsbEdge(edge) ? 4.5 : 2.2,
-        needsOutline: conductor.color.toLowerCase() === "#ffffff"
+        needsOutline: conductor.color.toLowerCase() === "#ffffff" || Boolean(getConductorStripeColor(conductor)),
+        stripeColor: getConductorStripeColor(conductor)
       };
     });
     const referenceNumber = portReferenceNumbers[edge.fromPortId] ?? portReferenceNumbers[edge.toPortId];
@@ -1358,6 +1383,14 @@ function buildEdgeDrawings(
     drawings.set(edge.id, { route: renderedRoute, trunkRoutes, conductorRoutes, connectorHeads, referenceBadges });
   });
   return { drawings };
+}
+
+function getConductorStripeColor(conductor: InterfaceWiringConductor) {
+  if (conductor.label.includes("白橙")) return "#f97316";
+  if (conductor.label.includes("白绿")) return "#16a34a";
+  if (conductor.label.includes("白蓝")) return "#2563eb";
+  if (conductor.label.includes("白棕")) return "#92400e";
+  return undefined;
 }
 
 function getSharedTerminalFanOffset(
@@ -1395,6 +1428,7 @@ function getTerminalFanPath(
 
 function getCableConnectorKind(port: InterfaceWiringPort): CableConnectorKind | undefined {
   const descriptor = `${port.interfaceType} ${port.label}`;
+  if (/RJ45/i.test(descriptor)) return "rj45";
   if (/6\.35/i.test(descriptor)) return "jack635-ts";
   if (/3\.5/i.test(descriptor)) {
     if (/TRRS/i.test(descriptor)) return "jack35-trrs";
@@ -1417,7 +1451,7 @@ function getCableConnectorPlacement(
   const deltaX = toward.x - port.x;
   const deltaY = toward.y - port.y;
   const distance = Math.hypot(deltaX, deltaY) || 1;
-  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 76 : 38;
+  const defaultLength = kind.startsWith("jack35") ? 28 : kind === "jack635-ts" ? 76 : kind === "rj45" ? 42 : 38;
   const minimumLength = kind === "jack635-ts" ? Math.min(58, distance * 0.8) : 8;
   const length = Math.max(minimumLength, Math.min(defaultLength, distance * (kind === "jack635-ts" ? 0.68 : 0.38)));
   const cable = {

@@ -2500,3 +2500,35 @@ PowerShell reminder:
 - Keep electrical truth separate from drawing density. The model and occupancy data should retain signal-to-positive plus shared-ground-to-negative/ground mappings, while an explicit collapsed display mode can render the installed audio cable as one assembled sheath with no misleading core fan-out.
 - Pair amplifier inputs deterministically: `1 -> 2` and, when needed, `3 -> 4`. A compact per-edge jumper bulge avoids changing the already accepted geometry of unrelated processor-to-amplifier jumpers.
 - When unrelated source edits arrive in a shared worktree during implementation, validate against the combined tree but stage only the current task's hunks. Do not absorb, revert or rewrite the other asset task merely because it overlaps a shared model file.
+### 2026-07-20 formal processor selection must reach wiring unchanged
+
+- The interface-wiring builder must not silently replace the processor already selected by the formal product-selection chain. A persisted manual dual-mic choice means AJ200 everywhere; a manual six-mic choice means AJ600 everywhere; the automatic standalone-line-array choice remains AJ350.
+- Keep true product constraints explicit and narrow: a Yinman large-disc array remains hard-locked to AJ350, while multi-line-array and hybrid rules retain their separately confirmed capacity branches. Do not encode a broad `one line array -> AJ350` override after a formal manual choice exists.
+- Processor identity errors cascade into misleading hardware and capacity output. Selecting AJ350 artwork for an AJ200 plan simultaneously changes visible SPK/MIC ports, direct-speaker capacity and hard findings, so regression coverage must assert the selected profile, its port counts, microphone occupancy, speaker split and absence of candidate-difference findings together.
+- Separate electrical truth from connector rendering. One visible 3.5 cable sheath can still own three correct Phoenix-side conductor paths because the plug endpoint intentionally collapses cores; inspect the model before treating the single sheath as a missing-wire defect.
+- Imported formal connection IDs are namespaced with a `candidate-` prefix in the interface model. New tests should match the stable formal ID suffix, as existing wiring helpers do, instead of asserting the raw generator ID verbatim.
+
+### 2026-07-20 drawing device names need one presentation contract
+
+- Interface-profile `customerName` describes the physical product record; it is not automatically the same as the compact customer-facing name used by topology drawings. Feeding it directly into wiring nodes creates visible cross-drawing drift even when both drawings represent the same device.
+- Normalize wiring node labels to the established topology vocabulary while preserving wiring-only disambiguators such as speaker ranges and per-unit slave indices. Device-name alignment must not collapse separate physical nodes or remove the numbering needed to trace ports.
+- Keep formal processor selection as the name source for processor nodes. This makes “双麦处理器 / 六麦处理器 / 高性能处理器” follow the same selected result across the equipment list, topology, wiring drawing and usage table without exposing AJ model IDs.
+
+### 2026-07-20 connector rendering and automatic equipment reset
+
+- A collapsed-conductor flag belongs to the exact physical cable segment. Applying it to the field cable while trying to simplify a local terminal jumper hides required installation detail even though the electrical model remains correct.
+- Connector-ended cables and bare-terminal cables need different drawing contracts. RJ45 should keep its eight-pin T568B mapping in structured data while the customer drawing shows one assembled cable and a plug at each end; bare Phoenix terminals still need visible conductor fan-out.
+- A white-striped Ethernet core cannot be represented honestly by one flat yellow or pale-green stroke. If the drawing does not need core-level crimping instructions, hide those cores instead of inventing a misleading solid color; retain the pin order and exact labels for validation.
+- Manual equipment state currently has two owners: quantity overrides and the processor tier stored in the profile. A single “restore automatic recommendation” command must clear both stores while leaving the independently controlled microphone and speaker solution choices untouched.
+
+### 2026-07-20 brand branching must follow the selected system architecture
+
+- Brand identity alone cannot choose the wiring root. Yinyi supports both a DT microphone with an internal processor and standalone line-array / hanging-microphone systems with AJ200 or AJ600; branching only on `brandId` silently drops the latter architecture.
+- Select the root preparation path from actual selected equipment first, then apply brand restrictions inside processor selection. For Yinyi, a present DT main owns speakers and control; otherwise the shared processor owns them and AJ350 remains forbidden.
+- A whole-chain regression must assert more than the processor panel. Lock the microphone node, direct processor link, direct and amplified speakers, RS232 edge and absence of AJ350 together so a future branch change cannot leave a plausible but incomplete drawing.
+
+### 2026-07-20 shared architecture also needs shared panel registration
+
+- Restoring a node and its edges is not enough when the brand wrapper owns interface artwork separately. A valid wiring model can still render as “interface image pending” if the wrapper omits the profile's `assetKey`.
+- When two brands share a physical product, register the shared panel in both brand entry points and keep the true brand restriction explicit. For Yinyi standalone line arrays this means reusing the line-array and converter panels while continuing to exclude AJ350.
+- Browser verification should assert both model facts and rendered asset facts: required nodes/edges, no forbidden processor, no missing-panel placeholder and the expected panel image alt. This catches the gap that a model-only regression cannot see.
