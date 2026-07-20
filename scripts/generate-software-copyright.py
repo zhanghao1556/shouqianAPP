@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 from docx import Document
 from docx.enum.section import WD_ORIENT
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
@@ -354,8 +354,20 @@ def add_figure(doc: Document, image_path: Path, caption: str):
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.space_before = Pt(4)
     p.paragraph_format.space_after = Pt(4)
+    p.paragraph_format.keep_with_next = True
     run = p.add_run()
-    run.add_picture(str(image_path), width=Inches(6.45))
+    with Image.open(image_path) as image:
+        pixel_width, pixel_height = image.size
+    display_width = 6.45
+    display_height = display_width * pixel_height / pixel_width
+    if display_height > 8.25:
+        display_height = 8.25
+        display_width = display_height * pixel_width / pixel_height
+    run.add_picture(
+        str(image_path),
+        width=Inches(display_width),
+        height=Inches(display_height),
+    )
     cap = doc.add_paragraph()
     cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cap.paragraph_format.space_before = Pt(2)
@@ -381,44 +393,30 @@ def add_key_value_table(doc: Document, rows: Sequence[tuple[str, str]], widths=(
     return table
 
 
-def find_font() -> Path | None:
-    candidates = [
-        Path(r"C:\Windows\Fonts\msyh.ttc"),
-        Path(r"C:\Windows\Fonts\simhei.ttf"),
-        Path(r"C:\Windows\Fonts\simsun.ttc"),
-    ]
-    return next((path for path in candidates if path.exists()), None)
-
-
 def process_screenshots():
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     specs = [
-        ("presales-form-page.png", "01-presales-parameters.png"),
-        ("project-archive-page.png", "02-project-archive.png"),
-        ("equipment-list-page.png", "03-equipment-recommendation.png"),
-        ("point-map-page.png", "04-point-layout.png"),
-        ("topology-page.png", "05-system-topology.png"),
-        ("wiring-page.png", "06-interface-wiring.png"),
-        ("port-usage-page.png", "07-port-usage.png"),
+        ("01-presales-section-long.png", "01-presales-parameters.png"),
+        ("02-project-archive-section-long.png", "02-project-archive.png"),
+        ("03-solution-content-long.png", "03-equipment-recommendation.png"),
+        ("04-point-layout-section-long.png", "04-point-layout.png"),
+        ("05-system-topology-section-long.png", "05-system-topology.png"),
+        ("06-interface-wiring-section-long.png", "06-interface-wiring.png"),
+        ("07-port-usage-section-long.png", "07-port-usage.png"),
     ]
     missing = [src for src, _ in specs if not (SCREENSHOT_DIR / src).exists()]
     if missing:
-        raise FileNotFoundError(f"Missing screenshot inputs: {', '.join(missing)}")
-
-    font_path = find_font()
-    replacement_font = ImageFont.truetype(str(font_path), 16) if font_path else ImageFont.load_default()
-    replacement_label_font = ImageFont.truetype(str(font_path), 13) if font_path else ImageFont.load_default()
+        raise FileNotFoundError(
+            "Missing long screenshot inputs. Run "
+            "node scripts/capture-software-copyright-screenshots.mjs first: "
+            f"{', '.join(missing)}"
+        )
 
     for source_name, target_name in specs:
         source = SCREENSHOT_DIR / source_name
         target = SCREENSHOT_DIR / target_name
         with Image.open(source) as image:
-            clean = image.convert("RGB").crop((20, 0, min(1038, image.width), min(710, image.height)))
-            if source_name == "project-archive-page.png":
-                draw = ImageDraw.Draw(clean)
-                draw.rectangle((27, 116, 320, 174), fill=(255, 255, 255))
-                draw.text((31, 123), "项目", font=replacement_label_font, fill=(86, 100, 95))
-                draw.text((31, 146), "示例教室项目", font=replacement_font, fill=(24, 54, 46))
+            clean = image.convert("RGB")
             clean.save(target, "PNG", optimize=True)
 
 
@@ -722,7 +720,7 @@ def create_manual(path: Path):
 
     doc.add_heading("6 自动设备推荐与手动调整", level=1)
     add_body(doc, "系统根据当前输入形成设备清单，并标记推荐的麦克风和音箱方案。用户可查看数量，也可使用增加、减少和恢复自动推荐功能。")
-    add_figure(doc, SCREENSHOT_DIR / "03-equipment-recommendation.png", "图 3  设备推荐、数量调整与恢复推荐")
+    add_figure(doc, SCREENSHOT_DIR / "03-equipment-recommendation.png", "图 3  方案输出正文：点位校核、客户选型与设备清单")
     doc.add_heading("6.1 自动推荐", level=2)
     add_body(doc, "自动推荐会综合场景、需求、空间尺寸、安装条件和已有设备，形成当前可用的设备组合。")
     doc.add_heading("6.2 手动调整", level=2)
@@ -764,7 +762,6 @@ def create_manual(path: Path):
     add_body(doc, "接口接线图以设备背面接口为基础，显示每根线的起点、终点和图中编号。鼠标指向线材或端口时，可突出对应线材与两端接口，便于追踪连接关系。")
     add_figure(doc, SCREENSHOT_DIR / "06-interface-wiring.png", "图 6  接口接线图")
     add_body(doc, "对于凤凰端子，图纸显示端子上的实际接线位置；对于带成品接头的线材，图纸显示接头形式。线芯分叉只在需要现场接线的端子侧显示。")
-    doc.add_page_break()
 
     doc.add_heading("9.2 接口占用表", level=2)
     add_body(doc, "接口占用表与接线图编号一一对应。每根线占一行，列出设备、接口、接口形式、线材和接线方式。")
@@ -931,7 +928,7 @@ def create_basic_info(path: Path):
     add_bullet(doc, "代码页使用连续源码行号、等宽字体和固定行距，便于核查。")
     add_bullet(doc, "不包含构建产物、第三方依赖目录、日志、测试输出或图片资产。")
     doc.add_heading("8 匿名化与版权标识检查", level=1)
-    add_body(doc, "软件说明书中的界面图片已裁去品牌头，并对示例项目字段进行匿名化处理；源代码文档对品牌标识、个人姓名、单位名称、网址和本机路径进行了中性替换；文档元数据中的作者和最后修改者已清除。")
+    add_body(doc, "软件说明书中的界面图片按功能区独立截取，并使用匿名示例项目；源代码文档对品牌标识、个人姓名、单位名称、网址和本机路径进行了中性替换；文档元数据中的作者和最后修改者已清除。")
     add_callout(doc, "提交前复核", "由申请人补齐身份信息后，再检查申请表、说明书、源码文档的名称与版本号是否完全一致。")
     doc.save(path)
 

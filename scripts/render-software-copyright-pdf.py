@@ -298,7 +298,7 @@ def render_standard_docx(input_path: Path, output_path: Path):
                 image_path.write_bytes(blob)
                 flow_image = Image(str(image_path))
                 max_width = available_width
-                max_height = 128 * mm
+                max_height = 210 * mm
                 scale = min(max_width / flow_image.imageWidth, max_height / flow_image.imageHeight, 1.0)
                 flow_image.drawWidth = flow_image.imageWidth * scale
                 flow_image.drawHeight = flow_image.imageHeight * scale

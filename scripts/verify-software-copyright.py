@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import zipfile
+from io import BytesIO
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageStat
@@ -47,6 +48,16 @@ PNG_DIRS = {
     "code_front": QA / "pdf-code-front",
     "code_back": QA / "pdf-code-back",
 }
+
+MANUAL_SCREENSHOTS = [
+    OUT / "screenshots" / "01-presales-parameters.png",
+    OUT / "screenshots" / "02-project-archive.png",
+    OUT / "screenshots" / "03-equipment-recommendation.png",
+    OUT / "screenshots" / "04-point-layout.png",
+    OUT / "screenshots" / "05-system-topology.png",
+    OUT / "screenshots" / "06-interface-wiring.png",
+    OUT / "screenshots" / "07-port-usage.png",
+]
 
 
 def numeric_page(path: Path) -> int:
@@ -111,6 +122,34 @@ def verify_docx_code(path: Path) -> dict:
     text = "\n".join("\n".join(page) for page in pages)
     scan_forbidden(text, path.name)
     return {"pages": len(pages), "linesPerPage": 50, "totalCodeLines": 3000}
+
+
+def verify_manual_screenshots(path: Path) -> dict:
+    expected_sizes = []
+    for screenshot in MANUAL_SCREENSHOTS:
+        if not screenshot.exists():
+            raise FileNotFoundError(screenshot)
+        with Image.open(screenshot) as image:
+            expected_sizes.append(image.size)
+
+    with zipfile.ZipFile(path) as archive:
+        media_names = sorted(
+            name for name in archive.namelist() if name.startswith("word/media/")
+        )
+        actual_sizes = []
+        for name in media_names:
+            with Image.open(BytesIO(archive.read(name))) as image:
+                actual_sizes.append(image.size)
+
+    if actual_sizes != expected_sizes:
+        raise RuntimeError(
+            "Manual screenshots do not match the seven current long captures: "
+            f"expected {expected_sizes}, got {actual_sizes}"
+        )
+    return {
+        "count": len(actual_sizes),
+        "pixelSizes": [f"{width}x{height}" for width, height in actual_sizes],
+    }
 
 
 def verify_rendered_images(name: str, expected_pages: int) -> dict:
@@ -215,11 +254,18 @@ def create_delivery_zip():
 
 def main():
     QA.mkdir(parents=True, exist_ok=True)
-    report = {"pdf": {}, "docxCode": {}, "rendered": {}, "contacts": {}}
+    report = {
+        "pdf": {},
+        "docxCode": {},
+        "manualScreenshots": {},
+        "rendered": {},
+        "contacts": {},
+    }
     for name, path in PDF_FILES.items():
         report["pdf"][name] = verify_pdf(name, path)
     report["docxCode"]["front"] = verify_docx_code(DOCX_FILES["code_front"])
     report["docxCode"]["back"] = verify_docx_code(DOCX_FILES["code_back"])
+    report["manualScreenshots"] = verify_manual_screenshots(DOCX_FILES["manual"])
     for name in PDF_FILES:
         report["rendered"][name] = verify_rendered_images(name, report["pdf"][name]["pages"])
 
