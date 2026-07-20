@@ -49,7 +49,12 @@ try {
 
 async function renderFixture(url, brand, isRelease) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1200 } });
-  if (!isRelease) await context.addInitScript((brandId) => { window.__APP_BRAND__ = brandId; }, brand);
+  if (!isRelease) {
+    await context.addInitScript((brandId) => {
+      window.__APP_BRAND__ = brandId;
+      window.__YIOU_RELEASE_BUILD__ = true;
+    }, brand);
+  }
   const page = await context.newPage();
   await page.goto(url);
   await page.waitForSelector(".engineeringShell");
