@@ -5,13 +5,14 @@ import { chromium, devices, webkit } from "playwright";
 
 const root = process.cwd();
 const args = process.argv.slice(2);
+const releaseVersion = "2.0";
 const brand = getArgValue("--brand") ?? "yinyi";
 if (brand !== "yinyi" && brand !== "yinman") {
   throw new Error(`Unsupported brand: ${brand}`);
 }
 
 const brandLabel = brand === "yinman" ? "音曼" : "音翼";
-const releaseHtml = `${brandLabel}AI售前工具-1.1.html`;
+const releaseHtml = `${brandLabel}AI售前工具-${releaseVersion}.html`;
 const releaseDir = getLatestReleaseDir();
 const releasePath = path.join(releaseDir, releaseHtml);
 
@@ -21,7 +22,7 @@ if (!fs.existsSync(releasePath)) {
 
 function getLatestReleaseDir() {
   const outputsDir = path.join(root, "outputs");
-  const releasePattern = new RegExp(`^${brandLabel}AI售前工具-1\\.1-内部测试版-(\\d{6})(?:-(\\d+))?$`);
+  const releasePattern = new RegExp(`^${brandLabel}AI售前工具-${releaseVersion.replace(".", "\\.")}-(\\d{6})(?:-(\\d+))?$`);
   if (!fs.existsSync(outputsDir)) {
     throw new Error(`Outputs directory not found: ${outputsDir}`);
   }
@@ -55,6 +56,8 @@ const structuralChecks = {
   hasInlineStyle: /<style>[\s\S]*<\/style>/.test(html),
   hasNoExternalAssetTags: !/(?:src|href)="\.\/assets\//.test(html),
   hasChineseTitle: html.includes(`<title>${brandLabel}AI售前工具</title>`),
+  hasReleaseVersion: html.includes(`window.__YIOU_RELEASE_VERSION__="${releaseVersion}"`),
+  hasNoInternalTestLabel: !html.includes("内部测试版") && !html.includes("内部测试报告"),
   hasNoKnownMojibake: !knownMojibakePattern.test(html)
 };
 

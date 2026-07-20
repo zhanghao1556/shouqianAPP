@@ -250,7 +250,7 @@ export const generateEngineeringOutputs = (
   const report = {
     pdfReportModel: {
       title: profile.projectName || "音翼售前方案",
-      subtitle: "内部测试版",
+      subtitle: "售前工程方案报告",
       generatedAt: new Date().toLocaleString("zh-CN", { hour12: false }),
       sections: []
     },

@@ -71,7 +71,7 @@ export const downloadSvgAsPng = async (svg: SVGSVGElement, filename: string) => 
   URL.revokeObjectURL(pngUrl);
 };
 
-export const svgToPngDataUrl = async (svg: SVGSVGElement) => {
+export const svgToPngDataUrl = async (svg: SVGSVGElement, options: { scale?: number } = {}) => {
   const clone = svg.cloneNode(true) as SVGSVGElement;
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   const interfaceWiringEnabled = __ENABLE_YINYI_INTERFACE_WIRING__ || __ENABLE_YINMAN_INTERFACE_WIRING__;
@@ -101,7 +101,7 @@ export const svgToPngDataUrl = async (svg: SVGSVGElement) => {
 
   try {
     const image = await loadImage(svgUrl);
-    const scale = 2;
+    const scale = Math.max(1, options.scale ?? 2);
     const canvas = document.createElement("canvas");
     canvas.width = Math.ceil(width * scale);
     canvas.height = Math.ceil(height * scale);

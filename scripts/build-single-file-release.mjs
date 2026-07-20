@@ -4,13 +4,13 @@ import crypto from "node:crypto";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const version = "1.1";
+const version = "2.0";
 const args = new Set(process.argv.slice(2));
 const brand = args.has("--brand") ? getArgValue("--brand") : "yinyi";
 const arrayMicImage = getArgValue("--arrayMicImage");
 const brandConfig = getBrandConfig(brand);
-const releaseDir = path.join(root, "outputs", `${brandConfig.slug}-1.1-internal-test`);
-const out = path.join(releaseDir, `${brandConfig.appName}-${version}-内部测试版.html`);
+const releaseDir = path.join(root, "outputs", `${brandConfig.slug}-${version}-release`);
+const out = path.join(releaseDir, `${brandConfig.appName}-${version}.html`);
 
 const index = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 const jsName = [...index.matchAll(/src="\.\/assets\/([^"]+\.js)"/g)][0]?.[1];
@@ -45,7 +45,7 @@ js = js.replaceAll("</script", "<\\/script");
 const html = index
   .replace(
     /<script type="module" crossorigin src="\.\/assets\/[^"]+\.js"><\/script>/,
-    () => `<script>window.__YIOU_RELEASE_BUILD__=true;window.__APP_BRAND__=${JSON.stringify(brandConfig.id)};</script>\n    <script type="module">\n${js}\n</script>`
+    () => `<script>window.__YIOU_RELEASE_BUILD__=true;window.__YIOU_RELEASE_VERSION__=${JSON.stringify(version)};window.__APP_BRAND__=${JSON.stringify(brandConfig.id)};</script>\n    <script type="module">\n${js}\n</script>`
   )
   .replace(/<link rel="stylesheet" crossorigin href="\.\/assets\/[^"]+\.css">/, () => `<style>\n${css}\n</style>`);
 

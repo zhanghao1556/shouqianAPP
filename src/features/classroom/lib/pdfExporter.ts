@@ -31,6 +31,8 @@ const pdfPageWidthPx = 1240;
 const pdfPageHeightPx = 1754;
 const pdfPageWidthPt = 595.28;
 const pdfPageHeightPt = 841.89;
+const interfaceWiringImageScale = 4;
+const interfaceWiringPageScale = 2;
 
 type ReportPage = {
   bytes: Uint8Array;
@@ -100,11 +102,13 @@ export const exportPdfReport = async (
   let interfaceWiringRows: InterfaceWiringUsageRow[] = [];
   if (isInterfaceWiringEnabled()) {
     const interfaceWiringSvg = await waitForInterfaceWiringSvg();
-    interfaceWiringImage = interfaceWiringSvg ? await svgToPngDataUrl(interfaceWiringSvg) : "";
+    interfaceWiringImage = interfaceWiringSvg
+      ? await svgToPngDataUrl(interfaceWiringSvg, { scale: interfaceWiringImageScale })
+      : "";
     interfaceWiringRows = await buildInterfaceWiringReportRows(profile, outputs, recordingInputSelections);
   }
   const payload = encodeReportPayload({
-    version: "1.1-internal-test",
+    version: "2.0",
     exportedAt: new Date().toISOString(),
     importScope: "profile-only",
     profile,
@@ -119,7 +123,7 @@ export const exportPdfReport = async (
     interfaceWiringRows
   );
   const pdfBlob = buildImagePdf(pages, payload);
-  downloadBlob(pdfBlob, `${sanitizeFilename(profile.projectName || getAppBrand().defaultPlanName)}-内部测试报告.pdf`);
+  downloadBlob(pdfBlob, `${sanitizeFilename(profile.projectName || getAppBrand().defaultPlanName)}-售前方案报告.pdf`);
 };
 
 async function waitForInterfaceWiringSvg() {
@@ -173,7 +177,10 @@ async function renderReportPages(
   }
   if (isInterfaceWiringEnabled()) {
     if (!interfaceWiringImage) throw new Error("接口接线图尚未生成，请稍后重试导出。");
-    pages.push(await renderImagePage("接口接线图", interfaceWiringImage));
+    pages.push(await renderImagePage("接口接线图", interfaceWiringImage, {
+      renderScale: interfaceWiringPageScale,
+      jpegQuality: 0.98
+    }));
     pages.push(...renderInterfaceUsagePages(interfaceWiringRows));
   }
 
@@ -181,15 +188,16 @@ async function renderReportPages(
   return Promise.all(pages.map(canvasToJpegPage));
 }
 
-function createCanvasPage(): CanvasPage {
+function createCanvasPage(renderScale = 1): CanvasPage {
   const theme = getReportTheme();
   const canvas = document.createElement("canvas");
-  canvas.width = pdfPageWidthPx;
-  canvas.height = pdfPageHeightPx;
+  canvas.width = Math.round(pdfPageWidthPx * renderScale);
+  canvas.height = Math.round(pdfPageHeightPx * renderScale);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("无法创建 PDF 画布。");
+  if (renderScale !== 1) ctx.scale(renderScale, renderScale);
   ctx.fillStyle = theme.background;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, pdfPageWidthPx, pdfPageHeightPx);
   drawSoftBackground(ctx, theme);
   return { canvas, ctx, y: 0 };
 }
@@ -456,9 +464,14 @@ const ceilingLabels = {
   unknown: "待确认"
 } as const;
 
-async function renderImagePage(title: string, dataUrl: string) {
+async function renderImagePage(
+  title: string,
+  dataUrl: string,
+  options: { renderScale?: number; jpegQuality?: number } = {}
+) {
   const theme = getReportTheme();
-  const page = createCanvasPage();
+  const page = createCanvasPage(options.renderScale ?? 1);
+  page.canvas.dataset.pdfJpegQuality = String(options.jpegQuality ?? 0.94);
   drawSectionTitle(page.ctx, title, 70, 92);
   const image = await loadImage(dataUrl);
   const boxX = 70;
@@ -615,7 +628,7 @@ function drawPageNumber(canvas: HTMLCanvasElement, pageNumber: number, totalPage
 
 function drawFooter(page: CanvasPage) {
   const theme = getReportTheme();
-  drawText(page.ctx, "本报告仅用于内部售前方案沟通，方案仅供参考，不包含报价信息；如有疑问，请联系张灏。", 70, pdfPageHeightPx - 58, {
+  drawText(page.ctx, "本报告仅用于售前方案沟通，方案仅供参考，不包含报价信息；如有疑问，请联系张灏。", 70, pdfPageHeightPx - 58, {
     size: 17,
     weight: 700,
     color: theme.muted,
@@ -717,8 +730,9 @@ function loadImage(dataUrl: string) {
 }
 
 async function canvasToJpegPage(canvas: HTMLCanvasElement): Promise<ReportPage> {
+  const quality = Number(canvas.dataset.pdfJpegQuality ?? 0.94);
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((value) => (value ? resolve(value) : reject(new Error("PDF 页面生成失败。"))), "image/jpeg", 0.94);
+    canvas.toBlob((value) => (value ? resolve(value) : reject(new Error("PDF 页面生成失败。"))), "image/jpeg", quality);
   });
   return {
     bytes: new Uint8Array(await blob.arrayBuffer()),

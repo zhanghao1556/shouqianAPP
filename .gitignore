@@ -15,6 +15,8 @@ outputs/*
 !outputs/音翼AI售前工具-*.zip
 !outputs/音翼AI售前工具-*-内部测试版-*-*/
 !outputs/音翼AI售前工具-*-内部测试版-*-*/**
+!outputs/音翼AI售前工具-2.0-*/
+!outputs/音翼AI售前工具-2.0-*/**
 
 # Large source/reference documents kept outside git by default
 docx_2/
@@ -27,5 +29,7 @@ docx_2/
 !outputs/音曼AI售前工具-*.zip
 !outputs/音曼AI售前工具-*-内部测试版-*/
 !outputs/音曼AI售前工具-*-内部测试版-*/**
+!outputs/音曼AI售前工具-2.0-*/
+!outputs/音曼AI售前工具-2.0-*/**
 outputs/音曼AI售前工具-1.1-内部测试版-260709-1.zip
 outputs/音曼AI售前工具-1.1-内部测试版-260709-1/

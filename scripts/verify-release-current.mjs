@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
 const distDir = path.join(root, "dist");
+const releaseVersion = "2.0";
 const requestedBrand = getArgValue("--brand");
 
 const brands = [
@@ -13,7 +14,7 @@ const brands = [
     label: "音翼",
     appName: "音翼AI售前工具",
     slug: "yinyi-ai-presales-tool",
-    forbidden: ["音曼", "Yinman AI Presales Tool", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "吊麦", "小圆盘阵麦", "音频扩展器", "拟调整预览", "尚未写入正式规则", "内部校准", "\uFFFD"],
+    forbidden: ["音曼", "Yinman AI Presales Tool", "翼欧", "AP150", "YM-AP150", "ap150", "SA110", "AJ200", "AJ600", "AJ350", "吊麦", "小圆盘阵麦", "音频扩展器", "拟调整预览", "尚未写入正式规则", "内部校准", "内部测试版", "内部测试报告", "\uFFFD"],
     forbiddenAssets: [
       "yinman-logo.png",
       "yinman-array-mic-pointmap.png",
@@ -31,7 +32,7 @@ const brands = [
     label: "音曼",
     appName: "音曼AI售前工具",
     slug: "yinman-ai-presales-tool",
-    forbidden: ["音翼", "Yinyi AI Presales Tool", "DT2 Pro", "DT2 pro", "翼欧", "拟调整预览", "尚未写入正式规则", "内部校准", "\uFFFD"],
+    forbidden: ["音翼", "Yinyi AI Presales Tool", "DT2 Pro", "DT2 pro", "翼欧", "拟调整预览", "尚未写入正式规则", "内部校准", "内部测试版", "内部测试报告", "\uFFFD"],
     forbiddenAssets: ["yinyi-tech-logo.svg", "yiou-logo.png", "topology-array-mic.png"]
   }
 ];
@@ -71,8 +72,8 @@ if (
 
 function verifyBrand(brand) {
   const releaseDir = latestReleaseDir(brand.appName);
-  const releaseHtmlPath = path.join(releaseDir, `${brand.appName}-1.1.html`);
-  const singleFileHtmlPath = path.join(outputsDir, `${brand.slug}-1.1-internal-test`, `${brand.appName}-1.1-内部测试版.html`);
+  const releaseHtmlPath = path.join(releaseDir, `${brand.appName}-${releaseVersion}.html`);
+  const singleFileHtmlPath = path.join(outputsDir, `${brand.slug}-${releaseVersion}-release`, `${brand.appName}-${releaseVersion}.html`);
   const releaseHtml = fs.readFileSync(releaseHtmlPath, "utf8");
   const singleFileHtml = fs.readFileSync(singleFileHtmlPath, "utf8");
   const releaseStat = fs.statSync(releaseHtmlPath);
@@ -81,6 +82,7 @@ function verifyBrand(brand) {
   const required = [
     `<title>${brand.appName}</title>`,
     `window.__YIOU_RELEASE_BUILD__=true`,
+    `window.__YIOU_RELEASE_VERSION__="${releaseVersion}"`,
     `window.__APP_BRAND__="${brand.id}"`,
     brand.appName,
     "高端教育空间声学方案",
@@ -152,7 +154,7 @@ function collectFiles(target) {
 }
 
 function latestReleaseDir(appName) {
-  const pattern = new RegExp(`^${escapeRegExp(appName)}-1\\.1-内部测试版-(\\d{6})-(\\d+)$`);
+  const pattern = new RegExp(`^${escapeRegExp(appName)}-${escapeRegExp(releaseVersion)}-(\\d{6})-(\\d+)$`);
   const matches = fs
     .readdirSync(outputsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())

@@ -3,23 +3,23 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
-const version = "1.1";
+const version = "2.0";
 const brand = getArgValue("--brand") || "yinyi";
 const brandConfig = getBrandConfig(brand);
-const releasePrefix = `${brandConfig.appName}-${version}-内部测试版`;
+const releasePrefix = `${brandConfig.appName}-${version}`;
 const releaseDate = formatReleaseDate(new Date());
 const releaseIndex = getNextReleaseIndex(releaseDate);
 const releaseLabel = `${releaseDate}-${releaseIndex}`;
-const source = path.join(root, "outputs", `${brandConfig.slug}-1.1-internal-test`, `${brandConfig.appName}-1.1-内部测试版.html`);
+const source = path.join(root, "outputs", `${brandConfig.slug}-${version}-release`, `${brandConfig.appName}-${version}.html`);
 const outDirName = `${releasePrefix}-${releaseLabel}`;
 const outDir = path.join(root, "outputs", outDirName);
 const outZip = path.join(root, "outputs", `${outDirName}.zip`);
-const outHtml = path.join(outDir, `${brandConfig.appName}-1.1.html`);
+const outHtml = path.join(outDir, `${brandConfig.appName}-${version}.html`);
 const outReadme = path.join(outDir, "README-打开说明.txt");
-const outOutline = path.join(outDir, `${brandConfig.appName}-1.1-软件大纲.md`);
+const outOutline = path.join(outDir, `${brandConfig.appName}-${version}-软件大纲.md`);
 const mirrorOutlines = [
-  path.join(root, "outputs", `${brandConfig.appName}-1.1-软件大纲.md`),
-  path.join(root, "outputs", `${brandConfig.slug}-1.1-internal-test`, `${brandConfig.appName}-1.1-软件大纲.md`)
+  path.join(root, "outputs", `${brandConfig.appName}-${version}-软件大纲.md`),
+  path.join(root, "outputs", `${brandConfig.slug}-${version}-release`, `${brandConfig.appName}-${version}-软件大纲.md`)
 ];
 
 if (!fs.existsSync(source)) {
@@ -109,10 +109,10 @@ html = html.replace(
     </div>`
 );
 
-const readme = `${brandConfig.appName} 1.1 内部测试版（${releaseLabel}）
+const readme = `${brandConfig.appName} ${version} 正式版（${releaseLabel}）
 
 交付文件：
-- ${brandConfig.appName}-1.1.html
+- ${brandConfig.appName}-${version}.html
 
 打开方式：
 1. 电脑：直接用 Chrome、Edge、Safari 等浏览器打开 HTML 文件。
@@ -137,12 +137,11 @@ const outline = `# ${brandConfig.appName}软件开发大纲
 
 后续开发按这条路线控制边界：
 
-- 当前优先保证 1.1 稳定。
-- 2.0 开始补工程表达能力。
+- 当前正式版本为 2.0，重点保证接线、拓扑和报告输出稳定。
 - 3.0 解决正式文档输出。
 - 4.0 做成核心差异化能力。
 
-## 1.1 售前方案基础版
+## 1.x 售前方案基础版
 
 目标：把售前采集、项目档案、方案清单、点位图跑通，形成最小可用闭环。
 
@@ -156,26 +155,18 @@ const outline = `# ${brandConfig.appName}软件开发大纲
 
 验收标准：能从一个房间的售前信息，生成一套可沟通的初步方案。
 
-当前 1.1 内部测试版发布边界：
+## 2.0 接线、拓扑与报告正式版
+
+目标：让售前方案具备清晰的工程表达和施工沟通价值。
+
+当前 2.0 正式版发布边界：
 
 - 显示售前采集、项目档案、设备清单、点位图、系统拓扑图、接口接线图与接口占用表。
 - 支持导入 / 导出 PDF 报告，导出报告包含项目档案、非零设备清单、点位图、系统拓扑图、接口接线图与自动分页的接口占用表，并保留可回导的内部校准数据。
 - 接口接线图与接口占用表采用当前页面相同的接口选择和接线结果。
+- 接口接线图报告页使用高清输出，放大时仍可辨认端口、线材和端子线芯。
 - 隐藏校准台、总文字报告预览、规则变更锁、推荐原因、工程依据和校准依据等内部规则说明。
-- 提供电脑 / 手机共用的单文件 HTML，发布包内主文件为“${brandConfig.appName}-1.1.html”。
-
-## 2.0 接线与拓扑图版
-
-目标：让方案具备施工指导价值。
-
-新增功能：
-
-- ${brandConfig.id === "yinman" ? "接线能力扩展：继续补充更多外接设备接口与施工表达。" : "接线图：展示主机、阵麦、音箱、功放、Line Out、SPK 等连接关系。"}
-- 拓扑图：展示整套系统的信号流和设备结构。
-- ${brandConfig.id === "yinman" ? "接口校核扩展：继续补充更多设备的占用与扩展能力。" : "接口占用统计：自动说明哪些接口已占用，哪些需要扩展设备。"}
-- 施工备注：线材、安装方式、特殊注意事项。
-
-验收标准：售前方案可以继续流转给施工或技术人员，不需要重新解释系统结构。
+- 提供电脑 / 手机共用的单文件 HTML，发布包内主文件为“${brandConfig.appName}-${version}.html”。
 
 ## 3.0 建设方案生成版
 

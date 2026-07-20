@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 
 const root = process.cwd();
 const outputsDir = path.join(root, "outputs");
+const releaseVersion = "2.0";
 const requestedBrand = getArgValue("--brand");
 const browser = await launchBrowser();
 const server = http.createServer((request, response) => {
@@ -29,7 +30,7 @@ try {
     if (brand !== "yinyi" && brand !== "yinman") throw new Error(`Unknown release brand: ${brand}`);
     const appName = brand === "yinman" ? "音曼AI售前工具" : "音翼AI售前工具";
     const expected = await renderFixture(distUrl, brand, false);
-    const releasePath = path.join(latestReleaseDir(appName), `${appName}-1.1.html`);
+    const releasePath = path.join(latestReleaseDir(appName), `${appName}-${releaseVersion}.html`);
     const actual = await renderFixture(pathToFileUrl(releasePath), brand, true);
     const mismatches = Object.keys(expected)
       .filter((key) => actual[key] !== expected[key]);
@@ -124,7 +125,7 @@ async function launchBrowser() {
 }
 
 function latestReleaseDir(appName) {
-  const pattern = new RegExp(`^${escapeRegExp(appName)}-1\\.1-内部测试版-(\\d{6})-(\\d+)$`);
+  const pattern = new RegExp(`^${escapeRegExp(appName)}-${escapeRegExp(releaseVersion)}-(\\d{6})-(\\d+)$`);
   const match = fs.readdirSync(outputsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => ({ entry, match: entry.name.match(pattern) }))
