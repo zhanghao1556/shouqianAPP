@@ -628,7 +628,7 @@ function drawPageNumber(canvas: HTMLCanvasElement, pageNumber: number, totalPage
 
 function drawFooter(page: CanvasPage) {
   const theme = getReportTheme();
-  drawText(page.ctx, "本报告仅用于售前方案沟通，方案仅供参考，不包含报价信息；如有疑问，请联系张灏。", 70, pdfPageHeightPx - 58, {
+  drawText(page.ctx, "本报告仅用于售前方案沟通，方案仅供参考，不包含报价信息；如有疑问，请联系FAE。", 70, pdfPageHeightPx - 58, {
     size: 17,
     weight: 700,
     color: theme.muted,

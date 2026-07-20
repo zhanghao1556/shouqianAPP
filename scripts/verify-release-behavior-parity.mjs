@@ -91,11 +91,14 @@ async function renderFixture(url, brand, isRelease) {
   const customerText = await page.locator("body").innerText();
   const internalModels = brand === "yinman"
     ? ["AJ200", "AJ350", "AJ600", "SA110", "AP150", "RING08"]
-    : ["DT1", "DT2", "DT2 Pro"];
+    : ["DT1", "DT2", "DT2 Pro", "AJ200", "AJ350", "AJ600", "SA110", "AP150"];
   for (const model of internalModels) {
     if (customerText.includes(model)) {
       throw new Error(`Customer-visible ${brandLabel} output exposes internal model: ${model}`);
     }
+  }
+  if (customerText.includes("张灏")) {
+    throw new Error(`Customer-visible ${brandLabel} output exposes a personal contact name.`);
   }
   await context.close();
   return {

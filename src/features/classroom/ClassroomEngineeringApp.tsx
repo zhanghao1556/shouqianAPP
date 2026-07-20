@@ -218,7 +218,7 @@ export function ClassroomEngineeringApp() {
           )}
         </section>
       </section>
-      <div className="referenceNotice">方案仅供参考，如有拿捏不准或者 BUG 请联系张灏</div>
+      <div className="referenceNotice">方案仅供参考，如有拿捏不准或者 BUG 请联系FAE</div>
     </main>
   );
 }
