@@ -166,10 +166,10 @@ function assertYinyiMonoInputConductors(edge, expectedSourceSignal, expectedSour
     edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color]),
     [
       [expectedSourceSignal, "signal", "#dc2626"],
-      [expectedSourceSignal, "signal", "#ffffff"],
       [expectedSourceGround, "ground", "#64748b"]
     ]
   );
+  assert.equal(edge.conductors.some((conductor) => conductor.color === "#ffffff"), false);
   assert.equal(edge.conductors.some((conductor) => /negative|pin3/.test(conductor.fromTerminalId)), false);
 }
 
@@ -232,7 +232,7 @@ assert.ok(
     "; lines=" + yinyiBalancedInputResult.outputs.connectionLines.map((line) => line.id + ":" + line.fromDevice + ">" + line.toDevice).join(",")
 );
 assertYinyiMonoInputConductors(yinyiBalancedInputEdge, "positive", "ground");
-assert.match(yinyiBalancedInputEdge.connectionMethod, /平衡端红白并接\+.*-悬空.*阵麦端红白并接LINE IN同一个L或R/);
+assert.match(yinyiBalancedInputEdge.connectionMethod, /平衡端红接\+、白接-、屏蔽接G.*阵麦端红线接LINE IN所选L或R.*白线绝缘不接/);
 
 const yinyiTsInputProfile = {
   ...yinyiProfile,
@@ -243,7 +243,7 @@ const yinyiTsInputEdge = yinyiTsInputResult.model.edges.find(
   (edge) => edge.id === "candidate-wireless-receiver-line-dt"
 );
 assertYinyiMonoInputConductors(yinyiTsInputEdge, "tip", "sleeve");
-assert.match(yinyiTsInputEdge.connectionMethod, /6\.35 TS端红白并接TIP.*屏蔽接SLEEVE.*阵麦端红白并接LINE IN同一个L或R/);
+assert.match(yinyiTsInputEdge.connectionMethod, /6\.35 TS端TIP接红线、SLEEVE接屏蔽，白线两端不接.*阵麦端红线接LINE IN所选L或R/);
 
 const yinyiXlrInputProfile = {
   ...yinyiProfile,
@@ -254,7 +254,7 @@ const yinyiXlrInputEdge = yinyiXlrInputResult.model.edges.find(
   (edge) => edge.id === "candidate-microphone-line-dt-1"
 );
 assertYinyiMonoInputConductors(yinyiXlrInputEdge, "pin2", "pin1");
-assert.match(yinyiXlrInputEdge.connectionMethod, /卡侬母头.*红白并接2（\+）.*屏蔽接1（G）.*3（-）悬空.*阵麦端红白并接LINE IN同一个L或R/);
+assert.match(yinyiXlrInputEdge.connectionMethod, /卡侬母头.*红接2（\+）、白接3（-）、屏蔽接1（G）.*阵麦端红线接LINE IN所选L或R.*白线绝缘不接/);
 const yinyiRecordingProfile = {
   ...yinyiProfile,
   existingDevices: { ...yinyiProfile.existingDevices, recordingHost: "录播主机" }

@@ -2470,3 +2470,9 @@ PowerShell reminder:
 - Connector shape does not change the passive mono conversion rule. Phoenix balanced `+`, XLR pin 2 and 6.35 TS tip are all source signal endpoints: red and white share that endpoint, shield uses the source ground endpoint, and the destination red/white pair shares one array-microphone L or R terminal.
 - A balanced source negative endpoint must remain unused in this conversion. Mapping it to ground recreates the exact cancellation-prone wiring the user rejected, even when the destination drawing looks like a plausible three-core fan-out.
 - Model TS tip and sleeve as physical terminal roles even when the renderer collapses them under one connector head. This preserves an accurate occupancy contract without exposing individual cores at the plug artwork.
+
+### 2026-07-20 open-circuit cold core at the Yinyi input end
+
+- Parallel cores are unnecessary for a mono-to-mono adapter and make hidden connector wiring easier to misread. Keep the source connector convention intact, but draw only the electrically continuous hot core and shield at the array-microphone terminal end.
+- An XLR or balanced source may retain white on pin 3 / negative inside the source connector while the array end of that white core is insulated and left open. A 6.35 TS source has no cold contact, so the spare white core is unused at both ends.
+- The active conductor model should contain only red signal continuity and shield continuity. Preserve the open white-core instruction in the usage row instead of inventing a destination terminal for a wire that physically lands nowhere.

@@ -1894,8 +1894,7 @@ function getBalancedToYinyiMonoConductors(fromPort: DevicePortCapability, toPort
   const positive = fromPort.terminals.find((terminal) => terminal.role === "positive")?.id ?? "positive";
   const ground = fromPort.terminals.find((terminal) => terminal.role === "ground")?.id ?? "ground";
   return [
-    mappedConductor("positive-signal-red", "红线：正端并接阵麦信号", "#dc2626", fromPort, positive, toPort, "signal"),
-    mappedConductor("positive-signal-white", "白线：正端并接阵麦信号", "#ffffff", fromPort, positive, toPort, "signal"),
+    mappedConductor("positive-signal-red", "红线：正相接阵麦信号", "#dc2626", fromPort, positive, toPort, "signal"),
     mappedConductor("ground-ground", "屏蔽接共地", "#64748b", fromPort, ground, toPort, "ground")
   ];
 }
@@ -1904,8 +1903,7 @@ function getConnectorToYinyiMonoConductors(fromPort: DevicePortCapability, toPor
   const signal = fromPort.terminals.find((terminal) => terminal.role === "signal")?.id ?? "connector";
   const ground = fromPort.terminals.find((terminal) => terminal.role === "ground")?.id ?? "connector";
   return [
-    mappedConductor("signal-signal-red", "红线：信号端并接阵麦信号", "#dc2626", fromPort, signal, toPort, "signal"),
-    mappedConductor("signal-signal-white", "白线：信号端并接阵麦信号", "#ffffff", fromPort, signal, toPort, "signal"),
+    mappedConductor("signal-signal-red", "红线：信号端接阵麦信号", "#dc2626", fromPort, signal, toPort, "signal"),
     mappedConductor("ground-ground", "屏蔽接共地", "#64748b", fromPort, ground, toPort, "ground")
   ];
 }
@@ -3120,17 +3118,17 @@ function getConnectionMethod(
 ) {
   if (line.cableType.includes("USB")) return "USB直连；USB Audio一进一出；内置232串口信号，可用于连接调试软件";
   if (toProductId === YINYI_DT2_PRO_PORT_PROFILE_ID && toPort.terminals.some((terminal) => terminal.id === "signal")) {
-    const arrayMicEnd = "阵麦端红白并接LINE IN同一个L或R，屏蔽接同组G";
+    const arrayMicEnd = "阵麦端红线接LINE IN所选L或R，屏蔽接同组G，白线绝缘不接";
     if (/XLR|卡侬/i.test(`${fromPort.interfaceType} ${fromPort.panelLabel}`)) {
-      return `线缆卡侬母头插接设备卡侬公口，红白并接2（+），屏蔽接1（G），3（-）悬空；${arrayMicEnd}`;
+      return `线缆卡侬母头插接设备卡侬公口，接头端红接2（+）、白接3（-）、屏蔽接1（G）；${arrayMicEnd}`;
     }
     if (/6\.35/i.test(`${fromPort.interfaceType} ${fromPort.panelLabel}`)) {
-      return `6.35 TS端红白并接TIP（信号），屏蔽接SLEEVE（G）；${arrayMicEnd}`;
+      return `6.35 TS端TIP接红线、SLEEVE接屏蔽，白线两端不接；${arrayMicEnd}`;
     }
     if (fromPort.terminals.some((terminal) => terminal.role === "positive")) {
-      return `源设备平衡端红白并接+，屏蔽接G，-悬空；${arrayMicEnd}`;
+      return `源设备平衡端红接+、白接-、屏蔽接G；${arrayMicEnd}`;
     }
-    return `源设备红白并接信号端，屏蔽接地端；${arrayMicEnd}`;
+    return `源设备红线接信号端、屏蔽接地端，白线不接；${arrayMicEnd}`;
   }
   if (fromPort.id === "xlr" && /卡侬|XLR/i.test(line.fromPort)) {
     return toPort.id.startsWith("mic")
