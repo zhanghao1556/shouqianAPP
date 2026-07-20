@@ -84,6 +84,11 @@ const xlrTerminals: DevicePortTerminal[] = [
   { id: "pin1", label: "1 (G)", role: "ground", color: "#64748b" }
 ];
 
+const tsMonoTerminals: DevicePortTerminal[] = [
+  { id: "tip", label: "TIP（信号）", role: "signal", color: "#dc2626" },
+  { id: "sleeve", label: "SLEEVE（G）", role: "ground", color: "#64748b" }
+];
+
 const t568bColors = ["#fbbf24", "#f97316", "#86efac", "#2563eb", "#93c5fd", "#16a34a", "#d6d3d1", "#92400e"];
 const t568bLabels = ["1 白橙", "2 橙", "3 白绿", "4 蓝", "5 白蓝", "6 绿", "7 白棕", "8 棕"];
 const rj45Terminals: DevicePortTerminal[] = t568bLabels.map((label, index) => ({
@@ -682,7 +687,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     ports: [
       port("balOut", "BAL OUT", "三芯差分接线端子（+/-/G）", "output", agentSource, true, balancedTerminals),
       port("lineOut", "LINE OUT", "RCA", "output", agentSource),
-      port("micOut", "MIC OUT", "6.35mm", "output", agentSource),
+      port("micOut", "MIC OUT", "6.35mm TS（大二芯）", "output", agentSource, true, tsMonoTerminals),
       port("usb", "USB（PPT控制）", "USB-B", "output", agentSource)
     ],
     interfacePanel: panel("wirelessReceiver", 1000 / 250, {
@@ -692,7 +697,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
         ground: { x: 0.426, y: 0.48 }
       }),
       lineOut: anchor(0.495, 0.48),
-      micOut: anchor(0.586, 0.48),
+      micOut: anchor(0.586, 0.48, {
+        tip: { x: 0.586, y: 0.48 },
+        sleeve: { x: 0.586, y: 0.48 }
+      }),
       usb: anchor(0.174, 0.46)
     }, "《手持麦接收机说明书》完整后面板；按已确认接口位置重构清晰工程图")
   },
@@ -702,7 +710,7 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
     ports: [
       port("antennaA", "ANT A", "BNC 天线接口", "input", confirmedSource),
       port("micOut1", "MIC OUT 1", "XLR-3 卡侬公口", "output", confirmedSource, true, xlrTerminals),
-      port("lineOut", "LINE OUT（手持1+2）", "6.35mm TS（大二芯）", "output", confirmedSource),
+      port("lineOut", "LINE OUT（手持1+2）", "6.35mm TS（大二芯）", "output", confirmedSource, true, tsMonoTerminals),
       port("micOut2", "MIC OUT 2", "XLR-3 卡侬公口", "output", confirmedSource, true, xlrTerminals),
       port("antennaB", "ANT B", "BNC 天线接口", "input", confirmedSource)
     ],
@@ -713,7 +721,10 @@ export const devicePortCatalog: Record<string, DevicePortProfile> = {
         pin3: { x: 319 / 1000, y: 132 / 300 },
         pin1: { x: 300 / 1000, y: 163 / 300 }
       }),
-      lineOut: anchor(500 / 1000, 144 / 300),
+      lineOut: anchor(500 / 1000, 144 / 300, {
+        tip: { x: 500 / 1000, y: 144 / 300 },
+        sleeve: { x: 500 / 1000, y: 144 / 300 }
+      }),
       micOut2: anchor(700 / 1000, 144 / 300, {
         pin2: { x: 681 / 1000, y: 132 / 300 },
         pin3: { x: 719 / 1000, y: 132 / 300 },

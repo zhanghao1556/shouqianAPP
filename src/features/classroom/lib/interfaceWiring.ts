@@ -678,7 +678,7 @@ class CandidateWiringBuilder {
         toNode,
         toPort,
         cableType: normalizeCableType(line.cableType),
-        connectionMethod: getConnectionMethod(line, fromPort, toPort),
+        connectionMethod: getConnectionMethod(line, fromPort, toPort, toNode.productId),
         signalDirection: line.cableType.includes("USB") ? "bidirectional" : "fromTo",
         conductors: getYinyiFormalConductorMappings(fromNode, fromPort, toNode, toPort)
       });
@@ -703,7 +703,7 @@ class CandidateWiringBuilder {
     const source = this.allocateExternalHubPort(
       "output",
       `${node.label} AEC输入`,
-      mode === "balanced" ? "balanced" : "stereo"
+      this.nodes.has("dt-main") ? "mono" : mode === "balanced" ? "balanced" : "stereo"
     );
     if (!source) return;
     const inputPortId = mode === "trs35" ? "lineIn35" : mode === "lrg" ? "lineInLrg" : "lineInBalanced";
@@ -720,10 +720,10 @@ class CandidateWiringBuilder {
       cableType: mode === "trs35" ? usesAj200HpOut ? "3.5mm成品音频线" : "3.5mm音频线" : "音频线",
       connectionMethod: usesYinyiArrayMic
         ? mode === "balanced"
-          ? "AEC信号：选用LINE OUT的L或R信号接录播LINE IN +，共地G并接-与G；禁止接MIC IN"
+          ? "AEC信号：主麦端红白并接LINE OUT同一个L或R，屏蔽接同组G；录播端红白并接+，屏蔽接G，-悬空；禁止接MIC IN"
           : mode === "trs35"
-            ? "AEC信号：LINE OUT的L/R/G直接接3.5mm LINE IN的L/R/G；禁止接MIC IN"
-            : "AEC信号：LINE OUT的L/R/G与录播凤凰端子L/R/G一一对应；禁止接MIC IN"
+            ? "AEC信号：主麦端红白并接LINE OUT同一个L或R，屏蔽接同组G；3.5mm端红接L、白接R、屏蔽接G；禁止接MIC IN"
+            : "AEC信号：主麦端红白并接LINE OUT同一个L或R，屏蔽接同组G；录播凤凰端红接L、白接R、屏蔽接G，三个端子全部接线；禁止接MIC IN"
         : mode === "balanced"
         ? "AEC信号：LINE OUT的+/-/G直连LINE IN的+/-/G；禁止接MIC IN"
         : usesAj200HpOut
@@ -732,7 +732,9 @@ class CandidateWiringBuilder {
             : "AEC信号：HP OUT的L/R/G与凤凰端子L/R/G一一对应；禁止接MIC IN"
           : "AEC信号：LINE OUT +并接L/R，G接G，LINE OUT -悬空；禁止接MIC IN",
       conductors: usesYinyiArrayMic
-        ? mode === "balanced" ? getYinyiMonoToBalancedConductors(source.port, inputPort) : undefined
+        ? mode === "balanced"
+          ? getYinyiMonoToBalancedConductors(source.port, inputPort)
+          : getYinyiMonoToStereoConductors(source.port, inputPort)
         : mode === "balanced"
         ? undefined
         : usesAj200HpOut
@@ -1293,10 +1295,19 @@ class CandidateWiringBuilder {
       };
     }
     if (isProcessorName(clean)) {
-      const profile = this.processorProductId ? getDevicePortProfile(this.processorProductId) : undefined;
+      const processorProductId = this.processorProductId ?? (
+        this.brandId === "yinyi"
+          ? clean.includes("六麦") ? PROCESSOR_AJ600_PORT_PROFILE_ID : PROCESSOR_AJ200_PORT_PROFILE_ID
+          : PROCESSOR_AJ350_PORT_PROFILE_ID
+      );
+      const profile = getDevicePortProfile(processorProductId);
+      if (this.brandId === "yinyi" && !this.processorProductId) {
+        this.processorProductId = processorProductId;
+        this.candidateProcessor = processorProductId === PROCESSOR_AJ600_PORT_PROFILE_ID ? "AJ600" : "AJ200";
+      }
       return {
         id: "processor",
-        productId: this.processorProductId ?? PROCESSOR_AJ350_PORT_PROFILE_ID,
+        productId: processorProductId,
         label: profile?.customerName ?? "智能音频处理主机",
         internalModel: profile?.internalModel,
         category: "processor",
@@ -1865,27 +1876,37 @@ function isStereoPortCapability(port: DevicePortCapability) {
 
 function getYinyiMonoToBalancedConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
   return [
-    mappedConductor("signal-positive", "信号", "#dc2626", fromPort, "signal", toPort, "positive"),
-    mappedConductor("ground-negative", "共地到-", "#ffffff", fromPort, "ground", toPort, "negative"),
-    mappedConductor("ground-ground", "共地到G", "#64748b", fromPort, "ground", toPort, "ground")
+    mappedConductor("signal-positive-red", "红线：信号接+", "#dc2626", fromPort, "signal", toPort, "positive"),
+    mappedConductor("signal-positive-white", "白线：并接同一信号与+", "#ffffff", fromPort, "signal", toPort, "positive"),
+    mappedConductor("ground-ground", "屏蔽接G", "#64748b", fromPort, "ground", toPort, "ground")
+  ];
+}
+
+function getYinyiMonoToStereoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  return [
+    mappedConductor("signal-left", "红线：单声道接L", "#dc2626", fromPort, "signal", toPort, "left"),
+    mappedConductor("signal-right", "白线：同一单声道接R", "#ffffff", fromPort, "signal", toPort, "right"),
+    mappedConductor("ground-ground", "屏蔽接G", "#64748b", fromPort, "ground", toPort, "ground")
   ];
 }
 
 function getBalancedToYinyiMonoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
   const positive = fromPort.terminals.find((terminal) => terminal.role === "positive")?.id ?? "positive";
-  const negative = fromPort.terminals.find((terminal) => terminal.role === "negative")?.id ?? "negative";
   const ground = fromPort.terminals.find((terminal) => terminal.role === "ground")?.id ?? "ground";
   return [
-    mappedConductor("positive-signal", "正相信号", "#dc2626", fromPort, positive, toPort, "signal"),
-    mappedConductor("negative-ground", "负相接共地", "#ffffff", fromPort, negative, toPort, "ground"),
+    mappedConductor("positive-signal-red", "红线：正端并接阵麦信号", "#dc2626", fromPort, positive, toPort, "signal"),
+    mappedConductor("positive-signal-white", "白线：正端并接阵麦信号", "#ffffff", fromPort, positive, toPort, "signal"),
     mappedConductor("ground-ground", "屏蔽接共地", "#64748b", fromPort, ground, toPort, "ground")
   ];
 }
 
 function getConnectorToYinyiMonoConductors(fromPort: DevicePortCapability, toPort: DevicePortCapability) {
+  const signal = fromPort.terminals.find((terminal) => terminal.role === "signal")?.id ?? "connector";
+  const ground = fromPort.terminals.find((terminal) => terminal.role === "ground")?.id ?? "connector";
   return [
-    mappedConductor("connector-signal", "信号", "#dc2626", fromPort, "connector", toPort, "signal"),
-    mappedConductor("connector-ground", "地", "#64748b", fromPort, "connector", toPort, "ground")
+    mappedConductor("signal-signal-red", "红线：信号端并接阵麦信号", "#dc2626", fromPort, signal, toPort, "signal"),
+    mappedConductor("signal-signal-white", "白线：信号端并接阵麦信号", "#ffffff", fromPort, signal, toPort, "signal"),
+    mappedConductor("ground-ground", "屏蔽接共地", "#64748b", fromPort, ground, toPort, "ground")
   ];
 }
 
@@ -1898,7 +1919,7 @@ function getYinyiFormalConductorMappings(
   const toYinyiMono = toNode.productId === YINYI_DT2_PRO_PORT_PROFILE_ID &&
     toPort.terminals.some((terminal) => terminal.id === "signal");
   if (toYinyiMono) {
-    return fromPort.terminals.length
+    return fromPort.terminals.some((terminal) => terminal.role === "positive")
       ? getBalancedToYinyiMonoConductors(fromPort, toPort)
       : getConnectorToYinyiMonoConductors(fromPort, toPort);
   }
@@ -3094,9 +3115,23 @@ function getInterfacePanelCompositeSize(
 function getConnectionMethod(
   line: ConnectionLine,
   fromPort: DevicePortCapability,
-  toPort: DevicePortCapability
+  toPort: DevicePortCapability,
+  toProductId?: string
 ) {
   if (line.cableType.includes("USB")) return "USB直连；USB Audio一进一出；内置232串口信号，可用于连接调试软件";
+  if (toProductId === YINYI_DT2_PRO_PORT_PROFILE_ID && toPort.terminals.some((terminal) => terminal.id === "signal")) {
+    const arrayMicEnd = "阵麦端红白并接LINE IN同一个L或R，屏蔽接同组G";
+    if (/XLR|卡侬/i.test(`${fromPort.interfaceType} ${fromPort.panelLabel}`)) {
+      return `线缆卡侬母头插接设备卡侬公口，红白并接2（+），屏蔽接1（G），3（-）悬空；${arrayMicEnd}`;
+    }
+    if (/6\.35/i.test(`${fromPort.interfaceType} ${fromPort.panelLabel}`)) {
+      return `6.35 TS端红白并接TIP（信号），屏蔽接SLEEVE（G）；${arrayMicEnd}`;
+    }
+    if (fromPort.terminals.some((terminal) => terminal.role === "positive")) {
+      return `源设备平衡端红白并接+，屏蔽接G，-悬空；${arrayMicEnd}`;
+    }
+    return `源设备红白并接信号端，屏蔽接地端；${arrayMicEnd}`;
+  }
   if (fromPort.id === "xlr" && /卡侬|XLR/i.test(line.fromPort)) {
     return toPort.id.startsWith("mic")
       ? "线缆卡侬母头插接设备卡侬公口，按2=+、3=-、1=G接处理器MIC IN"

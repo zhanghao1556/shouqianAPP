@@ -2451,3 +2451,22 @@ PowerShell reminder:
 
 - A green shadow around a heavily brightened image is not a green highlight. The highlighted surface itself must receive a green tint; otherwise clipping can hide the shadow while brightness washes the source artwork to white.
 - Keep terminal detail by layering a translucent green SVG rect with multiply blending over the exact focus bounds, and limit image brightness to a narrow range. Test both the tint element and its fill opacity, not only the presence of a green RGB value somewhere in the filter.
+
+### 2026-07-20 unbalanced Yinyi output to balanced recording input
+
+- Parallel signal cores must stay parallel at both ends. If red and white share one unbalanced source signal but terminate separately on balanced `+` and `-`, the destination sees common mode and can reject the signal.
+- For the user-confirmed passive conversion, red and white share the selected L or R at the source and share `+` at the destination; shield connects G-to-G and destination `-` remains unused. The usage row must state the unused terminal explicitly.
+- The 3.5mm and L/R/G destinations use the same mono source allocation: red and white share one source L or R, then fan out to destination L and R so both channels receive the same mono signal; shield remains G-to-G and all three L/R/G terminals are populated.
+- A wiring regression must assert both ends of every conductor. Checking only cable count or one endpoint cannot protect this relationship.
+- Main/slave selector state should use one selected-state color. Keeping both active M and active S red makes position, rather than a second color legend, carry the mode distinction.
+
+### 2026-07-20 Yinyi processor panel identity
+
+- A generic customer label must not choose a brand-incompatible internal fallback. Resolve the formal tier name before creating the wiring node, and keep Yinyi processor IDs within AJ200/AJ600 even when old data omits the tier.
+- Shared physical hardware can reuse one calibrated rear-panel asset map, but each brand wrapper must register only the models that brand actually sells; Yinyi must never import or select AJ350.
+
+### 2026-07-20 balanced, XLR and 6.35 sources into Yinyi mono input
+
+- Connector shape does not change the passive mono conversion rule. Phoenix balanced `+`, XLR pin 2 and 6.35 TS tip are all source signal endpoints: red and white share that endpoint, shield uses the source ground endpoint, and the destination red/white pair shares one array-microphone L or R terminal.
+- A balanced source negative endpoint must remain unused in this conversion. Mapping it to ground recreates the exact cancellation-prone wiring the user rejected, even when the destination drawing looks like a plausible three-core fan-out.
+- Model TS tip and sleeve as physical terminal roles even when the renderer collapses them under one connector head. This preserves an accurate occupancy contract without exposing individual cores at the plug artwork.

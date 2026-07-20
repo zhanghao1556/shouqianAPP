@@ -160,6 +160,19 @@ function assertNoPowerEdges(model) {
   );
 }
 
+function assertYinyiMonoInputConductors(edge, expectedSourceSignal, expectedSourceGround) {
+  assert.ok(edge);
+  assert.deepEqual(
+    edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color]),
+    [
+      [expectedSourceSignal, "signal", "#dc2626"],
+      [expectedSourceSignal, "signal", "#ffffff"],
+      [expectedSourceGround, "ground", "#64748b"]
+    ]
+  );
+  assert.equal(edge.conductors.some((conductor) => /negative|pin3/.test(conductor.fromTerminalId)), false);
+}
+
 const yinyiProfile = makeProfile({
   length: 12,
   width: 8,
@@ -205,6 +218,109 @@ assert.deepEqual(
   yinyiControlEdge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId]),
   [["pin1", "rx"], ["pin2", "tx"], ["pin3", "ground"], ["pin6", "ground"]]
 );
+const yinyiBalancedInputResult = buildYinyiModel(yinyiProfile, {
+  "DT2-Pro": 1,
+  "COLUMN-SPEAKER": 4,
+  "WIRELESS-HANDHELD": 1
+});
+const yinyiBalancedInputEdge = yinyiBalancedInputResult.model.edges.find(
+  (edge) => edge.id === "candidate-wireless-receiver-line-dt"
+);
+assert.ok(
+  yinyiBalancedInputEdge,
+  "Missing Yinyi balanced input edge; edges=" + yinyiBalancedInputResult.model.edges.map((edge) => edge.id).join(",") +
+    "; lines=" + yinyiBalancedInputResult.outputs.connectionLines.map((line) => line.id + ":" + line.fromDevice + ">" + line.toDevice).join(",")
+);
+assertYinyiMonoInputConductors(yinyiBalancedInputEdge, "positive", "ground");
+assert.match(yinyiBalancedInputEdge.connectionMethod, /平衡端红白并接\+.*-悬空.*阵麦端红白并接LINE IN同一个L或R/);
+
+const yinyiTsInputProfile = {
+  ...yinyiProfile,
+  existingDevices: { ...yinyiProfile.existingDevices, legacyWirelessMic: "无线手持麦" }
+};
+const yinyiTsInputResult = buildYinyiModel(yinyiTsInputProfile, { "DT2-Pro": 1, "COLUMN-SPEAKER": 4 });
+const yinyiTsInputEdge = yinyiTsInputResult.model.edges.find(
+  (edge) => edge.id === "candidate-wireless-receiver-line-dt"
+);
+assertYinyiMonoInputConductors(yinyiTsInputEdge, "tip", "sleeve");
+assert.match(yinyiTsInputEdge.connectionMethod, /6\.35 TS端红白并接TIP.*屏蔽接SLEEVE.*阵麦端红白并接LINE IN同一个L或R/);
+
+const yinyiXlrInputProfile = {
+  ...yinyiProfile,
+  existingDevices: { ...yinyiProfile.existingDevices, legacyWirelessMic: "有线麦克风" }
+};
+const yinyiXlrInputResult = buildYinyiModel(yinyiXlrInputProfile, { "DT2-Pro": 1, "COLUMN-SPEAKER": 4 });
+const yinyiXlrInputEdge = yinyiXlrInputResult.model.edges.find(
+  (edge) => edge.id === "candidate-microphone-line-dt-1"
+);
+assertYinyiMonoInputConductors(yinyiXlrInputEdge, "pin2", "pin1");
+assert.match(yinyiXlrInputEdge.connectionMethod, /卡侬母头.*红白并接2（\+）.*屏蔽接1（G）.*3（-）悬空.*阵麦端红白并接LINE IN同一个L或R/);
+const yinyiRecordingProfile = {
+  ...yinyiProfile,
+  existingDevices: { ...yinyiProfile.existingDevices, recordingHost: "录播主机" }
+};
+const yinyiRecordingResult = buildYinyiModel(yinyiRecordingProfile, { "DT2-Pro": 1, "COLUMN-SPEAKER": 4 });
+const yinyiRecordingEdge = yinyiRecordingResult.model.edges.find((edge) => edge.id === "external-recording-input-recording-host");
+assert.ok(yinyiRecordingEdge);
+assert.ok(yinyiRecordingEdge.fromPortId.endsWith(":lineOut1"));
+assert.deepEqual(
+  yinyiRecordingEdge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color]),
+  [
+    ["signal", "positive", "#dc2626"],
+    ["signal", "positive", "#ffffff"],
+    ["ground", "ground", "#64748b"]
+  ]
+);
+assert.equal(yinyiRecordingEdge.conductors.some((conductor) => conductor.toTerminalId === "negative"), false);
+assert.match(yinyiRecordingEdge.connectionMethod, /主麦端红白并接LINE OUT同一个L或R[\s\S]*?录播端红白并接\+[\s\S]*?-悬空/);
+for (const mode of ["trs35", "lrg"]) {
+  const result = buildYinyiModel(
+    yinyiRecordingProfile,
+    { "DT2-Pro": 1, "COLUMN-SPEAKER": 4 },
+    { "recording-host": mode }
+  );
+  const edge = result.model.edges.find((item) => item.id === "external-recording-input-recording-host");
+  assert.ok(edge);
+  assert.ok(edge.fromPortId.endsWith(":lineOut1"));
+  assert.deepEqual(
+    edge.conductors.map((conductor) => [conductor.fromTerminalId, conductor.toTerminalId, conductor.color]),
+    [
+      ["signal", "left", "#dc2626"],
+      ["signal", "right", "#ffffff"],
+      ["ground", "ground", "#64748b"]
+    ]
+  );
+  assert.match(edge.connectionMethod, /主麦端红白并接LINE OUT同一个L或R/);
+  assert.match(edge.connectionMethod, /红接L、白接R、屏蔽接G/);
+}
+for (const expected of [
+  { deviceName: "双麦处理器", candidate: "AJ200", productId: PROCESSOR_AJ200_PORT_PROFILE_ID },
+  { deviceName: "六麦处理器", candidate: "AJ600", productId: PROCESSOR_AJ600_PORT_PROFILE_ID }
+]) {
+  const outputs = {
+    ...yinyiResult.outputs,
+    productSelection: [],
+    generatedPoints: [],
+    connectionLines: [{
+      id: "yinyi-processor-panel-" + expected.candidate,
+      fromDevice: expected.deviceName,
+      fromPort: "LINE OUT",
+      toDevice: "教学模拟功放主机",
+      toPort: "LINE IN",
+      cableType: "音频线",
+      note: "处理器物理背板映射回归"
+    }]
+  };
+  const result = {
+    model: buildInterfaceWiringModel({ profile: yinyiProfile, outputs, brandId: "yinyi" })
+  };
+  const processor = node(result.model, "processor");
+  assert.equal(result.model.candidateProcessor, expected.candidate);
+  assert.equal(processor.productId, expected.productId);
+  assert.ok(getDevicePortProfile(processor.productId)?.interfacePanel);
+  assert.equal(result.model.nodes.some((item) => item.productId === PROCESSOR_AJ350_PORT_PROFILE_ID), false);
+  assert.equal(result.model.findings.some((item) => item.code === "interface-panel.missing.processor"), false);
+}
 assert.equal(
   yinyiResult.model.nodes.filter((item) => item.id.startsWith("dt-main-speakers-group-")).reduce((sum, item) => sum + item.quantity, 0),
   8
@@ -223,6 +339,7 @@ assert.match(yinyiMainPanelSvg, />G<.*?>L<.*?>R<.*?>G<.*?>L<.*?>R</s);
 assert.doesNotMatch(yinyiMainPanelSvg, />1<|>2<|>3<|>4</);
 assert.match(yinyiMainPanelSvg, /data-switch-layout="left-m-right-s" data-selected-mode="M"/);
 assert.match(yinyiSlavePanelSvg, /data-switch-layout="left-m-right-s" data-selected-mode="S"/);
+assert.match(yinyiSlavePanelSvg, /\.selected\{fill:#dc2626\}/);
 for (const terminalLabel of ["1+", "1-", "2+", "2-", "3+", "3-", "4+", "4-"]) {
   assert.ok(yinyiMainPanelSvg.includes(">" + terminalLabel + "<"));
 }
@@ -1300,6 +1417,11 @@ assert.match(viteConfigSource, /__ENABLE_YINYI_INTERFACE_WIRING__/);
 assert.match(viteConfigSource, /inlineDynamicImports: true/);
 assert.match(packageJsonSource, /set APP_BRAND=yinyi&& npm\.cmd run build/);
 assert.match(packageJsonSource, /set APP_BRAND=yinman&& npm\.cmd run build/);
+assert.match(yinyiWiringPreviewSource, /yinman-aj200-interface-panel\.svg/);
+assert.match(yinyiWiringPreviewSource, /yinman-aj600-interface-panel\.svg/);
+assert.doesNotMatch(yinyiWiringPreviewSource, /yinman-aj350-interface-panel\.svg/);
+assert.match(yinyiWiringPreviewSource, /aj200:\s*aj200InterfacePanel/);
+assert.match(yinyiWiringPreviewSource, /aj600:\s*aj600InterfacePanel/);
 assert.doesNotMatch(universalReleaseSource, /音翼 1\.1 当前不显示音曼专属接口接线图/);
 assert.match(releaseCurrentSource, /brand\.label[^\r\n]*接口接线图/);
 assert.match(releaseBehaviorSource, /const wiringSelector = [^\r\n]*brandLabel[^\r\n]*接口接线图/);
