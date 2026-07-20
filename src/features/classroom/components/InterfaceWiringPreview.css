@@ -520,11 +520,24 @@
 
 .interfaceWiringPortImageFocusLayer {
   pointer-events: none;
-  filter: brightness(1.42) contrast(1.34) saturate(1.45) drop-shadow(0 0 2px rgba(34, 197, 94, 0.96));
+  filter: brightness(1.02) contrast(1.12) saturate(1.18);
 }
 
 .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer {
   animation: interfaceWiringPortImageFocusPulse 0.9s ease-in-out infinite;
+}
+
+.interfaceWiringPortImageFocusTint {
+  pointer-events: none;
+  fill: rgba(34, 197, 94, 0.48);
+  stroke: #16a34a;
+  stroke-width: 1.5;
+  mix-blend-mode: multiply;
+  vector-effect: non-scaling-stroke;
+}
+
+.interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusTint {
+  animation: interfaceWiringPortImageFocusTintPulse 0.9s ease-in-out infinite;
 }
 
 .interfaceWiringPortHitTarget {
@@ -548,11 +561,24 @@
 @keyframes interfaceWiringPortImageFocusPulse {
   0%,
   100% {
-    filter: brightness(1.34) contrast(1.28) saturate(1.34) drop-shadow(0 0 2px rgba(34, 197, 94, 0.9));
+    filter: brightness(1.02) contrast(1.12) saturate(1.18);
   }
 
   50% {
-    filter: brightness(1.82) contrast(1.46) saturate(1.7) drop-shadow(0 0 5px rgba(34, 197, 94, 1));
+    filter: brightness(1.08) contrast(1.16) saturate(1.26);
+  }
+}
+
+@keyframes interfaceWiringPortImageFocusTintPulse {
+  0%,
+  100% {
+    fill: rgba(34, 197, 94, 0.48);
+    stroke: #16a34a;
+  }
+
+  50% {
+    fill: rgba(34, 197, 94, 0.64);
+    stroke: #15803d;
   }
 }
 
@@ -731,7 +757,8 @@
   .interfaceWiringEdgeLeads.is-active .interfaceWiringEdgeVisual,
   .interfaceWiringEdgeLeads.is-active .interfaceWiringConnectorHeadBody,
   .interfaceWiringEdgeReferences.is-active .interfaceWiringEdgeReferenceBadge,
-  .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer {
+  .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusLayer,
+  .interfaceWiringPortImageFocus.is-active .interfaceWiringPortImageFocusTint {
     animation: none;
   }
 }

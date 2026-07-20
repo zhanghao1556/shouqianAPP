@@ -2045,6 +2045,7 @@ assert.match(wiringPreviewSource, /data-terminal-selective=\{marker\.terminalSel
 assert.match(wiringPreviewSource, /function isTerminalChannelPort[\s\S]*?凤凰\|接线端子\|接线柱\|多针\|平衡输入/);
 assert.match(wiringPreviewSource, /!\/3\\\.5\|TRS\|TRRS\|XLR\|卡侬\|RJ45\|USB\/i/);
 assert.match(wiringPreviewSource, /className="interfaceWiringPortImageFocusLayer"/);
+assert.match(wiringPreviewSource, /className="interfaceWiringPortImageFocusTint"/);
 assert.match(wiringPreviewSource, /href=\{marker\.panelImage\}/);
 assert.match(wiringPreviewSource, /getInterfaceWiringPortFocusClipId\(portFocusIdPrefix, index\)/);
 assert.doesNotMatch(wiringPreviewSource, /interfaceWiringPortHighlight/);
@@ -2067,8 +2068,9 @@ assert.match(wiringPreviewStyles, /\.interfaceWiringEdgeTrunks\.is-dimmed,[\s\S]
 assert.match(wiringPreviewStyles, /\.interfaceWiringCanvas\[data-active-edge-id\] \.interfaceWiringPanelImage[\s\S]*?grayscale\(0\.6\)/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringPortImageFocus\.is-active[\s\S]*?opacity: 1;/);
 assert.match(wiringPreviewStyles, /@keyframes interfaceWiringPortImageFocusPulse/);
-assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusLayer[\s\S]*?rgba\(34, 197, 94, 0\.96\)/);
-assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusPulse[\s\S]*?rgba\(34, 197, 94, 1\)/);
+assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusTint[\s\S]*?fill: rgba\(34, 197, 94, 0\.48\)/);
+assert.match(wiringPreviewStyles, /interfaceWiringPortImageFocusTintPulse[\s\S]*?fill: rgba\(34, 197, 94, 0\.64\)/);
+assert.doesNotMatch(wiringPreviewStyles, /interfaceWiringPortImageFocusPulse[\s\S]*?brightness\(1\.8/);
 assert.match(wiringPreviewStyles, /\.interfaceWiringConnectorHeadHitTarget[\s\S]*?pointer-events: all;/);
 assert.match(wiringPreviewStyles, /@media \(prefers-reduced-motion: reduce\)/);
 console.log("PASS hover uses edge identity, green per-port terminal focus and finished 3.5/XLR/6.35 connector heads");

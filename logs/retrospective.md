@@ -2446,3 +2446,8 @@ PowerShell reminder:
 - When a brand-specific preview becomes a shared released feature, update the package description, static required markers and fresh-browser behavior comparison together. UI inclusion alone is not enough if release tooling still treats the feature as forbidden or absent for one brand.
 - Terminal focus color is a presentation contract independent of cable material colors. Keep the focus glow consistently green while preserving each cable's engineering color and the selected edge identity.
 - When browser pointer emulation does not retain a React hover state, separate the evidence: verify exact clip geometry and computed green CSS in the live page, keep console/page checks authoritative, and leave the final motion impression to the user's already-open localhost tab rather than mutating application state for a screenshot.
+
+### 2026-07-20 visible terminal highlight color
+
+- A green shadow around a heavily brightened image is not a green highlight. The highlighted surface itself must receive a green tint; otherwise clipping can hide the shadow while brightness washes the source artwork to white.
+- Keep terminal detail by layering a translucent green SVG rect with multiply blending over the exact focus bounds, and limit image brightness to a narrow range. Test both the tint element and its fill opacity, not only the presence of a green RGB value somewhere in the filter.

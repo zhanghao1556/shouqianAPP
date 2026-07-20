@@ -282,6 +282,14 @@ function InterfaceWiringDiagram({
                     key={`${marker.id}-focus-image-${imageIndex + 1}`}
                   />
                 ))}
+                <rect
+                  x={marker.focusBounds.x}
+                  y={marker.focusBounds.y}
+                  width={marker.focusBounds.width}
+                  height={marker.focusBounds.height}
+                  rx={Math.min(5, marker.focusBounds.height / 2)}
+                  className="interfaceWiringPortImageFocusTint"
+                />
               </g>
             );
           })}
