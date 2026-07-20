@@ -2583,3 +2583,13 @@ PowerShell reminder:
 - Never run customer-copy substitutions across an entire bundled JavaScript document when the token is also an internal enum or branch key. Replacing `yinyi` with `yinman` rewrote executable brand conditions and silently changed Yinman processor selection; brand copy must be handled at presentation boundaries while internal IDs remain immutable.
 - Final release acceptance is complete only after the packaged HTML itself exports a valid report. Static string checks, brand-matched business parity, mobile browsers, PDF payload/image dimensions and rendered footer together caught different classes of failure in this release.
 - A snapshot can verify perfectly against the same already-corrupted PowerShell path list and still be incomplete. On Windows PowerShell 5.1, capture `git ls-files -z` as raw bytes and decode UTF-8 explicitly; then compare the archive against an independent NUL-based Git list so Chinese paths cannot be silently filtered out.
+## 2026-07-20 软件著作权材料整理复盘
+
+- 软著材料应先统一一个不带品牌和单位信息的登记名称，再让说明书、源码册、README 和压缩包共同引用这一名称；否则后期改名容易造成申请表与附件不一致。
+- “前 60 页、后 60 页”应按用户明确口径执行，而不是照附件中 70 页拆分示例推断。两册各 60 页、每页 50 行，共 6,000 行，并把结束语占用后册第 60 页的第 50 行，最容易自动核查。
+- 源码匿名化不能只删包含品牌词的行。建立完整、确定性的源码序列并做中性标识替换，可以保留真实程序结构，同时避免品牌名、网址、本机路径和版权标识进入材料。
+- 界面截图不能直接复用当前开发页。应裁去品牌头、匿名化项目字段，并在进入说明书前重新保存图片以清除原图片元数据；图纸内容保留真实业务能力，比重新绘制示意图更能证明软件功能。
+- 缺少 LibreOffice/Word/WPS 时，DOCX 视觉渲染不可伪装成已完成。可将 DOCX 做结构、分页符、行数和元数据校验，再用纯 Python 从同一 DOCX 内容生成 PDF，最后以 Poppler 对 PDF 做全页视觉检查，并在交付说明中明确 DOCX 未经过办公套件渲染。
+- 源码册的视觉正确性需要三层证据：DOCX 中 60 个代码块每块 50 行、PDF 每页提取 50 个带行号代码行、全部渲染页无边缘裁切。仅看 PDF 页数不足以证明每页 50 行。
+- 申请人信息缺失时不要填写虚假占位主体。保留明确的“待申请人填写”字段和补充清单，比猜测企业名、姓名或日期更安全。
+- Windows 托管终端的中文回显乱码与文件损坏必须区分。本次 `cmd.exe` 仅在控制台回显中乱码，Python UTF-8、PDF 提取和实际路径均正常，因此不应重写中文文档或文件名。
