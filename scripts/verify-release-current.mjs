@@ -176,6 +176,7 @@ function extractCssRule(css, selector) {
 }
 
 function checkReleaseScripts(scripts) {
+  const releaseAll = scripts["release:all"] ?? "";
   return {
     yinyiRebuildsBeforePackaging:
       /npm\.cmd run build/.test(scripts["release:yinyi"] ?? "") &&
@@ -186,10 +187,16 @@ function checkReleaseScripts(scripts) {
       /build-single-file-release\.mjs --brand yinman/.test(scripts["release:yinman"] ?? "") &&
       /build-universal-release\.mjs --brand yinman/.test(scripts["release:yinman"] ?? ""),
     allRunsBothBrands:
-      /release:yinyi/.test(scripts["release:all"] ?? "") &&
-      /release:yinman/.test(scripts["release:all"] ?? ""),
+      /release:yinyi/.test(releaseAll) &&
+      /release:yinman/.test(releaseAll),
     allRunsBehaviorParity:
-      /verify:release-behavior/.test(scripts["release:all"] ?? "")
+      /verify:release-behavior/.test(releaseAll),
+    allVerifiesMatchingBrandDist: [
+      "verify:release-current -- --brand yinyi",
+      "verify:release-behavior -- --brand yinyi",
+      "verify:release-current -- --brand yinman",
+      "verify:release-behavior -- --brand yinman"
+    ].every((token) => releaseAll.includes(token))
   };
 }
 
